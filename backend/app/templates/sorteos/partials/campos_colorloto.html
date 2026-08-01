@@ -1,0 +1,27 @@
+<div class="border rounded p-3 bg-light">
+    <label class="form-label small text-muted">
+        {{ cantidad_balotas }} balotas — cada una es un número (1–7) con un color. Se permite repetir número y/o color.
+    </label>
+    {% for i in range(cantidad_balotas) %}
+    <div class="d-flex gap-2 align-items-center mb-2">
+        <span class="text-muted small" style="width: 60px;">Balota {{ i + 1 }}</span>
+        <input type="number" name="colorloto_numero" class="form-control" style="width: 80px;"
+               min="1" max="7" required
+               value="{{ valores_pares[i].numero if valores_pares and valores_pares|length > i else '' }}">
+        <select name="colorloto_color" class="form-select" style="width: 160px;" required>
+            <option value="">Color…</option>
+            {% for c in colores %}
+            <option value="{{ c.codigo }}"
+                {% if valores_pares and valores_pares|length > i and valores_pares[i].color_codigo == c.codigo %}selected{% endif %}>
+                {{ c.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endfor %}
+    {% if not colores %}
+    <div class="alert alert-warning small mb-0">
+        No hay colores vigentes configurados. Ve a <a href="/colores">Gestión de colores</a> para agregar la paleta antes de registrar sorteos de ColorLoto.
+    </div>
+    {% endif %}
+</div>

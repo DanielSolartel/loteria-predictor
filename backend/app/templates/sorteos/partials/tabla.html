@@ -1,0 +1,56 @@
+<div class="card stat-card">
+    {% if sorteos %}
+    <table class="table table-hover mb-0 align-middle">
+        <thead>
+            <tr>
+                <th>#Sorteo</th>
+                <th>Fecha</th>
+                <th>Día</th>
+                <th>Resultado</th>
+                <th>Fuente</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sorteos %}
+            <tr>
+                <td>{{ s.numero_sorteo }}</td>
+                <td>{{ s.fecha }}</td>
+                <td>{{ s.dia_semana }}</td>
+                <td>
+                    {% for n in s.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+                    {% if s.superbalota is not none %}
+                        <span class="numero-bolita superbalota-bolita">{{ s.superbalota }}</span>
+                    {% endif %}
+                    {% for p in s.pares %}
+                        <span class="color-swatch color-{{ p.color_codigo|lower }}" title="{{ p.color_nombre }}"></span>{{ p.numero }}
+                    {% endfor %}
+                </td>
+                <td class="text-muted small">{{ s.fuente }}</td>
+                <td class="text-end">
+                    <a href="/sorteos/{{ s.id }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+                    <a href="/sorteos/{{ s.id }}/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    <button class="btn btn-sm btn-outline-danger"
+                            hx-delete="/sorteos/{{ s.id }}"
+                            hx-target="#tabla-sorteos"
+                            hx-confirm="¿Eliminar el sorteo #{{ s.numero_sorteo }}? Esta acción no se puede deshacer.">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="p-5 text-center text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        Aún no hay sorteos registrados{% if juego_seleccionado %} para este juego{% endif %}.
+        <div class="mt-2">
+            <a href="/sorteos/nuevo{% if juego_seleccionado %}?juego={{ juego_seleccionado }}{% endif %}" class="btn btn-sm btn-primary">
+                Registrar el primero
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+<p class="text-muted small mt-2">{{ total }} sorteo(s) en total.</p>

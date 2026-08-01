@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Sistema Predictivo de Loterías{% endblock %}
+{% block content %}
+
+<h3 class="mb-4">Dashboard</h3>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted small">Estado del sistema</div>
+                    <div class="fw-bold {% if db_conectada %}text-success{% else %}text-danger{% endif %}">
+                        {% if db_conectada %}Operativo{% else %}Sin conexión a BD{% endif %}
+                    </div>
+                </div>
+                <i class="bi bi-activity stat-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted small">Juegos activos</div>
+                    <div class="fw-bold">{{ juegos|length }}</div>
+                </div>
+                <i class="bi bi-joystick stat-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted small">Sorteos registrados</div>
+                    <div class="fw-bold">{{ total_sorteos }}</div>
+                </div>
+                <i class="bi bi-collection stat-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted small">Última actualización</div>
+                    <div class="fw-bold">{{ ultima_actualizacion or "Sin datos aún" }}</div>
+                </div>
+                <i class="bi bi-clock-history stat-icon"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card stat-card p-3">
+            <h6 class="mb-3"><i class="bi bi-joystick me-2"></i>Juegos disponibles</h6>
+            {% if juegos %}
+            <div class="row g-2">
+                {% for j in juegos %}
+                <div class="col-md-4">
+                    <a href="/juegos/{{ j.codigo }}" class="text-decoration-none">
+                        <div class="border rounded p-3 h-100">
+                            <span class="badge game-badge mb-2">{{ j.codigo }}</span>
+                            <div class="fw-bold text-dark">{{ j.nombre }}</div>
+                            <div class="text-muted small">
+                                {{ j.cantidad_numeros }} número(s) · rango {{ j.rango }}
+                                {% if j.tiene_superbalota %} · superbalota {{ j.superbalota_rango }}{% endif %}
+                                {% if j.tiene_color %} · con color{% endif %}
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No hay juegos configurados todavía.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="placeholder-panel">
+            <i class="bi bi-bar-chart-fill fs-2 d-block mb-2"></i>
+            Estadísticas de frecuencia<br><span class="small">(disponible en fases siguientes)</span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="placeholder-panel">
+            <i class="bi bi-graph-up fs-2 d-block mb-2"></i>
+            Simulaciones y probabilidades<br><span class="small">(disponible en fases siguientes)</span>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

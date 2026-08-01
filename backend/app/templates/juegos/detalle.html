@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ juego.nombre }}{% endblock %}
+{% block content %}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/juegos">Juegos</a></li>
+        <li class="breadcrumb-item active">{{ juego.nombre }}</li>
+    </ol>
+</nav>
+
+<div class="card stat-card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <span class="badge game-badge mb-2">{{ juego.codigo }}</span>
+            <h3>{{ juego.nombre }}</h3>
+        </div>
+        <a href="/sorteos?juego={{ juego.codigo }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-list-ol me-1"></i>Ver sorteos
+        </a>
+    </div>
+
+    <hr>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h6 class="text-muted">Reglas del juego</h6>
+            <table class="table table-sm">
+                <tbody>
+                    <tr><th>Cantidad de números</th><td>{{ juego.cantidad_numeros }}</td></tr>
+                    <tr><th>Rango de números</th><td>{{ juego.rango }}</td></tr>
+                    <tr>
+                        <th>Superbalota</th>
+                        <td>{% if juego.tiene_superbalota %}Sí ({{ juego.superbalota_rango }}){% else %}No{% endif %}</td>
+                    </tr>
+                    <tr><th>Incluye color</th><td>{{ "Sí" if juego.tiene_color else "No" }}</td></tr>
+                    <tr><th>Permite repetición</th><td>{{ "Sí" if juego.permite_repeticion else "No" }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h6 class="text-muted">Espacio muestral</h6>
+            <p class="mb-1">Combinaciones posibles bajo azar uniforme:</p>
+            <p class="fs-4 fw-bold text-primary">{{ juego.espacio_muestral }}</p>
+            <p class="small text-muted">
+                Esto es 1 en {{ juego.espacio_muestral }} para acertar una combinación exacta
+                al azar — la base de cualquier análisis de probabilidad honesto sobre este juego.
+            </p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

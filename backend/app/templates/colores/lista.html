@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Colores — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-4">Paleta de colores — ColorLoto</h3>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card stat-card p-3">
+            <h6 class="mb-3">Colores vigentes</h6>
+            <div id="tabla-colores">
+                {% include "colores/partials/tabla.html" %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card stat-card p-3">
+            <h6 class="mb-3">Agregar color</h6>
+            <form hx-post="/colores" hx-target="#tabla-colores" hx-swap="innerHTML" hx-on::after-request="this.reset()">
+                <div class="mb-2">
+                    <label class="form-label small">Código (identificador estable)</label>
+                    <input type="text" name="codigo" class="form-control" placeholder="ej. MORADO" required
+                           style="text-transform: uppercase;">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Nombre visible</label>
+                    <input type="text" name="nombre" class="form-control" placeholder="ej. Morado" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Vigente desde</label>
+                    <input type="date" name="vigente_desde" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Agregar a la paleta
+                </button>
+            </form>
+            <p class="small text-muted mt-3 mb-0">
+                Retirar un color no borra el histórico: los sorteos pasados que lo usaron
+                siguen siendo válidos y consultables, solo se cierra su vigencia.
+            </p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

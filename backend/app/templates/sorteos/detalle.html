@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Sorteo #{{ sorteo.numero_sorteo }}{% endblock %}
+{% block content %}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/sorteos">Sorteos</a></li>
+        <li class="breadcrumb-item active">#{{ sorteo.numero_sorteo }}</li>
+    </ol>
+</nav>
+
+<div class="card stat-card p-4" style="max-width: 600px;">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <span class="badge game-badge mb-2">{{ juego_nombre }}</span>
+            <h4>Sorteo #{{ sorteo.numero_sorteo }}</h4>
+            <p class="text-muted mb-0">{{ sorteo.fecha_legible }} · {{ sorteo.dia_semana }}</p>
+        </div>
+        <div>
+            <a href="/sorteos/{{ sorteo.id }}/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+        </div>
+    </div>
+
+    <hr>
+
+    <h6 class="text-muted">Resultado</h6>
+    <div class="mb-3">
+        {% for n in sorteo.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+        {% if sorteo.superbalota is not none %}
+            <span class="numero-bolita superbalota-bolita">{{ sorteo.superbalota }}</span>
+        {% endif %}
+        {% for p in sorteo.pares %}
+            <span class="d-inline-flex align-items-center border rounded px-2 py-1 me-1 mb-1">
+                <span class="color-swatch color-{{ p.color_codigo|lower }}"></span>{{ p.numero }} · {{ p.color_nombre }}
+            </span>
+        {% endfor %}
+    </div>
+
+    <table class="table table-sm">
+        <tbody>
+            <tr><th>Fuente</th><td>{{ sorteo.fuente }}</td></tr>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

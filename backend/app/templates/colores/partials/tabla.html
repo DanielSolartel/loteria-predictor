@@ -1,0 +1,27 @@
+{% if colores %}
+<table class="table table-sm align-middle mb-0">
+    <thead>
+        <tr><th></th><th>Código</th><th>Nombre</th><th>Vigente desde</th><th class="text-end">Acciones</th></tr>
+    </thead>
+    <tbody>
+        {% for c in colores %}
+        <tr>
+            <td><span class="{{ c.css_class }}"></span></td>
+            <td><code>{{ c.codigo }}</code></td>
+            <td>{{ c.nombre }}</td>
+            <td class="small text-muted">{{ c.vigente_desde or "—" }}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger"
+                        hx-delete="/colores/{{ c.codigo }}"
+                        hx-target="#tabla-colores"
+                        hx-confirm="¿Retirar el color {{ c.nombre }}? El histórico de sorteos que ya lo usaron no se ve afectado.">
+                    <i class="bi bi-x-lg"></i> Retirar
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted mb-0">No hay colores vigentes. Agrega al menos uno para poder registrar sorteos de ColorLoto.</p>
+{% endif %}

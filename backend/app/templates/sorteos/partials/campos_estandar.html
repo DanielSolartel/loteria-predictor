@@ -1,0 +1,20 @@
+<div class="border rounded p-3 bg-light">
+    <label class="form-label small text-muted">
+        Números ({{ cantidad_numeros }}, rango {{ rango_min }}–{{ rango_max }}, sin repetir)
+    </label>
+    <div class="d-flex flex-wrap gap-2 mb-2">
+        {% for i in range(cantidad_numeros) %}
+        <input type="number" name="numeros" class="form-control" style="width: 90px;"
+               min="{{ rango_min }}" max="{{ rango_max }}" required
+               value="{{ valores_numeros[i] if valores_numeros and valores_numeros|length > i else '' }}"
+               placeholder="#{{ i + 1 }}">
+        {% endfor %}
+    </div>
+
+    {% if tiene_superbalota %}
+    <label class="form-label small text-muted">Superbalota ({{ superbalota_min }}–{{ superbalota_max }})</label>
+    <input type="number" name="superbalota" class="form-control" style="width: 120px;"
+           min="{{ superbalota_min }}" max="{{ superbalota_max }}" required
+           value="{{ valor_superbalota if valor_superbalota is not none else '' }}">
+    {% endif %}
+</div>

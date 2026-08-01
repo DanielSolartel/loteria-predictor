@@ -1,0 +1,96 @@
+:root {
+    --brand: #4c3f91;
+    --brand-dark: #322a63;
+}
+
+body {
+    background-color: #f4f5f9;
+}
+
+.topbar {
+    background-color: var(--brand-dark);
+}
+
+.sidebar {
+    width: 220px;
+    min-height: calc(100vh - 56px);
+    background-color: #fff;
+    border-right: 1px solid #e3e3ee;
+}
+
+.sidebar .nav-link {
+    color: #4a4a4a;
+    border-radius: 6px;
+    margin: 2px 8px;
+    padding: 0.5rem 0.75rem;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #f0edfc;
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--brand);
+    color: #fff;
+}
+
+.content-area {
+    max-width: 1200px;
+}
+
+.stat-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card .stat-icon {
+    font-size: 1.6rem;
+    color: var(--brand);
+}
+
+.game-badge {
+    background-color: var(--brand);
+}
+
+.color-swatch {
+    display: inline-block;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.color-amarillo { background-color: #f7d417; }
+.color-azul { background-color: #1d63e0; }
+.color-rojo { background-color: #e0291d; }
+.color-verde { background-color: #22a94b; }
+.color-blanco { background-color: #ffffff; }
+.color-negro { background-color: #1c1c1c; }
+
+.numero-bolita {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    background-color: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.superbalota-bolita {
+    background-color: #d63384;
+}
+
+.placeholder-panel {
+    border: 2px dashed #d5d5e6;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    color: #8a8aa3;
+}

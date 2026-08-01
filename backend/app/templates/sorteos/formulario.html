@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{% if modo_edicion %}Editar sorteo{% else %}Registrar sorteo{% endif %}{% endblock %}
+{% block content %}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/sorteos">Sorteos</a></li>
+        <li class="breadcrumb-item active">{% if modo_edicion %}Editar #{{ sorteo.numero_sorteo }}{% else %}Nuevo{% endif %}</li>
+    </ol>
+</nav>
+
+<div class="card stat-card p-4" style="max-width: 640px;">
+    <h5 class="mb-3">{% if modo_edicion %}Editar sorteo #{{ sorteo.numero_sorteo }}{% else %}Registrar sorteo manualmente{% endif %}</h5>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <strong>No se pudo guardar:</strong>
+        <ul class="mb-0">{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <form hx-{% if modo_edicion %}put{% else %}post{% endif %}="{% if modo_edicion %}/sorteos/{{ sorteo.id }}{% else %}/sorteos{% endif %}"
+          hx-target="this" hx-swap="outerHTML">
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Juego</label>
+                {% if modo_edicion %}
+                    <input type="text" class="form-control" value="{{ juego_actual.nombre }}" disabled>
+                    <input type="hidden" name="codigo_juego" value="{{ juego_actual.codigo }}">
+                {% else %}
+                    <select name="codigo_juego" class="form-select" required
+                            hx-get="/sorteos/campos" hx-target="#campos-resultado" hx-trigger="load, change">
+                        <option value="">Selecciona un juego…</option>
+                        {% for j in juegos %}
+                        <option value="{{ j.codigo }}" {% if j.codigo == juego_preseleccionado %}selected{% endif %}>{{ j.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Número de sorteo</label>
+                <input type="number" name="numero_sorteo" class="form-control" min="1" required
+                       {% if modo_edicion %}value="{{ sorteo.numero_sorteo }}" disabled{% endif %}>
+                {% if modo_edicion %}<input type="hidden" name="numero_sorteo" value="{{ sorteo.numero_sorteo }}">{% endif %}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha</label>
+                <input type="date" name="fecha" class="form-control" required
+                       value="{{ sorteo.fecha if modo_edicion else '' }}">
+            </div>
+        </div>
+
+        <div id="campos-resultado" class="mb-3"
+             {% if modo_edicion %}hx-get="/sorteos/campos?juego={{ juego_actual.codigo }}" hx-trigger="load" hx-target="this"{% endif %}>
+            {% if modo_edicion %}
+                <div class="text-muted small"><i class="bi bi-hourglass-split"></i> Cargando campos…</div>
+            {% else %}
+                <div class="placeholder-panel small">Selecciona un juego para ver los campos del resultado.</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Fuente (opcional)</label>
+            <input type="text" name="fuente" class="form-control" placeholder="ej. csv_historico, manual"
+                   value="{{ sorteo.fuente if modo_edicion and sorteo.fuente != '—' else '' }}">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>{% if modo_edicion %}Guardar cambios{% else %}Registrar sorteo{% endif %}
+        </button>
+        <a href="/sorteos" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+</div>
+
+{% endblock %}
