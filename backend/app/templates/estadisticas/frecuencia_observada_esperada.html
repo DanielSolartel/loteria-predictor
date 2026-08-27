@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Observada vs. esperada — {{ juego_nombre_actual }}{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-bar-chart-fill me-2"></i>Frecuencia observada vs. esperada — {{ juego_nombre_actual }}</h3>
+
+<ul class="nav nav-pills mb-2">
+    {% for j in juegos_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<ul class="nav nav-pills mb-4">
+    {% for m in metricas_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if m.activo %}active{% endif %}" href="{{ m.url }}">{{ m.etiqueta }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de {{ juego_nombre_actual }} disponibles todavía para calcular esta comparación.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta comparación describe el histórico frente al comportamiento teórico uniforme. Una diferencia observada <strong>no aumenta ni reduce por sí sola</strong> la probabilidad de un número en el próximo sorteo -cada sorteo es un evento independiente.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Rango / cantidad elegida</div>
+            <div class="fw-bold">{{ estadistica.rango_min }}–{{ estadistica.rango_max }} · {{ estadistica.cantidad_numeros }} números</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Regla teórica</div>
+            <div class="fw-bold">{{ estadistica.metodo_teorico }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small">Calculado en: {{ estadistica.calculado_en or "—" }}</p>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-observada-esperada" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por número</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Apariciones</th>
+                    <th>Frecuencia observada</th>
+                    <th>Frecuencia teórica esperada</th>
+                    <th>Diferencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.valor }}</td>
+                    <td>{{ fila.apariciones }}</td>
+                    <td>{{ "%.2f"|format(fila.frecuencia_observada.frecuencia_relativa * 100) }}%</td>
+                    <td>{{ "%.2f"|format(fila.probabilidad_teorica.probabilidad * 100) }}%</td>
+                    <td class="{% if fila.diferencia > 0 %}text-success{% elif fila.diferencia < 0 %}text-danger{% endif %}">
+                        {{ "%+.2f"|format(fila.diferencia * 100) }} pp
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-observada-esperada" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "observada": estadistica.chart_observada, "teorica": estadistica.chart_teorica} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-observada-esperada").textContent);
+        const ctx = document.getElementById("grafica-observada-esperada");
+        const formatoPorcentaje = (valor) => (valor * 100).toFixed(1) + "%";
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [
+                    {
+                        label: "Frecuencia observada",
+                        data: datos.observada,
+                        backgroundColor: "rgba(54, 90, 220, 0.6)",
+                    },
+                    {
+                        label: "Frecuencia teórica esperada",
+                        data: datos.teorica,
+                        backgroundColor: "rgba(150, 150, 150, 0.5)",
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true },
+                    tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${formatoPorcentaje(item.raw)}` } },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: (valor) => formatoPorcentaje(valor) },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}

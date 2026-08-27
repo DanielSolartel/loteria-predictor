@@ -17,6 +17,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -56,7 +57,10 @@ class JuegoORM(Base):
 
 class SorteoORM(Base):
     __tablename__ = "sorteos"
-    __table_args__ = (UniqueConstraint("juego_id", "numero_sorteo", name="uq_sorteo_juego_numero"),)
+    __table_args__ = (
+        UniqueConstraint("juego_id", "numero_sorteo", name="uq_sorteo_juego_numero"),
+        Index("ix_sorteos_juego_fecha", "juego_id", "fecha"),
+    )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     juego_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("juegos.id"), nullable=False, index=True)
@@ -151,7 +155,9 @@ class EstadisticaORM(Base):
     id: Mapped[uuid.UUID] = _uuid_pk()
     juego_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("juegos.id"), nullable=False, index=True)
     tipo_estadistica: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    hasta_numero_sorteo: Mapped[int | None] = mapped_column(Integer, nullable=True)
     parametros: Mapped[dict] = mapped_column(JSONB, default=dict)
+    parametros_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     resultado: Mapped[dict] = mapped_column(JSONB, default=dict)
     calculado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     valido_hasta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -216,3 +222,25 @@ class SimulacionORM(Base):
     resultado_resumen: Mapped[dict] = mapped_column(JSONB, default=dict)
     ejecutado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     duracion_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class SincronizacionORM(Base):
+    """Registro de cada ejecución del módulo de adquisición de datos.
+    Alimenta el panel 'Importación' del dashboard."""
+
+    __tablename__ = "sincronizaciones"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    juego_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("juegos.id"), nullable=False, index=True)
+    conector: Mapped[str] = mapped_column(String(60), nullable=False)
+    iniciado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finalizado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    estado: Mapped[str] = mapped_column(String(20), nullable=False)
+    sorteos_nuevos: Mapped[int] = mapped_column(Integer, default=0)
+    sorteos_fallidos: Mapped[int] = mapped_column(Integer, default=0)
+    sorteos_duplicados: Mapped[int] = mapped_column(Integer, default=0)
+    sorteos_incompletos: Mapped[int] = mapped_column(Integer, default=0)
+    total_sorteos_encontrados: Mapped[int] = mapped_column(Integer, default=0)
+    duracion_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ultimo_sorteo_importado: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    detalle_errores: Mapped[list] = mapped_column(JSONB, default=list)

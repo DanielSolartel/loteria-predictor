@@ -13,9 +13,11 @@ from datetime import date
 from uuid import UUID
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.application.interfaces.sorteo_repository import SorteoRepository
+from app.application.exceptions import SorteoDuplicadoError, SorteoNoEncontradoError
+from app.application.interfaces.sorteo_repository import FiltroSorteos, SorteoRepository
 from app.domain.entities.sorteo import Sorteo
 from app.domain.value_objects.color import Color, ColorNumberPair
 from app.domain.value_objects.combination import Combination
@@ -83,7 +85,11 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
             )
 
         self._session.add(orm)
-        self._session.flush()
+        try:
+            self._session.flush()
+        except IntegrityError as e:
+            self._session.rollback()
+            raise SorteoDuplicadoError(str(sorteo.juego_id), sorteo.numero_sorteo) from e
         return _to_entity(orm)
 
     def obtener_por_id(self, sorteo_id: UUID) -> Sorteo | None:
@@ -108,38 +114,53 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
             > 0
         )
 
-    def listar_por_juego(
-        self,
-        juego_id: UUID,
-        desde: date | None = None,
-        hasta: date | None = None,
-        limite: int = 100,
-        offset: int = 0,
-    ) -> list[Sorteo]:
+    def listar_por_juego(self, juego_id: UUID, filtro: FiltroSorteos) -> list[Sorteo]:
+        columna_orden = SorteoORM.fecha if filtro.orden_campo == "fecha" else SorteoORM.numero_sorteo
+        direccion = columna_orden.desc() if filtro.orden_direccion == "desc" else columna_orden.asc()
+        # Desempate estable por numero_sorteo: varios sorteos pueden
+        # compartir fecha (p.ej. Baloto y Revancha el mismo día en
+        # otra tabla, o simplemente para que el orden sea
+        # determinista al paginar -sin esto, dos páginas consecutivas
+        # podrían repetir o saltarse filas si hay empates).
+        desempate = SorteoORM.numero_sorteo.desc() if filtro.orden_direccion == "desc" else SorteoORM.numero_sorteo.asc()
+
         stmt = (
             select(SorteoORM)
-            .where(SorteoORM.juego_id == juego_id)
+            .where(*self._condiciones_filtro(juego_id, filtro))
             .options(
                 selectinload(SorteoORM.numeros),
                 selectinload(SorteoORM.superbalota),
                 selectinload(SorteoORM.colores_numeros).selectinload(SorteoColorNumeroORM.color),
             )
-            .order_by(SorteoORM.fecha.desc())
-            .limit(limite)
-            .offset(offset)
+            .order_by(direccion, desempate)
+            .limit(filtro.limite)
+            .offset(filtro.offset)
         )
-        if desde:
-            stmt = stmt.where(SorteoORM.fecha >= desde)
-        if hasta:
-            stmt = stmt.where(SorteoORM.fecha <= hasta)
-
         orms = self._session.scalars(stmt)
         return [_to_entity(o) for o in orms]
 
-    def contar_por_juego(self, juego_id: UUID) -> int:
+    def contar_por_juego(self, juego_id: UUID, filtro: FiltroSorteos | None = None) -> int:
+        condiciones = self._condiciones_filtro(juego_id, filtro) if filtro else [SorteoORM.juego_id == juego_id]
         return self._session.scalar(
-            select(func.count()).select_from(SorteoORM).where(SorteoORM.juego_id == juego_id)
+            select(func.count()).select_from(SorteoORM).where(*condiciones)
         )
+
+    @staticmethod
+    def _condiciones_filtro(juego_id: UUID, filtro: FiltroSorteos) -> list:
+        """Condiciones WHERE compartidas entre listar_por_juego y
+        contar_por_juego -mantenerlas en un solo lugar evita que el
+        conteo y el listado paginado puedan quedar desincronizados
+        si se agrega un filtro nuevo en el futuro."""
+        condiciones = [SorteoORM.juego_id == juego_id]
+        if filtro.desde:
+            condiciones.append(SorteoORM.fecha >= filtro.desde)
+        if filtro.hasta:
+            condiciones.append(SorteoORM.fecha <= filtro.hasta)
+        if filtro.numero_desde is not None:
+            condiciones.append(SorteoORM.numero_sorteo >= filtro.numero_desde)
+        if filtro.numero_hasta is not None:
+            condiciones.append(SorteoORM.numero_sorteo <= filtro.numero_hasta)
+        return condiciones
 
     def ultimo_sorteo(self, juego_id: UUID) -> Sorteo | None:
         orm = self._session.scalar(
@@ -155,8 +176,26 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
         )
         return _to_entity(orm) if orm else None
 
+    def obtener_por_numero(self, juego_id: UUID, numero_sorteo: int) -> Sorteo | None:
+        orm = self._session.scalar(
+            select(SorteoORM)
+            .where(SorteoORM.juego_id == juego_id, SorteoORM.numero_sorteo == numero_sorteo)
+            .options(
+                selectinload(SorteoORM.numeros),
+                selectinload(SorteoORM.superbalota),
+                selectinload(SorteoORM.colores_numeros).selectinload(SorteoColorNumeroORM.color),
+            )
+        )
+        return _to_entity(orm) if orm else None
+
+    def listar_numeros_sorteo(self, juego_id: UUID) -> list[int]:
+        return list(
+            self._session.scalars(
+                select(SorteoORM.numero_sorteo).where(SorteoORM.juego_id == juego_id)
+            )
+        )
+
     def actualizar(self, sorteo: Sorteo) -> Sorteo:
-        from app.application.exceptions import SorteoNoEncontradoError
 
         orm = self._session.get(SorteoORM, sorteo.id)
         if orm is None:
@@ -200,7 +239,6 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
         return _to_entity(orm)
 
     def eliminar(self, sorteo_id: UUID) -> None:
-        from app.application.exceptions import SorteoNoEncontradoError
 
         orm = self._session.get(SorteoORM, sorteo_id)
         if orm is None:

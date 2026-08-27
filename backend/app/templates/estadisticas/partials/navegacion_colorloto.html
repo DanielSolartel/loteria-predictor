@@ -1,0 +1,32 @@
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'frecuencia-numeros' %}active{% endif %}"
+           href="/estadisticas/colorloto/frecuencia-numeros{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Frecuencia de números
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'frecuencia-colores' %}active{% endif %}"
+           href="/estadisticas/colorloto/frecuencia-colores{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Frecuencia de colores
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'frecuencia-pares-numero-color' %}active{% endif %}"
+           href="/estadisticas/colorloto/frecuencia-pares-numero-color{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Frecuencia de pares número-color
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'atrasos-numeros' %}active{% endif %}"
+           href="/estadisticas/colorloto/atrasos-numeros{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Atrasos de números
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'atrasos-colores' %}active{% endif %}"
+           href="/estadisticas/colorloto/atrasos-colores{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Atrasos de colores
+        </a>
+    </li>
+</ul>

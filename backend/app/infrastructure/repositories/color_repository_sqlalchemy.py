@@ -26,14 +26,35 @@ class ColorRepositorySQLAlchemy(ColorRepository):
         self._session = session
 
     def listar_vigentes(self, juego_id: UUID, en_fecha: date | None = None) -> list[Color]:
-        fecha_ref = en_fecha or date.today()
-        stmt = select(ColorORM).where(
-            ColorORM.juego_id == juego_id,
-            ColorORM.activo.is_(True),
-        )
-        orms = self._session.scalars(stmt)
-        colores = [_to_entity(o) for o in orms]
+        if en_fecha is None:
+            # Paleta ACTUAL: contrato exacto ya usado por GameFactory,
+            # sin ningún cambio -filtra por activo=True en SQL (un
+            # color inactivo NUNCA debe aparecer como parte de la
+            # paleta de HOY), y por vigencia en memoria sobre ese
+            # subconjunto ya reducido.
+            stmt = select(ColorORM).where(
+                ColorORM.juego_id == juego_id,
+                ColorORM.activo.is_(True),
+            ).order_by(ColorORM.codigo)
+            colores = [_to_entity(o) for o in self._session.scalars(stmt)]
+            return [c for c in colores if c.esta_vigente_en(date.today())]
+
+        # Paleta HISTÓRICA en `en_fecha`: NUNCA filtra por `activo`
+        # -ese flag es administrativo del presente, independiente de
+        # la ventana temporal real de un color (`cerrar_vigencia`
+        # nunca lo toca). Una sola consulta trae TODOS los colores
+        # del juego (activos e inactivos), y la vigencia se resuelve
+        # en memoria vía `Color.esta_vigente_en`, la misma función
+        # pura ya usada arriba -sin duplicar la regla de negocio.
+        return self._listar_por_vigencia_en(juego_id, en_fecha)
+
+    def _listar_por_vigencia_en(self, juego_id: UUID, fecha_ref: date) -> list[Color]:
+        colores = self.listar_todos(juego_id)
         return [c for c in colores if c.esta_vigente_en(fecha_ref)]
+
+    def listar_todos(self, juego_id: UUID) -> list[Color]:
+        stmt = select(ColorORM).where(ColorORM.juego_id == juego_id).order_by(ColorORM.codigo)
+        return [_to_entity(o) for o in self._session.scalars(stmt)]
 
     def guardar(self, juego_id: UUID, color: Color) -> Color:
         orm = ColorORM(

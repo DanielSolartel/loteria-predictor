@@ -1,0 +1,16 @@
+{% if error %}
+<div class="alert alert-danger small py-2">{{ error }}</div>
+{% elif reporte %}
+<div class="alert {% if reporte.huecos %}alert-warning{% else %}alert-success{% endif %} small py-2 mb-0">
+    <strong>{{ reporte.total_sorteos }}</strong> sorteo(s) almacenados
+    {% if reporte.numero_sorteo_minimo %}
+    (rango {{ reporte.numero_sorteo_minimo }}–{{ reporte.numero_sorteo_maximo }}).
+    {% endif %}
+    {% if reporte.huecos %}
+    <br><i class="bi bi-exclamation-triangle-fill"></i>
+    Faltan {{ reporte.huecos|length }} sorteo(s): {{ reporte.huecos[:15]|join(', ') }}{% if reporte.huecos|length > 15 %}…{% endif %}
+    {% else %}
+    <br><i class="bi bi-check-circle-fill"></i> Sin huecos en la numeración.
+    {% endif %}
+</div>
+{% endif %}

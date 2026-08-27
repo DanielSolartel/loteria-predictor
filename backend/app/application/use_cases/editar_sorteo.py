@@ -6,6 +6,11 @@ Reutiliza la misma validación de `LotteryGame.validate_draw` que
 rechazarse exactamente igual que registrarlo inválido por primera
 vez. No hay reglas de validación duplicadas entre ambos casos de
 uso.
+
+Invalidación de caché: igual criterio que `RegistrarSorteo` -ocurre
+después de `sorteo_repository.actualizar(...)` exitoso, usando el
+`numero_sorteo` del sorteo (que no cambia al editar, solo su
+resultado/fecha/fuente).
 """
 from __future__ import annotations
 
@@ -18,6 +23,7 @@ from app.application.exceptions import (
     SorteoInvalidoError,
     SorteoNoEncontradoError,
 )
+from app.application.interfaces.estadistica_repository import EstadisticaRepository
 from app.application.interfaces.juego_repository import JuegoRepository
 from app.application.interfaces.sorteo_repository import SorteoRepository
 from app.application.use_cases.game_factory import GameFactory
@@ -43,10 +49,12 @@ class EditarSorteo:
         juego_repository: JuegoRepository,
         sorteo_repository: SorteoRepository,
         game_factory: GameFactory,
+        estadistica_repository: EstadisticaRepository,
     ):
         self._juegos = juego_repository
         self._sorteos = sorteo_repository
         self._game_factory = game_factory
+        self._estadisticas = estadistica_repository
 
     def ejecutar(self, datos: EditarSorteoInput) -> Sorteo:
         sorteo_actual = self._sorteos.obtener_por_id(datos.sorteo_id)
@@ -72,4 +80,11 @@ class EditarSorteo:
             fuente=datos.fuente,
             creado_en=sorteo_actual.creado_en,
         )
-        return self._sorteos.actualizar(sorteo_actualizado)
+        sorteo_guardado = self._sorteos.actualizar(sorteo_actualizado)
+
+        # Invalidación SOLO tras un guardado exitoso.
+        self._estadisticas.invalidar_por_juego(
+            sorteo_actual.juego_id, desde_numero_sorteo=sorteo_actual.numero_sorteo,
+        )
+
+        return sorteo_guardado

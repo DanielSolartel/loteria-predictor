@@ -44,11 +44,23 @@
                         <i class="bi bi-palette-fill me-2"></i>Colores (ColorLoto)
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_page == 'importacion' %}active{% endif %}" href="/importacion">
+                        <i class="bi bi-cloud-arrow-down-fill me-2"></i>Importación
+                    </a>
+                </li>
                 <li class="nav-item mt-3">
                     <span class="nav-link disabled text-muted small text-uppercase">Próximamente</span>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link disabled"><i class="bi bi-bar-chart-fill me-2"></i>Estadísticas</a>
+                    <a class="nav-link {% if active_page == 'estadisticas' %}active{% endif %}" href="/estadisticas/baloto/frecuencia-numeros">
+                        <i class="bi bi-bar-chart-fill me-2"></i>Estadísticas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_page == 'estadisticas' %}active{% endif %}" href="/estadisticas/colorloto/frecuencia-numeros">
+                        <i class="bi bi-palette-fill me-2"></i>ColorLoto
+                    </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link disabled"><i class="bi bi-cpu-fill me-2"></i>Modelos ML</a>

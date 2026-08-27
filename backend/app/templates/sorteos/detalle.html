@@ -2,6 +2,29 @@
 {% block title %}Sorteo #{{ sorteo.numero_sorteo }}{% endblock %}
 {% block content %}
 
+{% macro bolitas(resultado) %}
+    {% for n in resultado.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+    {% if resultado.superbalota is not none %}
+        <span class="numero-bolita superbalota-bolita">{{ resultado.superbalota }}</span>
+    {% endif %}
+    {% for p in resultado.pares %}
+        <span class="d-inline-flex align-items-center border rounded px-2 py-1 me-1 mb-1">
+            <span class="color-swatch color-{{ p.color_codigo|lower }}"></span>{{ p.numero }} · {{ p.color_nombre }}
+        </span>
+    {% endfor %}
+{% endmacro %}
+
+{% set es_familia_baloto = juego_codigo in ('BALOTO', 'BALOTO_REVANCHA') %}
+{% if es_familia_baloto %}
+    {% if juego_codigo == 'BALOTO' %}
+        {% set baloto = sorteo %}{% set baloto_nombre = juego_nombre %}
+        {% set revancha = sorteo_pareja %}{% set revancha_nombre = juego_pareja_nombre %}
+    {% else %}
+        {% set baloto = sorteo_pareja %}{% set baloto_nombre = juego_pareja_nombre %}
+        {% set revancha = sorteo %}{% set revancha_nombre = juego_nombre %}
+    {% endif %}
+{% endif %}
+
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/sorteos">Sorteos</a></li>
@@ -9,38 +32,72 @@
     </ol>
 </nav>
 
-<div class="card stat-card p-4" style="max-width: 600px;">
+<div class="card stat-card p-4" style="max-width: 640px;">
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
-            <span class="badge game-badge mb-2">{{ juego_nombre }}</span>
+            {% if es_familia_baloto %}
+                <span class="badge game-badge mb-2">BALOTO · REVANCHA</span>
+            {% else %}
+                <span class="badge game-badge mb-2">{{ juego_nombre }}</span>
+            {% endif %}
             <h4>Sorteo #{{ sorteo.numero_sorteo }}</h4>
-            <p class="text-muted mb-0">{{ sorteo.fecha_legible }} · {{ sorteo.dia_semana }}</p>
+            <p class="text-muted mb-0">
+                {{ sorteo.fecha_legible }} · {{ sorteo.dia_semana }}
+                {% if es_familia_baloto %}
+                    <br><span class="small">Un mismo sorteo oficial produce ambos resultados la misma noche.</span>
+                {% endif %}
+            </p>
         </div>
         <div>
+            <button class="btn btn-sm btn-outline-warning"
+                    hx-post="/importacion/reimportar-sorteo/{{ sorteo.id }}"
+                    hx-target="#resultado-reimportar" hx-swap="innerHTML"
+                    hx-confirm="¿Reimportar este sorteo desde el origen? Se sobrescribirá el resultado actual.">
+                <i class="bi bi-cloud-download"></i> Reimportar
+            </button>
             <a href="/sorteos/{{ sorteo.id }}/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
         </div>
     </div>
 
+    <div id="resultado-reimportar"></div>
+
     <hr>
 
-    <h6 class="text-muted">Resultado</h6>
-    <div class="mb-3">
-        {% for n in sorteo.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
-        {% if sorteo.superbalota is not none %}
-            <span class="numero-bolita superbalota-bolita">{{ sorteo.superbalota }}</span>
-        {% endif %}
-        {% for p in sorteo.pares %}
-            <span class="d-inline-flex align-items-center border rounded px-2 py-1 me-1 mb-1">
-                <span class="color-swatch color-{{ p.color_codigo|lower }}"></span>{{ p.numero }} · {{ p.color_nombre }}
-            </span>
-        {% endfor %}
-    </div>
+    {% if es_familia_baloto %}
+        <h6 class="text-muted mb-2"><i class="bi bi-1-circle-fill me-1"></i>{{ baloto_nombre or "Baloto" }}</h6>
+        <div class="mb-3">
+            {% if baloto %}
+                {{ bolitas(baloto) }}
+                <div class="small text-muted mt-1">Fuente: {{ baloto.fuente }}</div>
+            {% else %}
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-exclamation-circle"></i> Aún no se ha importado el resultado de Baloto para este sorteo.
+                </p>
+            {% endif %}
+        </div>
 
-    <table class="table table-sm">
-        <tbody>
-            <tr><th>Fuente</th><td>{{ sorteo.fuente }}</td></tr>
-        </tbody>
-    </table>
+        <h6 class="text-muted mb-2"><i class="bi bi-2-circle-fill me-1"></i>{{ revancha_nombre or "Revancha" }}</h6>
+        <div class="mb-3">
+            {% if revancha %}
+                {{ bolitas(revancha) }}
+                <div class="small text-muted mt-1">Fuente: {{ revancha.fuente }}</div>
+            {% else %}
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-exclamation-circle"></i> Aún no se ha importado el resultado de Revancha para este sorteo.
+                </p>
+            {% endif %}
+        </div>
+    {% else %}
+        <h6 class="text-muted">Resultado</h6>
+        <div class="mb-3">
+            {{ bolitas(sorteo) }}
+        </div>
+        <table class="table table-sm">
+            <tbody>
+                <tr><th>Fuente</th><td>{{ sorteo.fuente }}</td></tr>
+            </tbody>
+        </table>
+    {% endif %}
 </div>
 
 {% endblock %}

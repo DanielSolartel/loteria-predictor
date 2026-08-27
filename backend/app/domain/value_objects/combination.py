@@ -2,12 +2,12 @@
 Value Object: Combination
 
 Representa una combinación candidata (jugable o predicha) para
-cualquiera de los tres juegos. Los tres campos son opcionales porque
-cada juego usa un subconjunto distinto:
+cualquiera de los juegos soportados. Los tres campos son opcionales
+porque cada juego usa un subconjunto distinto:
 
-- MiLoto              -> solo `numeros`
-- Baloto Revancha      -> `numeros` + `superbalota`
-- ColorLoto            -> solo `pares`
+- MiLoto                    -> solo `numeros`
+- Baloto / Baloto Revancha  -> `numeros` + `superbalota` (ambos comparten mecánica)
+- ColorLoto                  -> solo `pares`
 
 No se valida aquí si la combinación es correcta para un juego
 específico: esa responsabilidad es de `LotteryGame.validate_draw` /

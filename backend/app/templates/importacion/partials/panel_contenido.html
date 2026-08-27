@@ -1,0 +1,103 @@
+{% if mensaje %}
+<div class="alert alert-info alert-dismissible fade show">
+    {{ mensaje }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    {% for c in conectores %}
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="badge game-badge mb-1">{{ c.codigo }}</span>
+                    <h6 class="mb-0">{{ c.nombre }}</h6>
+                </div>
+                <div id="salud-{{ c.codigo }}" class="text-end"
+                     hx-get="/importacion/salud/{{ c.codigo }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+                    <span class="badge bg-secondary">
+                        <span class="spinner-border spinner-border-sm" style="width:0.6rem;height:0.6rem;"></span>
+                        Verificando…
+                    </span>
+                </div>
+            </div>
+
+            <table class="table table-sm mb-2">
+                <tbody>
+                    <tr><th>Sorteos almacenados</th><td>{{ c.total_sorteos }}</td></tr>
+                    <tr><th>Último sorteo</th><td>{{ c.ultimo_sorteo_almacenado or '—' }}</td></tr>
+                    {% if c.ultima_sincronizacion %}
+                    <tr><th>Última sincronización</th><td>{{ c.ultima_sincronizacion.iniciado_en }}</td></tr>
+                    <tr><th>Estado</th><td>
+                        <span class="badge
+                            {% if c.ultima_sincronizacion.estado == 'completado' %}bg-success
+                            {% elif c.ultima_sincronizacion.estado == 'en_progreso' %}bg-warning text-dark
+                            {% else %}bg-danger{% endif %}">
+                            {{ c.ultima_sincronizacion.estado }}
+                        </span>
+                    </td></tr>
+                    <tr><th>Nuevos / fallidos</th>
+                        <td>{{ c.ultima_sincronizacion.sorteos_nuevos }} / {{ c.ultima_sincronizacion.sorteos_fallidos }}</td></tr>
+                    <tr><th>Duración</th><td>{{ c.ultima_sincronizacion.duracion_ms }} ms</td></tr>
+                    {% else %}
+                    <tr><td colspan="2" class="text-muted small">Sin sincronizaciones todavía</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            {% if c.ultima_sincronizacion and c.ultima_sincronizacion.detalle_errores %}
+            <details class="small mb-2">
+                <summary class="text-danger">{{ c.ultima_sincronizacion.sorteos_fallidos }} error(es) — ver detalle</summary>
+                <ul class="mb-0 mt-1">
+                    {% for err in c.ultima_sincronizacion.detalle_errores %}
+                    <li>Sorteo {{ err.numero_sorteo or err.draw_id }}: {{ err.error }}</li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% endif %}
+
+            <div class="d-flex flex-wrap gap-1 mt-auto">
+                <button class="btn btn-sm btn-primary"
+                        hx-post="/importacion/sincronizar/{{ c.codigo }}"
+                        hx-target="#panel-importacion" hx-indicator="#spinner-{{ c.codigo }}">
+                    <i class="bi bi-arrow-repeat me-1"></i>Sincronizar ahora
+                </button>
+                <button class="btn btn-sm btn-outline-warning"
+                        hx-post="/importacion/reimportar-todo/{{ c.codigo }}"
+                        hx-target="#panel-importacion" hx-indicator="#spinner-{{ c.codigo }}"
+                        hx-confirm="Esto reimporta TODO el histórico de {{ c.nombre }} desde el origen, recorriendo todas las páginas. Puede tardar varios minutos. ¿Continuar?">
+                    <i class="bi bi-cloud-download me-1"></i>Reimportar todo
+                </button>
+                <button class="btn btn-sm btn-outline-dark"
+                        hx-post="/importacion/reprocesar-html/{{ c.codigo }}"
+                        hx-target="#panel-importacion" hx-indicator="#spinner-{{ c.codigo }}"
+                        hx-confirm="Esto reconstruye {{ c.nombre }} a partir del HTML ya guardado en storage/html/, SIN usar la red. Solo cubre los sorteos que ya se descargaron alguna vez. ¿Continuar?">
+                    <i class="bi bi-file-earmark-code me-1"></i>Reprocesar desde HTML
+                </button>
+                <button class="btn btn-sm btn-outline-secondary"
+                        hx-get="/importacion/validar/{{ c.codigo }}"
+                        hx-target="#reporte-integridad-{{ c.codigo }}">
+                    <i class="bi bi-shield-check me-1"></i>Validar integridad
+                </button>
+                <button class="btn btn-sm btn-outline-info"
+                        hx-get="/importacion/calidad/{{ c.codigo }}"
+                        hx-target="#reporte-calidad-{{ c.codigo }}">
+                    <i class="bi bi-clipboard-data me-1"></i>Reporte de calidad
+                </button>
+                <span id="spinner-{{ c.codigo }}" class="htmx-indicator spinner-border spinner-border-sm text-primary align-self-center"></span>
+            </div>
+            <div id="reporte-integridad-{{ c.codigo }}" class="mt-2"></div>
+            <div id="reporte-calidad-{{ c.codigo }}" class="mt-2"
+                 {% if c.ultima_sincronizacion %}hx-get="/importacion/calidad/{{ c.codigo }}" hx-trigger="load"{% endif %}></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<p class="small text-muted mt-3">
+    "Sincronizar ahora" descubre y trae únicamente los sorteos nuevos desde el último almacenado
+    (hasta 5 páginas por ejecución). "Reimportar todo" recorre el histórico completo sin límite de
+    páginas -puede tardar. Para reimportar un sorteo puntual, usa el botón correspondiente en su
+    detalle dentro de la sección Sorteos.
+</p>

@@ -1,0 +1,28 @@
+{# Control de corte temporal -compartido por las 4 visualizaciones
+   estadísticas (Etapa X). GET puro, sin JavaScript: es un filtro de
+   lectura, nunca debería ser POST. El action apunta a la ruta ACTUAL
+   exacta (request.url.path, ya disponible en el contexto de las 4
+   rutas) -así el formulario nunca necesita conocer el juego_slug ni
+   la métrica por su cuenta. #}
+<form method="get" action="{{ request.url.path }}" class="mb-3 d-flex flex-wrap align-items-end gap-2">
+    <div>
+        <label for="hasta_numero_sorteo" class="form-label small mb-1">Corte por número de sorteo</label>
+        <input
+            type="number" id="hasta_numero_sorteo" name="hasta_numero_sorteo"
+            step="1" min="1"
+            value="{{ hasta_numero_sorteo if hasta_numero_sorteo is not none else '' }}"
+            class="form-control form-control-sm" style="width: 10rem;"
+        >
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">Aplicar corte</button>
+    <a href="{{ url_historico_completo }}" class="btn btn-sm btn-outline-secondary">Histórico completo</a>
+    {% if hasta_numero_sorteo is not none %}
+    <span class="badge text-bg-secondary align-self-center">Corte activo: {{ hasta_numero_sorteo }}</span>
+    {% endif %}
+</form>
+<p class="small text-muted mb-4">
+    El número de corte pertenece al juego actual -al cambiar de juego se vuelve al histórico completo, porque la numeración de sorteos no es comparable entre juegos.
+    Se incluyen los sorteos con número de sorteo menor o igual al corte.
+    Un corte posterior al último sorteo disponible utiliza todo el histórico disponible.
+    El corte no predice resultados.
+</p>

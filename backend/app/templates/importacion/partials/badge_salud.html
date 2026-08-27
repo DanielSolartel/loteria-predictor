@@ -1,0 +1,7 @@
+<span class="badge {% if disponible %}bg-success{% else %}bg-danger{% endif %}">
+    <i class="bi bi-{{ 'wifi' if disponible else 'wifi-off' }}"></i>
+    {{ 'Disponible' if disponible else 'No disponible' }}
+</span>
+<p class="small text-muted mb-2 mt-1">
+    {{ mensaje }}{% if latencia_ms %} ({{ latencia_ms }} ms){% endif %}
+</p>

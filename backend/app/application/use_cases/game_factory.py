@@ -14,6 +14,7 @@ from uuid import UUID
 from app.application.exceptions import JuegoNoSoportadoError
 from app.application.interfaces.color_repository import ColorRepository
 from app.domain.entities.juego import Juego
+from app.domain.games.baloto import BalotoGame
 from app.domain.games.baloto_revancha import BalotoRevanchaGame
 from app.domain.games.base_game import LotteryGame
 from app.domain.games.colorloto import ColorLotoGame
@@ -21,6 +22,7 @@ from app.domain.games.miloto import MiLotoGame
 
 _JUEGOS_SIN_COLOR: dict[str, type[LotteryGame]] = {
     "MILOTO": MiLotoGame,
+    "BALOTO": BalotoGame,
     "BALOTO_REVANCHA": BalotoRevanchaGame,
 }
 
