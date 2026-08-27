@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Distancia desde la última aparición — {{ juego_nombre_actual }}{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-bar-chart-fill me-2"></i>Distancia desde la última aparición — {{ juego_nombre_actual }}</h3>
+
+<ul class="nav nav-pills mb-2">
+    {% for j in juegos_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<ul class="nav nav-pills mb-4">
+    {% for m in metricas_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if m.activo %}active{% endif %}" href="{{ m.url }}">{{ m.etiqueta }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de {{ juego_nombre_actual }} disponibles todavía para calcular esta distancia.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta cifra describe la distancia en la numeración de sorteos desde la última aparición de cada número. No indica que un número deba salir pronto: cada sorteo es un evento independiente y el tiempo transcurrido no cambia su probabilidad futura. La distancia se calcula respecto del último sorteo real disponible dentro del corte seleccionado, nunca respecto de un número de sorteo hipotético que no exista en el histórico.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Rango analizado</div>
+            <div class="fw-bold">{{ estadistica.rango_min }} – {{ estadistica.rango_max }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Mayor distancia observada</div>
+            {% if estadistica.mayor_distancia is not none %}
+            <div class="fw-bold">
+                {{ estadistica.mayor_distancia }}
+                {% if estadistica.numeros_con_mayor_distancia | length > 1 %}
+                    <span class="small text-muted">({{ estadistica.numeros_con_mayor_distancia | length }} números, ver tabla)</span>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="fw-bold">Sin apariciones</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-atrasos-numeros" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por número</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead><tr><th>Número</th><th>Última aparición</th><th>Distancia en numeración</th></tr></thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.valor }}</td>
+                    <td>{{ fila.ultimo_sorteo_aparicion if fila.ultimo_sorteo_aparicion is not none else "Nunca" }}</td>
+                    <td>{{ fila.atraso if fila.atraso is not none else "N/D" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-atrasos-numeros" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "valores": estadistica.chart_valores} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-atrasos-numeros").textContent);
+        const ctx = document.getElementById("grafica-atrasos-numeros");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: "Distancia en numeración de sorteos",
+                    data: datos.valores,
+                    backgroundColor: "rgba(120, 120, 120, 0.6)",
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Distancia en numeración de sorteos" },
+                        ticks: { precision: 0 },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}

@@ -21,13 +21,18 @@ from app.api.rest.routers import juegos as rest_juegos
 from app.api.rest.routers import sorteos as rest_sorteos
 from app.api.web.routers import colores as web_colores
 from app.api.web.routers import dashboard as web_dashboard
+from app.api.web.routers import estadisticas as web_estadisticas
+from app.api.web.routers import importacion as web_importacion
 from app.api.web.routers import juegos as web_juegos
 from app.api.web.routers import sorteos as web_sorteos
 from app.application.exceptions import (
     ColorNoVigenteError,
+    ConectorNoDisponibleError,
     DominioError,
     JuegoNoEncontradoError,
     JuegoNoSoportadoError,
+    JuegoSinSuperbalotaError,
+    ResultadoHistoricoInconsistenteError,
     SorteoDuplicadoError,
     SorteoInvalidoError,
     SorteoNoEncontradoError,
@@ -42,6 +47,8 @@ app.include_router(web_dashboard.router)
 app.include_router(web_juegos.router)
 app.include_router(web_sorteos.router)
 app.include_router(web_colores.router)
+app.include_router(web_importacion.router)
+app.include_router(web_estadisticas.router)
 
 # Adaptador REST (JSON, puente hacia una futura UI en React/Next.js)
 app.include_router(rest_juegos.router)
@@ -52,10 +59,23 @@ app.include_router(rest_colores.router)
 _STATUS_POR_EXCEPCION = {
     JuegoNoEncontradoError: 404,
     JuegoNoSoportadoError: 422,
+    JuegoSinSuperbalotaError: 422,
     SorteoNoEncontradoError: 404,
     SorteoDuplicadoError: 409,
     SorteoInvalidoError: 422,
     ColorNoVigenteError: 422,
+    ConectorNoDisponibleError: 502,
+    # 500, no 422: a diferencia de JuegoSinSuperbalotaError (el
+    # usuario pidió una operación incompatible y puede elegir otra
+    # métrica), aquí el request puede ser perfectamente válido -el
+    # servidor encontró que los datos históricos persistidos son
+    # inconsistentes con cantidad_numeros. El usuario no puede
+    # corregir esto cambiando su solicitud; devolver 422 le atribuiría
+    # incorrectamente el problema al request. Confirmado inalcanzable
+    # con datos reales (StandardNumberGame.validate_draw ya lo impide
+    # al escribir), pero si ocurriera, es un fallo de integridad
+    # server-side, no una entrada del usuario procesable de otra forma.
+    ResultadoHistoricoInconsistenteError: 500,
 }
 
 

@@ -1,10 +1,40 @@
+{% macro enlace_orden(campo, etiqueta) %}
+    {% if paginacion %}
+        {% set nueva_direccion = 'asc' if (paginacion.orden == campo and paginacion.direccion == 'desc') else 'desc' %}
+        <a href="#" class="text-decoration-none text-dark"
+           hx-get="/sorteos/tabla?juego={{ juego_seleccionado }}&orden={{ campo }}&direccion={{ nueva_direccion }}&pagina=1"
+           hx-include="#filtros-sorteos" hx-target="#tabla-sorteos" hx-push-url="/sorteos">
+            {{ etiqueta }}
+            {% if paginacion.orden == campo %}
+                <i class="bi bi-caret-{{ 'up' if paginacion.direccion == 'asc' else 'down' }}-fill small"></i>
+            {% endif %}
+        </a>
+    {% else %}
+        {{ etiqueta }}
+    {% endif %}
+{% endmacro %}
+
+{% macro enlace_pagina(numero_pagina, contenido, activo=False, deshabilitado=False) %}
+    {% if deshabilitado %}
+        <li class="page-item disabled"><span class="page-link">{{ contenido }}</span></li>
+    {% else %}
+        <li class="page-item {% if activo %}active{% endif %}">
+            <a class="page-link" href="#"
+               hx-get="/sorteos/tabla?juego={{ juego_seleccionado }}&pagina={{ numero_pagina }}&orden={{ paginacion.orden }}&direccion={{ paginacion.direccion }}"
+               hx-include="#filtros-sorteos" hx-target="#tabla-sorteos" hx-push-url="/sorteos">
+                {{ contenido }}
+            </a>
+        </li>
+    {% endif %}
+{% endmacro %}
+
 <div class="card stat-card">
     {% if sorteos %}
     <table class="table table-hover mb-0 align-middle">
         <thead>
             <tr>
-                <th>#Sorteo</th>
-                <th>Fecha</th>
+                <th>{{ enlace_orden('numero_sorteo', '#Sorteo') }}</th>
+                <th>{{ enlace_orden('fecha', 'Fecha') }}</th>
                 <th>Día</th>
                 <th>Resultado</th>
                 <th>Fuente</th>
@@ -31,7 +61,7 @@
                     <a href="/sorteos/{{ s.id }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
                     <a href="/sorteos/{{ s.id }}/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                     <button class="btn btn-sm btn-outline-danger"
-                            hx-delete="/sorteos/{{ s.id }}"
+                            hx-delete="/sorteos/{{ s.id }}?juego={{ juego_seleccionado }}{% if paginacion %}&pagina={{ paginacion.pagina_actual }}&orden={{ paginacion.orden }}&direccion={{ paginacion.direccion }}{% endif %}"
                             hx-target="#tabla-sorteos"
                             hx-confirm="¿Eliminar el sorteo #{{ s.numero_sorteo }}? Esta acción no se puede deshacer.">
                         <i class="bi bi-trash"></i>
@@ -44,13 +74,54 @@
     {% else %}
     <div class="p-5 text-center text-muted">
         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-        Aún no hay sorteos registrados{% if juego_seleccionado %} para este juego{% endif %}.
-        <div class="mt-2">
-            <a href="/sorteos/nuevo{% if juego_seleccionado %}?juego={{ juego_seleccionado }}{% endif %}" class="btn btn-sm btn-primary">
-                Registrar el primero
-            </a>
-        </div>
+        {% if filtros and (filtros.numero or filtros.numero_desde or filtros.numero_hasta or filtros.fecha_desde or filtros.fecha_hasta) %}
+            No hay sorteos que coincidan con esos filtros.
+            <div class="mt-2">
+                <a href="/sorteos?juego={{ juego_seleccionado }}" class="btn btn-sm btn-outline-secondary">Limpiar filtros</a>
+            </div>
+        {% elif juego_seleccionado %}
+            Aún no hay sorteos registrados para este juego.
+            <div class="mt-2">
+                <a href="/sorteos/nuevo?juego={{ juego_seleccionado }}" class="btn btn-sm btn-primary">Registrar el primero</a>
+            </div>
+        {% else %}
+            Aún no hay sorteos registrados. Selecciona un juego arriba para empezar.
+        {% endif %}
     </div>
     {% endif %}
 </div>
-<p class="text-muted small mt-2">{{ total }} sorteo(s) en total.</p>
+
+{% if paginacion %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+    <p class="text-muted small mb-0">
+        {% if paginacion.total_registros %}
+            Mostrando {{ paginacion.desde_registro }}–{{ paginacion.hasta_registro }} de {{ paginacion.total_registros }} sorteo(s)
+            · página {{ paginacion.pagina_actual }} de {{ paginacion.total_paginas }}
+        {% else %}
+            0 sorteos
+        {% endif %}
+    </p>
+
+    {% if paginacion.total_paginas > 1 %}
+    <nav aria-label="Paginación de sorteos">
+        <ul class="pagination pagination-sm mb-0">
+            {{ enlace_pagina(1, 'Primera', deshabilitado=not paginacion.hay_anterior) }}
+            {{ enlace_pagina(paginacion.pagina_actual - 1, 'Anterior', deshabilitado=not paginacion.hay_anterior) }}
+            {% if paginacion.paginas_visibles[0] > 1 %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+            {% for p in paginacion.paginas_visibles %}
+                {{ enlace_pagina(p, p, activo=(p == paginacion.pagina_actual)) }}
+            {% endfor %}
+            {% if paginacion.paginas_visibles[-1] < paginacion.total_paginas %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+            {{ enlace_pagina(paginacion.pagina_actual + 1, 'Siguiente', deshabilitado=not paginacion.hay_siguiente) }}
+            {{ enlace_pagina(paginacion.total_paginas, 'Última', deshabilitado=not paginacion.hay_siguiente) }}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% else %}
+<p class="text-muted small mt-2">{{ sorteos|length }} sorteo(s) en la vista previa. Selecciona un juego para explorar el historial completo con paginación.</p>
+{% endif %}

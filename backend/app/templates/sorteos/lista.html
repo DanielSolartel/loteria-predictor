@@ -10,16 +10,57 @@
 </div>
 
 <div class="card stat-card p-3 mb-3">
-    <form class="row g-2 align-items-end" hx-get="/sorteos/tabla" hx-target="#tabla-sorteos" hx-push-url="/sorteos">
+    <form id="filtros-sorteos" class="row g-2 align-items-end"
+          hx-get="/sorteos/tabla" hx-target="#tabla-sorteos" hx-push-url="/sorteos">
         <div class="col-auto">
             <label class="form-label small text-muted mb-1">Juego</label>
             <select name="juego" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
-                <option value="">Todos</option>
+                <option value="">Todos (vista previa)</option>
                 {% for j in juegos %}
                 <option value="{{ j.codigo }}" {% if j.codigo == juego_seleccionado %}selected{% endif %}>{{ j.nombre }}</option>
                 {% endfor %}
             </select>
         </div>
+
+        {% if juego_seleccionado %}
+        <div class="col-auto">
+            <label class="form-label small text-muted mb-1">N° exacto</label>
+            <input type="number" name="numero" class="form-control form-control-sm" style="width: 100px;"
+                   value="{{ filtros.numero if filtros and filtros.numero is not none else '' }}">
+        </div>
+        <div class="col-auto">
+            <label class="form-label small text-muted mb-1">N° desde</label>
+            <input type="number" name="numero_desde" class="form-control form-control-sm" style="width: 100px;"
+                   value="{{ filtros.numero_desde if filtros and filtros.numero_desde is not none else '' }}">
+        </div>
+        <div class="col-auto">
+            <label class="form-label small text-muted mb-1">N° hasta</label>
+            <input type="number" name="numero_hasta" class="form-control form-control-sm" style="width: 100px;"
+                   value="{{ filtros.numero_hasta if filtros and filtros.numero_hasta is not none else '' }}">
+        </div>
+        <div class="col-auto">
+            <label class="form-label small text-muted mb-1">Fecha desde</label>
+            <input type="date" name="fecha_desde" class="form-control form-control-sm"
+                   value="{{ filtros.fecha_desde if filtros else '' }}">
+        </div>
+        <div class="col-auto">
+            <label class="form-label small text-muted mb-1">Fecha hasta</label>
+            <input type="date" name="fecha_hasta" class="form-control form-control-sm"
+                   value="{{ filtros.fecha_hasta if filtros else '' }}">
+        </div>
+        <div class="col-auto">
+            <label class="form-label small text-muted mb-1">Por página</label>
+            <select name="tamano" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                {% for t in (paginacion.tamanos_disponibles if paginacion else [25, 50, 100, 250]) %}
+                <option value="{{ t }}" {% if paginacion and paginacion.tamano_pagina == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>Buscar</button>
+            <a href="/sorteos?juego={{ juego_seleccionado }}" class="btn btn-sm btn-outline-secondary">Limpiar filtros</a>
+        </div>
+        {% endif %}
     </form>
 </div>
 

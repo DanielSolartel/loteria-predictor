@@ -2,6 +2,7 @@ import math
 
 import pytest
 
+from app.domain.games.baloto import BalotoGame
 from app.domain.games.baloto_revancha import BalotoRevanchaGame
 from app.domain.games.miloto import MiLotoGame
 from app.domain.value_objects.combination import Combination
@@ -84,3 +85,33 @@ class TestBalotoRevanchaGame:
         # instancia con distinta configuración compartida por error.
         assert self.game.game_code != MiLotoGame().game_code
         assert self.game.number_range != MiLotoGame().number_range
+
+
+class TestBalotoGame:
+    def setup_method(self):
+        self.game = BalotoGame()
+
+    def test_mismas_reglas_numericas_que_revancha(self):
+        # Baloto y Revancha comparten mecánica exacta (Acuerdo 01 de
+        # 2022) -por diseño, deben tener el mismo espacio muestral.
+        revancha = BalotoRevanchaGame()
+        assert self.game.number_range == revancha.number_range
+        assert self.game.numbers_to_pick == revancha.numbers_to_pick
+        assert self.game.superballot_range == revancha.superballot_range
+        assert self.game.sample_space_size() == revancha.sample_space_size()
+
+    def test_game_code_es_distinto_de_revancha(self):
+        # Misma mecánica, pero son juegos regulatoriamente distintos:
+        # deben tener identidad propia, nunca confundirse.
+        assert self.game.game_code == "BALOTO"
+        assert self.game.game_code != BalotoRevanchaGame().game_code
+
+    def test_combinacion_completa_es_valida(self):
+        combinacion = Combination(numeros=(1, 2, 3, 4, 5), superbalota=10)
+        assert self.game.validate_draw(combinacion).is_valid
+
+    def test_requiere_superbalota(self):
+        combinacion = Combination(numeros=(1, 2, 3, 4, 5))
+        resultado = self.game.validate_draw(combinacion)
+        assert not resultado.is_valid
+        assert any("Falta la superbalota" in e for e in resultado.errors)

@@ -1,0 +1,44 @@
+{% if error %}
+<div class="alert alert-danger small py-2">{{ error }}</div>
+{% elif reporte %}
+<div class="card border-0 bg-light p-3 small">
+    <h6 class="mb-2"><i class="bi bi-clipboard-data me-1"></i>Reporte de calidad de datos</h6>
+
+    {% if reporte.ultima_sincronizacion_en %}
+    <table class="table table-sm mb-2">
+        <tbody>
+            <tr><th>Última sincronización</th><td>{{ reporte.ultima_sincronizacion_en }}</td></tr>
+            <tr><th>Sorteos encontrados</th><td>{{ reporte.total_encontrados }}</td></tr>
+            <tr><th>Importados</th><td>{{ reporte.total_importados }}</td></tr>
+            <tr><th>Duplicados detectados</th><td>{{ reporte.duplicados_detectados }}</td></tr>
+            <tr><th>Con error</th><td>{{ reporte.sorteos_con_error }}</td></tr>
+            <tr><th>Incompletos (con advertencias)</th><td>{{ reporte.sorteos_incompletos }}</td></tr>
+            <tr><th>% de éxito</th><td>
+                <span class="badge {% if reporte.porcentaje_exito >= 90 %}bg-success{% elif reporte.porcentaje_exito >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ reporte.porcentaje_exito }}%
+                </span>
+            </td></tr>
+            <tr><th>Duración</th><td>{{ reporte.duracion_ms }} ms</td></tr>
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted mb-2">Aún no se ha ejecutado ninguna sincronización para este juego.</p>
+    {% endif %}
+
+    <hr class="my-2">
+    <h6 class="mb-2">Cobertura histórica (estado actual de la base de datos)</h6>
+    <table class="table table-sm mb-0">
+        <tbody>
+            <tr><th>Sorteos almacenados</th><td>{{ reporte.total_sorteos_almacenados }}</td></tr>
+            <tr><th>Rango histórico</th>
+                <td>{% if reporte.primer_sorteo %}{{ reporte.primer_sorteo }} – {{ reporte.ultimo_sorteo }}{% else %}—{% endif %}</td></tr>
+            <tr><th>Cobertura</th><td>
+                <span class="badge {% if reporte.cobertura_porcentaje >= 99 %}bg-success{% elif reporte.cobertura_porcentaje >= 90 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ reporte.cobertura_porcentaje }}%
+                </span>
+                {% if reporte.huecos %}<span class="text-muted">({{ reporte.huecos|length }} hueco(s))</span>{% endif %}
+            </td></tr>
+        </tbody>
+    </table>
+</div>
+{% endif %}

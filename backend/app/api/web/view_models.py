@@ -78,3 +78,986 @@ def color_a_vm(color: Color) -> dict:
         "vigente_hasta": color.vigente_hasta.isoformat() if color.vigente_hasta else None,
         "css_class": f"color-swatch color-{color.codigo.lower()}",
     }
+
+
+def _frecuencia_a_vm_base(estadistica, rango_min: int, rango_max: int) -> dict:
+    """Helper compartido entre `frecuencia_numeros_a_vm` y
+    `frecuencia_superbalota_a_vm`: ambas transforman una
+    `EstadisticaCalculada` cuyo `resultado["filas"]` es una lista de
+    `FrecuenciaObservada` serializada, con exactamente la misma
+    forma -la única diferencia entre ambas visualizaciones es de qué
+    pool proviene el resultado (números vs. superbalota), algo que ya
+    quedó resuelto en la capa de orquestación (Etapa T/V). Ordena
+    NUMÉRICAMENTE por el valor (no por frecuencia), nunca recalcula
+    ninguna frecuencia, y no muta `estadistica.resultado["filas"]`
+    (crea una lista nueva vía `sorted`)."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    return {
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_ordenadas,
+        "chart_labels": [f["valor"] for f in filas_ordenadas],
+        "chart_valores": [f["apariciones"] for f in filas_ordenadas],
+    }
+
+
+def frecuencia_numeros_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo "frecuencia_numeros"
+    (Etapa T) en un view model listo para la plantilla. Ver
+    `_frecuencia_a_vm_base` para el detalle del ordenamiento/formato.
+    `juego` es la entidad REAL resuelta por el router -nunca se
+    hardcodea código ni nombre aquí (corrección de la generalización
+    a Baloto Revancha/MiLoto: antes decía "BALOTO" sin importar qué
+    juego se hubiera calculado)."""
+    return {
+        "juego_codigo": juego.codigo, "juego_nombre": juego.nombre,
+        **_frecuencia_a_vm_base(estadistica, rango_min, rango_max),
+    }
+
+
+def frecuencia_superbalota_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "frecuencia_superbalota" (Etapa V) en un view model listo para la
+    plantilla -mismo formato exacto que `frecuencia_numeros_a_vm`,
+    reutilizando el helper compartido. `rango_min`/`rango_max` deben
+    provenir de `juego_dominio.superballot_range` (nunca hardcodeados
+    1-16 aquí). `juego` real, nunca "BALOTO" fijo."""
+    return {
+        "juego_codigo": juego.codigo, "juego_nombre": juego.nombre,
+        **_frecuencia_a_vm_base(estadistica, rango_min, rango_max),
+    }
+
+
+def tabla_frecuencia_numeros_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "tabla_frecuencia_numeros" (comparación observado vs. esperado)
+    en un view model listo para la plantilla. NO reutiliza
+    `_frecuencia_a_vm_base`: la forma de cada fila es distinta
+    (`FilaFrecuencia` anidada, no `FrecuenciaObservada` plana) -forzar
+    el mismo helper habría mezclado dos contratos distintos.
+
+    Mantiene observado y teórico SEPARADOS en todo momento -nunca los
+    fusiona en un solo campo ambiguo, ni aquí ni en el template:
+    `chart_observada` viene de `frecuencia_observada.frecuencia_relativa`,
+    `chart_teorica` viene de `probabilidad_teorica.probabilidad`, ambas
+    como PROPORCIONES en [0,1] (misma unidad, comparables
+    directamente) -el formato a porcentaje es responsabilidad de
+    Chart.js/Jinja al presentar, nunca de este view model. `diferencia`
+    conserva su signo tal cual la calculó el motor
+    (observada - teórica), sin ninguna clasificación de "bueno/malo".
+    `juego` es la entidad real resuelta por el router -nunca "BALOTO"
+    fijo (corrección de la generalización)."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["frecuencia_observada"]["total_sorteos"] if filas_ordenadas else 0
+    n = rango_max - rango_min + 1
+    metodo_teorico = (
+        filas_ordenadas[0]["probabilidad_teorica"]["metodo"] if filas_ordenadas
+        else f"K/N = {cantidad_numeros}/{n}"
+    )
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "metodo_teorico": metodo_teorico,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_ordenadas,
+        "chart_labels": [f["valor"] for f in filas_ordenadas],
+        "chart_observada": [f["frecuencia_observada"]["frecuencia_relativa"] for f in filas_ordenadas],
+        "chart_teorica": [f["probabilidad_teorica"]["probabilidad"] for f in filas_ordenadas],
+    }
+
+
+# =====================================================================
+# Navegación de dos niveles (juego + métrica) para las tres páginas
+# estadísticas -construida enteramente aquí (nunca en el template ni
+# en JavaScript). Alcance deliberadamente cerrado a 3 juegos (nunca
+# ColorLoto, decisión de producto explícita para esta etapa).
+# =====================================================================
+
+_SLUG_A_CODIGO: dict[str, str] = {
+    "baloto": "BALOTO",
+    "baloto-revancha": "BALOTO_REVANCHA",
+    "miloto": "MILOTO",
+}
+_NOMBRE_VISIBLE_POR_SLUG: dict[str, str] = {
+    "baloto": "Baloto",
+    "baloto-revancha": "Baloto Revancha",
+    "miloto": "MiLoto",
+}
+_ETIQUETA_METRICA: dict[str, str] = {
+    "frecuencia-numeros": "Números principales",
+    "frecuencia-superbalota": "Superbalota",
+    "frecuencia-observada-esperada": "Observada vs. esperada",
+    "atrasos-numeros": "Distancia desde la última aparición",
+    "distribucion-pares-impares": "Pares e impares",
+    "distribucion-altos-bajos": "Distribución inferior/superior",
+    "distribucion-pares-consecutivos": "Distribución de pares consecutivos",
+    "distribucion-racha-maxima": "Racha máxima de números consecutivos",
+    "repeticiones-entre-sorteos": "Repeticiones entre sorteos consecutivos",
+}
+
+
+def _etiqueta_composicion(cantidad_pares: int, cantidad_numeros: int) -> str:
+    """Singular/plural correcto para pares e impares por separado -
+    "1 par / 4 impares", "0 pares / 5 impares", nunca una etiqueta
+    ambigua como solo el número."""
+    cantidad_impares = cantidad_numeros - cantidad_pares
+    texto_pares = "1 par" if cantidad_pares == 1 else f"{cantidad_pares} pares"
+    texto_impares = "1 impar" if cantidad_impares == 1 else f"{cantidad_impares} impares"
+    return f"{texto_pares} / {texto_impares}"
+
+
+def distribucion_pares_impares_a_vm(estadistica, cantidad_numeros: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_pares_impares" (Etapa Y) en un view model listo
+    para la plantilla. Nunca recalcula la métrica.
+
+    "Composición histórica más frecuente" (Etapa Y, transformación de
+    PRESENTACIÓN, no un cálculo estadístico nuevo): si no hay datos
+    (`total_sorteos == 0`), None -el template debe mostrar "N/D", sin
+    asumir que las categorías con 0 apariciones están "empatadas" en
+    ese caso. Con datos, se incluyen TODAS las categorías con el
+    máximo de apariciones -nunca se elige una arbitrariamente en caso
+    de empate."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_pares = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_pares": cantidad_pares,
+            "cantidad_impares": cantidad_numeros - cantidad_pares,
+            "etiqueta": _etiqueta_composicion(cantidad_pares, cantidad_numeros),
+            "apariciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
+def _punto_de_corte_altos_bajos_vm(rango_min: int, rango_max: int) -> int:
+    """Réplica exacta de `_punto_de_corte_altos_bajos` del motor
+    (`app/application/estadisticas/motor/distribuciones.py`) -no se
+    importa la función privada del motor a través del límite de
+    módulo (misma convención ya seguida en el resto del proyecto para
+    símbolos con guion bajo); esta es una fórmula trivial de una
+    línea, verificada exhaustivamente contra la función real del
+    motor en la auditoría previa a esta etapa. Cambiar la fórmula del
+    motor sin actualizar esta réplica sería detectado de inmediato
+    por los tests de esta etapa, que comparan ambas contra los mismos
+    casos."""
+    mitad = (rango_max - rango_min + 1) // 2
+    return rango_min + mitad - 1
+
+
+def _etiqueta_inferior_superior(cantidad_inferiores: int, cantidad_numeros: int) -> str:
+    """Singular/plural correcto para inferiores/superiores por
+    separado -mismo patrón exacto ya usado en
+    `_etiqueta_composicion` para pares/impares."""
+    cantidad_superiores = cantidad_numeros - cantidad_inferiores
+    texto_inf = "1 inferior" if cantidad_inferiores == 1 else f"{cantidad_inferiores} inferiores"
+    texto_sup = "1 superior" if cantidad_superiores == 1 else f"{cantidad_superiores} superiores"
+    return f"{texto_inf} / {texto_sup}"
+
+
+def _etiqueta_pares_consecutivos(cantidad: int) -> str:
+    """Singular/plural correcto: '0 pares consecutivos', '1 par
+    consecutivo', '2 pares consecutivos'... Nunca una etiqueta
+    ambigua como solo el número, y nunca confundida con frecuencia
+    individual de un número (de ahí el nombre completo, no
+    "consecutivos" a secas)."""
+    return "1 par consecutivo" if cantidad == 1 else f"{cantidad} pares consecutivos"
+
+
+def _etiqueta_racha_maxima(longitud: int) -> str:
+    """Singular/plural correcto: 'Racha de 1 número', 'Racha de 2
+    números'... Nunca se reutiliza literalmente la etiqueta de pares
+    consecutivos -representan semánticas distintas (enlaces
+    adyacentes vs. longitud del bloque más largo)."""
+    return "Racha de 1 número" if longitud == 1 else f"Racha de {longitud} números"
+
+
+def _etiqueta_repeticiones(cantidad: int) -> str:
+    """Singular/plural correcto: '0 números repetidos', '1 número
+    repetido', 'N números repetidos'."""
+    return "1 número repetido" if cantidad == 1 else f"{cantidad} números repetidos"
+
+
+def distribucion_repeticiones_entre_sorteos_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_repeticiones_entre_sorteos" (Etapa AC) en un view
+    model listo para la plantilla. Nunca recalcula la métrica, nunca
+    consulta repositorios, nunca llama al motor.
+
+    Renombra `total_sorteos` (nombre del campo persistido, sin
+    cambiar el contrato/dataclass) a `total_transiciones` -SOLO en
+    presentación- porque para esta métrica ese campo NO representa
+    la cantidad de sorteos del histórico, sino la cantidad de
+    transiciones válidas (numero_sorteo_actual ==
+    numero_sorteo_anterior + 1). Ver docstring de la receta y del
+    motor para la justificación completa.
+
+    "Repetición más frecuente" sigue el mismo criterio ya validado
+    cuatro veces: excluye sin transiciones, incluye TODAS las
+    categorías empatadas en el máximo, nunca elige una arbitraria."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_transiciones = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_repetidos = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_repetidos": cantidad_repetidos,
+            "etiqueta": _etiqueta_repeticiones(cantidad_repetidos),
+            "transiciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    repeticion_mas_frecuente = None
+    if total_transiciones > 0 and filas_presentacion:
+        maximo = max(f["transiciones"] for f in filas_presentacion)
+        if maximo > 0:
+            repeticion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["transiciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_transiciones": total_transiciones,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "repeticion_mas_frecuente": repeticion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_transiciones": [f["transiciones"] for f in filas_presentacion],
+    }
+
+
+def _etiqueta_numero_colorloto(cantidad_repetidos_o_valor: int) -> str:
+    return str(cantidad_repetidos_o_valor)
+
+
+def frecuencia_numeros_colorloto_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "frecuencia_numeros_colorloto" (Etapa AE-1) en un view model listo
+    para la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor -transformación pura sobre el
+    resultado ya serializado.
+
+    `total_sorteos` se presenta como "Sorteos analizados"; la razón
+    `apariciones / total_sorteos` (ya calculada por el motor como
+    `frecuencia_relativa`, aquí solo renombrada para la interfaz) se
+    presenta como "Apariciones promedio por sorteo" -NUNCA
+    "porcentaje" ni con símbolo `%`: en ColorLoto un número puede
+    repetirse dentro de un mismo sorteo (contrato del dominio
+    confirmado, no un supuesto), así que esta magnitud puede legítimamente
+    superar 1.0 -no es una probabilidad ni una frecuencia acotada a
+    [0,1].
+
+    "Número(s) con mayor promedio" sigue el mismo criterio ya usado
+    4 veces: excluye sin sorteos, incluye TODAS las categorías
+    empatadas en el máximo, nunca elige una arbitraria."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        filas_presentacion.append({
+            "numero": int(f["valor"]),
+            "apariciones": f["apariciones"],
+            "apariciones_promedio": f["frecuencia_relativa"],
+            "apariciones_promedio_texto": f"{f['frecuencia_relativa']:.2f}",
+        })
+
+    numero_mayor_promedio = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones_promedio"] for f in filas_presentacion)
+        if maximo > 0:
+            numero_mayor_promedio = [
+                str(f["numero"]) for f in filas_presentacion if f["apariciones_promedio"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "numero_mayor_promedio": numero_mayor_promedio,
+        "chart_labels": [str(f["numero"]) for f in filas_presentacion],
+        "chart_promedios": [f["apariciones_promedio"] for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
+# Mapeo CERRADO y seguro de código de color -> valor hexadecimal para
+# las barras de la gráfica. `Color` (value object) no tiene ningún
+# campo de color visual -este mapeo vive aquí, en la capa de
+# presentación, nunca en el dominio. Fallback gris neutro para
+# cualquier código no reconocido (paleta ampliada en el futuro, o dato
+# corrupto que ya pasó la validación de integridad por algún motivo
+# excepcional) -nunca falla ni deja una barra sin color.
+_COLOR_HEX_SEGURO = {
+    "ROJO": "#DC2626",
+    "AZUL": "#2563EB",
+    "VERDE": "#16A34A",
+    "NEGRO": "#1F2937",
+    "BLANCO": "#E5E7EB",
+    "AMARILLO": "#EAB308",
+}
+_COLOR_HEX_FALLBACK = "#9CA3AF"
+
+
+def _color_hex_seguro(codigo: str) -> str:
+    return _COLOR_HEX_SEGURO.get(codigo, _COLOR_HEX_FALLBACK)
+
+
+def frecuencia_colores_colorloto_a_vm(estadistica, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "frecuencia_colores_colorloto" (Etapa AE-2) en un view model listo
+    para la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor -transformación pura sobre el
+    resultado ya serializado. Mismo criterio semántico que
+    `frecuencia_numeros_colorloto_a_vm`: "Apariciones promedio por
+    sorteo" (nunca "porcentaje"), puede legítimamente superar 1.0
+    porque un color puede repetirse dentro de un mismo sorteo.
+
+    Orden determinista: se conserva tal cual llega en `resultado`
+    -ya ordenado alfabéticamente por código por el propio motor
+    (`sorted(colores_a_reportar)`), nunca reordenado aquí.
+
+    Código y nombre legible: el catálogo real solo garantiza
+    `codigo` de forma fiable en la salida del motor (`FrecuenciaObservada.valor`)
+    -el "nombre legible" se deriva de ese mismo código con un
+    `.title()` simple y seguro (mismo criterio ya usado en varios
+    fixtures del proyecto: "ROJO" -> "Rojo"), sin depender de una
+    consulta adicional al catálogo completo (que ya no está disponible
+    en esta capa, solo el resultado ya serializado)."""
+    filas_ordenadas = estadistica.resultado["filas"]
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        codigo = f["valor"]
+        filas_presentacion.append({
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "apariciones": f["apariciones"],
+            "apariciones_promedio": f["frecuencia_relativa"],
+            "apariciones_promedio_texto": f"{f['frecuencia_relativa']:.2f}",
+        })
+
+    color_mayor_promedio = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones_promedio"] for f in filas_presentacion)
+        if maximo > 0:
+            color_mayor_promedio = [
+                f["nombre"] for f in filas_presentacion if f["apariciones_promedio"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "color_mayor_promedio": color_mayor_promedio,
+        "chart_labels": [f["nombre"] for f in filas_presentacion],
+        "chart_promedios": [f["apariciones_promedio"] for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+        "chart_colores": [f["color_hex"] for f in filas_presentacion],
+    }
+
+
+def _deserializar_par_numero_color(valor: str) -> tuple[int, str]:
+    """Deserializa el contrato ya existente del motor
+    (`f"{numero}-{color_codigo}"`, Paso 13) de forma INEQUÍVOCA.
+    `maxsplit=1` sobre el PRIMER guión es correcto siempre: el número
+    es un entero positivo (rango 1..7) sin guión propio, así que
+    precede siempre al primer guión de la cadena completa -incluso si
+    un futuro código de color contuviera guiones, el resto de la
+    cadena (después del primer corte) se conserva íntegro como
+    segundo elemento. Único punto de parseo -reutilizado por toda
+    esta capa, nunca reimplementado en el template."""
+    numero_str, color_codigo = valor.split("-", maxsplit=1)
+    return int(numero_str), color_codigo
+
+
+def frecuencia_pares_colorloto_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "frecuencia_pares_colorloto" (Etapa AE-3) en un view model listo
+    para la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor -transformación pura sobre el
+    resultado ya serializado. Mismo criterio semántico que las dos
+    métricas anteriores de ColorLoto: "Apariciones promedio por
+    sorteo" (nunca "porcentaje"), puede legítimamente superar 1.0
+    porque el mismo par exacto puede repetirse dentro de un sorteo.
+
+    Orden determinista: se conserva tal cual llega en `resultado`
+    -ya ordenado por (número, código) ascendente por el propio motor
+    (`sorted(universo)`), nunca reordenado aquí.
+
+    Datasets AGRUPADOS por color para la gráfica de barras agrupadas
+    (eje X = números 1..K, un dataset por color) -evita una fila
+    ilegible de 42 etiquetas: se construyen dinámicamente a partir de
+    los colores REALES presentes en el resultado (nunca 6 códigos
+    fijados a mano), preservando el sistema funcionando aunque el
+    catálogo tenga una cantidad distinta de colores."""
+    filas_crudas = estadistica.resultado["filas"]
+    total_sorteos = filas_crudas[0]["total_sorteos"] if filas_crudas else 0
+
+    filas_presentacion = []
+    for f in filas_crudas:
+        numero, codigo = _deserializar_par_numero_color(f["valor"])
+        filas_presentacion.append({
+            "numero": numero,
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "apariciones": f["apariciones"],
+            "apariciones_promedio": f["frecuencia_relativa"],
+            "apariciones_promedio_texto": f"{f['frecuencia_relativa']:.2f}",
+        })
+
+    par_mayor_promedio = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones_promedio"] for f in filas_presentacion)
+        if maximo > 0:
+            par_mayor_promedio = [
+                f"{f['numero']} - {f['nombre']}" for f in filas_presentacion if f["apariciones_promedio"] == maximo
+            ]
+
+    # Colores reales presentes en el resultado, en orden de primera
+    # aparición estable (no un conjunto sin orden) -nunca una lista
+    # fija de 6 códigos hardcodeados.
+    colores_presentes: list[str] = []
+    vistos: set[str] = set()
+    for f in filas_presentacion:
+        if f["codigo"] not in vistos:
+            vistos.add(f["codigo"])
+            colores_presentes.append(f["codigo"])
+
+    numeros_presentes = sorted({f["numero"] for f in filas_presentacion})
+
+    datasets = []
+    for codigo_color in colores_presentes:
+        filas_de_este_color = {f["numero"]: f for f in filas_presentacion if f["codigo"] == codigo_color}
+        datasets.append({
+            "label": codigo_color.title(),
+            "color_hex": _color_hex_seguro(codigo_color),
+            # Acceso seguro con .get(): en el contrato normal del
+            # motor todo color en colores_a_reportar tiene una fila
+            # para CADA número (producto cartesiano completo), pero
+            # el propio motor documenta que un par observado con un
+            # color fuera de `colores_vigentes` puede aportar
+            # entradas parciales sin garantía de cobertura completa
+            # -nunca asumir indexación directa aquí.
+            "data": [
+                filas_de_este_color[n]["apariciones_promedio"] if n in filas_de_este_color else 0.0
+                for n in numeros_presentes
+            ],
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "par_mayor_promedio": par_mayor_promedio,
+        "chart_labels": [str(n) for n in numeros_presentes],
+        "chart_datasets": datasets,
+    }
+
+
+def atrasos_numeros_colorloto_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "atrasos_numeros_colorloto" (Etapa AE-4) en un view model listo
+    para la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor -transformación pura sobre el
+    resultado ya serializado.
+
+    Campo real del contrato serializado: `AtrasoObservado.valor`
+    (string, mismo patrón que `FrecuenciaObservada.valor`) -nunca
+    `numero` directamente; se deserializa aquí a entero, igual que en
+    las tres recetas anteriores de ColorLoto. `atraso` y
+    `ultimo_sorteo_aparicion` pueden ser `None` (nunca apareció) -se
+    presentan como "N/D", nunca como `0` (0 tiene un significado real
+    distinto: apareció en el sorteo de referencia más reciente).
+
+    "Número(s) con mayor atraso": excluye explícitamente los números
+    sin ninguna aparición (`atraso is None`) del cálculo del máximo
+    -un valor sin aparición NO es "el más atrasado" de forma
+    arbitraria, es simplemente un dato no calculable con el contrato
+    actual. Si TODOS los números carecen de atraso (histórico vacío),
+    la tarjeta es N/D. Empates preservados completos, mismo criterio
+    ya usado 4 veces en las métricas anteriores."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        filas_presentacion.append({
+            "numero": int(f["valor"]),
+            "atraso": f["atraso"],
+            "ultimo_sorteo_aparicion": f["ultimo_sorteo_aparicion"],
+        })
+
+    numero_mayor_atraso = None
+    filas_con_atraso = [f for f in filas_presentacion if f["atraso"] is not None]
+    if filas_con_atraso:
+        maximo = max(f["atraso"] for f in filas_con_atraso)
+        numero_mayor_atraso = [str(f["numero"]) for f in filas_con_atraso if f["atraso"] == maximo]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "numero_mayor_atraso": numero_mayor_atraso,
+        "chart_labels": [str(f["numero"]) for f in filas_presentacion],
+        # None (nunca apareció) se serializa como `null` -Chart.js
+        # muestra un hueco real en esa barra, nunca la confunde con
+        # un atraso=0 verdadero (mismo riesgo de interpretación que
+        # la tarjeta de "mayor atraso" ya evita explícitamente).
+        "chart_atrasos": [f["atraso"] for f in filas_presentacion],
+    }
+
+
+def atrasos_colores_colorloto_a_vm(estadistica, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "atrasos_colores_colorloto" (Etapa AE-5) en un view model listo
+    para la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor -transformación pura sobre el
+    resultado ya serializado.
+
+    Combina los dos patrones ya validados: deserialización/estilo de
+    color de `frecuencia_colores_colorloto_a_vm` (Etapa AE-2 -`valor`
+    es el CÓDIGO del color, `.title()` para nombre legible,
+    `_color_hex_seguro` para el color visual, orden ya alfabético del
+    motor, nunca reordenado aquí) y distinción estricta `0`/`N/D` de
+    `atrasos_numeros_colorloto_a_vm` (Etapa AE-4 -`atraso`/
+    `ultimo_sorteo_aparicion` pueden ser `None`, nunca convertido a
+    `0`; el `None` se serializa como `null` para el gráfico, Chart.js
+    muestra un hueco real en esa barra, nunca confundido con un
+    atraso=0 verdadero).
+
+    "Color(es) con mayor atraso": excluye explícitamente los colores
+    sin ninguna aparición (`atraso is None`) del cálculo del máximo
+    -un color sin aparición NO es "el más atrasado" de forma
+    arbitraria. Si TODOS los colores carecen de atraso (histórico
+    vacío), la tarjeta es N/D. Empates preservados completos, mismo
+    criterio ya usado en las cuatro métricas anteriores."""
+    filas_ordenadas = estadistica.resultado["filas"]
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        codigo = f["valor"]
+        filas_presentacion.append({
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "atraso": f["atraso"],
+            "ultimo_sorteo_aparicion": f["ultimo_sorteo_aparicion"],
+        })
+
+    color_mayor_atraso = None
+    filas_con_atraso = [f for f in filas_presentacion if f["atraso"] is not None]
+    if filas_con_atraso:
+        maximo = max(f["atraso"] for f in filas_con_atraso)
+        color_mayor_atraso = [f["nombre"] for f in filas_con_atraso if f["atraso"] == maximo]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "color_mayor_atraso": color_mayor_atraso,
+        "chart_labels": [f["nombre"] for f in filas_presentacion],
+        # None (nunca observado) se serializa como `null` -Chart.js
+        # muestra un hueco real en esa barra, nunca lo confunde con
+        # un atraso=0 verdadero.
+        "chart_atrasos": [f["atraso"] for f in filas_presentacion],
+        "chart_colores": [f["color_hex"] for f in filas_presentacion],
+    }
+
+
+def distribucion_racha_maxima_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_racha_maxima" (Etapa AB) en un view model listo
+    para la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor.
+
+    Categorías 1..K (nunca 0 -un sorteo válido siempre tiene al
+    menos una racha de longitud 1, confirmado por el propio motor).
+    "Racha máxima más frecuente" sigue el mismo criterio ya validado
+    tres veces: excluye sin datos, incluye TODAS las categorías
+    empatadas en el máximo, nunca elige una arbitraria."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        longitud = int(f["valor"])
+        filas_presentacion.append({
+            "longitud_racha": longitud,
+            "etiqueta": _etiqueta_racha_maxima(longitud),
+            "apariciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    racha_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            racha_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "racha_mas_frecuente": racha_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
+def distribucion_pares_consecutivos_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_pares_consecutivos" (Etapa AA) en un view model
+    listo para la plantilla. Nunca recalcula la métrica, nunca
+    consulta repositorios.
+
+    Categorías 0..K-1 (nunca 0..K -un par consecutivo requiere DOS
+    números, así que con K números el máximo teórico de pares es
+    K-1, confirmado por el propio motor y verificado con datasets
+    reales durante la auditoría de esta etapa). "Composición más
+    frecuente" sigue el mismo criterio ya validado dos veces: excluye
+    sin datos, incluye TODAS las categorías empatadas en el máximo,
+    nunca elige una arbitraria."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_pares = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_pares_consecutivos": cantidad_pares,
+            "etiqueta": _etiqueta_pares_consecutivos(cantidad_pares),
+            "apariciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
+def distribucion_altos_bajos_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_altos_bajos" (Etapa Z) en un view model listo para
+    la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios.
+
+    Expone el punto de corte y el tamaño real de cada franja
+    (asimétricas: 21/22 para Baloto/Revancha, 19/20 para MiLoto) para
+    que la plantilla pueda explicar la asimetría junto a la
+    definición de los grupos, sin necesitar que el template conozca
+    ningún detalle de cálculo por su cuenta.
+
+    "Composición más frecuente" sigue el mismo criterio ya validado
+    para pares/impares: excluye None/sin datos, incluye TODAS las
+    categorías empatadas en el máximo, nunca elige una arbitraria."""
+    punto_de_corte = _punto_de_corte_altos_bajos_vm(rango_min, rango_max)
+    tamano_inferior = punto_de_corte - rango_min + 1
+    tamano_superior = rango_max - punto_de_corte
+
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_inferiores = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_inferiores": cantidad_inferiores,
+            "cantidad_superiores": cantidad_numeros - cantidad_inferiores,
+            "etiqueta": _etiqueta_inferior_superior(cantidad_inferiores, cantidad_numeros),
+            "apariciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "punto_de_corte": punto_de_corte,
+        "franja_inferior_texto": f"{rango_min}–{punto_de_corte}",
+        "franja_superior_texto": f"{punto_de_corte + 1}–{rango_max}",
+        "tamano_inferior": tamano_inferior,
+        "tamano_superior": tamano_superior,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
+def atrasos_numeros_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo "atrasos_numeros"
+    (Etapa W) en un view model listo para la plantilla. Nunca
+    recalcula la métrica -solo formatea lo que el orquestador ya
+    calculó y persistió. `None` (nunca observado) se conserva tal
+    cual en `filas`/`chart_valores` -el template decide cómo
+    mostrarlo ("Nunca"/"N/D"), este View Model nunca lo convierte en
+    0 ni en ningún otro valor numérico de reemplazo.
+
+    "Mayor distancia observada" se calcula aquí (no en el template,
+    para no repetir lógica de max()/filtrado de None en Jinja)
+    EXCLUYENDO explícitamente los None -si todas las filas son None
+    (juego sin sorteos o rango sin ninguna aparición), el campo queda
+    en None y el template debe mostrar una etiqueta neutral, nunca
+    "0"."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    distancias_observadas = [f["atraso"] for f in filas_ordenadas if f["atraso"] is not None]
+    mayor_distancia = max(distancias_observadas) if distancias_observadas else None
+    numeros_con_mayor_distancia = (
+        [f["valor"] for f in filas_ordenadas if f["atraso"] == mayor_distancia]
+        if mayor_distancia is not None else []
+    )
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_ordenadas,
+        "mayor_distancia": mayor_distancia,
+        "numeros_con_mayor_distancia": numeros_con_mayor_distancia,
+        "chart_labels": [f["valor"] for f in filas_ordenadas],
+        "chart_valores": [f["atraso"] for f in filas_ordenadas],  # None se preserva; nunca 0 de relleno
+    }
+
+
+def construir_navegacion_estadisticas(
+    juego_slug_actual: str, metrica_actual: str, tiene_superbalota_por_slug: dict[str, bool],
+    nombres_reales: dict[str, str] | None = None, hasta_numero_sorteo: int | None = None,
+) -> dict:
+    """Navegación de dos niveles. `tiene_superbalota_por_slug` debe
+    venir de la capacidad REAL de cada `LotteryGame`
+    (`.has_superballot`, un atributo de clase del dominio), nunca
+    inferida del slug -evita hardcodear qué juegos tienen superbalota
+    fuera de `domain/games/`. `nombres_reales` (código -> nombre de
+    `Juego.nombre`, la fuente de verdad persistida) es opcional: si no
+    se provee (p. ej. sin conexión a BD), se usa una etiqueta estática
+    de respaldo -nunca se rompe el render por falta de ese dato.
+
+    Desde una métrica incompatible con otro juego (superbalota hacia
+    MiLoto), el enlace de ESE juego en la navegación redirige a
+    "frecuencia-numeros" en vez de reproducir una ruta que fallaría.
+
+    Corte temporal (Etapa X) -decisión semántica deliberada, no un
+    descuido: la numeración de sorteos de Baloto/Revancha (2081-2695
+    en la base real) NO es comparable con la de MiLoto (532-589) -son
+    juegos independientes con series temporales propias. Por eso:
+      - `juegos_nav` NUNCA incluye el corte -cambiar de juego SIEMPRE
+        vuelve al histórico completo del juego destino, sin
+        excepción.
+      - `metricas_nav` SÍ incluye `?hasta_numero_sorteo=N` cuando hay
+        un corte activo -cambiar de métrica dentro del MISMO juego
+        conserva el corte, porque la numeración sigue siendo la
+        misma serie."""
+    nombres_reales = nombres_reales or {}
+
+    juegos_nav = []
+    for slug, codigo in _SLUG_A_CODIGO.items():
+        metrica_destino = metrica_actual
+        if metrica_actual == "frecuencia-superbalota" and not tiene_superbalota_por_slug.get(slug, False):
+            metrica_destino = "frecuencia-numeros"
+        juegos_nav.append({
+            "slug": slug,
+            "nombre": nombres_reales.get(codigo) or _NOMBRE_VISIBLE_POR_SLUG[slug],
+            "activo": slug == juego_slug_actual,
+            "url": f"/estadisticas/{slug}/{metrica_destino}",  # NUNCA lleva corte -numeraciones no comparables entre juegos
+        })
+
+    def _url_metrica(metrica_id: str) -> str:
+        base = f"/estadisticas/{juego_slug_actual}/{metrica_id}"
+        if hasta_numero_sorteo is not None:
+            return f"{base}?hasta_numero_sorteo={hasta_numero_sorteo}"
+        return base
+
+    metricas_nav = [{
+        "id": "frecuencia-numeros", "etiqueta": _ETIQUETA_METRICA["frecuencia-numeros"],
+        "url": _url_metrica("frecuencia-numeros"),
+        "activo": metrica_actual == "frecuencia-numeros",
+    }]
+    if tiene_superbalota_por_slug.get(juego_slug_actual, False):
+        metricas_nav.append({
+            "id": "frecuencia-superbalota", "etiqueta": _ETIQUETA_METRICA["frecuencia-superbalota"],
+            "url": _url_metrica("frecuencia-superbalota"),
+            "activo": metrica_actual == "frecuencia-superbalota",
+        })
+    metricas_nav.append({
+        "id": "frecuencia-observada-esperada", "etiqueta": _ETIQUETA_METRICA["frecuencia-observada-esperada"],
+        "url": _url_metrica("frecuencia-observada-esperada"),
+        "activo": metrica_actual == "frecuencia-observada-esperada",
+    })
+    metricas_nav.append({
+        "id": "atrasos-numeros", "etiqueta": _ETIQUETA_METRICA["atrasos-numeros"],
+        "url": _url_metrica("atrasos-numeros"),
+        "activo": metrica_actual == "atrasos-numeros",
+    })
+    metricas_nav.append({
+        "id": "distribucion-pares-impares", "etiqueta": _ETIQUETA_METRICA["distribucion-pares-impares"],
+        "url": _url_metrica("distribucion-pares-impares"),
+        "activo": metrica_actual == "distribucion-pares-impares",
+    })
+    metricas_nav.append({
+        "id": "distribucion-altos-bajos", "etiqueta": _ETIQUETA_METRICA["distribucion-altos-bajos"],
+        "url": _url_metrica("distribucion-altos-bajos"),
+        "activo": metrica_actual == "distribucion-altos-bajos",
+    })
+    metricas_nav.append({
+        "id": "distribucion-pares-consecutivos", "etiqueta": _ETIQUETA_METRICA["distribucion-pares-consecutivos"],
+        "url": _url_metrica("distribucion-pares-consecutivos"),
+        "activo": metrica_actual == "distribucion-pares-consecutivos",
+    })
+    metricas_nav.append({
+        "id": "distribucion-racha-maxima", "etiqueta": _ETIQUETA_METRICA["distribucion-racha-maxima"],
+        "url": _url_metrica("distribucion-racha-maxima"),
+        "activo": metrica_actual == "distribucion-racha-maxima",
+    })
+    metricas_nav.append({
+        "id": "repeticiones-entre-sorteos", "etiqueta": _ETIQUETA_METRICA["repeticiones-entre-sorteos"],
+        "url": _url_metrica("repeticiones-entre-sorteos"),
+        "activo": metrica_actual == "repeticiones-entre-sorteos",
+    })
+
+    return {
+        "juegos_nav": juegos_nav,
+        "metricas_nav": metricas_nav,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        # Histórico completo de la MISMA métrica/juego actual -nunca
+        # lleva query parameter, ni siquiera "?hasta_numero_sorteo="
+        # vacío (cero no es sinónimo de histórico completo).
+        "url_historico_completo": f"/estadisticas/{juego_slug_actual}/{metrica_actual}",
+    }

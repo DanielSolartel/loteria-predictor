@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Frecuencia de pares número-color — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Frecuencia de pares número-color — ColorLoto</h3>
+<p class="text-muted">ColorLoto sortea 6 balotas, cada una con un número y un color. Esta distribución cuenta el par exacto número-color de cada balota -no el número ni el color por separado.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de ColorLoto disponibles todavía para calcular esta distribución.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>El mismo par número-color puede repetirse dentro de un sorteo, y cada repetición cuenta. Por eso, las apariciones promedio por sorteo pueden superar 1. Esta cifra no es un porcentaje ni una probabilidad y no predice resultados futuros.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Par(es) con mayor promedio</div>
+            {% if estadistica.par_mayor_promedio %}
+            <div class="fw-bold">
+                {% for par in estadistica.par_mayor_promedio %}
+                    {{ par }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="fw-bold">N/D</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-frecuencia-pares-colorloto" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por par número-color</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Color</th>
+                    <th>Apariciones</th>
+                    <th>Apariciones promedio por sorteo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero }}</td>
+                    <td>
+                        <span class="d-inline-block rounded-circle border me-2" style="width:0.9rem;height:0.9rem;background-color:{{ fila.color_hex }};"></span>
+                        {{ fila.nombre }}
+                    </td>
+                    <td>{{ fila.apariciones }}</td>
+                    <td>{{ fila.apariciones_promedio_texto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-frecuencia-pares-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "datasets": estadistica.chart_datasets, "totalSorteos": estadistica.total_sorteos} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-frecuencia-pares-colorloto").textContent);
+        const ctx = document.getElementById("grafica-frecuencia-pares-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: datos.datasets.map((d) => ({
+                    label: d.label,
+                    data: d.data,
+                    backgroundColor: d.color_hex,
+                    borderColor: "rgba(0, 0, 0, 0.15)",
+                    borderWidth: 1,
+                })),
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: "bottom" },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const promedio = item.raw.toFixed(2);
+                                return `${item.dataset.label}: ${promedio} apariciones promedio por sorteo (número ${item.label}, ${datos.totalSorteos} sorteos)`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: { title: { display: true, text: "Número" } },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Apariciones promedio por sorteo" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}

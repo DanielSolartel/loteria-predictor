@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Frecuencia de superbalota — {{ juego_nombre_actual }}{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-bar-chart-fill me-2"></i>Frecuencia de superbalota — {{ juego_nombre_actual }}</h3>
+
+<ul class="nav nav-pills mb-2">
+    {% for j in juegos_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<ul class="nav nav-pills mb-4">
+    {% for m in metricas_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if m.activo %}active{% endif %}" href="{{ m.url }}">{{ m.etiqueta }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de {{ juego_nombre_actual }} con superbalota registrada todavía para calcular esta estadística.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta pantalla muestra la <strong>frecuencia histórica observada</strong> de cada superbalota en los sorteos analizados. No es una predicción ni representa la probabilidad de que un valor salga en el próximo sorteo -cada sorteo es un evento independiente.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos con superbalota analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Rango de la superbalota</div>
+            <div class="fw-bold">{{ estadistica.rango_min }} – {{ estadistica.rango_max }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Calculado en</div>
+            <div class="fw-bold">{{ estadistica.calculado_en or "—" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-frecuencia-superbalota" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por valor de superbalota</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead><tr><th>Superbalota</th><th>Apariciones</th><th>Frecuencia relativa observada</th></tr></thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.valor }}</td>
+                    <td>{{ fila.apariciones }}</td>
+                    <td>{{ "%.2f"|format(fila.frecuencia_relativa * 100) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-frecuencia-superbalota" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "valores": estadistica.chart_valores} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-frecuencia-superbalota").textContent);
+        const ctx = document.getElementById("grafica-frecuencia-superbalota");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: "Apariciones",
+                    data: datos.valores,
+                    backgroundColor: "rgba(220, 120, 54, 0.6)",
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}
