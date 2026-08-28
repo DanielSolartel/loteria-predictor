@@ -38,6 +38,7 @@ from app.application.estadisticas.motor.atrasos import (
     calcular_atrasos_colores,
     calcular_atrasos_numeros,
     calcular_atrasos_numeros_colorloto,
+    calcular_atrasos_pares_numero_color,
 )
 from app.application.estadisticas.motor.corte_temporal import filtrar_por_corte_temporal
 from app.application.estadisticas.motor.consecutivos import (
@@ -784,6 +785,70 @@ def _calcular_atrasos_colores_colorloto(
     return calcular_atrasos_colores(historico.pares, colores_vigentes)
 
 
+def _calcular_atrasos_pares_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[AtrasoObservado]:
+    """Reutiliza calcular_atrasos_pares_numero_color directamente,
+    sin reimplementar nada ni modificar el motor (Etapa AE-6). Mismo
+    envoltorio `_HistoricoColorLoto` y misma validación defensiva
+    compartida con AE-1/AE-2/AE-3/AE-4/AE-5 -no se duplica ninguna
+    regla.
+
+    Firma real del motor confirmada por auditoría (distinta de
+    `calcular_atrasos_colores`, que solo recibe 2 argumentos):
+    `calcular_atrasos_pares_numero_color(resultados, rango_min,
+    rango_max, colores_vigentes, hasta_numero_sorteo=None)` -mismo
+    patrón de `rango_min`/`rango_max` ya usado por
+    `_calcular_atrasos_numeros_colorloto` (AE-4), combinado con el
+    mismo `colores_vigentes` derivado por el helper temporal ya
+    usado por `_calcular_atrasos_colores_colorloto` (AE-5) -AE-6 no
+    introduce ningún patrón nuevo, combina los dos ya validados.
+
+    `colores_vigentes` se deriva del mismo helper ya validado por
+    AE-4P (`_codigos_colores_vigentes_en_referencia`): colores
+    VIGENTES en la fecha del último sorteo real del histórico ya
+    filtrado, más cualquier color realmente OBSERVADO que ya no
+    esté vigente en esa referencia (retirado) -unión que el propio
+    motor ya realiza internamente (`colores_a_reportar =
+    set(colores_vigentes) | {c for _, c in todos_los_pares}`,
+    confirmado por lectura directa del motor), nunca duplicada
+    aquí. Mismo contrato exacto ya reutilizado por
+    `frecuencia_pares_colorloto`/`atrasos_colores_colorloto` -AE-6
+    no crea ninguna política paralela.
+
+    NUNCA se pasa `hasta_numero_sorteo` al motor -mismo precedente
+    exacto ya establecido por AE-4/AE-5: el orquestador YA filtró
+    `historico.pares` por el corte antes de llegar aquí, y el
+    motor, al recibir `hasta_numero_sorteo=None` (su propio
+    default), deriva la referencia correcta como el máximo
+    `numero_sorteo` del propio histórico ya filtrado -pasar el
+    corte crudo aquí sería doble aplicación, mismo riesgo ya
+    evitado en AE-4/AE-5. Exactamente 4 argumentos posicionales
+    efectivos al motor -confirmado con espionaje en los tests.
+
+    `AtrasoObservado.valor` codifica cada par como
+    `f"{numero}-{color}"` (contrato ya existente del motor,
+    idéntico al usado por `frecuencia_pares_colorloto`) -el VM
+    deserializa/estiliza igual que esa receta, nunca aquí (esta
+    función no conoce presentación).
+
+    Orden determinista del universo de 42 pares: confirmado por
+    auditoría que coincide exactamente con el orden numérico de
+    `frecuencia_pares_colorloto` para el dominio real 1..7 (un solo
+    dígito) -una fragilidad latente del motor compartido para
+    rangos hipotéticos de dos dígitos queda explícitamente fuera
+    de alcance de esta etapa, como deuda técnica no bloqueante,
+    sin modificar el motor puro."""
+    rango_min = parametros["rango_min"]
+    rango_max = parametros["rango_max"]
+    cantidad_numeros = parametros["cantidad_numeros"]
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, cantidad_numeros, rango_min, rango_max,
+    )
+    colores_vigentes = _codigos_colores_vigentes_en_referencia(historico)
+    return calcular_atrasos_pares_numero_color(historico.pares, rango_min, rango_max, colores_vigentes)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -834,6 +899,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "atrasos_colores_colorloto": _Receta(
         calcular=_calcular_atrasos_colores_colorloto, serializar=_serializar_atrasos,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "atrasos_pares_colorloto": _Receta(
+        calcular=_calcular_atrasos_pares_colorloto, serializar=_serializar_atrasos,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

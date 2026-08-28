@@ -29,4 +29,10 @@
             Atrasos de colores
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'atrasos-pares-numero-color' %}active{% endif %}"
+           href="/estadisticas/colorloto/atrasos-pares-numero-color{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Atrasos pares número-color
+        </a>
+    </li>
 </ul>

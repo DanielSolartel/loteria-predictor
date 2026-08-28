@@ -924,10 +924,10 @@ class TestDistribucionParesImparesRouterYManejoDeErrores:
         """La validación de Query(ge=1) es un mecanismo separado
         (nativo de FastAPI, RequestValidationError) -no relacionado
         con _STATUS_POR_EXCEPCION ni con esta corrección; se confirma
-        que la firma de las 14 rutas (9 numéricas + 5 de ColorLoto,
-        Etapas AE-1/AE-2/AE-3/AE-4/AE-5) sigue intacta."""
+        que la firma de las 15 rutas (9 numéricas + 6 de ColorLoto,
+        Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6) sigue intacta."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 14
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 15
 
     def test_manejar_error_dominio_no_duplicado_para_500(self):
         """No se agregó un handler nuevo -el mecanismo genérico de
@@ -1762,7 +1762,7 @@ class TestColorLotoAislamientoDeSlugs:
 
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         rutas_en_orden = re.findall(r'@router\.get\("([^"]+)"\)', codigo_fuente)
-        assert len(rutas_en_orden) == 14
+        assert len(rutas_en_orden) == 15
 
         def compilar_como_starlette(path):
             patron = re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", path)
@@ -1775,20 +1775,20 @@ class TestColorLotoAislamientoDeSlugs:
                     return patron, m.groupdict()
             return None, None
 
-        # Las cinco URLs dedicadas de ColorLoto (Etapas AE-1/AE-2/AE-3/AE-4/AE-5)
+        # Las seis URLs dedicadas de ColorLoto (Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6)
         # deben resolver a SUS PROPIAS rutas, sin ningun grupo de
         # captura (match literal exacto) -confirma que el handler
         # dedicado de atrasos-numeros es ALCANZABLE, no interceptado
         # por la ruta generica homonima (colision real, a diferencia
-        # de frecuencia-colores/frecuencia-pares-numero-color/atrasos-colores).
-        for sufijo in ("frecuencia-numeros", "frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-numeros", "atrasos-colores"):
+        # de frecuencia-colores/frecuencia-pares-numero-color/atrasos-colores/atrasos-pares-numero-color).
+        for sufijo in ("frecuencia-numeros", "frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-numeros", "atrasos-colores", "atrasos-pares-numero-color"):
             patron, grupos = primera_ruta_que_matchea(f"/estadisticas/colorloto/{sufijo}")
             assert patron == f"/estadisticas/colorloto/{sufijo}"
             assert grupos == {}
 
         # Las rutas numericas existentes deben seguir resolviendo a
         # la ruta generica correspondiente, con juego_slug capturado
-        # correctamente -confirmando que el reordenamiento de AE-5 NO
+        # correctamente -confirmando que el reordenamiento de AE-6 NO
         # rompio ninguna de las 9 rutas numericas previas, INCLUIDA
         # la propia atrasos-numeros generica (la mas sensible, por
         # compartir sufijo con la ruta de ColorLoto).
@@ -1883,14 +1883,14 @@ class TestColorLotoAislamientoDeSlugs:
         intentar leer has_superballot de ColorLotoGame."""
         assert resolver_codigo("colorloto") is None
 
-    def test_catorce_rutas_totales_nueve_genericas_mas_cinco_colorloto(self):
+    def test_quince_rutas_totales_nueve_genericas_mas_seis_colorloto(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 14
+        assert codigo_fuente.count("@router.get(") == 15
         assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 9
 
-    def test_catorce_query_totales(self):
+    def test_quince_query_totales(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 14
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 15
 
     def test_no_construye_gamefactory_ni_llama_has_superballot_para_colorloto(self):
         """El docstring del handler EXPLICA en prosa que no usa estos
@@ -2610,9 +2610,9 @@ class TestColorLotoNavegacionCuatroMetricas:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert contenido.count("hasta_numero_sorteo") >= 4
 
-    def test_partial_tiene_exactamente_cinco_items_de_navegacion(self):
+    def test_partial_tiene_exactamente_seis_items_de_navegacion(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
-        assert contenido.count('<li class="nav-item">') == 5
+        assert contenido.count('<li class="nav-item">') == 6
 
 
 # =====================================================================
@@ -2825,3 +2825,239 @@ class TestColorLotoNavegacionCincoMetricas:
     def test_corte_preservado_al_alternar_entre_las_cinco(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert contenido.count("hasta_numero_sorteo") >= 5
+
+
+# =====================================================================
+# Etapa AE-6: sexta visualización descriptiva de ColorLoto -
+# atrasos de pares número-color -router/VM/template/navegación.
+# =====================================================================
+
+class TestColorLotoAtrasosParesRuta:
+    def test_ruta_dedicada_registrada(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/colorloto/atrasos-pares-numero-color")' in codigo_fuente
+
+    def test_ruta_registrada_antes_de_cualquier_ruta_generica(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice_atrasos_pares = codigo_fuente.index('@router.get("/estadisticas/colorloto/atrasos-pares-numero-color")')
+        indice_primera_generica = codigo_fuente.index('@router.get("/estadisticas/{juego_slug}/')
+        assert indice_atrasos_pares < indice_primera_generica
+
+    def test_no_conectada_a_juegos_numericos(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('def atrasos_pares_colorloto(')
+        fin_docstring = codigo_fuente.index('"""', codigo_fuente.index('"""', indice) + 3) + 3
+        cuerpo_ejecutable = codigo_fuente[fin_docstring:fin_docstring + 2000]
+        assert "SLUG_A_CODIGO" not in cuerpo_ejecutable
+        assert 'obtener_por_codigo("COLORLOTO")' in cuerpo_ejecutable
+
+    def test_ruta_incompatible_sigue_devolviendo_404(self):
+        assert resolver_codigo("colorloto") is None
+
+    def test_parametros_metrica_incluyen_marcador_de_politica(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('tipo_estadistica="atrasos_pares_colorloto"')
+        bloque = codigo_fuente[indice:indice + 400]
+        assert '"politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL' in bloque
+
+
+class TestColorLotoAtrasosParesVM:
+    def _juego(self):
+        return Juego(id=uuid4(), codigo="COLORLOTO", nombre="ColorLoto", rango_min=1, rango_max=7, cantidad_numeros=6, tiene_superbalota=False, superbalota_min=None, superbalota_max=None, tiene_color=True, permite_repeticion=True, activo=True)
+
+    def _fake_est(self, filas):
+        class FakeEst:
+            def __init__(self, filas):
+                self.resultado = {"filas": filas}
+                self.hasta_numero_sorteo = None
+                self.calculado_en = None
+        return FakeEst(filas)
+
+    def _filas_base(self):
+        filas = []
+        colores = ("AMARILLO", "AZUL", "BLANCO", "NEGRO", "ROJO", "VERDE")
+        for n in range(1, 8):
+            for c in colores:
+                filas.append({"valor": f"{n}-{c}", "atraso": (n % 5), "ultimo_sorteo_aparicion": 10, "total_sorteos": 20})
+        return filas
+
+    def test_cuarenta_y_dos_pares_numero_codigo_hex(self):
+        from app.api.web.view_models import atrasos_pares_colorloto_a_vm
+        vm = atrasos_pares_colorloto_a_vm(self._fake_est(self._filas_base()), 1, 7, self._juego())
+        assert len(vm["filas"]) == 42
+        assert vm["filas"][0]["numero"] == 1
+        assert vm["filas"][0]["codigo"] == "AMARILLO"
+        assert vm["filas"][0]["color_hex"].startswith("#")
+
+    def test_atraso_cero_positivo_y_nd(self):
+        from app.api.web.view_models import atrasos_pares_colorloto_a_vm
+        filas = self._filas_base()
+        filas[0]["atraso"] = 0
+        filas[0]["ultimo_sorteo_aparicion"] = 20
+        filas[2]["atraso"] = None
+        filas[2]["ultimo_sorteo_aparicion"] = None
+        vm = atrasos_pares_colorloto_a_vm(self._fake_est(filas), 1, 7, self._juego())
+        assert vm["filas"][0]["atraso"] == 0
+        assert vm["filas"][2]["atraso"] is None
+        assert vm["filas"][2]["ultimo_sorteo_aparicion"] is None
+
+    def test_empates_de_mayor_atraso_preservados(self):
+        from app.api.web.view_models import atrasos_pares_colorloto_a_vm
+        filas = self._filas_base()
+        for f in filas:
+            f["atraso"] = 1
+        filas[0]["atraso"] = 5
+        filas[6]["atraso"] = 5
+        vm = atrasos_pares_colorloto_a_vm(self._fake_est(filas), 1, 7, self._juego())
+        assert set(vm["par_mayor_atraso"]) == {"1 - Amarillo", "2 - Amarillo"}
+
+    def test_valores_sin_aparicion_nunca_elegidos_como_mayor_atraso(self):
+        from app.api.web.view_models import atrasos_pares_colorloto_a_vm
+        filas = self._filas_base()
+        for f in filas:
+            f["atraso"] = 3
+        filas[0]["atraso"] = None
+        filas[0]["ultimo_sorteo_aparicion"] = None
+        vm = atrasos_pares_colorloto_a_vm(self._fake_est(filas), 1, 7, self._juego())
+        assert "1 - Amarillo" not in vm["par_mayor_atraso"]
+
+    def test_nd_total_sin_ninguna_aparicion(self):
+        from app.api.web.view_models import atrasos_pares_colorloto_a_vm
+        filas_vacio = [{"valor": f"{n}-ROJO", "atraso": None, "ultimo_sorteo_aparicion": None, "total_sorteos": 0} for n in range(1, 8)]
+        vm = atrasos_pares_colorloto_a_vm(self._fake_est(filas_vacio), 1, 7, self._juego())
+        assert vm["par_mayor_atraso"] is None
+        assert vm["total_sorteos"] == 0
+
+    def test_dataset_agrupado_preserva_none_nunca_cero_falso(self):
+        from app.api.web.view_models import atrasos_pares_colorloto_a_vm
+        filas = self._filas_base()
+        filas[2]["atraso"] = None
+        vm = atrasos_pares_colorloto_a_vm(self._fake_est(filas), 1, 7, self._juego())
+        assert len(vm["chart_datasets"]) == 6
+        dataset_del_par = next(d for d in vm["chart_datasets"] if d["label"] == filas[2]["valor"].split("-", 1)[1].title())
+        assert None in dataset_del_par["data"]
+
+    def test_no_usa_cero_como_fallback_de_fila_ausente(self):
+        import inspect
+        from app.api.web import view_models
+        codigo_fuente = inspect.getsource(view_models.atrasos_pares_colorloto_a_vm)
+        assert "else 0.0" not in codigo_fuente
+        assert "else None" in codigo_fuente
+
+    def test_orden_determinista_dominio_real_coincide_con_frecuencia(self):
+        """Confirma, en el dominio real 1-7, que el orden del
+        resultado ya serializado (nunca reordenado por el VM) es
+        numérico correcto -mismo orden ya usado por
+        frecuencia_pares_colorloto_a_vm."""
+        from app.api.web.view_models import atrasos_pares_colorloto_a_vm
+        filas = self._filas_base()
+        vm = atrasos_pares_colorloto_a_vm(self._fake_est(filas), 1, 7, self._juego())
+        numeros_en_orden = [f["numero"] for f in vm["filas"]]
+        assert numeros_en_orden == sorted(numeros_en_orden)
+
+    def test_vm_no_llama_motor_ni_repositorios(self):
+        import inspect
+        from app.api.web import view_models
+        codigo_fuente = inspect.getsource(view_models.atrasos_pares_colorloto_a_vm)
+        assert "calcular_atrasos_pares_numero_color" not in codigo_fuente
+        assert "repository" not in codigo_fuente.lower()
+
+
+class TestColorLotoAtrasosParesTemplate:
+    _TEMPLATE = "app/templates/estadisticas/atrasos_pares_colorloto.html"
+
+    def test_template_existe_chartjs_local_sin_cdn(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "/static/vendor/chartjs/chart.umd.min.js" in contenido
+        assert "cdnjs.cloudflare.com" not in contenido
+
+    def test_exactamente_un_canvas_height_180(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert contenido.count("<canvas") == 1
+        assert 'height="180"' in contenido
+
+    def test_sin_safe(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "|safe" not in contenido
+
+    def test_estado_sin_datos_exacto(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "No hay sorteos de ColorLoto disponibles todavía para calcular esta distribución." in contenido
+
+    def test_texto_semantico_de_atraso_exacto(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "El atraso indica la diferencia entre el sorteo de referencia y la última aparición histórica del par exacto número-color." in contenido
+        assert "histórica y no predictiva" in contenido
+
+    def test_columnas_de_tabla_correctas(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert ">Número<" in contenido
+        assert ">Color<" in contenido
+        assert "Sorteos de atraso" in contenido
+        assert "Último sorteo con aparición" in contenido
+
+    def test_nunca_llama_frecuencia_promedio_o_porcentaje_a_la_magnitud(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8").lower()
+        assert "frecuencia" not in contenido
+        assert "promedio" not in contenido
+        assert "porcentaje" not in contenido
+
+    def test_sin_lenguaje_predictivo_prohibido(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8").lower()
+        for prohibida in ["más probable", "debe salir pronto", "recomendado", "caliente", "frío"]:
+            assert prohibida not in contenido, prohibida
+
+    def test_sorteos_analizados_presente(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "Sorteos analizados" in contenido
+
+    def test_control_de_corte_reutilizado(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "partials/control_corte_temporal.html" in contenido
+
+    def test_nd_para_pares_nunca_observados(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "N/D" in contenido
+
+    def test_sin_fallback_cero_punto_cero_en_javascript(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "0.0" not in contenido
+
+    def test_grafico_agrupado_por_color_con_leyenda(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "chart_datasets" in contenido
+        assert 'legend: { display: true' in contenido
+
+
+class TestColorLotoNavegacionSeisMetricas:
+    def test_partial_navegacion_incluye_las_seis_metricas(self):
+        contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
+        assert "frecuencia-numeros" in contenido
+        assert "frecuencia-colores" in contenido
+        assert "frecuencia-pares-numero-color" in contenido
+        assert "atrasos-numeros" in contenido
+        assert "atrasos-colores" in contenido
+        assert "atrasos-pares-numero-color" in contenido
+
+    def test_los_seis_templates_incluyen_la_navegacion(self):
+        for archivo in ("frecuencia_numeros_colorloto.html", "frecuencia_colores_colorloto.html", "frecuencia_pares_colorloto.html", "atrasos_numeros_colorloto.html", "atrasos_colores_colorloto.html", "atrasos_pares_colorloto.html"):
+            contenido = Path(f"app/templates/estadisticas/{archivo}").read_text(encoding="utf-8")
+            assert "navegacion_colorloto.html" in contenido
+
+    def test_pagina_activa_marcada_en_los_seis_handlers(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '"pagina_colorloto_activa": "frecuencia-numeros"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "frecuencia-colores"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "frecuencia-pares-numero-color"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "atrasos-numeros"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "atrasos-colores"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "atrasos-pares-numero-color"' in codigo_fuente
+
+    def test_navegacion_numerica_9_9_8_sigue_intacta(self):
+        for slug, esperado in (("baloto", 9), ("baloto-revancha", 9), ("miloto", 8)):
+            nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
+            assert len(nav["metricas_nav"]) == esperado, slug
+
+    def test_corte_preservado_al_alternar_entre_las_seis(self):
+        contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
+        assert contenido.count("hasta_numero_sorteo") >= 6
