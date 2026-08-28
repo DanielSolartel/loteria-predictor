@@ -35,4 +35,10 @@
             Atrasos pares número-color
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'repeticiones-entre-sorteos' %}active{% endif %}"
+           href="/estadisticas/colorloto/repeticiones-entre-sorteos{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Repeticiones entre sorteos
+        </a>
+    </li>
 </ul>
