@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Atrasos de pares número-color — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Atrasos de pares número-color — ColorLoto</h3>
+<p class="text-muted">ColorLoto sortea 6 balotas, cada una con un número y un color. Esta estadística mide el atraso del par exacto número-color -no el número ni el color por separado.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de ColorLoto disponibles todavía para calcular esta distribución.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>El atraso indica la diferencia entre el sorteo de referencia y la última aparición histórica del par exacto número-color. Un atraso alto no aumenta la probabilidad de que ese par aparezca próximamente. Esta información es histórica y no predictiva.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Par(es) con mayor atraso</div>
+            {% if estadistica.par_mayor_atraso %}
+            <div class="fw-bold">
+                {% for par in estadistica.par_mayor_atraso %}
+                    {{ par }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="fw-bold">N/D</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-atrasos-pares-colorloto" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por par número-color</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Color</th>
+                    <th>Sorteos de atraso</th>
+                    <th>Último sorteo con aparición</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero }}</td>
+                    <td>
+                        <span class="d-inline-block rounded-circle border me-2" style="width:0.9rem;height:0.9rem;background-color:{{ fila.color_hex }};"></span>
+                        {{ fila.nombre }}
+                    </td>
+                    <td>{{ fila.atraso if fila.atraso is not none else "N/D" }}</td>
+                    <td>{{ fila.ultimo_sorteo_aparicion if fila.ultimo_sorteo_aparicion is not none else "N/D" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-atrasos-pares-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "datasets": estadistica.chart_datasets, "totalSorteos": estadistica.total_sorteos} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-atrasos-pares-colorloto").textContent);
+        const ctx = document.getElementById("grafica-atrasos-pares-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: datos.datasets.map((d) => ({
+                    label: d.label,
+                    data: d.data,
+                    backgroundColor: d.color_hex,
+                    borderColor: "rgba(0, 0, 0, 0.15)",
+                    borderWidth: 1,
+                })),
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: "bottom" },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                if (item.raw === null || item.raw === undefined) {
+                                    return `${item.dataset.label}: sin apariciones registradas (N/D) (número ${item.label})`;
+                                }
+                                return `${item.dataset.label}: ${item.raw} sorteos de atraso (número ${item.label})`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: { title: { display: true, text: "Número" } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        title: { display: true, text: "Sorteos de atraso" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}

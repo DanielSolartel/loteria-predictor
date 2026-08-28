@@ -37,6 +37,7 @@ from app.api.web.view_models import (
     atrasos_numeros_a_vm,
     atrasos_numeros_colorloto_a_vm,
     atrasos_colores_colorloto_a_vm,
+    atrasos_pares_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -406,6 +407,70 @@ def atrasos_colores_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/atrasos_colores_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/atrasos-pares-numero-color")
+def atrasos_pares_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-6: sexta visualización descriptiva de ColorLoto
+    -atraso del PAR EXACTO (número, color) como unidad atómica,
+    distinto de atrasos de número y de atrasos de color por
+    separado. Reutiliza `calcular_atrasos_pares_numero_color` sin
+    modificarlo.
+
+    Confirmado sin colisión posible con ninguna de las 9 rutas
+    genéricas (a diferencia de `atrasos-numeros`, que sí
+    colisiona); mantenida agrupada con las demás rutas de
+    ColorLoto, antes de cualquier ruta genérica, por consistencia
+    con el patrón ya establecido.
+
+    Reutiliza el contrato temporal de paleta ya validado por
+    AE-4P: el marcador estático `POLITICA_UNIVERSO_COLORES_ACTUAL`
+    forma parte de la identidad de caché, mismo patrón exacto ya
+    usado por `frecuencia_pares_colorloto`/`atrasos_colores_colorloto`."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/atrasos-pares-numero-color",
+        "pagina_colorloto_activa": "atrasos-pares-numero-color",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/atrasos_pares_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="atrasos_pares_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "rango_min": juego.rango_min, "rango_max": juego.rango_max, "cantidad_numeros": juego.cantidad_numeros,
+            "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL,
+        },
+    )
+
+    vm = atrasos_pares_colorloto_a_vm(resultado, juego.rango_min, juego.rango_max, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/atrasos_pares_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

@@ -1437,3 +1437,105 @@ class TestUpsertConAtrasosColoresColorLotoEtapaAE5:
         assert repo.buscar_vigente(juego_id, "atrasos_numeros_colorloto", None, self._PARAMS_SIN_MARCADOR).resultado == {"v": "atrasos_numeros"}
         assert repo.buscar_vigente(juego_id, "frecuencia_pares_colorloto", None, self._PARAMS_CON_MARCADOR).resultado == {"v": "pares"}
         assert repo.buscar_vigente(juego_id, "atrasos_colores_colorloto", None, self._PARAMS_CON_MARCADOR).resultado == {"v": "atrasos_colores"}
+
+
+class TestUpsertConAtrasosParesColorlotoEtapaAE6:
+    """Mismo patrón exacto ya usado para las 14 recetas anteriores.
+    Identidad con las CUATRO claves, incluido el marcador de
+    política (mismo patrón ya validado por AE-2/AE-3/AE-5)."""
+
+    _PARAMS_CON_MARCADOR = {
+        "rango_min": 1, "rango_max": 7, "cantidad_numeros": 6,
+        "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1",
+    }
+
+    def test_parametros_exactos_con_las_cuatro_claves_y_marcador(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS_CON_MARCADOR
+        assert set(entrada.parametros.keys()) == {"rango_min", "rango_max", "cantidad_numeros", "politica_universo_colores"}
+
+    def test_ausencia_de_corte_y_lista_de_colores_en_parametros(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "x"}))
+        assert "hasta_numero_sorteo" not in entrada.parametros
+        assert not any("color" in k and k != "politica_universo_colores" for k in entrada.parametros.keys())
+
+    def test_identidad_por_juego(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_a, juego_b = uuid4(), uuid4()
+        repo.guardar(_entrada(juego_a, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "juego_a"}))
+        repo.guardar(_entrada(juego_b, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "juego_b"}))
+        a = repo.buscar_vigente(juego_a, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR)
+        b = repo.buscar_vigente(juego_b, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR)
+        assert a.resultado == {"v": "juego_a"}
+        assert b.resultado == {"v": "juego_b"}
+
+    def test_caché_antigua_sin_marcador_no_es_seleccionada(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_sin_marcador = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6}
+        repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=params_sin_marcador, resultado={"v": "sin_marcador_hipotetico"}))
+        vigente = repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR)
+        assert vigente is None
+
+    def test_hit_de_cache_nueva_con_marcador(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "cacheado"}))
+        vigente = repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR)
+        assert vigente is not None
+        assert vigente.id == primera.id
+
+    def test_historico_completo_y_corte_son_caches_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR)
+        corte = repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", 100, self._PARAMS_CON_MARCADOR)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_recalcular_invalidado_no_duplica_upsert(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "atrasos_pares_colorloto")
+        assert total == 1
+
+    def test_ninguna_estadistica_de_otro_juego_es_invalidada(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_a, juego_b = uuid4(), uuid4()
+        repo.guardar(_entrada(juego_b, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "juego_b"}))
+        repo.invalidar_por_juego(juego_a, desde_numero_sorteo=0)
+        vigente_b = repo.buscar_vigente(juego_b, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR)
+        assert vigente_b is not None
+        assert vigente_b.resultado == {"v": "juego_b"}
+
+    def test_convivencia_sin_interferencia_con_las_catorce_metricas_anteriores(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_sin_marcador = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6}
+        repo.guardar(_entrada(juego_id, tipo="atrasos_numeros_colorloto", hasta_numero_sorteo=None, parametros=params_sin_marcador, resultado={"v": "atrasos_numeros"}))
+        repo.guardar(_entrada(juego_id, tipo="atrasos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "atrasos_colores"}))
+        repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "atrasos_pares"}))
+        assert repo.buscar_vigente(juego_id, "atrasos_numeros_colorloto", None, params_sin_marcador).resultado == {"v": "atrasos_numeros"}
+        assert repo.buscar_vigente(juego_id, "atrasos_colores_colorloto", None, self._PARAMS_CON_MARCADOR).resultado == {"v": "atrasos_colores"}
+        assert repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR).resultado == {"v": "atrasos_pares"}
+
+    def test_invalidacion_existente_aplicable_sin_cambios(self):
+        """Confirma que invalidar_por_juego (mecanismo agnóstico ya
+        existente, sin ningún cambio de código) cubre la nueva
+        receta automáticamente."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_CON_MARCADOR, resultado={"v": "x"}))
+        afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        assert afectadas == 1
+        assert repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR) is None

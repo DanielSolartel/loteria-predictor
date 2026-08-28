@@ -743,6 +743,111 @@ def atrasos_colores_colorloto_a_vm(estadistica, juego: Juego) -> dict:
     }
 
 
+def atrasos_pares_colorloto_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "atrasos_pares_colorloto" (Etapa AE-6) en un view model listo
+    para la plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor -transformación pura sobre
+    el resultado ya serializado.
+
+    Combina los dos patrones ya validados: deserialización/
+    agrupación de `frecuencia_pares_colorloto_a_vm` (Etapa AE-3
+    -reutiliza `_deserializar_par_numero_color` como único punto
+    de parseo, agrupa por número en el eje X y por color en
+    datasets, colores REALES presentes en orden de primera
+    aparición estable, nunca 6 códigos fijados a mano) y
+    distinción estricta `0`/`N-D` de
+    `atrasos_colores_colorloto_a_vm`/`atrasos_numeros_colorloto_a_vm`
+    (Etapas AE-4/AE-5 -`atraso`/`ultimo_sorteo_aparicion` pueden
+    ser `None`, nunca convertido a `0`).
+
+    Diferencia CRÍTICA frente al fallback de
+    `frecuencia_pares_colorloto_a_vm`: esa función usa `0.0` para
+    una combinación sin fila (frecuencia cero es un valor real
+    válido); aquí el fallback para una combinación sin fila es
+    `None`, nunca `0` -un atraso de `0` es un valor real distinto
+    (paró en el sorteo de referencia) que jamás debe confundirse
+    con "sin datos". El `None` se serializa como `null` en el
+    dataset de Chart.js -la librería ya muestra un hueco real en
+    esa barra, nunca la dibuja como una barra de altura cero.
+
+    "Par(es) con mayor atraso": excluye explícitamente los pares
+    sin ninguna aparición (`atraso is None`) del cálculo del
+    máximo -un par sin aparición NO es "el más atrasado" de forma
+    arbitraria. Si TODOS los pares carecen de atraso (histórico
+    vacío), la tarjeta es N/D. Empates preservados completos,
+    mismo criterio ya usado en las cinco métricas anteriores.
+
+    Orden determinista: se conserva tal cual llega en `resultado`
+    -confirmado por auditoría que coincide exactamente con el
+    orden numérico de `frecuencia_pares_colorloto_a_vm` para el
+    dominio real 1..7, nunca reordenado aquí."""
+    filas_crudas = estadistica.resultado["filas"]
+    total_sorteos = filas_crudas[0]["total_sorteos"] if filas_crudas else 0
+
+    filas_presentacion = []
+    for f in filas_crudas:
+        numero, codigo = _deserializar_par_numero_color(f["valor"])
+        filas_presentacion.append({
+            "numero": numero,
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "atraso": f["atraso"],
+            "ultimo_sorteo_aparicion": f["ultimo_sorteo_aparicion"],
+        })
+
+    par_mayor_atraso = None
+    filas_con_atraso = [f for f in filas_presentacion if f["atraso"] is not None]
+    if filas_con_atraso:
+        maximo = max(f["atraso"] for f in filas_con_atraso)
+        par_mayor_atraso = [
+            f"{f['numero']} - {f['nombre']}" for f in filas_con_atraso if f["atraso"] == maximo
+        ]
+
+    # Colores reales presentes en el resultado, en orden de primera
+    # aparición estable (no un conjunto sin orden) -nunca una lista
+    # fija de 6 códigos hardcodeados.
+    colores_presentes: list[str] = []
+    vistos: set[str] = set()
+    for f in filas_presentacion:
+        if f["codigo"] not in vistos:
+            vistos.add(f["codigo"])
+            colores_presentes.append(f["codigo"])
+
+    numeros_presentes = sorted({f["numero"] for f in filas_presentacion})
+
+    datasets = []
+    for codigo_color in colores_presentes:
+        filas_de_este_color = {f["numero"]: f for f in filas_presentacion if f["codigo"] == codigo_color}
+        datasets.append({
+            "label": codigo_color.title(),
+            "color_hex": _color_hex_seguro(codigo_color),
+            # None (nunca observado) se serializa como `null`
+            # -nunca 0.0 como en frecuencia, ya que aquí 0 es un
+            # atraso real distinto de "sin datos". Chart.js
+            # muestra un hueco real en esa barra.
+            "data": [
+                filas_de_este_color[n]["atraso"] if n in filas_de_este_color else None
+                for n in numeros_presentes
+            ],
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "par_mayor_atraso": par_mayor_atraso,
+        "chart_labels": [str(n) for n in numeros_presentes],
+        "chart_datasets": datasets,
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
