@@ -848,6 +848,70 @@ def atrasos_pares_colorloto_a_vm(estadistica, rango_min: int, rango_max: int, ju
     }
 
 
+def repeticiones_entre_sorteos_colorloto_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "repeticiones_entre_sorteos_colorloto" (Etapa AE-7) en un
+    view model listo para la plantilla. Nunca recalcula la
+    métrica, nunca consulta repositorios, nunca llama al motor.
+
+    Mismo patrón exacto ya validado por
+    `distribucion_repeticiones_entre_sorteos_a_vm` (Etapa AC, la
+    versión numérica): reutiliza `_etiqueta_repeticiones` sin
+    duplicarla, y renombra `total_sorteos` (nombre del campo
+    persistido, sin cambiar el contrato/dataclass ni el
+    serializador) a `total_transiciones` -SOLO en presentación-
+    porque ese campo NO representa la cantidad de sorteos del
+    histórico, sino la cantidad de transiciones válidas
+    (numero_sorteo_actual == numero_sorteo_anterior + 1). A
+    diferencia del resto de VMs de ColorLoto, esta función nunca
+    lee ni deriva ningún color: la métrica ignora el color por
+    completo.
+
+    "Repetición más frecuente": mismo criterio ya validado
+    cinco veces -excluye el caso sin transiciones, incluye TODAS
+    las categorías empatadas en el máximo, nunca elige una
+    arbitraria."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_transiciones = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_repetidos = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_repetidos": cantidad_repetidos,
+            "etiqueta": _etiqueta_repeticiones(cantidad_repetidos),
+            "transiciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    repeticion_mas_frecuente = None
+    if total_transiciones > 0 and filas_presentacion:
+        maximo = max(f["transiciones"] for f in filas_presentacion)
+        if maximo > 0:
+            repeticion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["transiciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_transiciones": total_transiciones,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "repeticion_mas_frecuente": repeticion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_transiciones": [f["transiciones"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:

@@ -45,7 +45,10 @@ from app.application.estadisticas.motor.consecutivos import (
     calcular_distribucion_pares_consecutivos,
     calcular_distribucion_racha_maxima,
 )
-from app.application.estadisticas.motor.repeticiones import calcular_repeticiones_entre_sorteos
+from app.application.estadisticas.motor.repeticiones import (
+    calcular_repeticiones_entre_sorteos,
+    calcular_repeticiones_entre_sorteos_colorloto,
+)
 from app.application.estadisticas.motor.distribuciones import (
     calcular_distribucion_altos_bajos,
     calcular_distribucion_pares_impares,
@@ -849,6 +852,55 @@ def _calcular_atrasos_pares_colorloto(
     return calcular_atrasos_pares_numero_color(historico.pares, rango_min, rango_max, colores_vigentes)
 
 
+def _calcular_repeticiones_entre_sorteos_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Reutiliza calcular_repeticiones_entre_sorteos_colorloto
+    directamente, sin reimplementar nada ni modificar el motor
+    (Etapa AE-7). Mismo envoltorio `_HistoricoColorLoto` y misma
+    validación defensiva compartida con AE-1 a AE-6 -no se
+    duplica ninguna regla.
+
+    Firma real del motor: `calcular_repeticiones_entre_sorteos_colorloto
+    (resultados, rango_min, rango_max, cantidad_balotas,
+    hasta_numero_sorteo=None)` -exactamente 4 argumentos
+    posicionales efectivos, NUNCA `hasta_numero_sorteo`: el
+    orquestador YA filtró `historico.pares` por el corte antes de
+    llegar aquí, mismo precedente exacto ya establecido por las
+    seis recetas anteriores de ColorLoto.
+
+    El motor ignora el color por completo (`for n, _ in r.pares`
+    en ambos puntos donde itera sobre los pares, confirmado por
+    lectura directa) -por eso esta receta nunca deriva
+    `colores_vigentes` ni pasa ningún parámetro relacionado con
+    la paleta al motor: un cambio de paleta no puede alterar el
+    resultado matemático de esta métrica.
+
+    Usa intersección de MULTICONJUNTOS (no de conjuntos): un
+    número que aparece dos veces en ambos sorteos de una
+    transición aporta 2 al conteo de repetidos, no 1 -confirmado
+    por el propio docstring del módulo y por ejecución real en
+    la auditoría previa a esta implementación.
+
+    Una transición solo es válida cuando `numero_sorteo_actual ==
+    numero_sorteo_anterior + 1`; un hueco en la numeración nunca
+    fabrica una transición. `FrecuenciaObservada.total_sorteos`
+    en el resultado de ESTA función **no** es la cantidad de
+    sorteos del histórico, sino la cantidad de TRANSICIONES
+    VÁLIDAS -mismo criterio y mismo nombre de campo ya usado por
+    `distribucion_repeticiones_entre_sorteos` (Etapa AC, la
+    versión numérica ya validada); el renombrado a
+    "Transiciones analizadas" vive exclusivamente en el View
+    Model, nunca aquí ni en el motor."""
+    rango_min = parametros["rango_min"]
+    rango_max = parametros["rango_max"]
+    cantidad_numeros = parametros["cantidad_numeros"]
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, cantidad_numeros, rango_min, rango_max,
+    )
+    return calcular_repeticiones_entre_sorteos_colorloto(historico.pares, rango_min, rango_max, cantidad_numeros)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -903,6 +955,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "atrasos_pares_colorloto": _Receta(
         calcular=_calcular_atrasos_pares_colorloto, serializar=_serializar_atrasos,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "repeticiones_entre_sorteos_colorloto": _Receta(
+        calcular=_calcular_repeticiones_entre_sorteos_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

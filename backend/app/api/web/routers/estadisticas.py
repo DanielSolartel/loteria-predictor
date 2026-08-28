@@ -38,6 +38,7 @@ from app.api.web.view_models import (
     atrasos_numeros_colorloto_a_vm,
     atrasos_colores_colorloto_a_vm,
     atrasos_pares_colorloto_a_vm,
+    repeticiones_entre_sorteos_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -472,6 +473,79 @@ def atrasos_pares_colorloto(
     return templates.TemplateResponse(
         request=request, name="estadisticas/atrasos_pares_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/repeticiones-entre-sorteos")
+def repeticiones_entre_sorteos_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-7: séptima visualización descriptiva de ColorLoto
+    -cuántos números (con multiplicidad, multiconjunto) coinciden
+    entre cada par de sorteos numericamente consecutivos
+    (numero_sorteo_actual == numero_sorteo_anterior + 1), ignorando
+    color por completo. Reutiliza
+    `calcular_repeticiones_entre_sorteos_colorloto` sin
+    modificarlo.
+
+    Ruta registrada OBLIGATORIAMENTE antes de la ruta genérica
+    homonima `/estadisticas/{juego_slug}/repeticiones-entre-sorteos`
+    -ambas comparten exactamente el mismo sufijo; si el orden
+    fuera incorrecto, Starlette capturaria esta URL con el
+    handler generico (`juego_slug='colorloto'`), que devolveria
+    un 404 controlado via `_resolver_codigo` en vez de alcanzar
+    este handler dedicado -mismo defecto critico ya corregido
+    para atrasos-numeros (Etapa AE-4).
+
+    `FrecuenciaObservada.total_sorteos` aqui es la cantidad de
+    TRANSICIONES VALIDAS, nunca la cantidad de sorteos -mismo
+    criterio exacto ya validado por
+    `distribucion_repeticiones_entre_sorteos` (Etapa AC); el View
+    Model la presenta como "Transiciones analizadas".
+
+    Sin marcador de politica de colores en la identidad de
+    cache: el motor ignora el color por completo, un cambio de
+    paleta no puede alterar el resultado matematico."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/repeticiones-entre-sorteos",
+        "pagina_colorloto_activa": "repeticiones-entre-sorteos",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/repeticiones_entre_sorteos_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="repeticiones_entre_sorteos_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "rango_min": juego.rango_min, "rango_max": juego.rango_max, "cantidad_numeros": juego.cantidad_numeros,
+        },
+    )
+
+    vm = repeticiones_entre_sorteos_colorloto_a_vm(resultado, juego.rango_min, juego.rango_max, juego.cantidad_numeros, juego)
+    tiene_transiciones = vm["total_transiciones"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/repeticiones_entre_sorteos_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_transiciones": tiene_transiciones},
     )
 
 

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Repeticiones entre sorteos — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-bar-chart-fill me-2"></i>Repeticiones entre sorteos — ColorLoto</h3>
+<p class="text-muted">Una transición compara un sorteo con el número de sorteo inmediatamente siguiente (N con N+1), contando solo los números de las balotas, sin importar el color. El primer sorteo del histórico no produce ninguna transición por sí solo, y los huecos de numeración (por ejemplo, si falta un sorteo intermedio) no se comparan, porque no representan sorteos consecutivos reales. Un número repetido dentro del mismo sorteo se cuenta con su multiplicidad -si el 5 sale dos veces en ambos sorteos, aporta 2 al conteo de repetidos, no 1.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_transiciones %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay transiciones válidas para calcular esta distribución.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta distribución describe cuántos números de las balotas coincidieron entre pares de sorteos consecutivos del histórico, ignorando el color. Cada sorteo sigue siendo independiente: una repetición pasada no aumenta ni reduce la probabilidad de repetición futura.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Transiciones analizadas</div>
+            <div class="fw-bold">{{ estadistica.total_transiciones }}</div>
+            <div class="text-muted small">Pares de sorteos consecutivos comparados</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Balotas por sorteo</div>
+            <div class="fw-bold">{{ estadistica.cantidad_numeros }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Repetición más frecuente</div>
+            {% if estadistica.repeticion_mas_frecuente %}
+            <div class="fw-bold">
+                {% for etiqueta in estadistica.repeticion_mas_frecuente %}
+                    {{ etiqueta }}{% if not loop.last %}<br>{% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="fw-bold">N/D</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-repeticiones-entre-sorteos-colorloto" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por cantidad de números repetidos</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Números repetidos</th>
+                    <th>Transiciones</th>
+                    <th>Frecuencia relativa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.cantidad_repetidos }}</td>
+                    <td>{{ fila.transiciones }}</td>
+                    <td>{{ "%.2f"|format(fila.frecuencia_relativa * 100) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-repeticiones-entre-sorteos-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "porcentajes": estadistica.chart_porcentajes, "transiciones": estadistica.chart_transiciones} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-repeticiones-entre-sorteos-colorloto").textContent);
+        const ctx = document.getElementById("grafica-repeticiones-entre-sorteos-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: "Frecuencia relativa",
+                    data: datos.porcentajes,
+                    backgroundColor: "rgba(120, 120, 120, 0.6)",
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const porcentaje = item.raw.toFixed(1) + "%";
+                                const transiciones = datos.transiciones[item.dataIndex];
+                                return `${porcentaje} (${transiciones} transición${transiciones === 1 ? "" : "es"})`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Frecuencia relativa" },
+                        ticks: { callback: (valor) => valor + "%" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}

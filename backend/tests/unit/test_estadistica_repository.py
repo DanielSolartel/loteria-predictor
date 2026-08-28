@@ -1539,3 +1539,107 @@ class TestUpsertConAtrasosParesColorlotoEtapaAE6:
         afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
         assert afectadas == 1
         assert repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", None, self._PARAMS_CON_MARCADOR) is None
+
+
+class TestUpsertConRepeticionesEntreSorteosColorlotoEtapaAE7:
+    """Mismo patrón exacto ya usado para las 15 recetas anteriores.
+    Identidad con SOLO TRES claves -sin el marcador de política,
+    confirmado que esta métrica ignora el color por completo."""
+
+    _PARAMS = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6}
+
+    def test_parametros_exactos_con_las_tres_claves_sin_marcador(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS
+        assert set(entrada.parametros.keys()) == {"rango_min", "rango_max", "cantidad_numeros"}
+        assert "politica_universo_colores" not in entrada.parametros
+
+    def test_ausencia_de_corte_en_parametros(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS, resultado={"v": "x"}))
+        assert "hasta_numero_sorteo" not in entrada.parametros
+
+    def test_identidad_por_juego(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_a, juego_b = uuid4(), uuid4()
+        repo.guardar(_entrada(juego_a, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "juego_a"}))
+        repo.guardar(_entrada(juego_b, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "juego_b"}))
+        a = repo.buscar_vigente(juego_a, "repeticiones_entre_sorteos_colorloto", None, self._PARAMS)
+        b = repo.buscar_vigente(juego_b, "repeticiones_entre_sorteos_colorloto", None, self._PARAMS)
+        assert a.resultado == {"v": "juego_a"}
+        assert b.resultado == {"v": "juego_b"}
+
+    def test_hit_de_cache(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "cacheado"}))
+        vigente = repo.buscar_vigente(juego_id, "repeticiones_entre_sorteos_colorloto", None, self._PARAMS)
+        assert vigente is not None
+        assert vigente.id == primera.id
+
+    def test_miss_de_cache_con_parametros_distintos(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "x"}))
+        otros_params = {"rango_min": 1, "rango_max": 9, "cantidad_numeros": 6}
+        vigente = repo.buscar_vigente(juego_id, "repeticiones_entre_sorteos_colorloto", None, otros_params)
+        assert vigente is None
+
+    def test_historico_completo_y_corte_son_caches_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "repeticiones_entre_sorteos_colorloto", None, self._PARAMS)
+        corte = repo.buscar_vigente(juego_id, "repeticiones_entre_sorteos_colorloto", 100, self._PARAMS)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_recalcular_invalidado_no_duplica_upsert(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "repeticiones_entre_sorteos_colorloto")
+        assert total == 1
+
+    def test_invalidacion_por_sorteo_existente_aplicable_sin_cambios(self):
+        """Confirma que invalidar_por_juego (mecanismo agnóstico ya
+        existente, sin ningún cambio de código) cubre la nueva
+        receta automáticamente."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "x"}))
+        afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        assert afectadas == 1
+        assert repo.buscar_vigente(juego_id, "repeticiones_entre_sorteos_colorloto", None, self._PARAMS) is None
+
+    def test_invalidacion_conservadora_por_paleta_sin_modificar_su_codigo(self):
+        """La invalidación genérica por cambios de paleta
+        (`GestionarPaletaColores` -> `invalidar_por_juego`, agnóstica
+        de tipo_estadistica) invalida esta caché igual que las
+        demás, aunque la métrica no dependa del color -comportamiento
+        conservador aceptado, mismo mecanismo YA existente, SIN
+        ningún cambio de código requerido ni realizado."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "x"}))
+        # Mismo invalidar_por_juego usado por GestionarPaletaColores -
+        # sin discriminar tipo_estadistica, tal como ya sucede para
+        # las 6 recetas de ColorLoto que SI dependen de color.
+        afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        assert afectadas == 1
+
+    def test_convivencia_sin_interferencia_con_las_quince_metricas_anteriores(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_con_marcador = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+        repo.guardar(_entrada(juego_id, tipo="atrasos_pares_colorloto", hasta_numero_sorteo=None, parametros=params_con_marcador, resultado={"v": "atrasos_pares"}))
+        repo.guardar(_entrada(juego_id, tipo="repeticiones_entre_sorteos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "repeticiones"}))
+        assert repo.buscar_vigente(juego_id, "atrasos_pares_colorloto", None, params_con_marcador).resultado == {"v": "atrasos_pares"}
+        assert repo.buscar_vigente(juego_id, "repeticiones_entre_sorteos_colorloto", None, self._PARAMS).resultado == {"v": "repeticiones"}
