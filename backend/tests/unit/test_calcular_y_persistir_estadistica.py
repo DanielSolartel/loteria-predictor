@@ -45,7 +45,9 @@ from app.application.use_cases.calcular_y_persistir_estadistica import (
     POLITICA_UNIVERSO_COLORES_ACTUAL,
     _CATALOGO,
     _HistoricoColorLoto,
+    _RANGO_REAL_COLORLOTO,
     _calcular_atrasos_pares_colorloto,
+    _calcular_distribucion_pares_impares_colorloto,
     _calcular_frecuencia_colores_colorloto,
     _calcular_repeticiones_entre_sorteos_colorloto,
     _codigos_colores_vigentes_en_referencia,
@@ -2637,7 +2639,7 @@ class TestMotorFrecuenciaNumerosColorLotoSemantica:
 class TestRecetaFrecuenciaNumerosColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("frecuencia_numeros_colorloto") == 1
-        assert len(_CATALOGO) == 16
+        assert len(_CATALOGO) == 17
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -2649,7 +2651,7 @@ class TestRecetaFrecuenciaNumerosColorLoto:
         frecuencia_pares_colorloto, atrasos_numeros_colorloto Y
         atrasos_colores_colorloto), no solo las cuatro anteriores."""
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_numerico
-        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto")
+        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto")
         for nombre, receta in _CATALOGO.items():
             if nombre not in recetas_colorloto:
                 assert receta.obtener_historico is _obtener_historico_numerico, nombre
@@ -2917,7 +2919,7 @@ class TestMotorFrecuenciaColoresColorLotoSemantica:
 class TestRecetaFrecuenciaColoresColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("frecuencia_colores_colorloto") == 1
-        assert len(_CATALOGO) == 16
+        assert len(_CATALOGO) == 17
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -2929,7 +2931,7 @@ class TestRecetaFrecuenciaColoresColorLoto:
         from app.application.use_cases.calcular_y_persistir_estadistica import (
             _obtener_historico_numerico, _obtener_historico_colorloto,
         )
-        recetas_colorloto_con_fuente_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto")
+        recetas_colorloto_con_fuente_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto")
         for nombre, receta in _CATALOGO.items():
             if nombre in recetas_colorloto_con_fuente_colorloto:
                 assert receta.obtener_historico is _obtener_historico_colorloto, nombre
@@ -3202,7 +3204,7 @@ class TestMotorFrecuenciaParesColorLotoSemantica:
 class TestRecetaFrecuenciaParesColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("frecuencia_pares_colorloto") == 1
-        assert len(_CATALOGO) == 16
+        assert len(_CATALOGO) == 17
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -3212,7 +3214,7 @@ class TestRecetaFrecuenciaParesColorLoto:
         """Actualizado en Etapa AE-5: excluye las cinco recetas de
         ColorLoto, no solo las cuatro anteriores."""
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_numerico
-        recetas_colorloto = {"frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto"}
+        recetas_colorloto = {"frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto"}
         for nombre, receta in _CATALOGO.items():
             if nombre not in recetas_colorloto:
                 assert receta.obtener_historico is _obtener_historico_numerico, nombre
@@ -3431,7 +3433,7 @@ class TestMotorAtrasosNumerosColorLotoSemantica:
 class TestRecetaAtrasosNumerosColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("atrasos_numeros_colorloto") == 1
-        assert len(_CATALOGO) == 16
+        assert len(_CATALOGO) == 17
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -3445,7 +3447,7 @@ class TestRecetaAtrasosNumerosColorLoto:
         from app.application.use_cases.calcular_y_persistir_estadistica import (
             _obtener_historico_numerico, _obtener_historico_colorloto,
         )
-        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto")
+        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto")
         for nombre, receta in _CATALOGO.items():
             if nombre in recetas_colorloto:
                 assert receta.obtener_historico is _obtener_historico_colorloto, nombre
@@ -4222,7 +4224,7 @@ class TestMotorAtrasosColoresColorLotoSemantica:
 class TestRecetaAtrasosColoresColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("atrasos_colores_colorloto") == 1
-        assert len(_CATALOGO) == 16
+        assert len(_CATALOGO) == 17
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -4238,7 +4240,7 @@ class TestRecetaAtrasosColoresColorLoto:
         )
         recetas_colorloto = (
             "frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto",
-            "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto",
+            "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto",
         )
         for nombre, receta in _CATALOGO.items():
             if nombre in recetas_colorloto:
@@ -4497,7 +4499,7 @@ class TestMotorAtrasosParesNumeroColorSemantica:
 class TestRecetaAtrasosParesColorloto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("atrasos_pares_colorloto") == 1
-        assert len(_CATALOGO) == 16
+        assert len(_CATALOGO) == 17
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -4714,7 +4716,7 @@ class TestMotorRepeticionesEntreSorteosColorlotoSemantica:
 class TestRecetaRepeticionesEntreSorteosColorloto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("repeticiones_entre_sorteos_colorloto") == 1
-        assert len(_CATALOGO) == 16
+        assert len(_CATALOGO) == 17
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -4838,3 +4840,197 @@ class TestRecetaRepeticionesEntreSorteosColorloto:
         from app.application.estadisticas.motor.repeticiones import calcular_repeticiones_entre_sorteos_colorloto
         firma = inspect.signature(calcular_repeticiones_entre_sorteos_colorloto)
         assert list(firma.parameters.keys()) == ["resultados", "rango_min", "rango_max", "cantidad_balotas", "hasta_numero_sorteo"]
+
+
+# =====================================================================
+# Etapa AE-8: octava visualización descriptiva de ColorLoto -
+# distribución de números pares e impares. Reutiliza los helpers ya
+# existentes (_cl, _col, _PALETA_COLORLOTO, _PARES_VALIDOS,
+# _orquestador_colorloto, _HistoricoColorLoto) sin duplicarlos.
+# =====================================================================
+
+class TestMotorDistribucionParesImparesColorlotoSemantica:
+    """Semántica del motor ya auditada exhaustivamente en la
+    auditoría previa a esta implementación -aquí se confirman los
+    casos obligatorios explícitos de esta implementación."""
+
+    def test_categorias_cero_a_seis_completas_y_ordenadas(self):
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        r = calcular_distribucion_pares_impares_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))], cantidad_balotas=6)
+        assert [f.valor for f in r] == [str(n) for n in range(7)]
+
+    def test_multiplicidad_de_numeros_pares(self):
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        p_rep = ((2, "ROJO"), (2, "AZUL"), (2, "VERDE"), (4, "NEGRO"), (6, "BLANCO"), (1, "AMARILLO"))
+        r = calcular_distribucion_pares_impares_colorloto([_cl(1, p_rep, date(2024, 1, 1))], cantidad_balotas=6)
+        fila_activa = [f for f in r if f.apariciones > 0]
+        assert fila_activa[0].valor == "5"
+
+    def test_independencia_del_color(self):
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        p_a = ((1, "ROJO"), (2, "ROJO"), (3, "ROJO"), (4, "ROJO"), (5, "ROJO"), (6, "ROJO"))
+        p_b = ((1, "AZUL"), (2, "VERDE"), (3, "NEGRO"), (4, "BLANCO"), (5, "AMARILLO"), (6, "ROJO"))
+        r_a = calcular_distribucion_pares_impares_colorloto([_cl(1, p_a, date(2024, 1, 1))], cantidad_balotas=6)
+        r_b = calcular_distribucion_pares_impares_colorloto([_cl(1, p_b, date(2024, 1, 1))], cantidad_balotas=6)
+        assert [(f.valor, f.apariciones) for f in r_a] == [(f.valor, f.apariciones) for f in r_b]
+
+    def test_categoria_ausente_con_cero_real(self):
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        r = calcular_distribucion_pares_impares_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))], cantidad_balotas=6)
+        fila_0 = [f for f in r if f.valor == "0"][0]
+        assert fila_0.apariciones == 0
+
+    def test_historico_vacio(self):
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        r = calcular_distribucion_pares_impares_colorloto([], cantidad_balotas=6)
+        assert len(r) == 7
+        assert all(f.total_sorteos == 0 for f in r)
+
+    def test_una_observacion(self):
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        r = calcular_distribucion_pares_impares_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))], cantidad_balotas=6)
+        assert r[0].total_sorteos == 1
+
+    def test_suma_de_apariciones_igual_a_total_sorteos(self):
+        datos = [_cl(n, _PARES_VALIDOS, date(2024, 1, n)) for n in range(1, 6)]
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        r = calcular_distribucion_pares_impares_colorloto(datos, cantidad_balotas=6)
+        assert sum(f.apariciones for f in r) == r[0].total_sorteos == 5
+
+    def test_dominio_real_pares_2_4_6(self):
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        p_solo_pares = ((2, "ROJO"), (4, "AZUL"), (6, "VERDE"), (2, "NEGRO"), (4, "BLANCO"), (6, "AMARILLO"))
+        r = calcular_distribucion_pares_impares_colorloto([_cl(1, p_solo_pares, date(2024, 1, 1))], cantidad_balotas=6)
+        fila_6 = [f for f in r if f.valor == "6"][0]
+        assert fila_6.apariciones == 1
+
+
+class TestRecetaDistribucionParesImparesColorloto:
+    def test_receta_registrada_exactamente_una_vez(self):
+        assert list(_CATALOGO.keys()).count("distribucion_pares_impares_colorloto") == 1
+        assert len(_CATALOGO) == 17
+
+    def test_fuente_de_historico_es_colorloto(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
+        assert _CATALOGO["distribucion_pares_impares_colorloto"].obtener_historico is _obtener_historico_colorloto
+
+    def test_serializador_es_serializar_frecuencia_observada(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_frecuencia_observada
+        assert _CATALOGO["distribucion_pares_impares_colorloto"].serializar is _serializar_frecuencia_observada
+
+    def test_espia_motor_recibe_dos_argumentos_sin_corte_ni_rango(self):
+        import app.application.use_cases.calcular_y_persistir_estadistica as modulo
+        original = modulo.calcular_distribucion_pares_impares_colorloto
+        capturado = {}
+
+        def espia(*a, **kw):
+            capturado["args"] = a
+            capturado["kwargs"] = kw
+            return original(*a, **kw)
+
+        modulo.calcular_distribucion_pares_impares_colorloto = espia
+        try:
+            orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+            orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", parametros_metrica={"cantidad_numeros": 6})
+        finally:
+            modulo.calcular_distribucion_pares_impares_colorloto = original
+        assert len(capturado["args"]) == 2
+        assert "hasta_numero_sorteo" not in capturado["kwargs"]
+        assert "rango_min" not in capturado["kwargs"]
+        assert "rango_max" not in capturado["kwargs"]
+
+    def test_cantidad_numeros_correcta_al_motor(self):
+        import app.application.use_cases.calcular_y_persistir_estadistica as modulo
+        original = modulo.calcular_distribucion_pares_impares_colorloto
+        capturado = {}
+
+        def espia(resultados, cantidad_balotas):
+            capturado["cantidad_balotas"] = cantidad_balotas
+            return original(resultados, cantidad_balotas)
+
+        modulo.calcular_distribucion_pares_impares_colorloto = espia
+        try:
+            orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+            orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", parametros_metrica={"cantidad_numeros": 6})
+        finally:
+            modulo.calcular_distribucion_pares_impares_colorloto = original
+        assert capturado["cantidad_balotas"] == 6
+
+    def test_corte_separado_sin_pasarse_al_motor(self):
+        orquestador, _, _, estadistica_repo, juego_id = _orquestador_colorloto([
+            _cl(n, _PARES_VALIDOS, date(2024, 1, n)) for n in range(1, 6)
+        ])
+        orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", hasta_numero_sorteo=3, parametros_metrica={"cantidad_numeros": 6})
+        fila_guardada = estadistica_repo._filas[-1]
+        assert "hasta_numero_sorteo" not in fila_guardada.parametros
+        assert fila_guardada.hasta_numero_sorteo == 3
+        assert fila_guardada.resultado["filas"][0]["total_sorteos"] == 3
+
+    def test_motor_no_invocado_ante_cantidad_incorrecta(self):
+        import app.application.use_cases.calcular_y_persistir_estadistica as modulo
+        original = modulo.calcular_distribucion_pares_impares_colorloto
+        llamado = {"v": False}
+
+        def espia(*a, **kw):
+            llamado["v"] = True
+            return original(*a, **kw)
+
+        modulo.calcular_distribucion_pares_impares_colorloto = espia
+        try:
+            orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS[:5], date(2024, 1, 1))])
+            try:
+                orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", parametros_metrica={"cantidad_numeros": 6})
+            except ResultadoHistoricoInconsistenteError:
+                pass
+        finally:
+            modulo.calcular_distribucion_pares_impares_colorloto = original
+        assert llamado["v"] is False
+
+    def test_cache_no_persistida_ante_corrupcion(self):
+        orquestador, _, _, estadistica_repo, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS[:5], date(2024, 1, 1))])
+        try:
+            orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", parametros_metrica={"cantidad_numeros": 6})
+        except ResultadoHistoricoInconsistenteError:
+            pass
+        assert estadistica_repo.guardar_fue_llamado is False
+
+    def test_historico_vacio_valido(self):
+        orquestador, _, _, estadistica_repo, juego_id = _orquestador_colorloto([])
+        orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", parametros_metrica={"cantidad_numeros": 6})
+        assert estadistica_repo.guardar_fue_llamado is True
+
+    def test_serializacion_correcta_siete_filas(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        resultado = orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", parametros_metrica={"cantidad_numeros": 6})
+        assert len(resultado.resultado["filas"]) == 7
+        for fila in resultado.resultado["filas"]:
+            assert "apariciones" in fila
+            assert "total_sorteos" in fila
+            assert "frecuencia_relativa" in fila
+
+    def test_identidad_de_cache_una_sola_clave(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        resultado = orquestador.ejecutar(juego_id, "distribucion_pares_impares_colorloto", parametros_metrica={"cantidad_numeros": 6})
+        assert set(resultado.parametros.keys()) == {"cantidad_numeros"}
+        assert "rango_min" not in resultado.parametros
+        assert "rango_max" not in resultado.parametros
+        assert "politica_universo_colores" not in resultado.parametros
+
+    def test_receta_no_deriva_colores_vigentes(self):
+        """A diferencia de las recetas de AE-2/AE-3/AE-5/AE-6, esta
+        receta nunca llama a
+        _codigos_colores_vigentes_en_referencia -el motor ignora el
+        color por completo."""
+        import inspect
+        from app.application.use_cases import calcular_y_persistir_estadistica as modulo
+        codigo_fuente = inspect.getsource(modulo._calcular_distribucion_pares_impares_colorloto)
+        assert "_codigos_colores_vigentes_en_referencia" not in codigo_fuente
+
+    def test_usa_rango_real_colorloto_constante(self):
+        assert _RANGO_REAL_COLORLOTO == (1, 7)
+
+    def test_motor_no_modificado(self):
+        import inspect
+        from app.application.estadisticas.motor.distribuciones import calcular_distribucion_pares_impares_colorloto
+        firma = inspect.signature(calcular_distribucion_pares_impares_colorloto)
+        assert list(firma.parameters.keys()) == ["resultados", "cantidad_balotas", "hasta_numero_sorteo"]
