@@ -39,6 +39,7 @@ from app.api.web.view_models import (
     atrasos_colores_colorloto_a_vm,
     atrasos_pares_colorloto_a_vm,
     repeticiones_entre_sorteos_colorloto_a_vm,
+    distribucion_pares_impares_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -546,6 +547,75 @@ def repeticiones_entre_sorteos_colorloto(
     return templates.TemplateResponse(
         request=request, name="estadisticas/repeticiones_entre_sorteos_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_transiciones": tiene_transiciones},
+    )
+
+
+@router.get("/estadisticas/colorloto/distribucion-pares-impares")
+def distribucion_pares_impares_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-8: octava visualización descriptiva de ColorLoto
+    -cuántos de los 6 números de las balotas de cada sorteo son
+    pares, ignorando color por completo. Reutiliza
+    `calcular_distribucion_pares_impares_colorloto` sin
+    modificarlo.
+
+    Ruta registrada OBLIGATORIAMENTE antes de la ruta genérica
+    homonima `/estadisticas/{juego_slug}/distribucion-pares-impares`
+    -ambas comparten exactamente el mismo sufijo; si el orden
+    fuera incorrecto, Starlette capturaria esta URL con el
+    handler generico (`juego_slug='colorloto'`), que devolveria
+    un 404 controlado via `_resolver_codigo` en vez de alcanzar
+    este handler dedicado -mismo defecto critico ya corregido
+    para atrasos-numeros/repeticiones-entre-sorteos (Etapas
+    AE-4/AE-7). La ruta generica de Baloto
+    (`/estadisticas/baloto/distribucion-pares-impares`) sigue
+    intacta y respondiendo 200, sin ninguna interferencia.
+
+    Identidad de cache con una sola clave (`cantidad_numeros`),
+    sin rango ni marcador de politica de colores: el motor
+    ignora el color por completo, y el resultado de paridad
+    nunca depende de los limites del rango -solo la validacion
+    de integridad previa los necesita, usando el rango real y
+    fijo de ColorLoto."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/distribucion-pares-impares",
+        "pagina_colorloto_activa": "distribucion-pares-impares",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_pares_impares_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="distribucion_pares_impares_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"cantidad_numeros": juego.cantidad_numeros},
+    )
+
+    vm = distribucion_pares_impares_colorloto_a_vm(resultado, juego.cantidad_numeros, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/distribucion_pares_impares_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 
 

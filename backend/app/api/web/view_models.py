@@ -912,6 +912,66 @@ def repeticiones_entre_sorteos_colorloto_a_vm(
     }
 
 
+def distribucion_pares_impares_colorloto_a_vm(estadistica, cantidad_numeros: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_pares_impares_colorloto" (Etapa AE-8) en un
+    view model listo para la plantilla. Nunca recalcula la
+    métrica, nunca consulta repositorios, nunca llama al motor.
+
+    Mismo patrón exacto ya validado por
+    `distribucion_pares_impares_a_vm` (Etapa Y, la versión
+    numérica): reutiliza `_etiqueta_composicion` sin duplicarla
+    -la identidad `cantidad_impares = cantidad_numeros -
+    cantidad_pares` sigue siendo matemáticamente correcta con
+    repetición, ya que cada una de las 6 posiciones (balotas)
+    contribuye independientemente a par o impar, sin importar si
+    el número se repite. A diferencia del resto de VMs de
+    ColorLoto, esta función nunca lee ni deriva ningún color: la
+    métrica ignora el color por completo.
+
+    "Composición más frecuente": mismo criterio ya validado -si
+    no hay datos (`total_sorteos == 0`), `None` (el template debe
+    mostrar "N/D", sin asumir empate entre categorías en cero);
+    con datos, incluye TODAS las categorías empatadas en el
+    máximo, nunca elige una arbitraria."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_pares = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_pares": cantidad_pares,
+            "cantidad_impares": cantidad_numeros - cantidad_pares,
+            "etiqueta": _etiqueta_composicion(cantidad_pares, cantidad_numeros),
+            "apariciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:

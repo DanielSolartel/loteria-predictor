@@ -52,6 +52,7 @@ from app.application.estadisticas.motor.repeticiones import (
 from app.application.estadisticas.motor.distribuciones import (
     calcular_distribucion_altos_bajos,
     calcular_distribucion_pares_impares,
+    calcular_distribucion_pares_impares_colorloto,
 )
 from app.application.estadisticas.motor.frecuencia import (
     calcular_frecuencia_colores,
@@ -901,6 +902,75 @@ def _calcular_repeticiones_entre_sorteos_colorloto(
     return calcular_repeticiones_entre_sorteos_colorloto(historico.pares, rango_min, rango_max, cantidad_numeros)
 
 
+_RANGO_REAL_COLORLOTO = (1, 7)
+"""Rango numérico REAL y FIJO de ColorLoto (1..7), confirmado por
+el reglamento oficial documentado en `domain/games/colorloto.py`.
+A diferencia de las 9 recetas numéricas (que sirven a TRES juegos
+con rangos DISTINTOS -Baloto 1-43, MiLoto 1-39- y por eso deben
+leer `rango_min`/`rango_max` dinámicamente de cada `Juego`),
+ColorLoto es un único juego con un único rango que nunca varía
+-usarlo como constante aquí, en vez de pasarlo a través de
+`parametros_metrica`, es lo que permite que la identidad de
+caché de esta receta sea exactamente `{"cantidad_numeros": 6}`,
+sin `rango_min`/`rango_max` -el resultado de paridad NUNCA
+depende de esos límites, solo la VALIDACIÓN previa de integridad
+los necesita."""
+
+
+def _calcular_distribucion_pares_impares_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Reutiliza calcular_distribucion_pares_impares_colorloto
+    directamente, sin reimplementar nada ni modificar el motor
+    (Etapa AE-8). Mismo envoltorio `_HistoricoColorLoto` y misma
+    validación defensiva compartida con AE-1 a AE-7 -no se
+    duplica ninguna regla.
+
+    Firma real del motor: `calcular_distribucion_pares_impares_colorloto
+    (resultados, cantidad_balotas, hasta_numero_sorteo=None)`
+    -exactamente 2 argumentos posicionales efectivos, NUNCA
+    `hasta_numero_sorteo`: el orquestador YA filtró
+    `historico.pares` por el corte antes de llegar aquí, mismo
+    precedente exacto ya establecido por las siete recetas
+    anteriores de ColorLoto.
+
+    El motor ignora el color por completo (`for n, _ in r.pares`,
+    confirmado por lectura directa) -por eso esta receta nunca
+    deriva `colores_vigentes` ni pasa ningún parámetro
+    relacionado con la paleta: un cambio de paleta no puede
+    alterar el resultado matemático de esta métrica. Mismo
+    criterio ya aplicado por `_calcular_repeticiones_entre_sorteos_colorloto`
+    (Etapa AE-7).
+
+    La validación de integridad previa sí necesita rango (para
+    confirmar que cada número del histórico está dentro de
+    1..7) -usa `_RANGO_REAL_COLORLOTO`, la constante del rango
+    real y fijo del juego, en vez de leerlo de `parametros`: así
+    la identidad de caché persistida queda exactamente
+    `{"cantidad_numeros": 6}`, sin `rango_min`/`rango_max` -el
+    resultado de paridad nunca depende de esos límites, solo la
+    validación de integridad los necesita.
+
+    Multiplicidad: un número par repetido dentro del mismo
+    sorteo ocupa otra posición y vuelve a contar (confirmado por
+    lectura y ejecución real del motor en la auditoría previa a
+    esta implementación) -cada una de las 6 balotas contribuye
+    independientemente a par o impar, así que
+    `cantidad_pares + cantidad_impares = cantidad_numeros` se
+    cumple siempre, con o sin repetición de número.
+
+    Reutiliza `_serializar_frecuencia_observada` sin cambios
+    -mismo tipo `FrecuenciaObservada` ya usado por AE-7 y por
+    `distribucion_pares_impares` (la versión numérica ya
+    validada, Etapa Y)."""
+    cantidad_numeros = parametros["cantidad_numeros"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, cantidad_numeros, rango_min, rango_max,
+    )
+    return calcular_distribucion_pares_impares_colorloto(historico.pares, cantidad_numeros)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -959,6 +1029,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "repeticiones_entre_sorteos_colorloto": _Receta(
         calcular=_calcular_repeticiones_entre_sorteos_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "distribucion_pares_impares_colorloto": _Receta(
+        calcular=_calcular_distribucion_pares_impares_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }
