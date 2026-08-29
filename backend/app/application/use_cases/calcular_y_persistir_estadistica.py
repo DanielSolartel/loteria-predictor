@@ -51,6 +51,7 @@ from app.application.estadisticas.motor.repeticiones import (
 )
 from app.application.estadisticas.motor.distribuciones import (
     calcular_distribucion_altos_bajos,
+    calcular_distribucion_altos_bajos_colorloto,
     calcular_distribucion_pares_impares,
     calcular_distribucion_pares_impares_colorloto,
 )
@@ -971,6 +972,64 @@ def _calcular_distribucion_pares_impares_colorloto(
     return calcular_distribucion_pares_impares_colorloto(historico.pares, cantidad_numeros)
 
 
+def _calcular_distribucion_altos_bajos_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Reutiliza calcular_distribucion_altos_bajos_colorloto
+    directamente, sin reimplementar nada ni modificar el motor
+    (Etapa AE-9). Mismo envoltorio `_HistoricoColorLoto` y misma
+    validación defensiva compartida con AE-1 a AE-8 -no se
+    duplica ninguna regla.
+
+    Firma real del motor: `calcular_distribucion_altos_bajos_colorloto
+    (resultados, rango_min, rango_max, cantidad_balotas,
+    hasta_numero_sorteo=None)` -exactamente 4 argumentos
+    posicionales efectivos, NUNCA `hasta_numero_sorteo`: el
+    orquestador YA filtró `historico.pares` por el corte antes de
+    llegar aquí, mismo precedente exacto ya establecido por las
+    ocho recetas anteriores de ColorLoto.
+
+    A DIFERENCIA de `_calcular_distribucion_pares_impares_colorloto`
+    (Etapa AE-8), aquí `rango_min`/`rango_max` SÍ forman parte de
+    `parametros` -confirmado por auditoría que el resultado de
+    esta métrica SÍ depende materialmente del rango: el motor
+    calcula `corte = _punto_de_corte_altos_bajos(rango_min,
+    rango_max)` y clasifica cada número como "bajo" (`n <=
+    corte`) o "alto" según ese umbral -dos ejecuciones con rangos
+    distintos producirían resultados distintos con el mismo
+    histórico. AE-8 fue la EXCEPCIÓN (su motor de paridad nunca
+    recibe rango), no la regla general: el patrón correcto,
+    confirmado contra las identidades reales de AE-4/AE-6/AE-7,
+    es incluir el rango en `parametros` siempre que el motor lo
+    reciba como argumento -mismo criterio aquí.
+
+    El motor ignora el color por completo (`for n, _ in r.pares`,
+    confirmado por lectura directa) -por eso esta receta nunca
+    deriva `colores_vigentes` ni incluye el marcador de política
+    en `parametros`: un cambio de paleta no puede alterar el
+    resultado matemático de esta métrica.
+
+    `valor` en cada fila serializada es la cantidad de NÚMEROS
+    BAJOS del sorteo (`n <= corte`, confirmado citando el bloque
+    exacto del motor en la auditoría) -para el rango real 1..7 el
+    corte es 3: bajos={1,2,3}, altos={4,5,6,7}. Multiplicidad
+    preservada: una aparición repetida vuelve a contar. La
+    traducción a "cantidad_altos"/etiquetas compuestas vive
+    exclusivamente en el View Model, nunca aquí ni en el motor.
+
+    Reutiliza `_serializar_frecuencia_observada` sin cambios
+    -mismo tipo `FrecuenciaObservada` ya usado por AE-7/AE-8 y
+    por `distribucion_altos_bajos` (la versión numérica ya
+    validada, Etapa Z)."""
+    rango_min = parametros["rango_min"]
+    rango_max = parametros["rango_max"]
+    cantidad_numeros = parametros["cantidad_numeros"]
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, cantidad_numeros, rango_min, rango_max,
+    )
+    return calcular_distribucion_altos_bajos_colorloto(historico.pares, rango_min, rango_max, cantidad_numeros)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1033,6 +1092,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "distribucion_pares_impares_colorloto": _Receta(
         calcular=_calcular_distribucion_pares_impares_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "distribucion_altos_bajos_colorloto": _Receta(
+        calcular=_calcular_distribucion_altos_bajos_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

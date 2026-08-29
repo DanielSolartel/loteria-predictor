@@ -924,10 +924,10 @@ class TestDistribucionParesImparesRouterYManejoDeErrores:
         """La validación de Query(ge=1) es un mecanismo separado
         (nativo de FastAPI, RequestValidationError) -no relacionado
         con _STATUS_POR_EXCEPCION ni con esta corrección; se confirma
-        que la firma de las 17 rutas (9 numéricas + 8 de ColorLoto,
-        Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8) sigue intacta."""
+        que la firma de las 18 rutas (9 numéricas + 9 de ColorLoto,
+        Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8/AE-9) sigue intacta."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 17
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 18
 
     def test_manejar_error_dominio_no_duplicado_para_500(self):
         """No se agregó un handler nuevo -el mecanismo genérico de
@@ -1762,7 +1762,7 @@ class TestColorLotoAislamientoDeSlugs:
 
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         rutas_en_orden = re.findall(r'@router\.get\("([^"]+)"\)', codigo_fuente)
-        assert len(rutas_en_orden) == 17
+        assert len(rutas_en_orden) == 18
 
         def compilar_como_starlette(path):
             patron = re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", path)
@@ -1775,29 +1775,31 @@ class TestColorLotoAislamientoDeSlugs:
                     return patron, m.groupdict()
             return None, None
 
-        # Las ocho URLs dedicadas de ColorLoto (Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8)
+        # Las nueve URLs dedicadas de ColorLoto (Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8/AE-9)
         # deben resolver a SUS PROPIAS rutas, sin ningun grupo de
         # captura (match literal exacto) -confirma que los handlers
-        # dedicados de atrasos-numeros, repeticiones-entre-sorteos y
-        # distribucion-pares-impares son ALCANZABLES, no interceptados
-        # por su ruta generica homonima (colision real en los TRES
-        # casos, mismo sufijo exacto, a diferencia de frecuencia-colores/
-        # frecuencia-pares-numero-color/atrasos-colores/atrasos-pares-numero-color).
-        for sufijo in ("frecuencia-numeros", "frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-numeros", "atrasos-colores", "atrasos-pares-numero-color", "repeticiones-entre-sorteos", "distribucion-pares-impares"):
+        # dedicados de atrasos-numeros, repeticiones-entre-sorteos,
+        # distribucion-pares-impares y distribucion-altos-bajos son
+        # ALCANZABLES, no interceptados por su ruta generica homonima
+        # (colision real en los CUATRO casos, mismo sufijo exacto, a
+        # diferencia de frecuencia-colores/frecuencia-pares-numero-color/
+        # atrasos-colores/atrasos-pares-numero-color).
+        for sufijo in ("frecuencia-numeros", "frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-numeros", "atrasos-colores", "atrasos-pares-numero-color", "repeticiones-entre-sorteos", "distribucion-pares-impares", "distribucion-altos-bajos"):
             patron, grupos = primera_ruta_que_matchea(f"/estadisticas/colorloto/{sufijo}")
             assert patron == f"/estadisticas/colorloto/{sufijo}"
             assert grupos == {}
 
         # Las rutas numericas existentes deben seguir resolviendo a
         # la ruta generica correspondiente, con juego_slug capturado
-        # correctamente -confirmando que el reordenamiento de AE-8 NO
+        # correctamente -confirmando que el reordenamiento de AE-9 NO
         # rompio ninguna de las 9 rutas numericas previas, INCLUIDA
-        # atrasos-numeros, repeticiones-entre-sorteos y
-        # distribucion-pares-impares genericas (las mas sensibles,
-        # por compartir sufijo exacto con ColorLoto) -Baloto en
-        # particular sigue resolviendo correctamente a la generica.
+        # atrasos-numeros, repeticiones-entre-sorteos,
+        # distribucion-pares-impares y distribucion-altos-bajos
+        # genericas (las mas sensibles, por compartir sufijo exacto
+        # con ColorLoto) -Baloto en particular sigue resolviendo
+        # correctamente a la generica.
         for slug in ("baloto", "baloto-revancha", "miloto"):
-            for sufijo in ("frecuencia-numeros", "atrasos-numeros", "repeticiones-entre-sorteos", "distribucion-pares-impares"):
+            for sufijo in ("frecuencia-numeros", "atrasos-numeros", "repeticiones-entre-sorteos", "distribucion-pares-impares", "distribucion-altos-bajos"):
                 patron, grupos = primera_ruta_que_matchea(f"/estadisticas/{slug}/{sufijo}")
                 assert patron == f"/estadisticas/{{juego_slug}}/{sufijo}"
                 assert grupos == {"juego_slug": slug}
@@ -1887,14 +1889,14 @@ class TestColorLotoAislamientoDeSlugs:
         intentar leer has_superballot de ColorLotoGame."""
         assert resolver_codigo("colorloto") is None
 
-    def test_diecisiete_rutas_totales_nueve_genericas_mas_ocho_colorloto(self):
+    def test_dieciocho_rutas_totales_nueve_genericas_mas_nueve_colorloto(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 17
+        assert codigo_fuente.count("@router.get(") == 18
         assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 9
 
-    def test_diecisiete_query_totales(self):
+    def test_dieciocho_query_totales(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 17
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 18
 
     def test_no_construye_gamefactory_ni_llama_has_superballot_para_colorloto(self):
         """El docstring del handler EXPLICA en prosa que no usa estos
@@ -2617,9 +2619,9 @@ class TestColorLotoNavegacionCuatroMetricas:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert contenido.count("hasta_numero_sorteo") >= 4
 
-    def test_partial_tiene_exactamente_ocho_items_de_navegacion(self):
+    def test_partial_tiene_exactamente_nueve_items_de_navegacion(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
-        assert contenido.count('<li class="nav-item">') == 8
+        assert contenido.count('<li class="nav-item">') == 9
 
 
 # =====================================================================
@@ -3475,3 +3477,235 @@ class TestColorLotoNavegacionOchoPestanas:
     def test_corte_preservado_al_alternar_entre_las_ocho(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert contenido.count("hasta_numero_sorteo") >= 8
+
+
+# =====================================================================
+# Etapa AE-9: novena visualización descriptiva de ColorLoto -
+# distribución de números bajos y altos -router/VM/template/navegación.
+# =====================================================================
+
+class TestColorLotoDistribucionAltosBajosRuta:
+    def test_ruta_dedicada_registrada(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/colorloto/distribucion-altos-bajos")' in codigo_fuente
+
+    def test_ruta_registrada_antes_de_la_generica_homonima(self):
+        """Requisito obligatorio del contrato -no verificacion
+        opcional: ambas rutas comparten exactamente el mismo
+        sufijo, confirmado como colision real en la auditoria
+        previa a esta implementacion."""
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice_literal = codigo_fuente.index('@router.get("/estadisticas/colorloto/distribucion-altos-bajos")')
+        indice_generica = codigo_fuente.index('@router.get("/estadisticas/{juego_slug}/distribucion-altos-bajos")')
+        assert indice_literal < indice_generica
+
+    def test_no_conectada_a_juegos_numericos(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('def distribucion_altos_bajos_colorloto(')
+        fin_docstring = codigo_fuente.index('"""', codigo_fuente.index('"""', indice) + 3) + 3
+        fin_handler = codigo_fuente.index('@router.get(', fin_docstring)
+        cuerpo_ejecutable = codigo_fuente[fin_docstring:fin_handler]
+        assert "SLUG_A_CODIGO" not in cuerpo_ejecutable
+        assert "GameFactory" not in cuerpo_ejecutable
+        assert 'obtener_por_codigo("COLORLOTO")' in cuerpo_ejecutable
+
+    def test_ruta_invalida_sigue_devolviendo_404(self):
+        assert resolver_codigo("colorloto") is None
+
+    def test_baloto_generico_sigue_presente_y_no_se_elimino(self):
+        """La ruta generica de Baloto para esta metrica NO es un
+        caso incompatible: existe legitimamente para los 3 juegos
+        numericos y debe seguir funcionando sin ninguna
+        interferencia de la nueva ruta literal de ColorLoto."""
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/{juego_slug}/distribucion-altos-bajos")' in codigo_fuente
+
+    def test_parametros_metrica_con_tres_claves_sin_marcador(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('tipo_estadistica="distribucion_altos_bajos_colorloto"')
+        bloque = codigo_fuente[indice:indice + 400]
+        assert '"rango_min": juego.rango_min' in bloque
+        assert '"rango_max": juego.rango_max' in bloque
+        assert '"cantidad_numeros": juego.cantidad_numeros' in bloque
+        assert "POLITICA_UNIVERSO_COLORES_ACTUAL" not in bloque
+
+
+class TestColorLotoDistribucionAltosBajosVM:
+    def _juego(self):
+        return Juego(id=uuid4(), codigo="COLORLOTO", nombre="ColorLoto", rango_min=1, rango_max=7, cantidad_numeros=6, tiene_superbalota=False, superbalota_min=None, superbalota_max=None, tiene_color=True, permite_repeticion=True, activo=True)
+
+    def _fake_est(self, filas):
+        class FakeEst:
+            def __init__(self, filas):
+                self.resultado = {"filas": filas}
+                self.hasta_numero_sorteo = None
+                self.calculado_en = None
+        return FakeEst(filas)
+
+    def _filas_base(self, total_sorteos=10):
+        return [{"valor": str(n), "apariciones": (n % 3), "total_sorteos": total_sorteos, "frecuencia_relativa": (n % 3) / total_sorteos} for n in range(7)]
+
+    def test_siete_filas_orden_cero_a_seis(self):
+        from app.api.web.view_models import distribucion_altos_bajos_colorloto_a_vm
+        vm = distribucion_altos_bajos_colorloto_a_vm(self._fake_est(self._filas_base()), 1, 7, 6, self._juego())
+        assert len(vm["filas"]) == 7
+        assert [f["cantidad_bajos"] for f in vm["filas"]] == list(range(7))
+
+    def test_punto_de_corte_y_franjas_dominio_real(self):
+        from app.api.web.view_models import distribucion_altos_bajos_colorloto_a_vm
+        vm = distribucion_altos_bajos_colorloto_a_vm(self._fake_est(self._filas_base()), 1, 7, 6, self._juego())
+        assert vm["punto_de_corte"] == 3
+        assert vm["franja_bajos_texto"] == "1-3"
+        assert vm["franja_altos_texto"] == "4-7"
+
+    def test_cantidad_altos_derivada_correctamente(self):
+        from app.api.web.view_models import distribucion_altos_bajos_colorloto_a_vm
+        vm = distribucion_altos_bajos_colorloto_a_vm(self._fake_est(self._filas_base()), 1, 7, 6, self._juego())
+        for fila in vm["filas"]:
+            assert fila["cantidad_altos"] == 6 - fila["cantidad_bajos"]
+
+    def test_etiqueta_singular_plural_correcta(self):
+        from app.api.web.view_models import distribucion_altos_bajos_colorloto_a_vm
+        vm = distribucion_altos_bajos_colorloto_a_vm(self._fake_est(self._filas_base()), 1, 7, 6, self._juego())
+        assert vm["filas"][0]["etiqueta"] == "0 bajos / 6 altos"
+        assert vm["filas"][1]["etiqueta"] == "1 bajo / 5 altos"
+        assert vm["filas"][3]["etiqueta"] == "3 bajos / 3 altos"
+
+    def test_cero_real_sin_none_ni_nd_en_filas(self):
+        from app.api.web.view_models import distribucion_altos_bajos_colorloto_a_vm
+        vm = distribucion_altos_bajos_colorloto_a_vm(self._fake_est(self._filas_base()), 1, 7, 6, self._juego())
+        for fila in vm["filas"]:
+            assert fila["apariciones"] is not None
+            assert isinstance(fila["apariciones"], int)
+
+    def test_denominador_es_total_sorteos_no_transiciones(self):
+        from app.api.web.view_models import distribucion_altos_bajos_colorloto_a_vm
+        vm = distribucion_altos_bajos_colorloto_a_vm(self._fake_est(self._filas_base(total_sorteos=42)), 1, 7, 6, self._juego())
+        assert vm["total_sorteos"] == 42
+        assert "total_transiciones" not in vm
+
+    def test_historico_vacio_composicion_nd(self):
+        from app.api.web.view_models import distribucion_altos_bajos_colorloto_a_vm
+        vm = distribucion_altos_bajos_colorloto_a_vm(self._fake_est([]), 1, 7, 6, self._juego())
+        assert vm["total_sorteos"] == 0
+        assert vm["composicion_mas_frecuente"] is None
+
+    def test_vm_nunca_lee_ni_deriva_color(self):
+        """Verificacion precisa: excluye el propio nombre de la
+        funcion/helper (que termina en "colorloto", conteniendo
+        la subcadena "color" sin relacion con la paleta) y busca
+        solo patrones que SI indicarian lectura real de color:
+        acceso a un campo de codigo/color de un par, o el helper
+        de color hexadecimal ya usado por el resto de VMs de
+        ColorLoto."""
+        import inspect
+        from app.api.web import view_models
+        codigo_fuente = inspect.getsource(view_models.distribucion_altos_bajos_colorloto_a_vm)
+        fin_docstring = codigo_fuente.index('"""', codigo_fuente.index('"""') + 3) + 3
+        cuerpo_ejecutable = codigo_fuente[fin_docstring:]
+        assert "_color_hex_seguro" not in cuerpo_ejecutable
+        assert "f[\"codigo\"]" not in cuerpo_ejecutable
+        assert "colores_vigentes" not in cuerpo_ejecutable
+
+    def test_vm_no_llama_motor_ni_repositorios(self):
+        import inspect
+        from app.api.web import view_models
+        codigo_fuente = inspect.getsource(view_models.distribucion_altos_bajos_colorloto_a_vm)
+        assert "calcular_distribucion_altos_bajos_colorloto" not in codigo_fuente
+        assert "repository" not in codigo_fuente.lower()
+
+    def test_vm_reutiliza_punto_de_corte_generico_sin_duplicar(self):
+        import inspect
+        from app.api.web import view_models
+        codigo_fuente = inspect.getsource(view_models.distribucion_altos_bajos_colorloto_a_vm)
+        assert "_punto_de_corte_altos_bajos_vm(" in codigo_fuente
+
+
+class TestColorLotoDistribucionAltosBajosTemplate:
+    _TEMPLATE = "app/templates/estadisticas/distribucion_altos_bajos_colorloto.html"
+
+    def test_template_existe_chartjs_local_sin_cdn(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "/static/vendor/chartjs/chart.umd.min.js" in contenido
+        assert "cdnjs.cloudflare.com" not in contenido
+
+    def test_exactamente_un_canvas_height_180(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert contenido.count("<canvas") == 1
+        assert 'height="180"' in contenido
+
+    def test_sin_safe(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "|safe" not in contenido
+
+    def test_tojson_y_json_parse_presentes(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "| tojson" in contenido
+        assert "JSON.parse" in contenido
+
+    def test_muestra_sorteos_analizados(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "Sorteos analizados" in contenido
+
+    def test_estado_sin_datos_exacto(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "No hay sorteos de ColorLoto disponibles todavía para calcular esta distribución." in contenido
+
+    def test_explica_bajo_alto_corte_y_multiplicidad(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "bajo" in contenido.lower()
+        assert "alto" in contenido.lower()
+        assert "repetido" in contenido.lower()
+
+    def test_control_de_corte_reutilizado(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "partials/control_corte_temporal.html" in contenido
+
+    def test_navegacion_colorloto_incluida(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "partials/navegacion_colorloto.html" in contenido
+
+    def test_tabla_completa_con_columnas_inequivocas(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "Números bajos (" in contenido
+        assert "Números altos (" in contenido
+
+
+class TestColorLotoNavegacionNuevePestanas:
+    def test_partial_navegacion_incluye_las_nueve_metricas(self):
+        contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
+        assert "frecuencia-numeros" in contenido
+        assert "frecuencia-colores" in contenido
+        assert "frecuencia-pares-numero-color" in contenido
+        assert "atrasos-numeros" in contenido
+        assert "atrasos-colores" in contenido
+        assert "atrasos-pares-numero-color" in contenido
+        assert "repeticiones-entre-sorteos" in contenido
+        assert "distribucion-pares-impares" in contenido
+        assert "distribucion-altos-bajos" in contenido
+
+    def test_los_nueve_templates_incluyen_la_navegacion(self):
+        for archivo in ("frecuencia_numeros_colorloto.html", "frecuencia_colores_colorloto.html", "frecuencia_pares_colorloto.html", "atrasos_numeros_colorloto.html", "atrasos_colores_colorloto.html", "atrasos_pares_colorloto.html", "repeticiones_entre_sorteos_colorloto.html", "distribucion_pares_impares_colorloto.html", "distribucion_altos_bajos_colorloto.html"):
+            contenido = Path(f"app/templates/estadisticas/{archivo}").read_text(encoding="utf-8")
+            assert "navegacion_colorloto.html" in contenido
+
+    def test_pagina_activa_marcada_en_los_nueve_handlers(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '"pagina_colorloto_activa": "frecuencia-numeros"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "frecuencia-colores"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "frecuencia-pares-numero-color"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "atrasos-numeros"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "atrasos-colores"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "atrasos-pares-numero-color"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "repeticiones-entre-sorteos"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "distribucion-pares-impares"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "distribucion-altos-bajos"' in codigo_fuente
+
+    def test_navegacion_numerica_9_9_8_sigue_intacta(self):
+        for slug, esperado in (("baloto", 9), ("baloto-revancha", 9), ("miloto", 8)):
+            nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
+            assert len(nav["metricas_nav"]) == esperado, slug
+
+    def test_corte_preservado_al_alternar_entre_las_nueve(self):
+        contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
+        assert contenido.count("hasta_numero_sorteo") >= 9

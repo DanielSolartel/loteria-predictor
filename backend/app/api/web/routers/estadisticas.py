@@ -40,6 +40,7 @@ from app.api.web.view_models import (
     atrasos_pares_colorloto_a_vm,
     repeticiones_entre_sorteos_colorloto_a_vm,
     distribucion_pares_impares_colorloto_a_vm,
+    distribucion_altos_bajos_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -615,6 +616,79 @@ def distribucion_pares_impares_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/distribucion_pares_impares_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/distribucion-altos-bajos")
+def distribucion_altos_bajos_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-9: novena visualización descriptiva de ColorLoto
+    -cuántos de los 6 números de las balotas de cada sorteo son
+    bajos (1..3, para el rango real 1..7), ignorando color por
+    completo. Reutiliza `calcular_distribucion_altos_bajos_colorloto`
+    sin modificarlo.
+
+    Ruta registrada OBLIGATORIAMENTE antes de la ruta genérica
+    homonima `/estadisticas/{juego_slug}/distribucion-altos-bajos`
+    -ambas comparten exactamente el mismo sufijo; si el orden
+    fuera incorrecto, Starlette capturaria esta URL con el
+    handler generico (`juego_slug='colorloto'`), que devolveria
+    un 404 controlado via `_resolver_codigo` en vez de alcanzar
+    este handler dedicado -mismo defecto critico ya corregido
+    para atrasos-numeros/repeticiones-entre-sorteos/distribucion-pares-impares
+    (Etapas AE-4/AE-7/AE-8). La ruta generica de Baloto
+    (`/estadisticas/baloto/distribucion-altos-bajos`) sigue
+    intacta y respondiendo 200, sin ninguna interferencia.
+
+    Identidad de cache con TRES claves (`rango_min`, `rango_max`,
+    `cantidad_numeros`), sin marcador de politica de colores: a
+    diferencia de AE-8 (paridad, que no depende del rango), el
+    umbral bajos/altos de esta metrica SI depende materialmente
+    de `rango_min`/`rango_max` -confirmado en la auditoria y su
+    adenda correctiva- por lo que ambos forman parte obligatoria
+    de la identidad. El motor ignora el color por completo, por
+    eso el marcador de politica queda excluido."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/distribucion-altos-bajos",
+        "pagina_colorloto_activa": "distribucion-altos-bajos",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_altos_bajos_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="distribucion_altos_bajos_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "rango_min": juego.rango_min, "rango_max": juego.rango_max, "cantidad_numeros": juego.cantidad_numeros,
+        },
+    )
+
+    vm = distribucion_altos_bajos_colorloto_a_vm(resultado, juego.rango_min, juego.rango_max, juego.cantidad_numeros, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/distribucion_altos_bajos_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

@@ -972,6 +972,96 @@ def distribucion_pares_impares_colorloto_a_vm(estadistica, cantidad_numeros: int
     }
 
 
+def _etiqueta_altos_bajos_colorloto(cantidad_bajos: int, cantidad_numeros: int) -> str:
+    """Singular/plural correcto para bajos/altos por separado
+    -mismo patrón exacto ya usado en `_etiqueta_composicion`
+    (pares/impares) y `_etiqueta_inferior_superior` (numérico),
+    pero con la terminología "bajos"/"altos" exacta exigida por
+    el contrato de esta etapa -deliberadamente distinta del
+    helper numérico `_etiqueta_inferior_superior`, que usa
+    "inferior"/"superior", para que la etiqueta coincida con el
+    propio nombre de la métrica (`distribucion_altos_bajos`)."""
+    cantidad_altos = cantidad_numeros - cantidad_bajos
+    texto_bajos = "1 bajo" if cantidad_bajos == 1 else f"{cantidad_bajos} bajos"
+    texto_altos = "1 alto" if cantidad_altos == 1 else f"{cantidad_altos} altos"
+    return f"{texto_bajos} / {texto_altos}"
+
+
+def distribucion_altos_bajos_colorloto_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_altos_bajos_colorloto" (Etapa AE-9) en un view
+    model listo para la plantilla. Nunca recalcula la métrica,
+    nunca consulta repositorios, nunca llama al motor.
+
+    Reutiliza `_punto_de_corte_altos_bajos_vm` sin duplicarla
+    -esa función YA es genérica (no específica de ningún juego,
+    solo depende de `rango_min`/`rango_max`) y YA está verificada
+    exhaustivamente contra la fórmula real del motor. Para el
+    rango real 1..7 el corte es 3: bajos={1,2,3}, altos={4,5,6,7}.
+
+    `valor` en el resultado ya serializado es la cantidad de
+    NÚMEROS BAJOS del sorteo (confirmado por auditoría citando
+    el bloque exacto del motor: `sum(1 for n, _ in r.pares if n
+    <= corte)`) -este VM la expone como `cantidad_bajos` y
+    deriva `cantidad_altos = cantidad_numeros - cantidad_bajos`,
+    con una etiqueta compuesta explícita (`_etiqueta_altos_bajos_colorloto`)
+    para que ninguna vista quede con una categoría ambigua
+    "0".."6" sin contexto. A diferencia del resto de VMs de
+    ColorLoto, esta función nunca lee ni deriva ningún color: la
+    métrica ignora el color por completo.
+
+    "Composición más frecuente": mismo criterio ya validado -si
+    no hay datos (`total_sorteos == 0`), `None` (el template debe
+    mostrar "N/D"); con datos, incluye TODAS las categorías
+    empatadas en el máximo, nunca elige una arbitraria."""
+    punto_de_corte = _punto_de_corte_altos_bajos_vm(rango_min, rango_max)
+
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_bajos = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_bajos": cantidad_bajos,
+            "cantidad_altos": cantidad_numeros - cantidad_bajos,
+            "etiqueta": _etiqueta_altos_bajos_colorloto(cantidad_bajos, cantidad_numeros),
+            "apariciones": f["apariciones"],
+            "total_sorteos": f["total_sorteos"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "punto_de_corte": punto_de_corte,
+        "franja_bajos_texto": f"{rango_min}-{punto_de_corte}",
+        "franja_altos_texto": f"{punto_de_corte + 1}-{rango_max}",
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
