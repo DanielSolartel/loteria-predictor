@@ -47,4 +47,10 @@
             Distribución pares/impares
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'distribucion-altos-bajos' %}active{% endif %}"
+           href="/estadisticas/colorloto/distribucion-altos-bajos{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Distribución altos/bajos
+        </a>
+    </li>
 </ul>
