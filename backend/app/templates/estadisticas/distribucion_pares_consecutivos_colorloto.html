@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Distribución de pares consecutivos — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-bar-chart-fill me-2"></i>Distribución de pares consecutivos — ColorLoto</h3>
+<p class="text-muted">Cuenta, en cada sorteo, cuántos pares de números adyacentes (diferencia exactamente 1, por ejemplo 4 y 5) hay entre los números de las balotas -el color se ignora por completo. Los números repetidos dentro del mismo sorteo se deduplican antes de contar: una misma cifra que aparece en dos colores distintos cuenta una sola vez para esta métrica. En una secuencia como 1, 2, 3 se cuentan dos pares consecutivos: (1,2) y (2,3); los pares pueden solaparse.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de ColorLoto disponibles todavía para calcular esta distribución.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta distribución describe composiciones observadas en sorteos pasados. No indica que una cantidad de pares consecutivos esté "pendiente" ni que sea más o menos probable en el próximo sorteo: cada sorteo es un evento independiente, y esta cifra es descriptiva, no predictiva.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Balotas por sorteo</div>
+            <div class="fw-bold">{{ estadistica.cantidad_numeros }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Cantidad histórica más frecuente</div>
+            {% if estadistica.composicion_mas_frecuente %}
+            <div class="fw-bold">
+                {% for etiqueta in estadistica.composicion_mas_frecuente %}
+                    {{ etiqueta }}{% if not loop.last %}<br>{% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="fw-bold">N/D</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-distribucion-pares-consecutivos-colorloto" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por cantidad de pares consecutivos</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Pares consecutivos</th>
+                    <th>Sorteos</th>
+                    <th>Frecuencia relativa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.cantidad_pares_consecutivos }}</td>
+                    <td>{{ fila.apariciones }}</td>
+                    <td>{{ "%.2f"|format(fila.frecuencia_relativa * 100) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-distribucion-pares-consecutivos-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "porcentajes": estadistica.chart_porcentajes, "apariciones": estadistica.chart_apariciones} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-distribucion-pares-consecutivos-colorloto").textContent);
+        const ctx = document.getElementById("grafica-distribucion-pares-consecutivos-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: "Frecuencia relativa",
+                    data: datos.porcentajes,
+                    backgroundColor: "rgba(120, 120, 120, 0.6)",
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const porcentaje = item.raw.toFixed(1) + "%";
+                                const sorteos = datos.apariciones[item.dataIndex];
+                                return `${porcentaje} (${sorteos} sorteo${sorteos === 1 ? "" : "s"})`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: { title: { display: true, text: "Cantidad de pares consecutivos" } },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Frecuencia relativa" },
+                        ticks: { callback: (valor) => valor + "%" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}
