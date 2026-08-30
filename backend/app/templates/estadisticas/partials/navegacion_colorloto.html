@@ -53,4 +53,10 @@
             Distribución altos/bajos
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'maximo-repeticion-color' %}active{% endif %}"
+           href="/estadisticas/colorloto/maximo-repeticion-color{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Máximo color repetido
+        </a>
+    </li>
 </ul>

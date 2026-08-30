@@ -41,6 +41,7 @@ from app.api.web.view_models import (
     repeticiones_entre_sorteos_colorloto_a_vm,
     distribucion_pares_impares_colorloto_a_vm,
     distribucion_altos_bajos_colorloto_a_vm,
+    maximo_repeticion_color_por_sorteo_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -689,6 +690,70 @@ def distribucion_altos_bajos_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/distribucion_altos_bajos_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/maximo-repeticion-color")
+def maximo_repeticion_color_por_sorteo_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-10 (PROVISIONAL): décima visualización
+    descriptiva de ColorLoto -para cada sorteo, la mayor
+    cantidad de balotas que comparten un mismo color. Reutiliza
+    `calcular_maximo_repeticion_color_por_sorteo` sin
+    modificarlo.
+
+    Literal y exclusiva de ColorLoto -sin ruta genérica
+    equivalente, ya que ningún juego numérico tiene el
+    concepto de color; confirmado con simulación exacta del
+    algoritmo de Starlette en la auditoría previa que ninguna
+    ruta genérica actual la captura. Se registra agrupada junto
+    a las demás rutas literales de ColorLoto por coherencia con
+    el patrón establecido, no por necesidad de resolver una
+    colisión real.
+
+    Identidad de cache con UNA SOLA clave (`cantidad_numeros`),
+    sin rango ni marcador de politica de colores -decisión M1,
+    justificada con evidencia directa en la auditoría y su
+    adenda correctiva."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/maximo-repeticion-color",
+        "pagina_colorloto_activa": "maximo-repeticion-color",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/maximo_repeticion_color_por_sorteo_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="maximo_repeticion_color_por_sorteo_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"cantidad_numeros": juego.cantidad_numeros},
+    )
+
+    vm = maximo_repeticion_color_por_sorteo_colorloto_a_vm(resultado, juego.cantidad_numeros, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/maximo_repeticion_color_por_sorteo_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

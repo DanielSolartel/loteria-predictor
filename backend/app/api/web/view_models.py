@@ -1062,6 +1062,78 @@ def distribucion_altos_bajos_colorloto_a_vm(
     }
 
 
+def _etiqueta_maximo_repeticion_color(cantidad_balotas_del_color: int) -> str:
+    """Singular/plural correcto -mismo patrón exacto ya usado
+    por `_etiqueta_composicion`/`_etiqueta_altos_bajos_colorloto`.
+    Nunca menciona un código de color específico: el motor no
+    reporta CUÁL color alcanzó el máximo, solo CUÁNTAS balotas
+    lo alcanzaron -los empates entre colores no forman parte
+    del resultado."""
+    if cantidad_balotas_del_color == 1:
+        return "1 balota del mismo color"
+    return f"{cantidad_balotas_del_color} balotas del mismo color"
+
+
+def maximo_repeticion_color_por_sorteo_colorloto_a_vm(estadistica, cantidad_numeros: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "maximo_repeticion_color_por_sorteo_colorloto" (Etapa AE-10,
+    PROVISIONAL) en un view model listo para la plantilla. Nunca
+    recalcula la métrica, nunca consulta repositorios, nunca
+    llama al motor -mismo patrón exacto ya validado por AE-8/AE-9.
+
+    Categorías 1..6 (nunca 0, confirmado por el propio motor):
+    `valor` es la mayor cantidad de balotas que compartieron un
+    mismo color dentro del sorteo. A diferencia del resto de VMs
+    de ColorLoto, esta función lee el resultado de una métrica
+    que SÍ depende del color internamente (Counter en el motor),
+    pero el propio VM nunca deriva ni expone ningún código,
+    nombre o valor hexadecimal de color -el resultado serializado
+    ya es puramente numérico (multiplicidad máxima), sin ninguna
+    identidad de color que traducir.
+
+    "Composición más frecuente": mismo criterio ya validado -si
+    no hay datos (`total_sorteos == 0`), `None` (el template debe
+    mostrar "N/D"); con datos, incluye TODAS las categorías
+    empatadas en el máximo, nunca elige una arbitraria."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        maximo_repetido = int(f["valor"])
+        filas_presentacion.append({
+            "maximo_repetido": maximo_repetido,
+            "etiqueta": _etiqueta_maximo_repeticion_color(maximo_repetido),
+            "etiqueta_corta": f"{maximo_repetido} balota" if maximo_repetido == 1 else f"{maximo_repetido} balotas",
+            "apariciones": f["apariciones"],
+            "total_sorteos": f["total_sorteos"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo_apariciones = max(f["apariciones"] for f in filas_presentacion)
+        if maximo_apariciones > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo_apariciones
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
+        "chart_labels": [f["etiqueta_corta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
