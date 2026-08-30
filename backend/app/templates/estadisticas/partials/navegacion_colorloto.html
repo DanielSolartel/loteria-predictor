@@ -59,4 +59,10 @@
             Máximo color repetido
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'distribucion-pares-consecutivos' %}active{% endif %}"
+           href="/estadisticas/colorloto/distribucion-pares-consecutivos{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Pares consecutivos
+        </a>
+    </li>
 </ul>

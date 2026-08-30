@@ -1134,6 +1134,71 @@ def maximo_repeticion_color_por_sorteo_colorloto_a_vm(estadistica, cantidad_nume
     }
 
 
+def distribucion_pares_consecutivos_colorloto_a_vm(estadistica, cantidad_numeros: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_pares_consecutivos_colorloto" (Etapa AE-11,
+    PROVISIONAL) en un view model listo para la plantilla. Nunca
+    recalcula la métrica, nunca consulta repositorios, nunca llama
+    al motor -mismo patrón exacto ya validado por AE-8/AE-9/AE-10.
+
+    Categorías 0..5 (nunca 0..6 -un par consecutivo requiere DOS
+    números distintos, así que con 6 balotas el máximo teórico de
+    pares es 5, confirmado por el propio motor y verificado con
+    caracterización real en la auditoría y su adenda correctiva).
+    Reutiliza el helper `_etiqueta_pares_consecutivos` ya existente
+    (Etapa AA, sin duplicar su lógica de singular/plural) -mismo
+    criterio textual ya usado por la versión numérica de esta misma
+    métrica (`distribucion_pares_consecutivos_a_vm`).
+
+    "Composición más frecuente" sigue el mismo criterio ya validado
+    cuatro veces (AE-7/AE-8/AE-9/AE-10): excluye sin datos, incluye
+    TODAS las categorías empatadas en el máximo, nunca elige una
+    arbitraria. `apariciones=0` se presenta como cero real, nunca
+    como `None` ni "N/D" -el template decide su propia presentación
+    a partir de este valor entero real.
+
+    No expone ni deriva ningún código, nombre o valor hexadecimal de
+    color -el resultado serializado ya es puramente numérico
+    (cantidad de pares consecutivos), sin ninguna identidad de color
+    que traducir; el motor que produce este resultado ignora el
+    color por completo."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_pares = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_pares_consecutivos": cantidad_pares,
+            "etiqueta": _etiqueta_pares_consecutivos(cantidad_pares),
+            "apariciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
