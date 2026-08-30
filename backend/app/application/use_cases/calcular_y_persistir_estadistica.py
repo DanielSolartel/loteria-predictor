@@ -54,6 +54,7 @@ from app.application.estadisticas.motor.distribuciones import (
     calcular_distribucion_altos_bajos_colorloto,
     calcular_distribucion_pares_impares,
     calcular_distribucion_pares_impares_colorloto,
+    calcular_maximo_repeticion_color_por_sorteo,
 )
 from app.application.estadisticas.motor.frecuencia import (
     calcular_frecuencia_colores,
@@ -586,28 +587,39 @@ POLITICA_UNIVERSO_COLORES_ACTUAL = "vigentes_ultimo_sorteo_mas_observados_v1"
 """Marcador ESTÁTICO de la política de universo temporal de colores
 vigente (Etapa AE-4P) -no una huella dinámica del catálogo, nunca
 cambia cuando se agrega o retira un color. Se incluye dentro de
-`parametros_metrica` de las dos recetas que dependen del universo de
-colores (`frecuencia_colores_colorloto`, `frecuencia_pares_colorloto`)
+`parametros_metrica` de toda receta cuyo MOTOR reciba
+`colores_vigentes` como argumento y por tanto CONSTRUYA su universo
+de categorías a partir de ese catálogo -no un número fijo de
+recetas (evitar codificar aquí una cifra que quedaría desactualizada
+cada vez que una etapa nueva la adopte o no la necesite; verificar
+contra el código real de cada receta, no contra este docstring),
 para forzar, mediante el propio mecanismo de `parametros_hash`
 (`calcular_parametros_hash`, SHA-256 del diccionario completo de
 parámetros), que cualquier fila persistida ANTES de este marcador
 -calculada bajo la política anterior (catálogo completo sin
 filtrar)- deje de coincidir con la identidad de caché actual: su
-`parametros_hash` guardado corresponde a un diccionario de solo 3
-claves, mientras que `buscar_vigente` ahora calcula el hash sobre un
-diccionario de 4 claves -distinto por construcción, sin necesitar
-ningún SQL manual ni migración. Las filas antiguas NO se borran: sólo
-dejan de ser encontradas por `WHERE parametros_hash == hash_calculado`,
-permaneciendo en la tabla como registros huérfanos e inofensivos
-hasta que la próxima invalidación natural (por sorteo o por mutación
-de paleta) las alcance.
+`parametros_hash` guardado corresponde a un diccionario sin esta
+clave, mientras que `buscar_vigente` ahora calcula el hash sobre un
+diccionario que SÍ la incluye -distinto por construcción, sin
+necesitar ningún SQL manual ni migración. Las filas antiguas NO se
+borran: sólo dejan de ser encontradas por
+`WHERE parametros_hash == hash_calculado`, permaneciendo en la tabla
+como registros huérfanos e inofensivos hasta que la próxima
+invalidación natural (por sorteo o por mutación de paleta) las
+alcance.
 
-NUNCA se agrega a `frecuencia_numeros_colorloto` ni
-`atrasos_numeros_colorloto` -ninguna de las dos depende del universo
-de colores (ignoran el color por completo), así que agregar el
-marcador ahí sería ruido sin ningún propósito real, y además
-invalidaría innecesariamente cachés que la corrección de AE-4P nunca
-tocó.
+NUNCA se agrega a una receta cuyo motor ignore el color por completo
+(p.ej. `frecuencia_numeros_colorloto`, `atrasos_numeros_colorloto`,
+`repeticiones_entre_sorteos_colorloto`, `distribucion_pares_impares_colorloto`,
+`distribucion_altos_bajos_colorloto`) ni a una receta que SÍ lea o
+compare colores observados pero nunca construya categorías desde el
+catálogo (p.ej. `maximo_repeticion_color_por_sorteo_colorloto`,
+Etapa AE-10 -sus categorías 1..6 dependen únicamente de
+`cantidad_numeros` y de la multiplicidad de colores efectivamente
+observados en cada sorteo, nunca de qué colores están vigentes) -en
+ninguno de estos casos agregar el marcador tendría ningún
+propósito real, y además invalidaría innecesariamente cachés que
+ningún cambio de política de universo de colores puede afectar.
 
 Nunca reemplaza la invalidación explícita de paleta ya implementada
 en `GestionarPaletaColores` -ambos mecanismos son complementarios: el
@@ -1030,6 +1042,75 @@ def _calcular_distribucion_altos_bajos_colorloto(
     return calcular_distribucion_altos_bajos_colorloto(historico.pares, rango_min, rango_max, cantidad_numeros)
 
 
+def _calcular_maximo_repeticion_color_por_sorteo_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Reutiliza calcular_maximo_repeticion_color_por_sorteo
+    directamente, sin reimplementar nada ni modificar el motor
+    (Etapa AE-10, provisional). Mismo envoltorio
+    `_HistoricoColorLoto` y misma validación defensiva
+    compartida con AE-1 a AE-9 -no se duplica ninguna regla.
+
+    Firma real del motor: `calcular_maximo_repeticion_color_por_sorteo
+    (resultados, cantidad_balotas, hasta_numero_sorteo=None)`
+    -exactamente 2 argumentos posicionales efectivos, NUNCA
+    `hasta_numero_sorteo`: el orquestador YA filtró
+    `historico.pares` por el corte antes de llegar aquí, mismo
+    precedente exacto ya establecido por las nueve recetas
+    anteriores de ColorLoto.
+
+    Decisión M1 (identidad de una sola clave, sin
+    `politica_universo_colores`), confirmada con evidencia
+    directa en la auditoría y su adenda correctiva: el motor
+    SI lee y compara identidades de color (`Counter(c for _, c
+    in r.pares)`), pero NUNCA construye su universo de
+    categorías desde `colores_vigentes` -las categorías son
+    siempre 1..6, derivadas únicamente de `cantidad_balotas`,
+    nunca del catálogo o de la política de colores vigentes.
+    El marcador `POLITICA_UNIVERSO_COLORES_ACTUAL` pertenece
+    exclusivamente a las recetas que reciben `colores_vigentes`
+    como argumento del motor y por tanto construyen categorías
+    desde el catálogo -no es el caso aquí. El resultado nunca
+    muestra el código del color que alcanzó el máximo (solo la
+    multiplicidad), y una mutación de paleta sobre un color no
+    observado en ningún sorteo histórico no puede alterar el
+    resultado matemático -el motor opera exclusivamente sobre
+    `r.pares`, el histórico de sorteos ya registrado e
+    inmutable salvo edición explícita del sorteo (que ya
+    invalida la caché por el mecanismo existente de
+    `desde_numero_sorteo`). La invalidación conservadora y
+    agnóstica de `GestionarPaletaColores` seguirá cubriendo
+    esta receta automáticamente, sin ningún cambio de código,
+    aunque matemáticamente no sea necesaria para colores no
+    observados.
+
+    La validación de integridad previa sí necesita rango (para
+    confirmar que cada número del histórico está dentro de
+    1..7) -usa `_RANGO_REAL_COLORLOTO`, la constante del rango
+    real y fijo del juego, en vez de leerlo de `parametros`:
+    así la identidad de caché persistida queda exactamente
+    `{"cantidad_numeros": 6}`, sin `rango_min`/`rango_max` -el
+    resultado nunca depende de esos límites, solo la
+    validación de integridad los necesita. Mismo patrón
+    exacto ya usado por AE-8.
+
+    `total_sorteos` es la cantidad de SORTEOS analizados, nunca
+    transiciones -esa semántica pertenece exclusivamente a
+    AE-7. Multiplicidad preservada mediante el `Counter` ya
+    existente en el motor -confirmado con ejecución real en la
+    adenda correctiva que un sorteo con 3 balotas del mismo
+    color se clasifica en la categoría "3".
+
+    Reutiliza `_serializar_frecuencia_observada` sin cambios
+    -mismo tipo `FrecuenciaObservada` ya usado por AE-7/AE-8/AE-9."""
+    cantidad_numeros = parametros["cantidad_numeros"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, cantidad_numeros, rango_min, rango_max,
+    )
+    return calcular_maximo_repeticion_color_por_sorteo(historico.pares, cantidad_numeros)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1096,6 +1177,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "distribucion_altos_bajos_colorloto": _Receta(
         calcular=_calcular_distribucion_altos_bajos_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "maximo_repeticion_color_por_sorteo_colorloto": _Receta(
+        calcular=_calcular_maximo_repeticion_color_por_sorteo_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }
