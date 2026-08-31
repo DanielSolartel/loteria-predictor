@@ -45,6 +45,7 @@ from app.application.estadisticas.motor.consecutivos import (
     calcular_distribucion_pares_consecutivos,
     calcular_distribucion_pares_consecutivos_colorloto,
     calcular_distribucion_racha_maxima,
+    calcular_distribucion_racha_maxima_colorloto,
 )
 from app.application.estadisticas.motor.repeticiones import (
     calcular_repeticiones_entre_sorteos,
@@ -1181,6 +1182,75 @@ def _calcular_distribucion_pares_consecutivos_colorloto(
     )
 
 
+def _calcular_distribucion_racha_maxima_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Reutiliza calcular_distribucion_racha_maxima_colorloto
+    directamente, sin reimplementar nada ni modificar el motor
+    (Etapa AE-12, PROVISIONAL). Mismo envoltorio `_HistoricoColorLoto`
+    y misma validación defensiva compartida con AE-1 a AE-11 -no se
+    duplica ninguna regla.
+
+    Firma real del motor: `calcular_distribucion_racha_maxima_colorloto
+    (resultados, rango_min, rango_max, cantidad_balotas,
+    hasta_numero_sorteo=None)` -exactamente 4 argumentos
+    posicionales efectivos, NUNCA `hasta_numero_sorteo`: el
+    orquestador YA filtró `historico.pares` por el corte antes de
+    llegar aquí, mismo precedente exacto ya establecido por las once
+    recetas anteriores de ColorLoto.
+
+    Igual que `_calcular_distribucion_pares_consecutivos_colorloto`
+    (Etapa AE-11), este motor SÍ exige `rango_min`/`rango_max` como
+    posicionales (llama a `_validar_rango` internamente sobre los
+    números del histórico) -pero, confirmado por lectura directa del
+    cuerpo del motor y por caracterización real en la auditoría de
+    AE-12, esos límites se usan EXCLUSIVAMENTE para esa validación
+    interna: `conteos` (la longitud de la racha máxima por sorteo) y
+    la llamada a `tabular_conteo_por_sorteo` (categorías 1..cantidad_balotas
+    y denominador) nunca los leen. Dos ejecuciones con rangos
+    distintos sobre el mismo histórico producen exactamente el mismo
+    resultado -por eso `_RANGO_REAL_COLORLOTO` (la constante del
+    rango real y fijo del juego, mismo patrón ya usado por
+    AE-8/AE-10/AE-11) alimenta tanto la validación de integridad como
+    esta llamada al motor, y NUNCA se lee
+    `parametros["rango_min"]`/`parametros["rango_max"]` -así la
+    identidad de caché persistida queda exactamente
+    `{"cantidad_numeros": 6}`, decisión M1, sin rango.
+
+    El motor ignora el color por completo (`for n, _ in r.pares` en
+    ambos puntos donde itera sobre los pares, confirmado por lectura
+    directa) -por eso esta receta nunca deriva `colores_vigentes` ni
+    incluye el marcador `POLITICA_UNIVERSO_COLORES_ACTUAL` en
+    `parametros`: un cambio de paleta no puede alterar el resultado
+    matemático de esta métrica. Mismo criterio ya aplicado por
+    AE-7/AE-8/AE-9/AE-10/AE-11.
+
+    `valor` en cada fila serializada es la LONGITUD DE LA RACHA MÁS
+    LARGA del sorteo (números adyacentes con diferencia exactamente
+    1, medidos sobre los números deduplicados de las balotas),
+    tabulada en las categorías fijas 1..6 (nunca la categoría "0": el
+    propio motor filtra `f.valor != "0"` porque un sorteo con al
+    menos un número siempre tiene una racha de longitud mínima 1,
+    confirmado por el propio motor y verificado con caracterización
+    real en la auditoría). El motor DEDUPLICA los números de cada
+    sorteo antes de buscar rachas (`{n for n, _ in r.pares}`,
+    confirmado por lectura directa) -una repetición del mismo número
+    con colores distintos nunca alarga artificialmente una racha;
+    este comportamiento ya estaba implementado en el motor puro desde
+    antes de esta etapa, AE-12 no lo modifica ni lo reimplementa.
+
+    Reutiliza `_serializar_frecuencia_observada` sin cambios -mismo
+    tipo `FrecuenciaObservada` ya usado por AE-7/AE-8/AE-9/AE-10/AE-11."""
+    cantidad_numeros = parametros["cantidad_numeros"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, cantidad_numeros, rango_min, rango_max,
+    )
+    return calcular_distribucion_racha_maxima_colorloto(
+        historico.pares, rango_min, rango_max, cantidad_numeros,
+    )
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1255,6 +1325,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "distribucion_pares_consecutivos_colorloto": _Receta(
         calcular=_calcular_distribucion_pares_consecutivos_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "distribucion_racha_maxima_colorloto": _Receta(
+        calcular=_calcular_distribucion_racha_maxima_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }
