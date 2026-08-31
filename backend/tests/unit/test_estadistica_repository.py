@@ -2068,3 +2068,118 @@ class TestUpsertConDistribucionParesConsecutivosColorlotoEtapaAE11:
         repo.guardar(_entrada(juego_id, tipo="distribucion_pares_consecutivos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "pares_consecutivos"}))
         assert repo.buscar_vigente(juego_id, "distribucion_altos_bajos_colorloto", None, params_altos_bajos).resultado == {"v": "altos_bajos"}
         assert repo.buscar_vigente(juego_id, "distribucion_pares_consecutivos_colorloto", None, self._PARAMS).resultado == {"v": "pares_consecutivos"}
+
+
+class TestUpsertConDistribucionRachaMaximaColorlotoEtapaAE12:
+    """Mismo patrón exacto ya usado para las 20 recetas anteriores
+    (Etapa AE-12, PROVISIONAL). Identidad con SOLO UNA clave -decisión
+    M1, confirmada con evidencia directa (caracterización real) en la
+    auditoría de AE-12: el motor exige `rango_min`/`rango_max` como
+    argumentos posicionales, pero únicamente para su validación
+    interna -la longitud de la racha máxima, las categorías y el
+    denominador nunca dependen de esos límites, así que la identidad
+    de caché persistida es idéntica a la de AE-8/AE-10/AE-11
+    (`{"cantidad_numeros": 6}`), sin rango y sin política de universo
+    de colores (el motor ignora el color por completo)."""
+
+    _PARAMS = {"cantidad_numeros": 6}
+
+    def test_parametros_exactos_con_una_sola_clave(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS
+        assert set(entrada.parametros.keys()) == {"cantidad_numeros"}
+        assert "rango_min" not in entrada.parametros
+        assert "rango_max" not in entrada.parametros
+        assert "politica_universo_colores" not in entrada.parametros
+
+    def test_ausencia_de_corte_en_parametros(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS, resultado={"v": "x"}))
+        assert "hasta_numero_sorteo" not in entrada.parametros
+
+    def test_identidad_por_juego(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_a, juego_b = uuid4(), uuid4()
+        repo.guardar(_entrada(juego_a, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "juego_a"}))
+        repo.guardar(_entrada(juego_b, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "juego_b"}))
+        a = repo.buscar_vigente(juego_a, "distribucion_racha_maxima_colorloto", None, self._PARAMS)
+        b = repo.buscar_vigente(juego_b, "distribucion_racha_maxima_colorloto", None, self._PARAMS)
+        assert a.resultado == {"v": "juego_a"}
+        assert b.resultado == {"v": "juego_b"}
+
+    def test_hit_de_cache_con_identidad_identica(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "cacheado"}))
+        vigente = repo.buscar_vigente(juego_id, "distribucion_racha_maxima_colorloto", None, dict(self._PARAMS))
+        assert vigente is not None
+        assert vigente.id == primera.id
+
+    def test_miss_de_cache_si_cambia_cantidad_numeros(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "x"}))
+        otros_params = {"cantidad_numeros": 5}
+        vigente = repo.buscar_vigente(juego_id, "distribucion_racha_maxima_colorloto", None, otros_params)
+        assert vigente is None
+
+    def test_historico_completo_y_corte_son_caches_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "distribucion_racha_maxima_colorloto", None, self._PARAMS)
+        corte = repo.buscar_vigente(juego_id, "distribucion_racha_maxima_colorloto", 100, self._PARAMS)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_recalcular_invalidado_no_duplica_upsert(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "distribucion_racha_maxima_colorloto")
+        assert total == 1
+
+    def test_invalidacion_por_sorteo_existente_aplicable_sin_cambios(self):
+        """Confirma que invalidar_por_juego (mecanismo agnóstico ya
+        existente, sin ningún cambio de código) cubre la nueva
+        receta automáticamente -mismo mecanismo usado por
+        RegistrarSorteo/EditarSorteo/EliminarSorteo, ninguno de
+        los cuales fue modificado."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "x"}))
+        afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        assert afectadas == 1
+        assert repo.buscar_vigente(juego_id, "distribucion_racha_maxima_colorloto", None, self._PARAMS) is None
+
+    def test_invalidacion_conservadora_por_paleta_cubre_ae12_sin_cambios(self):
+        """GestionarPaletaColores llama exactamente al mismo
+        invalidar_por_juego(juego_id, desde_numero_sorteo=0),
+        agnóstico de tipo_estadistica -cubre esta receta
+        automáticamente sin ningún cambio de código, aunque
+        matemáticamente no sea necesario (el motor ignora el color
+        por completo, decisión M1). No se duplica la cobertura ya
+        existente de GestionarPaletaColores mismo -solo se
+        confirma aquí que el mecanismo agnóstico alcanza también
+        a esta receta específica."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "x"}))
+        afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        assert afectadas == 1
+
+    def test_no_colisiona_con_cache_de_otras_metricas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_altos_bajos = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6}
+        repo.guardar(_entrada(juego_id, tipo="distribucion_altos_bajos_colorloto", hasta_numero_sorteo=None, parametros=params_altos_bajos, resultado={"v": "altos_bajos"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_racha_maxima_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "racha_maxima"}))
+        assert repo.buscar_vigente(juego_id, "distribucion_altos_bajos_colorloto", None, params_altos_bajos).resultado == {"v": "altos_bajos"}
+        assert repo.buscar_vigente(juego_id, "distribucion_racha_maxima_colorloto", None, self._PARAMS).resultado == {"v": "racha_maxima"}

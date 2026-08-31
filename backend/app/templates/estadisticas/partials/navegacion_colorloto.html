@@ -65,4 +65,10 @@
             Pares consecutivos
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'distribucion-racha-maxima' %}active{% endif %}"
+           href="/estadisticas/colorloto/distribucion-racha-maxima{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Racha máxima
+        </a>
+    </li>
 </ul>

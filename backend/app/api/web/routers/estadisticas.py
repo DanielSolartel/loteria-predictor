@@ -43,6 +43,7 @@ from app.api.web.view_models import (
     distribucion_altos_bajos_colorloto_a_vm,
     maximo_repeticion_color_por_sorteo_colorloto_a_vm,
     distribucion_pares_consecutivos_colorloto_a_vm,
+    distribucion_racha_maxima_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -828,6 +829,80 @@ def distribucion_pares_consecutivos_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/distribucion_pares_consecutivos_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/distribucion-racha-maxima")
+def distribucion_racha_maxima_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-12 (PROVISIONAL): duodécima visualización descriptiva
+    de ColorLoto -para cada sorteo, la longitud de su mayor racha de
+    números consecutivos (diferencia exactamente 1), ignorando el
+    color por completo. Reutiliza
+    `calcular_distribucion_racha_maxima_colorloto` sin modificarlo.
+
+    Ruta registrada OBLIGATORIAMENTE antes de la ruta genérica
+    homónima `/estadisticas/{juego_slug}/distribucion-racha-maxima`
+    -ambas comparten exactamente el mismo sufijo; si el orden fuera
+    incorrecto, Starlette capturaría esta URL con el handler genérico
+    (`juego_slug='colorloto'`), que devolvería un 404 controlado vía
+    `_resolver_codigo` en vez de alcanzar este handler dedicado -mismo
+    defecto crítico ya corregido para frecuencia-numeros/atrasos-numeros/
+    repeticiones-entre-sorteos/distribucion-pares-impares/distribucion-altos-bajos/
+    distribucion-pares-consecutivos (Etapas AE-1/AE-4/AE-7/AE-8/AE-9/AE-11),
+    confirmado con simulación del motor real de enrutamiento de
+    Starlette en la auditoría de AE-12. La ruta genérica de Baloto/Baloto
+    Revancha/MiLoto (`/estadisticas/{baloto,baloto-revancha,miloto}/distribucion-racha-maxima`)
+    sigue intacta y respondiendo 200, sin ninguna interferencia.
+
+    Identidad de caché con UNA SOLA clave (`cantidad_numeros`), sin
+    rango ni marcador de política de colores -decisión M1, confirmada
+    con evidencia directa (caracterización real) en la auditoría de
+    AE-12: el motor exige `rango_min`/`rango_max` como argumentos
+    posicionales, pero únicamente para su validación interna -la
+    longitud de la racha máxima y las categorías nunca dependen de
+    esos límites. Categorías fijas 1..6, sin la categoría 0 (el
+    propio motor la filtra: un sorteo con al menos un número siempre
+    tiene una racha de longitud mínima 1)."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/distribucion-racha-maxima",
+        "pagina_colorloto_activa": "distribucion-racha-maxima",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_racha_maxima_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="distribucion_racha_maxima_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"cantidad_numeros": juego.cantidad_numeros},
+    )
+
+    vm = distribucion_racha_maxima_colorloto_a_vm(resultado, juego.cantidad_numeros, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/distribucion_racha_maxima_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 
