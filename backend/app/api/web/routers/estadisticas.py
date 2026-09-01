@@ -44,6 +44,7 @@ from app.api.web.view_models import (
     maximo_repeticion_color_por_sorteo_colorloto_a_vm,
     distribucion_pares_consecutivos_colorloto_a_vm,
     distribucion_racha_maxima_colorloto_a_vm,
+    distribucion_trios_consecutivos_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -903,6 +904,86 @@ def distribucion_racha_maxima_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/distribucion_racha_maxima_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/distribucion-trios-consecutivos")
+def distribucion_trios_consecutivos_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-13 (PROVISIONAL): decimotercera visualización
+    descriptiva de ColorLoto -para cada sorteo, cuántos tríos de
+    números consecutivos (tres números adyacentes con diferencia
+    exactamente 1 entre cada par) hay entre los números de las
+    balotas, ignorando el color por completo. Reutiliza
+    `calcular_distribucion_trios_consecutivos_colorloto` sin
+    modificarlo.
+
+    A DIFERENCIA de las Etapas AE-1/AE-4/AE-7/AE-8/AE-9/AE-11/AE-12,
+    esta ruta NO colisiona con ninguna ruta genérica: confirmado por
+    la auditoría de AE-13 (simulación con el motor real de
+    `starlette.routing.Route`) que
+    `/estadisticas/{juego_slug}/distribucion-trios-consecutivos` NO
+    existe entre las rutas registradas -ni el motor numérico
+    (`calcular_distribucion_trios_consecutivos`) fue nunca conectado
+    a `_CATALOGO` para ningún juego numérico. Baloto,
+    `baloto-revancha` y MiLoto con este sufijo deben seguir
+    resolviendo a 404 nativo de FastAPI (ausencia de match), sin
+    ningún handler que los intercepte. Se registra igualmente dentro
+    del bloque literal de ColorLoto, antes del bloque genérico, por
+    prudencia y consistencia con el patrón establecido -mismo
+    criterio ya aplicado a `maximo-repeticion-color` (Etapa AE-10),
+    la única otra ruta de ColorLoto sin colisión real.
+
+    Identidad de caché con UNA SOLA clave (`cantidad_numeros`), sin
+    rango ni marcador de política de colores -decisión M1, confirmada
+    con evidencia directa (caracterización real) en la auditoría de
+    AE-13: el motor exige `rango_min`/`rango_max` como argumentos
+    posicionales, pero únicamente para su validación interna -la
+    cantidad de tríos consecutivos y las categorías nunca dependen de
+    esos límites. Categorías fijas 0..4 (a diferencia de AE-12, esta
+    métrica SÍ incluye la categoría 0: un sorteo sin ningún trío
+    consecutivo es un valor real y posible, mismo criterio que AE-11).
+    Los tríos superpuestos se cuentan por separado -una racha de
+    longitud 4 aporta 2 tríos, confirmado por caracterización real."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/distribucion-trios-consecutivos",
+        "pagina_colorloto_activa": "distribucion-trios-consecutivos",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_trios_consecutivos_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="distribucion_trios_consecutivos_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"cantidad_numeros": juego.cantidad_numeros},
+    )
+
+    vm = distribucion_trios_consecutivos_colorloto_a_vm(resultado, juego.cantidad_numeros, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/distribucion_trios_consecutivos_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

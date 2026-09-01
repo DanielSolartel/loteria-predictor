@@ -927,7 +927,7 @@ class TestDistribucionParesImparesRouterYManejoDeErrores:
         que la firma de las 20 rutas (9 numéricas + 11 de ColorLoto,
         Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8/AE-9/AE-10/AE-11) sigue intacta."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 21
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 22
 
     def test_manejar_error_dominio_no_duplicado_para_500(self):
         """No se agregó un handler nuevo -el mecanismo genérico de
@@ -1762,7 +1762,7 @@ class TestColorLotoAislamientoDeSlugs:
 
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         rutas_en_orden = re.findall(r'@router\.get\("([^"]+)"\)', codigo_fuente)
-        assert len(rutas_en_orden) == 21
+        assert len(rutas_en_orden) == 22
 
         def compilar_como_starlette(path):
             patron = re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", path)
@@ -1775,7 +1775,7 @@ class TestColorLotoAislamientoDeSlugs:
                     return patron, m.groupdict()
             return None, None
 
-        # Las doce URLs dedicadas de ColorLoto (Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8/AE-9/AE-10/AE-11/AE-12)
+        # Las trece URLs dedicadas de ColorLoto (Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8/AE-9/AE-10/AE-11/AE-12/AE-13)
         # deben resolver a SUS PROPIAS rutas, sin ningun grupo de
         # captura (match literal exacto) -confirma que los handlers
         # dedicados de atrasos-numeros, repeticiones-entre-sorteos,
@@ -1785,38 +1785,45 @@ class TestColorLotoAislamientoDeSlugs:
         # homonima (colision real en los SEIS casos, mismo sufijo
         # exacto, a diferencia de frecuencia-colores/frecuencia-pares-numero-color/
         # atrasos-colores/atrasos-pares-numero-color). maximo-repeticion-color
-        # (AE-10) NO tiene ninguna ruta generica equivalente -confirmado
-        # abajo que Baloto/Revancha simplemente no resuelven a nada.
-        for sufijo in ("frecuencia-numeros", "frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-numeros", "atrasos-colores", "atrasos-pares-numero-color", "repeticiones-entre-sorteos", "distribucion-pares-impares", "distribucion-altos-bajos", "maximo-repeticion-color", "distribucion-pares-consecutivos", "distribucion-racha-maxima"):
+        # (AE-10) y distribucion-trios-consecutivos (AE-13) NO tienen
+        # ninguna ruta generica equivalente -confirmado abajo que
+        # Baloto/Revancha simplemente no resuelven a nada para ninguna
+        # de las dos.
+        for sufijo in ("frecuencia-numeros", "frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-numeros", "atrasos-colores", "atrasos-pares-numero-color", "repeticiones-entre-sorteos", "distribucion-pares-impares", "distribucion-altos-bajos", "maximo-repeticion-color", "distribucion-pares-consecutivos", "distribucion-racha-maxima", "distribucion-trios-consecutivos"):
             patron, grupos = primera_ruta_que_matchea(f"/estadisticas/colorloto/{sufijo}")
             assert patron == f"/estadisticas/colorloto/{sufijo}"
             assert grupos == {}
 
         # Las rutas numericas existentes deben seguir resolviendo a
         # la ruta generica correspondiente, con juego_slug capturado
-        # correctamente -confirmando que el reordenamiento de AE-12 NO
+        # correctamente -confirmando que el reordenamiento de AE-13 NO
         # rompio ninguna de las 9 rutas numericas previas, INCLUIDA
         # atrasos-numeros, repeticiones-entre-sorteos,
         # distribucion-pares-impares, distribucion-altos-bajos,
         # distribucion-pares-consecutivos y distribucion-racha-maxima
         # genericas (las mas sensibles, por compartir sufijo exacto
         # con ColorLoto) -Baloto en particular sigue resolviendo
-        # correctamente a la generica.
+        # correctamente a la generica. distribucion-trios-consecutivos
+        # NO pertenece a este grupo -nunca hubo ruta generica para
+        # ella, ni siquiera para juegos numericos (confirmado en la
+        # auditoria de AE-13).
         for slug in ("baloto", "baloto-revancha", "miloto"):
             for sufijo in ("frecuencia-numeros", "atrasos-numeros", "repeticiones-entre-sorteos", "distribucion-pares-impares", "distribucion-altos-bajos", "distribucion-pares-consecutivos", "distribucion-racha-maxima"):
                 patron, grupos = primera_ruta_que_matchea(f"/estadisticas/{slug}/{sufijo}")
                 assert patron == f"/estadisticas/{{juego_slug}}/{sufijo}"
                 assert grupos == {"juego_slug": slug}
 
-        # maximo-repeticion-color (AE-10) NO tiene ruta generica
-        # equivalente -Baloto y Revancha deben quedar SIN ningun
-        # handler que los capture (404 real, no un handler generico
-        # mal dirigido) -confirmado con simulacion exacta en la
-        # auditoria previa, reconfirmado aqui.
+        # maximo-repeticion-color (AE-10) y distribucion-trios-consecutivos
+        # (AE-13) NO tienen ruta generica equivalente -Baloto y
+        # Revancha deben quedar SIN ningun handler que los capture
+        # (404 real, no un handler generico mal dirigido) -confirmado
+        # con simulacion exacta en la auditoria previa, reconfirmado
+        # aqui para ambos sufijos.
         for slug in ("baloto", "baloto-revancha"):
-            patron_col, grupos_col = primera_ruta_que_matchea(f"/estadisticas/{slug}/maximo-repeticion-color")
-            assert patron_col is None
-            assert grupos_col is None
+            for sufijo_sin_colision in ("maximo-repeticion-color", "distribucion-trios-consecutivos"):
+                patron_col, grupos_col = primera_ruta_que_matchea(f"/estadisticas/{slug}/{sufijo_sin_colision}")
+                assert patron_col is None
+                assert grupos_col is None
 
     def test_cuerpo_real_del_handler_atrasos_colorloto_produce_contenido_propio(self):
         """Complementa la simulación de enrutamiento: confirma por AST
@@ -1930,6 +1937,23 @@ class TestColorLotoAislamientoDeSlugs:
         )
         assert indice_racha_maxima_colorloto < indice_racha_maxima_generica
 
+    def test_ruta_trios_consecutivos_colorloto_sin_colision_generica(self):
+        """A DIFERENCIA de AE-1/AE-4/AE-7/AE-8/AE-9/AE-11/AE-12,
+        `distribucion-trios-consecutivos` (Etapa AE-13) NO colisiona
+        con ninguna ruta genérica -confirmado por la auditoría de
+        AE-13 (simulación con el motor real de
+        `starlette.routing.Route`) que
+        `/estadisticas/{juego_slug}/distribucion-trios-consecutivos`
+        no existe entre las rutas registradas, ni siquiera para el
+        motor numérico equivalente (`calcular_distribucion_trios_consecutivos`,
+        nunca conectado a `_CATALOGO`). Mismo caso que
+        `maximo-repeticion-color` (Etapa AE-10) -la ruta se registra
+        igualmente en el bloque literal de ColorLoto por prudencia y
+        consistencia, no por necesidad de evitar una colisión real."""
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/colorloto/distribucion-trios-consecutivos")' in codigo_fuente
+        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' not in codigo_fuente
+
     def test_metrica_incompatible_produce_404_nativo_no_attributeerror(self):
         """La ruta genérica `{juego_slug}` nunca reconoce "colorloto"
         como código válido (no está en SLUG_A_CODIGO) -por tanto
@@ -1941,12 +1965,12 @@ class TestColorLotoAislamientoDeSlugs:
 
     def test_veinte_rutas_totales_nueve_genericas_mas_once_colorloto(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 21
+        assert codigo_fuente.count("@router.get(") == 22
         assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 9
 
     def test_veinte_query_totales(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 21
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 22
 
     def test_no_construye_gamefactory_ni_llama_has_superballot_para_colorloto(self):
         """El docstring del handler EXPLICA en prosa que no usa estos
@@ -2669,9 +2693,9 @@ class TestColorLotoNavegacionCuatroMetricas:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert contenido.count("hasta_numero_sorteo") >= 4
 
-    def test_partial_tiene_exactamente_doce_items_de_navegacion(self):
+    def test_partial_tiene_exactamente_trece_items_de_navegacion(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
-        assert contenido.count('<li class="nav-item">') == 12
+        assert contenido.count('<li class="nav-item">') == 13
 
 
 # =====================================================================
@@ -4259,8 +4283,212 @@ class TestColorLotoDistribucionRachaMaximaTemplate:
         assert "partials/navegacion_colorloto.html" in contenido
 
 
-class TestColorLotoNavegacionDocePestanas:
-    def test_partial_navegacion_incluye_las_doce_metricas(self):
+class TestColorLotoDistribucionTriosConsecutivosRuta:
+    def test_ruta_dedicada_registrada(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/colorloto/distribucion-trios-consecutivos")' in codigo_fuente
+
+    def test_sin_ruta_generica_equivalente(self):
+        """A DIFERENCIA de AE-11/AE-12, esta métrica NO colisiona con
+        ninguna ruta genérica -confirmado por la auditoría de AE-13
+        que `/estadisticas/{juego_slug}/distribucion-trios-consecutivos`
+        no existe entre las rutas registradas, mismo caso que
+        `maximo-repeticion-color` (Etapa AE-10)."""
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' not in codigo_fuente
+
+    def test_no_conectada_a_juegos_numericos(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('def distribucion_trios_consecutivos_colorloto(')
+        fin_docstring = codigo_fuente.index('"""', codigo_fuente.index('"""', indice) + 3) + 3
+        fin_handler = codigo_fuente.index('@router.get(', fin_docstring)
+        cuerpo_ejecutable = codigo_fuente[fin_docstring:fin_handler]
+        assert "SLUG_A_CODIGO" not in cuerpo_ejecutable
+        assert "GameFactory" not in cuerpo_ejecutable
+        assert 'obtener_por_codigo("COLORLOTO")' in cuerpo_ejecutable
+
+    def test_ruta_invalida_sigue_devolviendo_404(self):
+        assert resolver_codigo("colorloto") is None
+
+    def test_parametros_metrica_con_una_sola_clave_sin_marcador(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('tipo_estadistica="distribucion_trios_consecutivos_colorloto"')
+        bloque = codigo_fuente[indice:indice + 300]
+        assert '"cantidad_numeros": juego.cantidad_numeros' in bloque
+        assert "rango_min" not in bloque
+        assert "rango_max" not in bloque
+        assert "POLITICA_UNIVERSO_COLORES_ACTUAL" not in bloque
+
+    def test_baloto_revancha_miloto_sin_handler_para_este_sufijo(self):
+        """Confirma que Baloto, `baloto-revancha` y MiLoto NO tienen
+        ningún handler para este sufijo -a diferencia de AE-11/AE-12,
+        donde sí existe una ruta genérica preexistente que debe
+        conservarse, aquí simplemente no hay ninguna ruta genérica
+        que pudiera colisionar ni conservarse: la única línea de
+        decorador `@router.get` con este sufijo es la literal de
+        ColorLoto, nunca una genérica `{juego_slug}`."""
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        lineas_decorador_con_sufijo = [
+            linea for linea in codigo_fuente.splitlines()
+            if linea.strip().startswith("@router.get(") and "distribucion-trios-consecutivos" in linea
+        ]
+        assert len(lineas_decorador_con_sufijo) == 1
+        assert "{juego_slug}" not in lineas_decorador_con_sufijo[0]
+
+    def test_ruta_literal_registrada_una_sola_vez(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert codigo_fuente.count('@router.get("/estadisticas/colorloto/distribucion-trios-consecutivos")') == 1
+
+
+class TestColorLotoDistribucionTriosConsecutivosVM:
+    def _juego(self):
+        return Juego(id=uuid4(), codigo="COLORLOTO", nombre="ColorLoto", rango_min=1, rango_max=7, cantidad_numeros=6, tiene_superbalota=False, superbalota_min=None, superbalota_max=None, tiene_color=True, permite_repeticion=True, activo=True)
+
+    def _fake_est(self, filas):
+        class FakeEst:
+            def __init__(self, filas):
+                self.resultado = {"filas": filas}
+                self.hasta_numero_sorteo = None
+                self.calculado_en = None
+        return FakeEst(filas)
+
+    def _filas_base(self, total_sorteos=10):
+        return [{"valor": str(n), "apariciones": (1 if n == 2 else 0), "total_sorteos": total_sorteos, "frecuencia_relativa": (0.1 if n == 2 else 0.0)} for n in range(0, 5)]
+
+    def test_cinco_filas_orden_cero_a_cuatro(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est(self._filas_base()), 6, self._juego())
+        assert len(vm["filas"]) == 5
+        assert [f["cantidad_trios_consecutivos"] for f in vm["filas"]] == [0, 1, 2, 3, 4]
+
+    def test_incluye_categoria_cero(self):
+        """A diferencia de AE-12 (racha máxima, que excluye la
+        categoría 0), esta métrica SÍ la incluye -mismo criterio que
+        `distribucion_pares_consecutivos_colorloto_a_vm` (Etapa
+        AE-11): un sorteo sin ningún trío consecutivo es un valor
+        real y posible."""
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est(self._filas_base()), 6, self._juego())
+        assert 0 in [f["cantidad_trios_consecutivos"] for f in vm["filas"]]
+
+    def test_etiqueta_singular_plural_correcta_reutiliza_helper_nuevo(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm, _etiqueta_trios_consecutivos
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est(self._filas_base()), 6, self._juego())
+        assert vm["filas"][0]["etiqueta"] == _etiqueta_trios_consecutivos(0) == "Sin tríos consecutivos"
+        assert vm["filas"][1]["etiqueta"] == _etiqueta_trios_consecutivos(1) == "1 trío consecutivo"
+        assert vm["filas"][2]["etiqueta"] == _etiqueta_trios_consecutivos(2) == "2 tríos consecutivos"
+
+    def test_clave_no_se_confunde_con_longitud_de_racha(self):
+        """Confirma que la clave expuesta es `cantidad_trios_consecutivos`,
+        nunca `longitud_racha` (clave de AE-12) ni `cantidad_pares_consecutivos`
+        (clave de AE-11) -tres semánticas distintas."""
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est(self._filas_base()), 6, self._juego())
+        assert "cantidad_trios_consecutivos" in vm["filas"][0]
+        assert "longitud_racha" not in vm["filas"][0]
+        assert "cantidad_pares_consecutivos" not in vm["filas"][0]
+
+    def test_apariciones_cero_se_presenta_como_cero_real(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est(self._filas_base()), 6, self._juego())
+        assert vm["filas"][0]["apariciones"] == 0
+        assert vm["filas"][0]["apariciones"] is not None
+
+    def test_denominador_es_total_sorteos_no_transiciones(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est(self._filas_base(total_sorteos=42)), 6, self._juego())
+        assert vm["total_sorteos"] == 42
+        assert "total_transiciones" not in vm
+
+    def test_historico_vacio_composicion_nd(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est([]), 6, self._juego())
+        assert vm["total_sorteos"] == 0
+        assert vm["composicion_mas_frecuente"] is None
+
+    def test_vm_nunca_expone_codigo_de_color(self):
+        import json
+        from app.api.web.view_models import distribucion_trios_consecutivos_colorloto_a_vm
+        vm = distribucion_trios_consecutivos_colorloto_a_vm(self._fake_est(self._filas_base()), 6, self._juego())
+        texto = json.dumps(vm)
+        for prohibido in ("ROJO", "AZUL", "VERDE", "NEGRO", "BLANCO", "AMARILLO"):
+            assert prohibido not in texto
+
+    def test_vm_no_llama_motor_ni_repositorios(self):
+        import inspect
+        from app.api.web import view_models
+        codigo_fuente = inspect.getsource(view_models.distribucion_trios_consecutivos_colorloto_a_vm)
+        assert "calcular_distribucion_trios_consecutivos_colorloto" not in codigo_fuente
+        assert "repository" not in codigo_fuente.lower()
+
+
+class TestColorLotoDistribucionTriosConsecutivosTemplate:
+    _TEMPLATE = "app/templates/estadisticas/distribucion_trios_consecutivos_colorloto.html"
+
+    def test_template_existe_chartjs_local_sin_cdn(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "/static/vendor/chartjs/chart.umd.min.js" in contenido
+        assert "cdnjs.cloudflare.com" not in contenido
+
+    def test_exactamente_un_canvas_height_180(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert contenido.count("<canvas") == 1
+        assert 'height="180"' in contenido
+
+    def test_sin_safe(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "|safe" not in contenido
+
+    def test_tojson_y_json_parse_presentes(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "| tojson" in contenido
+        assert "JSON.parse" in contenido
+
+    def test_muestra_sorteos_analizados(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "Sorteos analizados" in contenido
+
+    def test_estado_sin_datos_exacto(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "No hay sorteos de ColorLoto disponibles todavía para calcular esta distribución." in contenido
+
+    def test_explica_deduplicacion(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "deduplican" in contenido
+
+    def test_explica_diferencia_exactamente_uno(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "diferencia exactamente 1" in contenido
+
+    def test_explica_solapamiento_de_trios(self):
+        """Requisito específico de AE-13: el template debe aclarar
+        explícitamente que los tríos pueden solaparse, con el
+        ejemplo correcto 1-2-3-4 -> dos tríos."""
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "solapar" in contenido
+        assert "1-2-3-4" in contenido
+
+    def test_aviso_no_predictivo(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "descriptiva" in contenido
+        assert "no predictiva" in contenido
+
+    def test_sin_codigos_de_color_hex(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        for prohibido in ("ROJO", "AZUL", "VERDE", "NEGRO", "BLANCO", "AMARILLO"):
+            assert prohibido not in contenido
+
+    def test_control_de_corte_reutilizado(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "partials/control_corte_temporal.html" in contenido
+
+    def test_navegacion_colorloto_incluida(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "partials/navegacion_colorloto.html" in contenido
+
+
+class TestColorLotoNavegacionTrecePestanas:
+    def test_partial_navegacion_incluye_las_trece_metricas(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert "frecuencia-numeros" in contenido
         assert "frecuencia-colores" in contenido
@@ -4274,13 +4502,14 @@ class TestColorLotoNavegacionDocePestanas:
         assert "maximo-repeticion-color" in contenido
         assert "distribucion-pares-consecutivos" in contenido
         assert "distribucion-racha-maxima" in contenido
+        assert "distribucion-trios-consecutivos" in contenido
 
-    def test_los_doce_templates_incluyen_la_navegacion(self):
-        for archivo in ("frecuencia_numeros_colorloto.html", "frecuencia_colores_colorloto.html", "frecuencia_pares_colorloto.html", "atrasos_numeros_colorloto.html", "atrasos_colores_colorloto.html", "atrasos_pares_colorloto.html", "repeticiones_entre_sorteos_colorloto.html", "distribucion_pares_impares_colorloto.html", "distribucion_altos_bajos_colorloto.html", "maximo_repeticion_color_por_sorteo_colorloto.html", "distribucion_pares_consecutivos_colorloto.html", "distribucion_racha_maxima_colorloto.html"):
+    def test_los_trece_templates_incluyen_la_navegacion(self):
+        for archivo in ("frecuencia_numeros_colorloto.html", "frecuencia_colores_colorloto.html", "frecuencia_pares_colorloto.html", "atrasos_numeros_colorloto.html", "atrasos_colores_colorloto.html", "atrasos_pares_colorloto.html", "repeticiones_entre_sorteos_colorloto.html", "distribucion_pares_impares_colorloto.html", "distribucion_altos_bajos_colorloto.html", "maximo_repeticion_color_por_sorteo_colorloto.html", "distribucion_pares_consecutivos_colorloto.html", "distribucion_racha_maxima_colorloto.html", "distribucion_trios_consecutivos_colorloto.html"):
             contenido = Path(f"app/templates/estadisticas/{archivo}").read_text(encoding="utf-8")
             assert "navegacion_colorloto.html" in contenido
 
-    def test_pagina_activa_marcada_en_los_doce_handlers(self):
+    def test_pagina_activa_marcada_en_los_trece_handlers(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert '"pagina_colorloto_activa": "frecuencia-numeros"' in codigo_fuente
         assert '"pagina_colorloto_activa": "frecuencia-colores"' in codigo_fuente
@@ -4294,12 +4523,13 @@ class TestColorLotoNavegacionDocePestanas:
         assert '"pagina_colorloto_activa": "maximo-repeticion-color"' in codigo_fuente
         assert '"pagina_colorloto_activa": "distribucion-pares-consecutivos"' in codigo_fuente
         assert '"pagina_colorloto_activa": "distribucion-racha-maxima"' in codigo_fuente
+        assert '"pagina_colorloto_activa": "distribucion-trios-consecutivos"' in codigo_fuente
 
     def test_navegacion_numerica_9_9_8_sigue_intacta(self):
         for slug, esperado in (("baloto", 9), ("baloto-revancha", 9), ("miloto", 8)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
-    def test_corte_preservado_al_alternar_entre_las_doce(self):
+    def test_corte_preservado_al_alternar_entre_las_trece(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
-        assert contenido.count("hasta_numero_sorteo") >= 12
+        assert contenido.count("hasta_numero_sorteo") >= 13

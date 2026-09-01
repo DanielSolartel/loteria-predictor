@@ -311,6 +311,18 @@ def _etiqueta_racha_maxima(longitud: int) -> str:
     return "Racha de 1 número" if longitud == 1 else f"Racha de {longitud} números"
 
 
+def _etiqueta_trios_consecutivos(cantidad: int) -> str:
+    """Singular/plural correcto: 'Sin tríos consecutivos', '1 trío
+    consecutivo', '2 tríos consecutivos'... Nunca una etiqueta
+    ambigua como solo el número, y nunca confundida con "cantidad de
+    números consecutivos" (longitud de racha) ni con la etiqueta de
+    pares consecutivos -representan semánticas distintas: un trío
+    exige tres números adyacentes, no dos."""
+    if cantidad == 0:
+        return "Sin tríos consecutivos"
+    return "1 trío consecutivo" if cantidad == 1 else f"{cantidad} tríos consecutivos"
+
+
 def _etiqueta_repeticiones(cantidad: int) -> str:
     """Singular/plural correcto: '0 números repetidos', '1 número
     repetido', 'N números repetidos'."""
@@ -1260,6 +1272,79 @@ def distribucion_racha_maxima_colorloto_a_vm(estadistica, cantidad_numeros: int,
         "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
         "filas": filas_presentacion,
         "racha_mas_frecuente": racha_mas_frecuente,
+        "chart_labels": [f["etiqueta"] for f in filas_presentacion],
+        "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
+        "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
+    }
+
+
+def distribucion_trios_consecutivos_colorloto_a_vm(estadistica, cantidad_numeros: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_trios_consecutivos_colorloto" (Etapa AE-13,
+    PROVISIONAL) en un view model listo para la plantilla. Nunca
+    recalcula la métrica, nunca consulta repositorios, nunca llama
+    al motor -mismo patrón exacto ya validado por AE-8/AE-9/AE-10/AE-11/AE-12.
+
+    Categorías 0..4 (a diferencia de AE-12, esta métrica SÍ incluye
+    la categoría 0: un sorteo sin ningún trío consecutivo es un valor
+    real y posible -mismo criterio ya usado por
+    `distribucion_pares_consecutivos_colorloto_a_vm`, Etapa AE-11-,
+    nunca 0..6: un trío consecutivo requiere TRES números distintos,
+    así que con 6 balotas el máximo teórico es 4, confirmado por el
+    propio motor y verificado con caracterización real en la
+    auditoría de AE-13). Reutiliza el helper `_etiqueta_trios_consecutivos`
+    agregado en esta misma etapa (no existía precedente, ni siquiera
+    numérico, confirmado por la auditoría) sin duplicar lógica de
+    singular/plural en ningún otro punto del View Model. Clave
+    `cantidad_trios_consecutivos` (nunca `longitud_racha` ni
+    `cantidad_pares_consecutivos`) para no confundir "cantidad de
+    tríos" con "longitud de la racha máxima" ni con "cantidad de
+    pares consecutivos" -tres semánticas distintas ya presentes en
+    ColorLoto (AE-11, AE-12, AE-13).
+
+    "Composición más frecuente" sigue el mismo criterio ya validado
+    seis veces (AE-7/AE-8/AE-9/AE-10/AE-11/AE-12): excluye sin datos,
+    incluye TODAS las categorías empatadas en el máximo, nunca elige
+    una arbitraria. `apariciones=0` se presenta como cero real, nunca
+    como `None` ni "N/D" -el template decide su propia presentación
+    a partir de este valor entero real.
+
+    No expone ni deriva ningún código, nombre o valor hexadecimal de
+    color -el resultado serializado ya es puramente numérico
+    (cantidad de tríos consecutivos), sin ninguna identidad de color
+    que traducir; el motor que produce este resultado ignora el
+    color por completo."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        cantidad_trios = int(f["valor"])
+        filas_presentacion.append({
+            "cantidad_trios_consecutivos": cantidad_trios,
+            "etiqueta": _etiqueta_trios_consecutivos(cantidad_trios),
+            "apariciones": f["apariciones"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+        })
+
+    composicion_mas_frecuente = None
+    if total_sorteos > 0 and filas_presentacion:
+        maximo = max(f["apariciones"] for f in filas_presentacion)
+        if maximo > 0:
+            composicion_mas_frecuente = [
+                f["etiqueta"] for f in filas_presentacion if f["apariciones"] == maximo
+            ]
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "composicion_mas_frecuente": composicion_mas_frecuente,
         "chart_labels": [f["etiqueta"] for f in filas_presentacion],
         "chart_porcentajes": [f["frecuencia_relativa"] * 100 for f in filas_presentacion],
         "chart_apariciones": [f["apariciones"] for f in filas_presentacion],
