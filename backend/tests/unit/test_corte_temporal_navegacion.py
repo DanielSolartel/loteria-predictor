@@ -290,10 +290,10 @@ class TestRegresionEtapaX:
 # =====================================================================
 
 class TestValidacionDeCorteEnElRouter:
-    def test_las_veintiuna_rutas_usan_query_con_ge_1(self):
+    def test_las_veintidos_rutas_usan_query_con_ge_1(self):
         codigo_fuente = Path(_ROUTER).read_text(encoding="utf-8")
         ocurrencias = codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)")
-        assert ocurrencias == 21
+        assert ocurrencias == 22
 
     def test_solo_se_agrego_la_ruta_esperada_de_etapa_ac(self):
         codigo_fuente = Path(_ROUTER).read_text(encoding="utf-8")
