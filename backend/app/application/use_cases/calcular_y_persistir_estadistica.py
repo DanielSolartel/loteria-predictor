@@ -40,6 +40,7 @@ from app.application.estadisticas.motor.atrasos import (
     calcular_atrasos_numeros_colorloto,
     calcular_atrasos_pares_numero_color,
 )
+from app.application.estadisticas.motor.coocurrencia import calcular_coocurrencia_pares_colorloto
 from app.application.estadisticas.motor.corte_temporal import filtrar_por_corte_temporal
 from app.application.estadisticas.motor.consecutivos import (
     calcular_distribucion_pares_consecutivos,
@@ -68,7 +69,7 @@ from app.application.estadisticas.motor.frecuencia import (
     construir_tabla_frecuencia,
 )
 from app.application.estadisticas.tipos import (
-    FilaFrecuencia, FrecuenciaObservada, ResultadoColorLoto, ResultadoNumerico,
+    FilaFrecuencia, FrecuenciaObservada, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
 from app.application.exceptions import ResultadoHistoricoInconsistenteError, TipoEstadisticaNoSoportadoError
 from app.application.interfaces.color_repository import ColorRepository
@@ -491,10 +492,47 @@ def _serializar_atrasos(filas: list[AtrasoObservado]) -> dict:
     return {"filas": [dataclasses.asdict(f) for f in filas]}
 
 
+def _serializar_metrica_asociacion(filas: list[MetricaAsociacion]) -> dict:
+    """Serializador dedicado para `MetricaAsociacion` (Etapa AE-14,
+    PROVISIONAL) -primera conexión de este tipo en todo el proyecto,
+    ni siquiera para juegos numéricos. A diferencia de
+    `_serializar_frecuencia_observada`/`_serializar_atrasos`
+    (`dataclasses.asdict` directo, que dejaría `elementos` como una
+    lista de STRINGS, p. ej. `["1", "2"]`), aquí se convierte
+    explícitamente cada elemento a `int` -nunca se persiste como un
+    único string delimitado (p. ej. "1-2") que exigiría volver a
+    parsear con un separador para recuperar los números: una lista
+    JSON de enteros es inequívoca y numérica por construcción, sin
+    depender de ningún carácter separador. `frecuencia_esperada` y
+    `lift` se preservan tal cual -None se serializa como `null` (para
+    ColorLoto, siempre None: ver docstring de `motor/coocurrencia.py`
+    sobre por qué el modelo de repetición del dominio no está
+    verificado), nunca sustituidos por 0 -mismo criterio ya aplicado
+    en `_serializar_atrasos` para no inventar un valor de reemplazo:
+    0 sería un dato real distinto (lift=0 significaría "nunca
+    coocurre pese a ser matemáticamente posible"), no la ausencia de
+    cálculo que None representa aquí."""
+    return {
+        "filas": [
+            {
+                "elementos": [int(e) for e in f.elementos],
+                "soporte": f.soporte,
+                "total_sorteos": f.total_sorteos,
+                "frecuencia_relativa": f.frecuencia_relativa,
+                "frecuencia_esperada": f.frecuencia_esperada,
+                "lift": f.lift,
+            }
+            for f in filas
+        ]
+    }
+
+
 # Unión mínima y tipada del resultado que puede producir cualquier
 # receta -evita Any indiscriminado; cada receta declara concretamente
-# cuál de los tres produce mediante sus propias anotaciones arriba.
-_ResultadoMotor = list[FrecuenciaObservada] | list[FilaFrecuencia] | list[AtrasoObservado]
+# cuál de los cuatro produce mediante sus propias anotaciones arriba.
+_ResultadoMotor = (
+    list[FrecuenciaObservada] | list[FilaFrecuencia] | list[AtrasoObservado] | list[MetricaAsociacion]
+)
 
 
 class _HistoricoColorLoto(NamedTuple):
@@ -932,6 +970,21 @@ sin `rango_min`/`rango_max` -el resultado de paridad NUNCA
 depende de esos límites, solo la VALIDACIÓN previa de integridad
 los necesita."""
 
+_CANTIDAD_NUMEROS_COLORLOTO = 6
+"""Cantidad FIJA de balotas por sorteo de ColorLoto, mismo criterio
+de constante que `_RANGO_REAL_COLORLOTO`: ColorLoto es un único
+juego con una única cantidad de balotas que nunca varía. Introducida
+en la Etapa AE-14 (PROVISIONAL) porque `calcular_coocurrencia_pares_colorloto`
+recibe `cantidad_balotas` en su firma pero -confirmado por lectura
+directa del cuerpo real del motor en la auditoría de AE-14- NUNCA lo
+usa matemáticamente (ni para el cálculo de pares ni para validación);
+por eso esta receta lo obtiene de esta constante fija, nunca de
+`parametros_metrica`, y la identidad de caché de AE-14 queda
+exactamente `{}` -diccionario vacío, decisión consciente, no una
+omisión. Las 13 recetas anteriores de ColorLoto siguen leyendo
+`cantidad_numeros` de `parametros["cantidad_numeros"]` sin ningún
+cambio; esta constante es exclusiva de AE-14 y no las afecta."""
+
 
 def _calcular_distribucion_pares_impares_colorloto(
     historico: "_HistoricoColorLoto", parametros: dict,
@@ -1330,6 +1383,82 @@ def _calcular_distribucion_trios_consecutivos_colorloto(
     )
 
 
+def _calcular_coocurrencia_pares_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[MetricaAsociacion]:
+    """Reutiliza calcular_coocurrencia_pares_colorloto directamente,
+    sin reimplementar nada ni modificar el motor (Etapa AE-14,
+    PROVISIONAL). Mismo envoltorio `_HistoricoColorLoto` y misma
+    validación defensiva compartida con AE-1 a AE-13 -no se duplica
+    ninguna regla.
+
+    Firma real del motor: `calcular_coocurrencia_pares_colorloto
+    (resultados, rango_min, rango_max, cantidad_balotas,
+    hasta_numero_sorteo=None)` -exactamente 4 argumentos
+    posicionales efectivos, NUNCA `hasta_numero_sorteo`: el
+    orquestador YA filtró `historico.pares` por el corte antes de
+    llegar aquí, mismo precedente exacto ya establecido por las
+    trece recetas anteriores de ColorLoto.
+
+    A DIFERENCIA de toda receta anterior de ColorLoto, esta NO lee
+    `parametros["cantidad_numeros"]`: confirmado por lectura directa
+    del cuerpo real del motor en la auditoría de AE-14 que
+    `cantidad_balotas` aparece en la firma pero JAMÁS se usa
+    matemáticamente dentro del cuerpo de la función -ni para el
+    cálculo de pares ni para ninguna validación. Por eso esta receta
+    obtiene ese valor de `_CANTIDAD_NUMEROS_COLORLOTO` (constante fija,
+    mismo criterio que `_RANGO_REAL_COLORLOTO`), nunca de
+    `parametros_metrica`. Igual que en las trece recetas anteriores,
+    `rango_min`/`rango_max` se leen de `_RANGO_REAL_COLORLOTO`
+    (desempaquetado, nunca indexado) -confirmado por lectura directa
+    y por caracterización real en la auditoría de AE-14 que esos
+    límites SOLO alimentan `_validar_rango` dentro del motor, nunca
+    el cálculo de pares en sí (mismo resultado bajo tres rangos
+    distintos, verificado empíricamente). El resultado consecuente es
+    que NINGÚN parámetro define la identidad matemática de esta
+    métrica -por eso `parametros_metrica` es el diccionario VACÍO
+    `{}`, una decisión consciente y demostrada, no una omisión:
+    `calcular_parametros_hash({})` produce un hash SHA-256 estable
+    (`json.dumps({}, sort_keys=True, ...)` → `"{}"`), sin ningún caso
+    especial necesario en el repositorio.
+
+    El motor ignora el color por completo (`for n, _ in r.pares` en
+    el único punto donde itera sobre los pares, confirmado por
+    lectura directa) -por eso esta receta nunca deriva
+    `colores_vigentes` ni incluye ningún marcador de política de
+    colores: un cambio de paleta no puede alterar el resultado
+    matemático de esta métrica. Mismo criterio ya aplicado por
+    AE-7/AE-8/AE-9/AE-10/AE-11/AE-12/AE-13.
+
+    A DIFERENCIA de las trece recetas anteriores (que siempre
+    completan el universo teórico de categorías, incluso con cero
+    apariciones), este motor reporta ÚNICAMENTE pares observados al
+    menos una vez (soporte > 0) -comportamiento ya documentado y
+    verificado en el propio módulo `motor/coocurrencia.py`, no
+    modificado ni reimplementado aquí. Para ColorLoto (7 números
+    posibles), el máximo teórico es C(7,2)=21 pares -manejable sin
+    paginación ni top-N, muy distinto del universo de Baloto
+    (hasta C(43,2)=903) que el propio módulo señala como la razón de
+    no completar el universo teórico. `frecuencia_esperada` y `lift`
+    quedan siempre en `None` para ColorLoto (el modelo de repetición
+    del dominio no está verificado contra el reglamento oficial
+    completo, ver docstring del módulo) -esta receta nunca inventa
+    un valor de reemplazo para esos campos.
+
+    Reutiliza `_serializar_metrica_asociacion` (agregado en esta
+    misma etapa, primera conexión de `MetricaAsociacion` en todo el
+    proyecto) -serializador dedicado que preserva `None` como `None`
+    y convierte `elementos` a enteros explícitos, nunca a un string
+    delimitado difícil de reinterpretar."""
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    return calcular_coocurrencia_pares_colorloto(
+        historico.pares, rango_min, rango_max, _CANTIDAD_NUMEROS_COLORLOTO,
+    )
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1412,6 +1541,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "distribucion_trios_consecutivos_colorloto": _Receta(
         calcular=_calcular_distribucion_trios_consecutivos_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "coocurrencia_pares_colorloto": _Receta(
+        calcular=_calcular_coocurrencia_pares_colorloto, serializar=_serializar_metrica_asociacion,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

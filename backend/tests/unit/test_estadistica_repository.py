@@ -2298,3 +2298,105 @@ class TestUpsertConDistribucionTriosConsecutivosColorlotoEtapaAE13:
         repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "trios_consecutivos"}))
         assert repo.buscar_vigente(juego_id, "distribucion_altos_bajos_colorloto", None, params_altos_bajos).resultado == {"v": "altos_bajos"}
         assert repo.buscar_vigente(juego_id, "distribucion_trios_consecutivos_colorloto", None, self._PARAMS).resultado == {"v": "trios_consecutivos"}
+
+
+class TestUpsertConCoocurrenciaParesColorlotoEtapaAE14:
+    """Mismo patrón exacto ya usado para las 22 recetas anteriores
+    (Etapa AE-14, PROVISIONAL), adaptado a la identidad de caché
+    VACÍA -decisión consciente, no una omisión: la auditoría de
+    AE-14 demostró que ningún parámetro (`cantidad_balotas`,
+    `rango_min`, `rango_max`, color, política de colores) define la
+    identidad matemática de esta métrica, así que `parametros_metrica`
+    es exactamente `{}`."""
+
+    _PARAMS: dict = {}
+
+    def test_hash_de_diccionario_vacio_es_estable(self):
+        from app.application.interfaces.estadistica_repository import calcular_parametros_hash
+        h1 = calcular_parametros_hash({})
+        h2 = calcular_parametros_hash({})
+        assert h1 == h2
+        assert isinstance(h1, str) and len(h1) > 0
+
+    def test_persistencia_con_parametros_vacios(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "nueva"}))
+        assert entrada.parametros == {}
+
+    def test_hit_de_cache_con_parametros_vacios(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "cacheado"}))
+        vigente = repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {})
+        assert vigente is not None
+        assert vigente.id == primera.id
+
+    def test_miss_por_corte_distinto(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        vigente_otro_corte = repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", 100, {})
+        assert vigente_otro_corte is None
+
+    def test_historico_completo_y_corte_cien_son_caches_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=100, parametros={}, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {})
+        corte = repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", 100, {})
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_no_sustitucion_de_vacio_por_parametros_predeterminados(self):
+        """Confirma que el repositorio no reemplaza `{}` explícito
+        por considerarlo falsy -mismo mecanismo ya usado por
+        `ejecutar()`: `parametros_metrica or {}` con `{}` explícito
+        sigue produciendo `{}`, nunca otro valor no vacío."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        assert entrada.parametros == {}
+        assert entrada.parametros is not None
+
+    def test_ausencia_de_claves_prohibidas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        assert "cantidad_numeros" not in entrada.parametros
+        assert "rango_min" not in entrada.parametros
+        assert "rango_max" not in entrada.parametros
+        assert "politica_universo_colores" not in entrada.parametros
+        assert "color_objetivo" not in entrada.parametros
+        assert "hasta_numero_sorteo" not in entrada.parametros
+
+    def test_una_cache_vigente_por_identidad(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "coocurrencia_pares_colorloto")
+        assert total == 1
+
+    def test_convivencia_con_los_veintidos_tipos_anteriores(self):
+        """Confirma que la identidad vacía de AE-14 convive sin
+        colisión con la identidad de una clave de AE-11/AE-12/AE-13
+        (`{"cantidad_numeros": 6}`) y con la de dos claves de AE-9
+        -claves distintas, tipos distintos, sin ninguna ambigüedad."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos_colorloto", hasta_numero_sorteo=None, parametros={"cantidad_numeros": 6}, resultado={"v": "trios"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "coocurrencia"}))
+        assert repo.buscar_vigente(juego_id, "distribucion_trios_consecutivos_colorloto", None, {"cantidad_numeros": 6}).resultado == {"v": "trios"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {}).resultado == {"v": "coocurrencia"}
+
+    def test_invalidacion_agnostica_cubre_sin_cambios(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        assert afectadas == 1
+        assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {}) is None
