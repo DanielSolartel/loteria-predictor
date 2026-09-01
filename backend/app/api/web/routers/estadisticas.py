@@ -45,6 +45,7 @@ from app.api.web.view_models import (
     distribucion_pares_consecutivos_colorloto_a_vm,
     distribucion_racha_maxima_colorloto_a_vm,
     distribucion_trios_consecutivos_colorloto_a_vm,
+    coocurrencia_pares_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -984,6 +985,98 @@ def distribucion_trios_consecutivos_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/distribucion_trios_consecutivos_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/coocurrencia-pares")
+def coocurrencia_pares_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-14 (PROVISIONAL): decimocuarta visualización
+    descriptiva de ColorLoto -para el histórico analizado, qué pares
+    de números (dos números distintos presentes en el mismo sorteo,
+    deduplicados antes de formar el par) coocurrieron y con qué
+    soporte (cantidad de sorteos que los contienen), ignorando el
+    color por completo. Reutiliza `calcular_coocurrencia_pares_colorloto`
+    sin modificarlo.
+
+    A DIFERENCIA de toda visualización anterior de ColorLoto, esta
+    NO es una distribución categórica por sorteo -es una tabla de
+    asociaciones observadas entre pares de números, agregada sobre
+    TODO el histórico analizado. Por eso, a diferencia de las trece
+    páginas anteriores, esta página no usa gráfica de barras ni
+    `<canvas>`: el motor reporta ÚNICAMENTE pares observados al menos
+    una vez (nunca completa el universo teórico con soporte cero,
+    comportamiento ya documentado en `motor/coocurrencia.py`, no
+    modificado aquí), y una tabla es la presentación correcta para
+    ese tipo de resultado -forzar una gráfica de barras habría sido
+    una decisión de presentación arbitraria no respaldada por la
+    forma real de los datos, confirmado en la auditoría de AE-14.
+    Para ColorLoto (7 números posibles), el máximo teórico es
+    C(7,2)=21 pares -manejable sin paginación ni top-N.
+
+    Igual que `maximo-repeticion-color` (Etapa AE-10) y
+    `distribucion-trios-consecutivos` (Etapa AE-13), esta ruta NO
+    colisiona con ninguna ruta genérica -confirmado por la auditoría
+    de AE-14 (simulación con el motor real de `starlette.routing.Route`)
+    que `/estadisticas/{juego_slug}/coocurrencia-pares` no existe
+    entre las rutas registradas, ni siquiera para el motor numérico
+    equivalente (`calcular_coocurrencia_pares`, nunca conectado a
+    `_CATALOGO` para ningún juego numérico). Baloto, `baloto-revancha`
+    y MiLoto con este sufijo deben seguir resolviendo a 404 nativo de
+    FastAPI (ausencia de match), sin ningún handler que los
+    intercepte.
+
+    Identidad de caché con el diccionario VACÍO `{}` -decisión
+    consciente, no una omisión: confirmado por lectura directa del
+    cuerpo real del motor y por caracterización real en la auditoría
+    de AE-14 que `cantidad_balotas` aparece en la firma del motor
+    pero JAMÁS se usa matemáticamente, y que `rango_min`/`rango_max`
+    solo alimentan la validación interna del motor (mismo resultado
+    bajo tres rangos distintos, verificado empíricamente) -ningún
+    parámetro define la identidad matemática de este resultado.
+    `frecuencia_esperada` y `lift` quedan siempre en `None` para
+    ColorLoto (modelo de repetición del dominio sin verificar, ver
+    docstring del motor) -esta página nunca inventa un valor de
+    reemplazo ni presenta esos campos como si fueran cero."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/coocurrencia-pares",
+        "pagina_colorloto_activa": "coocurrencia-pares",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/coocurrencia_pares_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="coocurrencia_pares_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={},
+    )
+
+    vm = coocurrencia_pares_colorloto_a_vm(resultado, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/coocurrencia_pares_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 
