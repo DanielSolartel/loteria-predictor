@@ -40,7 +40,10 @@ from app.application.estadisticas.motor.atrasos import (
     calcular_atrasos_numeros_colorloto,
     calcular_atrasos_pares_numero_color,
 )
-from app.application.estadisticas.motor.coocurrencia import calcular_coocurrencia_pares_colorloto
+from app.application.estadisticas.motor.coocurrencia import (
+    calcular_coocurrencia_pares_colorloto,
+    calcular_coocurrencia_trios_colorloto,
+)
 from app.application.estadisticas.motor.corte_temporal import filtrar_por_corte_temporal
 from app.application.estadisticas.motor.consecutivos import (
     calcular_distribucion_pares_consecutivos,
@@ -1459,6 +1462,47 @@ def _calcular_coocurrencia_pares_colorloto(
     )
 
 
+def _calcular_coocurrencia_trios_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[MetricaAsociacion]:
+    """Igual que `_calcular_coocurrencia_pares_colorloto` (Etapa
+    AE-15, PROVISIONAL), reutilizando `calcular_coocurrencia_trios_colorloto`
+    directamente, sin reimplementar nada ni modificar el motor.
+
+    Firma real del motor: `calcular_coocurrencia_trios_colorloto
+    (resultados, rango_min, rango_max, cantidad_balotas,
+    hasta_numero_sorteo=None)` -exactamente 4 argumentos
+    posicionales efectivos, NUNCA `hasta_numero_sorteo`: el
+    orquestador YA filtró `historico.pares` por el corte antes de
+    llegar aquí, mismo precedente exacto de AE-14.
+
+    Igual que en AE-14, esta receta NO lee ninguna clave de
+    `parametros`: `rango_min`/`rango_max` vienen de
+    `_RANGO_REAL_COLORLOTO` (desempaquetado, nunca indexado) y la
+    cantidad de balotas de `_CANTIDAD_NUMEROS_COLORLOTO` -ninguno de
+    los dos alimenta el cálculo matemático dentro del motor, solo la
+    validación defensiva previa. Por eso `parametros_metrica` es el
+    diccionario VACÍO `{}`, mismo criterio exacto que AE-14.
+
+    El motor reporta ÚNICAMENTE tríos observados al menos una vez
+    (soporte > 0), ordenados por soporte descendente -comportamiento
+    del propio módulo `motor/coocurrencia.py`, no modificado ni
+    reimplementado aquí. `frecuencia_esperada` y `lift` quedan
+    siempre en `None` para ColorLoto (mismo motivo documentado en el
+    módulo del motor y ya aplicado por AE-14): esta receta nunca
+    inventa un valor de reemplazo para esos campos.
+
+    Reutiliza `_serializar_metrica_asociacion` (ya conectado por
+    AE-14, sin modificarlo)."""
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    return calcular_coocurrencia_trios_colorloto(
+        historico.pares, rango_min, rango_max, _CANTIDAD_NUMEROS_COLORLOTO,
+    )
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1545,6 +1589,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "coocurrencia_pares_colorloto": _Receta(
         calcular=_calcular_coocurrencia_pares_colorloto, serializar=_serializar_metrica_asociacion,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "coocurrencia_trios_colorloto": _Receta(
+        calcular=_calcular_coocurrencia_trios_colorloto, serializar=_serializar_metrica_asociacion,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

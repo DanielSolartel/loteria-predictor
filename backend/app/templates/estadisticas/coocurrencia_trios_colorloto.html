@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Coocurrencia de tríos — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-table me-2"></i>Coocurrencia de tríos — ColorLoto</h3>
+<p class="text-muted">Muestra qué tríos de números (tres números distintos presentes en el mismo sorteo) coocurrieron en el histórico analizado, y con qué soporte -la cantidad de sorteos en los que apareció ese trío. Solo se consideran los números; los colores no forman parte del trío ni afectan el cálculo. Los números repetidos dentro del mismo sorteo se deduplican antes de formar tríos: una misma cifra que aparece en dos colores distintos cuenta una sola vez. La frecuencia relativa es soporte dividido entre el total de sorteos analizados. Se muestran únicamente los tríos observados al menos una vez -no se completa artificialmente el universo con tríos de soporte cero. No existe una única "masa" que deba sumar el número de sorteos: cada sorteo aporta a varios tríos distintos a la vez.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de ColorLoto disponibles todavía para calcular esta coocurrencia.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta tabla describe tríos de números observados juntos en sorteos pasados. No indica que un trío vaya a repetirse en el próximo sorteo ni tiene ninguna capacidad predictiva: cada sorteo es un evento independiente, y esta cifra es puramente descriptiva.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Tríos observados</div>
+            <div class="fw-bold">{{ estadistica.cantidad_trios_observados }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle de tríos observados (ordenados por soporte)</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Trío</th>
+                    <th>Soporte</th>
+                    <th>Frecuencia relativa</th>
+                    <th>Porcentaje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero_1 }} – {{ fila.numero_2 }} – {{ fila.numero_3 }}</td>
+                    <td>{{ fila.soporte }}</td>
+                    <td>{{ "%.4f"|format(fila.frecuencia_relativa) }}</td>
+                    <td>{{ "%.2f"|format(fila.porcentaje) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

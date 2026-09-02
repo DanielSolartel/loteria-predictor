@@ -1415,6 +1415,58 @@ def coocurrencia_pares_colorloto_a_vm(estadistica, juego: Juego) -> dict:
     }
 
 
+def coocurrencia_trios_colorloto_a_vm(estadistica, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "coocurrencia_trios_colorloto" (Etapa AE-15, PROVISIONAL) en un
+    view model listo para la plantilla. Nunca recalcula la métrica,
+    nunca consulta repositorios, nunca llama al motor -mismo patrón
+    exacto ya validado por `coocurrencia_pares_colorloto_a_vm`
+    (AE-14), solo con tres elementos por fila en vez de dos.
+
+    Igual que la VM de pares: consume directamente las filas de
+    `MetricaAsociacion` ya serializadas por `_serializar_metrica_asociacion`
+    (elementos como enteros reales, nunca strings), preservando el
+    orden real devuelto por el motor (soporte descendente, sin
+    ningún criterio de desempate adicional) y sin nunca elegir un
+    único "trío más frecuente" -todas las filas empatadas quedan
+    visibles siempre. Para ColorLoto (7 números posibles), el máximo
+    teórico es C(7,3)=35 tríos -se muestran todas las filas
+    observadas, sin top-N, paginación ni truncamiento.
+
+    `frecuencia_esperada`/`lift` se preservan literalmente como
+    `None` cuando el serializado los trae así (siempre el caso para
+    ColorLoto) -nunca se sustituyen por 0. El resumen superior se
+    limita a total de sorteos y cantidad de tríos observados, sin
+    ninguna recomendación de números ni cálculo estadístico nuevo."""
+    filas_serializadas = estadistica.resultado["filas"]
+
+    total_sorteos = filas_serializadas[0]["total_sorteos"] if filas_serializadas else 0
+
+    filas_presentacion = []
+    for f in filas_serializadas:
+        numero_1, numero_2, numero_3 = f["elementos"]
+        filas_presentacion.append({
+            "numero_1": numero_1,
+            "numero_2": numero_2,
+            "numero_3": numero_3,
+            "soporte": f["soporte"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+            "porcentaje": f["frecuencia_relativa"] * 100,
+            "frecuencia_esperada": f["frecuencia_esperada"],
+            "lift": f["lift"],
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "cantidad_trios_observados": len(filas_presentacion),
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
