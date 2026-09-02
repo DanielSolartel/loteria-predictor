@@ -48,6 +48,7 @@ from app.api.web.view_models import (
     coocurrencia_pares_colorloto_a_vm,
     coocurrencia_trios_colorloto_a_vm,
     coocurrencia_pares_colores_colorloto_a_vm,
+    coocurrencia_trios_colores_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1240,6 +1241,83 @@ def coocurrencia_pares_colores_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/coocurrencia_pares_colores_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/coocurrencia-trios-colores")
+def coocurrencia_trios_colores_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-17 (PROVISIONAL): decimoséptima visualización
+    descriptiva de ColorLoto -para el histórico analizado, qué
+    tríos de CÓDIGOS DE COLOR (tres colores distintos presentes en
+    el mismo sorteo, deduplicados antes de formar el trío)
+    coocurrieron y con qué soporte. Reutiliza
+    `calcular_coocurrencia_trios_colores` sin modificarlo, candidata
+    aprobada por la auditoría previa (Decisión A).
+
+    Mismo patrón exacto que `coocurrencia-pares-colores` (AE-16),
+    esta vez con tamaño de combinación 3. Tabla de asociaciones (sin
+    `<canvas>` ni Chart.js): el motor reporta ÚNICAMENTE tríos de
+    colores observados al menos una vez. La auditoría previa
+    demostró con un histórico sintético de siete códigos que el
+    número global de filas puede superar 20 (el máximo teórico de
+    UN sorteo con seis colores) -esta página nunca impone ese
+    número como límite fijo, muestra dinámicamente todo lo que el
+    motor devuelva.
+
+    Esta ruta NO colisiona con ninguna ruta genérica -mismo
+    precedente exacto que las tres coocurrencias anteriores:
+    `/estadisticas/{juego_slug}/coocurrencia-trios-colores` no
+    existe entre las rutas registradas.
+
+    Identidad de caché con el diccionario VACÍO `{}` -mismo criterio
+    exacto que AE-14/AE-15/AE-16, demostrado por la auditoría
+    previa: la función del motor no acepta ningún parámetro de
+    rango, cantidad ni catálogo de colores.
+
+    Reutiliza `_serializar_metrica_asociacion_texto` (Etapa AE-16)
+    SIN NINGÚN CAMBIO -su comprensión de lista genérica acepta tres
+    elementos exactamente igual que dos, confirmado por la auditoría
+    previa mediante ejecución real."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/coocurrencia-trios-colores",
+        "pagina_colorloto_activa": "coocurrencia-trios-colores",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/coocurrencia_trios_colores_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="coocurrencia_trios_colores_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={},
+    )
+
+    vm = coocurrencia_trios_colores_colorloto_a_vm(resultado, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/coocurrencia_trios_colores_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

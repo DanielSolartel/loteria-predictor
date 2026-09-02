@@ -43,6 +43,7 @@ from app.application.estadisticas.motor.atrasos import (
 from app.application.estadisticas.motor.coocurrencia import (
     calcular_coocurrencia_pares_colores,
     calcular_coocurrencia_pares_colorloto,
+    calcular_coocurrencia_trios_colores,
     calcular_coocurrencia_trios_colorloto,
 )
 from app.application.estadisticas.motor.corte_temporal import filtrar_por_corte_temporal
@@ -1617,6 +1618,71 @@ def _calcular_coocurrencia_pares_colores_colorloto(
     return calcular_coocurrencia_pares_colores(historico.pares)
 
 
+def _calcular_coocurrencia_trios_colores_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[MetricaAsociacion]:
+    """Coocurrencia de TRÍOS DE COLORES de ColorLoto (Etapa AE-17,
+    PROVISIONAL) -candidata aprobada por la auditoría previa
+    (Decisión A). Mismo patrón exacto que
+    `_calcular_coocurrencia_pares_colores_colorloto` (AE-16), esta
+    vez con `calcular_coocurrencia_trios_colores` (tamaño de
+    combinación 3 en vez de 2) -reutiliza el motor existente sin
+    ninguna modificación (ya existía en `motor/coocurrencia.py`
+    desde antes de esta etapa, con tests de motor propios).
+
+    Firma real del motor: `calcular_coocurrencia_trios_colores
+    (resultados, hasta_numero_sorteo=None)` -igual que su análoga
+    de pares (AE-16), NO recibe `rango_min`, `rango_max` ni
+    `cantidad_balotas`: la auditoría previa confirmó por lectura
+    directa de la firma que este motor tampoco acepta catálogo ni
+    parámetro de paleta. Se le pasa exactamente `historico.pares`,
+    ya filtrado por el corte por el orquestador antes de llegar
+    aquí, NUNCA `hasta_numero_sorteo` -mismo precedente exacto de
+    AE-14/AE-15/AE-16, evitando un doble filtrado accidental.
+
+    Sí reutiliza `_validar_historico_colorloto_consistente` con
+    `_RANGO_REAL_COLORLOTO`/`_CANTIDAD_NUMEROS_COLORLOTO` -esos
+    límites siguen validando la integridad del histórico de entrada,
+    exactamente igual que en AE-14/AE-15/AE-16; la ausencia de esos
+    parámetros en la llamada al motor no significa ausencia de
+    validación, solo que el motor no los necesita para su propio
+    cálculo matemático (que ignora los números por completo).
+
+    Igual que AE-14/AE-15/AE-16, esta receta NO lee ninguna clave de
+    `parametros`: no hay ningún parámetro que alimente el cálculo
+    matemático del motor. Por eso `parametros_metrica` es el
+    diccionario VACÍO `{}`, mismo criterio exacto, demostrado por la
+    auditoría previa (no copiado): la identidad de caché de AE-17 no
+    colisiona con la de AE-14/AE-15/AE-16 porque el `tipo_estadistica`
+    es distinto en los cuatro casos, aun compartiendo la misma
+    identidad de parámetros vacía.
+
+    El motor reporta ÚNICAMENTE tríos de colores observados al menos
+    una vez (soporte > 0), ordenados por soporte descendente,
+    deduplicando colores repetidos dentro de cada sorteo antes de
+    generar tríos -comportamiento del propio módulo
+    `motor/coocurrencia.py`, no modificado ni reimplementado aquí.
+    `frecuencia_esperada` y `lift` quedan siempre en `None`. La
+    auditoría previa demostró con un histórico sintético de siete
+    códigos distribuidos entre sorteos que el número global de filas
+    puede superar 20 (el máximo teórico de UN sorteo con seis
+    colores, C(6,3)) -esta receta nunca impone ese límite como techo
+    fijo.
+
+    Reutiliza `_serializar_metrica_asociacion_texto` (agregada en
+    AE-16, reutilizada aquí SIN NINGÚN CAMBIO -la auditoría previa
+    confirmó por ejecución real que su comprensión de lista genérica
+    `[str(e) for e in f.elementos]` no asume ninguna longitud fija y
+    acepta tres elementos exactamente igual que dos). Nunca
+    `_serializar_metrica_asociacion` (AE-14), que sigue
+    exclusivamente para enteros."""
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    return calcular_coocurrencia_trios_colores(historico.pares)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1711,6 +1777,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "coocurrencia_pares_colores_colorloto": _Receta(
         calcular=_calcular_coocurrencia_pares_colores_colorloto, serializar=_serializar_metrica_asociacion_texto,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "coocurrencia_trios_colores_colorloto": _Receta(
+        calcular=_calcular_coocurrencia_trios_colores_colorloto, serializar=_serializar_metrica_asociacion_texto,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }
