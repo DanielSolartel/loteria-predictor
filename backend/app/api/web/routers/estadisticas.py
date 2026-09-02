@@ -47,6 +47,7 @@ from app.api.web.view_models import (
     distribucion_trios_consecutivos_colorloto_a_vm,
     coocurrencia_pares_colorloto_a_vm,
     coocurrencia_trios_colorloto_a_vm,
+    coocurrencia_pares_colores_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1152,6 +1153,93 @@ def coocurrencia_trios_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/coocurrencia_trios_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/coocurrencia-pares-colores")
+def coocurrencia_pares_colores_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-16 (PROVISIONAL): decimosexta visualización
+    descriptiva de ColorLoto -para el histórico analizado, qué
+    pares de CÓDIGOS DE COLOR (dos colores distintos presentes en
+    el mismo sorteo, deduplicados antes de formar el par) coocurrieron
+    y con qué soporte (cantidad de sorteos que los contienen).
+    Reutiliza `calcular_coocurrencia_pares_colores` sin modificarlo,
+    candidata aprobada por la auditoría previa (Decisión A).
+
+    A DIFERENCIA de `coocurrencia-pares` (AE-14) y `coocurrencia-trios`
+    (AE-15), que ignoran el color y calculan sobre los NÚMEROS, esta
+    página ignora los NÚMEROS por completo y calcula sobre los
+    CÓDIGOS DE COLOR -mismo patrón exacto de tabla de asociaciones,
+    sin `<canvas>` ni Chart.js: el motor reporta ÚNICAMENTE pares de
+    colores observados al menos una vez (nunca completa el universo
+    teórico con soporte cero). El máximo de filas depende del
+    universo histórico real de códigos de color -la auditoría previa
+    confirmó que la paleta NO está hardcodeada a 6 colores (puede
+    cambiar con el reglamento), así que esta página nunca asume ni
+    fuerza un límite de C(6,2)=21 filas: muestra dinámicamente todo
+    lo que el motor devuelva.
+
+    Esta ruta NO colisiona con ninguna ruta genérica -mismo
+    precedente exacto que `coocurrencia-pares`/`coocurrencia-trios`:
+    `/estadisticas/{juego_slug}/coocurrencia-pares-colores` no existe
+    entre las rutas registradas. Baloto, `baloto-revancha` y MiLoto
+    con este sufijo deben seguir resolviendo a 404 nativo de FastAPI
+    (ausencia de match), sin ningún handler que los intercepte.
+
+    Identidad de caché con el diccionario VACÍO `{}` -mismo criterio
+    exacto que AE-14/AE-15, esta vez demostrado por la auditoría
+    previa: la función del motor no acepta ningún parámetro de
+    rango, cantidad ni catálogo de colores, así que ningún parámetro
+    define la identidad matemática de este resultado.
+    `frecuencia_esperada` y `lift` quedan siempre en `None` -esta
+    página nunca inventa un valor de reemplazo ni presenta esos
+    campos como si fueran cero.
+
+    A DIFERENCIA de `coocurrencia-pares`/`coocurrencia-trios`, esta
+    receta serializa con `_serializar_metrica_asociacion_texto`
+    (nueva en esta etapa) en vez de `_serializar_metrica_asociacion`
+    -los elementos de esta métrica son códigos de color (`str`),
+    nunca convertibles a `int` sin perder la información real."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/coocurrencia-pares-colores",
+        "pagina_colorloto_activa": "coocurrencia-pares-colores",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/coocurrencia_pares_colores_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="coocurrencia_pares_colores_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={},
+    )
+
+    vm = coocurrencia_pares_colores_colorloto_a_vm(resultado, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/coocurrencia_pares_colores_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

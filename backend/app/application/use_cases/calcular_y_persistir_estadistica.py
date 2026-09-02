@@ -41,6 +41,7 @@ from app.application.estadisticas.motor.atrasos import (
     calcular_atrasos_pares_numero_color,
 )
 from app.application.estadisticas.motor.coocurrencia import (
+    calcular_coocurrencia_pares_colores,
     calcular_coocurrencia_pares_colorloto,
     calcular_coocurrencia_trios_colorloto,
 )
@@ -519,6 +520,48 @@ def _serializar_metrica_asociacion(filas: list[MetricaAsociacion]) -> dict:
         "filas": [
             {
                 "elementos": [int(e) for e in f.elementos],
+                "soporte": f.soporte,
+                "total_sorteos": f.total_sorteos,
+                "frecuencia_relativa": f.frecuencia_relativa,
+                "frecuencia_esperada": f.frecuencia_esperada,
+                "lift": f.lift,
+            }
+            for f in filas
+        ]
+    }
+
+
+def _serializar_metrica_asociacion_texto(filas: list[MetricaAsociacion]) -> dict:
+    """Serializador dedicado para `MetricaAsociacion` cuyos elementos
+    son códigos de color (Etapa AE-16, PROVISIONAL) -aislado a
+    propósito de `_serializar_metrica_asociacion` (Etapa AE-14, que
+    convierte incondicionalmente cada elemento con `int(e)`). La
+    auditoría previa de AE-16 reprodujo `ValueError: invalid literal
+    for int() with base 10: 'AMARILLO'` al intentar reutilizar ese
+    serializador tal cual -los códigos de color nunca son
+    representables como enteros, y forzar esa conversión rompería
+    esta receta desde el primer cálculo real.
+
+    `_serializar_metrica_asociacion` NO se modifica: AE-14 y AE-15
+    dependen de que siga produciendo enteros reales, confirmado por
+    sus propios tests de persistencia (`elementos` como lista de
+    enteros). Esta función nueva convierte cada elemento con `str(e)`
+    -un no-op sobre un código de color que ya es `str`, mismo
+    criterio ya documentado en `motor/coocurrencia.py` para
+    `calcular_coocurrencia_pares_colores`- y nunca con `int(e)`.
+
+    Mismo criterio que el serializador numérico para el resto de
+    campos: `frecuencia_esperada`/`lift` se preservan tal cual (None
+    para ColorLoto, ver docstring del motor), nunca sustituidos por
+    0 -0 sería un dato real distinto (lift=0 significaría "nunca
+    coocurre pese a ser matemáticamente posible"), no la ausencia de
+    cálculo que None representa aquí. No muta `filas` ni los objetos
+    `MetricaAsociacion` que contiene -construye una estructura nueva
+    en cada llamada."""
+    return {
+        "filas": [
+            {
+                "elementos": [str(e) for e in f.elementos],
                 "soporte": f.soporte,
                 "total_sorteos": f.total_sorteos,
                 "frecuencia_relativa": f.frecuencia_relativa,
@@ -1503,6 +1546,77 @@ def _calcular_coocurrencia_trios_colorloto(
     )
 
 
+def _calcular_coocurrencia_pares_colores_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[MetricaAsociacion]:
+    """Coocurrencia de PARES DE COLORES de ColorLoto (Etapa AE-16,
+    PROVISIONAL) -candidata aprobada por la auditoría previa
+    (Decisión A). A diferencia de `_calcular_coocurrencia_pares_colorloto`
+    (AE-14) y `_calcular_coocurrencia_trios_colorloto` (AE-15), que
+    calculan sobre los NÚMEROS de las balotas, esta receta calcula
+    sobre los CÓDIGOS DE COLOR -reutiliza `calcular_coocurrencia_pares_colores`
+    directamente, sin reimplementar nada ni modificar el motor (ya
+    existía en `motor/coocurrencia.py` desde antes de esta etapa,
+    con tests de motor propios).
+
+    Firma real del motor: `calcular_coocurrencia_pares_colores
+    (resultados, hasta_numero_sorteo=None)` -a diferencia de las
+    variantes numéricas, esta función NO recibe `rango_min`,
+    `rango_max` ni `cantidad_balotas`: la auditoría confirmó por
+    lectura directa de la firma que el motor no acepta ningún
+    catálogo ni parámetro de paleta, así que esos límites no se le
+    pasan aquí -pasarlos produciría un `TypeError` real, no un
+    parámetro ignorado. Se le pasa exactamente `historico.pares`,
+    ya filtrado por el corte por el orquestador antes de llegar
+    aquí, NUNCA `hasta_numero_sorteo`, mismo precedente exacto de
+    AE-14/AE-15 -pasar el corte de nuevo aquí introduciría un doble
+    filtrado accidental, no simplemente redundante sino
+    potencialmente incorrecto si algún día el motor definiera un
+    corte con semántica distinta.
+
+    Sí reutiliza `_validar_historico_colorloto_consistente` con
+    `_RANGO_REAL_COLORLOTO`/`_CANTIDAD_NUMEROS_COLORLOTO` -esos
+    límites siguen validando la integridad del histórico de entrada
+    (cantidad de pares, rango de número, color vigente en la fecha
+    del sorteo), exactamente igual que en AE-14/AE-15; la ausencia
+    de esos parámetros en la llamada al motor no significa ausencia
+    de validación, solo que el motor no los necesita para su propio
+    cálculo matemático (que ignora los números por completo).
+
+    Igual que AE-14/AE-15, esta receta NO lee ninguna clave de
+    `parametros`: no hay ningún parámetro -ni rango, ni cantidad, ni
+    lista de colores, ni política de universo- que alimente el
+    cálculo matemático del motor. Por eso `parametros_metrica` es el
+    diccionario VACÍO `{}`, mismo criterio exacto que AE-14/AE-15,
+    demostrado (no copiado) por la auditoría previa: la identidad de
+    caché de AE-16 no colisiona con la de AE-14 ni AE-15 porque el
+    `tipo_estadistica` es distinto en los tres casos, aun compartiendo
+    la misma identidad de parámetros vacía.
+
+    El motor reporta ÚNICAMENTE pares de colores observados al menos
+    una vez (soporte > 0), ordenados por soporte descendente,
+    deduplicando colores repetidos dentro de cada sorteo antes de
+    generar pares -comportamiento del propio módulo
+    `motor/coocurrencia.py`, no modificado ni reimplementado aquí.
+    `frecuencia_esperada` y `lift` quedan siempre en `None` (mismo
+    motivo documentado en el módulo del motor): esta receta nunca
+    inventa un valor de reemplazo para esos campos.
+
+    A DIFERENCIA de AE-14/AE-15, esta receta NO reutiliza
+    `_serializar_metrica_asociacion` -esa función convierte cada
+    elemento con `int(e)`, y un código de color como "AMARILLO"
+    nunca es representable como entero (`ValueError` reproducido
+    por la auditoría previa). Reutiliza en su lugar
+    `_serializar_metrica_asociacion_texto` (agregada en esta misma
+    etapa, aislada de la función numérica existente, que permanece
+    sin modificar para no arriesgar ninguna regresión en AE-14/AE-15)."""
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    return calcular_coocurrencia_pares_colores(historico.pares)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1593,6 +1707,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "coocurrencia_trios_colorloto": _Receta(
         calcular=_calcular_coocurrencia_trios_colorloto, serializar=_serializar_metrica_asociacion,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "coocurrencia_pares_colores_colorloto": _Receta(
+        calcular=_calcular_coocurrencia_pares_colores_colorloto, serializar=_serializar_metrica_asociacion_texto,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

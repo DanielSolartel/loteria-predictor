@@ -1467,6 +1467,68 @@ def coocurrencia_trios_colorloto_a_vm(estadistica, juego: Juego) -> dict:
     }
 
 
+def coocurrencia_pares_colores_colorloto_a_vm(estadistica, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "coocurrencia_pares_colores_colorloto" (Etapa AE-16, PROVISIONAL)
+    en un view model listo para la plantilla. Nunca recalcula la
+    métrica, nunca consulta repositorios, nunca llama al motor
+    -mismo patrón exacto ya validado por `coocurrencia_pares_colorloto_a_vm`
+    (AE-14) y `coocurrencia_trios_colorloto_a_vm` (AE-15).
+
+    A DIFERENCIA de esas dos VM, aquí `f["elementos"]` contiene dos
+    CÓDIGOS DE COLOR (strings reales, p. ej. "AMARILLO"/"AZUL"), no
+    números -provienen de `_serializar_metrica_asociacion_texto`
+    (Etapa AE-16), nunca de `_serializar_metrica_asociacion`. Esta
+    VM nunca aplica `int(...)` sobre esos valores -serían códigos
+    inválidos como enteros, mismo motivo exacto que forzó la
+    creación del serializador textual nuevo en esta etapa. Los
+    colores se conservan literalmente tal como llegan serializados,
+    incluidos códigos históricamente retirados si el histórico los
+    contiene -esta VM no filtra ni valida vigencia, esa
+    responsabilidad ya quedó resuelta antes de llegar aquí (capa de
+    validación defensiva del histórico, no esta capa de
+    presentación).
+
+    Igual que las dos VM de coocurrencia anteriores: preserva el
+    orden real devuelto por el motor (soporte descendente, sin
+    ningún criterio de desempate adicional) y nunca elige un único
+    "par de colores más frecuente" -todas las filas empatadas
+    quedan visibles siempre. `frecuencia_esperada`/`lift` se
+    preservan literalmente como `None` cuando el serializado los
+    trae así (siempre el caso para ColorLoto) -nunca se sustituyen
+    por 0. El resumen superior se limita a total de sorteos y
+    cantidad de pares de colores observados, sin ninguna
+    recomendación ni cálculo estadístico nuevo. No expone ningún
+    número de balota -el motor que produce este resultado ignora
+    los números por completo."""
+    filas_serializadas = estadistica.resultado["filas"]
+
+    total_sorteos = filas_serializadas[0]["total_sorteos"] if filas_serializadas else 0
+
+    filas_presentacion = []
+    for f in filas_serializadas:
+        color_1, color_2 = f["elementos"]
+        filas_presentacion.append({
+            "color_1": color_1,
+            "color_2": color_2,
+            "soporte": f["soporte"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+            "porcentaje": f["frecuencia_relativa"] * 100,
+            "frecuencia_esperada": f["frecuencia_esperada"],
+            "lift": f["lift"],
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "cantidad_pares_observados": len(filas_presentacion),
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
