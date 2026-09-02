@@ -2821,3 +2821,160 @@ class TestUpsertConCoocurrenciaTriosColoresColorlotoEtapaAE17:
         segunda = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "actualizada"}))
         assert segunda.id == primera.id
         assert repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", None, {}).resultado == {"v": "actualizada"}
+
+
+class TestUpsertConIntervalosHistoricosColoresColorlotoEtapaAE18:
+    """Etapa AE-18 (PROVISIONAL): identidad MINIMA con una unica
+    clave -distinta del patron de AE-5 (que persiste rango_min/
+    rango_max/cantidad_numeros ademas de la politica), demostrada
+    por la auditoria previa: el motor de intervalos no recibe esos
+    parametros, asi que serian redundantes en la identidad."""
+
+    _PARAMS = {"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+    _PARAMS_V2 = {"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v2"}
+
+    def test_parametros_exactos_con_una_sola_clave(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS
+        assert set(entrada.parametros.keys()) == {"politica_universo_colores"}
+
+    def test_hash_de_parametros_es_estable(self):
+        from app.application.interfaces.estadistica_repository import calcular_parametros_hash
+        h1 = calcular_parametros_hash(self._PARAMS)
+        h2 = calcular_parametros_hash(self._PARAMS)
+        assert h1 == h2
+
+    def test_politica_distinta_produce_hash_distinto(self):
+        from app.application.interfaces.estadistica_repository import calcular_parametros_hash
+        h1 = calcular_parametros_hash(self._PARAMS)
+        h2 = calcular_parametros_hash(self._PARAMS_V2)
+        assert h1 != h2
+
+    def test_hit_de_cache_con_politica_exacta(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "cacheado"}))
+        vigente = repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, self._PARAMS)
+        assert vigente is not None
+        assert vigente.id == primera.id
+
+    def test_cache_con_politica_distinta_no_es_seleccionada(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "v1"}))
+        vigente = repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, self._PARAMS_V2)
+        assert vigente is None
+
+    def test_historico_completo_y_corte_cien_son_caches_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, self._PARAMS)
+        corte = repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", 100, self._PARAMS)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_ausencia_de_claves_redundantes(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "x"}))
+        assert "rango_min" not in entrada.parametros
+        assert "rango_max" not in entrada.parametros
+        assert "cantidad_numeros" not in entrada.parametros
+        assert "cantidad_balotas" not in entrada.parametros
+        assert "colores" not in entrada.parametros
+        assert "colores_vigentes" not in entrada.parametros
+        assert "hasta_numero_sorteo" not in entrada.parametros
+
+    def test_una_cache_vigente_por_identidad(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "intervalos_historicos_colores_colorloto")
+        assert total == 1
+
+    def test_coexistencia_con_ae5_y_ae14_a_ae17(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_ae5 = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+        repo.guardar(_entrada(juego_id, tipo="atrasos_colores_colorloto", hasta_numero_sorteo=None, parametros=params_ae5, resultado={"v": "atrasos"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "pares_num"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "trios_color"}))
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "intervalos"}))
+        assert repo.buscar_vigente(juego_id, "atrasos_colores_colorloto", None, params_ae5).resultado == {"v": "atrasos"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {}).resultado == {"v": "pares_num"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", None, {}).resultado == {"v": "trios_color"}
+        assert repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, self._PARAMS).resultado == {"v": "intervalos"}
+
+    def test_jsonb_con_todos_los_campos_de_intervaloshistoricos(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{
+            "valor": "ROJO", "cantidad_apariciones": 3, "cantidad_intervalos": 2,
+            "intervalo_minimo": 1, "intervalo_maximo": 9, "intervalo_promedio": 5,
+            "intervalo_mediana": 5.0, "intervalos": [9, 1],
+        }]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado=resultado))
+        fila = entrada.resultado["filas"][0]
+        assert set(fila.keys()) == {"valor", "cantidad_apariciones", "cantidad_intervalos", "intervalo_minimo", "intervalo_maximo", "intervalo_promedio", "intervalo_mediana", "intervalos"}
+
+    def test_intervalos_persistido_como_array(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{
+            "valor": "ROJO", "cantidad_apariciones": 3, "cantidad_intervalos": 2,
+            "intervalo_minimo": 1, "intervalo_maximo": 9, "intervalo_promedio": 5,
+            "intervalo_mediana": 5.0, "intervalos": [9, 1],
+        }]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado=resultado))
+        assert isinstance(entrada.resultado["filas"][0]["intervalos"], list)
+        assert entrada.resultado["filas"][0]["intervalos"] == [9, 1]
+
+    def test_none_real_preservado(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{
+            "valor": "AZUL", "cantidad_apariciones": 0, "cantidad_intervalos": 0,
+            "intervalo_minimo": None, "intervalo_maximo": None,
+            "intervalo_promedio": None, "intervalo_mediana": None, "intervalos": [],
+        }]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado=resultado))
+        fila = entrada.resultado["filas"][0]
+        assert fila["intervalo_minimo"] is None
+        assert fila["intervalo_maximo"] is None
+        assert fila["intervalo_promedio"] is None
+        assert fila["intervalo_mediana"] is None
+
+    def test_int_y_float_aceptados_sin_conversion_forzada(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{
+            "valor": "ROJO", "cantidad_apariciones": 3, "cantidad_intervalos": 2,
+            "intervalo_minimo": 1, "intervalo_maximo": 9, "intervalo_promedio": 5,
+            "intervalo_mediana": 5.0, "intervalos": [9, 1],
+        }]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado=resultado))
+        fila = entrada.resultado["filas"][0]
+        assert isinstance(fila["intervalo_promedio"], int)
+        assert isinstance(fila["intervalo_mediana"], float)
+
+    def test_upsert_y_recuperacion_sin_perdida(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{
+            "valor": "ROJO", "cantidad_apariciones": 3, "cantidad_intervalos": 2,
+            "intervalo_minimo": 1, "intervalo_maximo": 9, "intervalo_promedio": 5,
+            "intervalo_mediana": 5.0, "intervalos": [9, 1],
+        }]}
+        primera = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado=resultado))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado=resultado))
+        assert segunda.id == primera.id
+        recuperada = repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, self._PARAMS)
+        assert recuperada.resultado == resultado

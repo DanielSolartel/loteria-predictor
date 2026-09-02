@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Intervalos históricos de colores — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-hourglass-split me-2"></i>Intervalos históricos de colores — ColorLoto</h3>
+<p class="text-muted">Muestra, para cada color, estadísticos descriptivos de TODOS los intervalos históricos entre apariciones consecutivas (cuántos sorteos separaron una aparición de la siguiente), ignorando los números de las balotas por completo. Un mismo color repetido en varias balotas del mismo sorteo cuenta como una sola aparición. Los intervalos se calculan como la diferencia real entre números de sorteo consecutivos donde el color apareció, nunca por posición en la lista. Con menos de dos apariciones no existe ningún intervalo que calcular, y los estadísticos quedan sin dato (N/D), nunca en cero. Esta información es histórica y no predictiva: un intervalo promedio bajo no implica que el próximo intervalo vaya a ser corto.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de ColorLoto disponibles todavía para calcular esta estadística.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta tabla y gráfica describen intervalos ya ocurridos entre apariciones de cada color. No indican que un color "ya le toca" aparecer ni tienen ninguna capacidad predictiva: cada sorteo es un evento independiente, y esta información es puramente descriptiva.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Colores analizados</div>
+            <div class="fw-bold">{{ estadistica.cantidad_colores_analizados }}</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-intervalos-historicos-colores-colorloto" height="180"></canvas>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por color</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Color</th>
+                    <th>Apariciones</th>
+                    <th>Intervalo mínimo</th>
+                    <th>Intervalo máximo</th>
+                    <th>Intervalo promedio</th>
+                    <th>Intervalo mediana</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>
+                        <span class="d-inline-block rounded-circle border me-2" style="width:0.9rem;height:0.9rem;background-color:{{ fila.color_hex }};"></span>
+                        {{ fila.nombre }}
+                    </td>
+                    <td>{{ fila.cantidad_apariciones }}</td>
+                    <td>{{ fila.intervalo_minimo if fila.intervalo_minimo is not none else "N/D" }}</td>
+                    <td>{{ fila.intervalo_maximo if fila.intervalo_maximo is not none else "N/D" }}</td>
+                    <td>{{ "%.2f"|format(fila.intervalo_promedio) if fila.intervalo_promedio is not none else "N/D" }}</td>
+                    <td>{{ "%.2f"|format(fila.intervalo_mediana) if fila.intervalo_mediana is not none else "N/D" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-intervalos-historicos-colores-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "promedios": estadistica.chart_intervalo_promedio, "colores": estadistica.chart_colores} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-intervalos-historicos-colores-colorloto").textContent);
+        const ctx = document.getElementById("grafica-intervalos-historicos-colores-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: "Intervalo promedio (sorteos)",
+                    data: datos.promedios,
+                    backgroundColor: datos.colores,
+                    borderColor: "rgba(0, 0, 0, 0.15)",
+                    borderWidth: 1,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                if (item.raw === null || item.raw === undefined) {
+                                    return "Sin intervalos calculables (N/D)";
+                                }
+                                return `${item.raw} sorteos en promedio`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Intervalo promedio (sorteos)" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% endif %}
+
+{% endblock %}

@@ -39,6 +39,7 @@ from app.application.estadisticas.motor.atrasos import (
     calcular_atrasos_numeros,
     calcular_atrasos_numeros_colorloto,
     calcular_atrasos_pares_numero_color,
+    calcular_intervalos_historicos_colores,
 )
 from app.application.estadisticas.motor.coocurrencia import (
     calcular_coocurrencia_pares_colores,
@@ -74,7 +75,7 @@ from app.application.estadisticas.motor.frecuencia import (
     construir_tabla_frecuencia,
 )
 from app.application.estadisticas.tipos import (
-    FilaFrecuencia, FrecuenciaObservada, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
+    FilaFrecuencia, FrecuenciaObservada, IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
 from app.application.exceptions import ResultadoHistoricoInconsistenteError, TipoEstadisticaNoSoportadoError
 from app.application.interfaces.color_repository import ColorRepository
@@ -579,6 +580,7 @@ def _serializar_metrica_asociacion_texto(filas: list[MetricaAsociacion]) -> dict
 # cuál de los cuatro produce mediante sus propias anotaciones arriba.
 _ResultadoMotor = (
     list[FrecuenciaObservada] | list[FilaFrecuencia] | list[AtrasoObservado] | list[MetricaAsociacion]
+    | list[IntervalosHistoricos]
 )
 
 
@@ -1683,6 +1685,69 @@ def _calcular_coocurrencia_trios_colores_colorloto(
     return calcular_coocurrencia_trios_colores(historico.pares)
 
 
+def _calcular_intervalos_historicos_colores_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[IntervalosHistoricos]:
+    """Intervalos históricos de COLORES de ColorLoto (Etapa AE-18,
+    PROVISIONAL) -candidata aprobada por la auditoría previa
+    (Decisión A, corregida). Reutiliza `calcular_intervalos_historicos_colores`
+    directamente, sin reimplementar nada ni modificar el motor (ya
+    existía en `motor/atrasos.py` desde antes de esta etapa, con 6
+    tests de motor propios en `TestCalcularIntervalosHistoricosColores`).
+
+    A diferencia de AE-14/AE-15/AE-16/AE-17, esta receta SÍ deriva
+    `colores_vigentes` -mismo patrón exacto ya validado por AE-5
+    (`_calcular_atrasos_colores_colorloto`): el helper
+    `_codigos_colores_vigentes_en_referencia` (Etapa AE-4P) calcula
+    los códigos vigentes en la fecha del último sorteo real del
+    histórico ya filtrado, unión que el propio motor ya realiza
+    internamente con los colores observados que no estén ahí -este
+    helper nunca duplica esa unión.
+
+    La auditoría previa detectó y corrigió una contradicción real:
+    el patrón de AE-5 (leer `rango_min`/`rango_max`/`cantidad_numeros`
+    desde `parametros`) es INCOMPATIBLE con una identidad de caché
+    mínima, porque `ejecutar()` pasa el mismo diccionario
+    `parametros_metrica` tal cual a la receta (`calcular_y_persistir_estadistica.py`,
+    método `ejecutar`) -sin ninguna clave agregada. Por eso esta
+    receta usa el patrón más reciente y limpio ya establecido por
+    AE-14 a AE-17: `_RANGO_REAL_COLORLOTO`/`_CANTIDAD_NUMEROS_COLORLOTO`
+    como CONSTANTES DE MÓDULO, nunca leídas de `parametros` -cero
+    lectura de `parametros[...]`, confirmado por AST, ejecutado
+    realmente sin `KeyError` con la identidad mínima real de esta
+    etapa.
+
+    NUNCA se pasa `hasta_numero_sorteo` al motor -mismo precedente
+    exacto de AE-4/5/6/14-17: el orquestador ya filtró
+    `historico.pares` por el corte antes de llegar aquí.
+
+    Identidad de caché `{"politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL}`
+    -demostrada, no copiada: el motor no recibe ningún parámetro de
+    rango/cantidad (a diferencia de AE-5, cuyo motor de atrasos sí
+    los usa), así que esas claves serían redundantes aquí; pero la
+    derivación de `colores_vigentes` depende del mismo algoritmo
+    versionado que AE-5, así que la política SÍ debe formar parte de
+    la identidad -si el algoritmo de unión cambiara en el futuro
+    (nueva versión de la política), una caché calculada bajo la
+    versión anterior no debe reutilizarse silenciosamente.
+
+    Reutiliza `_serializar_atrasos` (Etapa AE-4, protegida) SIN
+    NINGÚN CAMBIO -`dataclasses.asdict` es genérico sobre cualquier
+    dataclass, confirmado por ejecución real de esta auditoría con
+    una salida real de `IntervalosHistoricos`, incluida la tupla
+    `intervalos` (se serializa como array JSON automáticamente vía
+    `json.dumps`). `intervalo_promedio`/`intervalo_mediana` pueden
+    quedar como `int` o `float` en el JSON según el caso real -la
+    normalización a `float` para presentación es responsabilidad del
+    View Model, nunca de este serializador protegido."""
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    colores_vigentes = _codigos_colores_vigentes_en_referencia(historico)
+    return calcular_intervalos_historicos_colores(historico.pares, colores_vigentes)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1781,6 +1846,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "coocurrencia_trios_colores_colorloto": _Receta(
         calcular=_calcular_coocurrencia_trios_colores_colorloto, serializar=_serializar_metrica_asociacion_texto,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "intervalos_historicos_colores_colorloto": _Receta(
+        calcular=_calcular_intervalos_historicos_colores_colorloto, serializar=_serializar_atrasos,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

@@ -49,6 +49,7 @@ from app.api.web.view_models import (
     coocurrencia_trios_colorloto_a_vm,
     coocurrencia_pares_colores_colorloto_a_vm,
     coocurrencia_trios_colores_colorloto_a_vm,
+    intervalos_historicos_colores_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1318,6 +1319,83 @@ def coocurrencia_trios_colores_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/coocurrencia_trios_colores_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/intervalos-historicos-colores")
+def intervalos_historicos_colores_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-18 (PROVISIONAL): decimoctava visualización
+    descriptiva de ColorLoto -para el histórico analizado, los
+    estadísticos descriptivos de TODOS los intervalos históricos
+    entre apariciones consecutivas de cada color (mínimo, máximo,
+    promedio, mediana), ignorando los números de las balotas por
+    completo. Reutiliza `calcular_intervalos_historicos_colores` sin
+    modificarlo, candidata aprobada por la auditoría previa (Decisión
+    A, corregida).
+
+    A diferencia de las coocurrencias (AE-14 a AE-17), esta receta SÍ
+    deriva `colores_vigentes` -mismo patrón exacto ya validado por
+    AE-5 (`_codigos_colores_vigentes_en_referencia`), unión de
+    colores vigentes en la fecha del último sorteo real más
+    cualquier color retirado realmente observado. Identidad de caché
+    `{"politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL}`
+    -demostrada por la auditoría previa: el motor no recibe ningún
+    parámetro de rango/cantidad (a diferencia del motor de atrasos de
+    AE-5), así que esas claves serían redundantes aquí; la política
+    sí debe formar parte de la identidad porque versiona el algoritmo
+    de derivación de `colores_vigentes`, no los datos en sí.
+
+    Reutiliza `_serializar_atrasos` (Etapa AE-4, protegida) sin
+    ningún cambio -confirmado por hash AST idéntico antes/después de
+    esta etapa; `dataclasses.asdict` es genérico sobre cualquier
+    dataclass, incluida la tupla `intervalos` de `IntervalosHistoricos`
+    (se serializa como array JSON automáticamente).
+
+    Tabla y gráfica -mismo patrón que AE-5 (`atrasos-colores`), no
+    tabla pura como AE-14 a AE-17: cada color tiene múltiples
+    estadísticos numéricos, y una barra del intervalo promedio por
+    color complementa la tabla completa. Sin ninguna ruta genérica
+    equivalente."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/intervalos-historicos-colores",
+        "pagina_colorloto_activa": "intervalos-historicos-colores",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/intervalos_historicos_colores_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="intervalos_historicos_colores_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL},
+    )
+
+    vm = intervalos_historicos_colores_colorloto_a_vm(resultado, juego)
+    tiene_sorteos = vm["cantidad_colores_analizados"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/intervalos_historicos_colores_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

@@ -1596,6 +1596,85 @@ def coocurrencia_trios_colores_colorloto_a_vm(estadistica, juego: Juego) -> dict
     }
 
 
+def _num_o_none(valor):
+    """Normaliza un valor numérico posiblemente `int` o `float` a
+    `float` para presentación consistente -Etapa AE-18, PROVISIONAL.
+    `IntervalosHistoricos.intervalo_promedio`/`intervalo_mediana`
+    están tipados `float | None`, pero `statistics.mean`/`median`
+    pueden devolver un `int` real de Python cuando el resultado es
+    exacto (confirmado por ejecución real en la auditoría previa) -
+    el serializador protegido `_serializar_atrasos` (`dataclasses.asdict`
+    genérico) no normaliza este tipo, así que esta normalización
+    vive aquí, en el VM, nunca en el serializador. `None` se
+    preserva literalmente, nunca convertido a `0.0`."""
+    return None if valor is None else float(valor)
+
+
+def intervalos_historicos_colores_colorloto_a_vm(estadistica, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "intervalos_historicos_colores_colorloto" (Etapa AE-18,
+    PROVISIONAL) en un view model listo para la plantilla. Nunca
+    recalcula la métrica, nunca consulta repositorios, nunca llama
+    al motor -transformación pura sobre el resultado ya serializado,
+    mismo patrón exacto que las 17 VM anteriores de ColorLoto.
+
+    A diferencia de las coocurrencias (AE-14 a AE-17), aquí cada
+    fila serializada proviene de `IntervalosHistoricos`
+    (`_serializar_atrasos`, reutilizado sin cambios -confirmado por
+    hash AST idéntico antes/después de esta etapa), no de
+    `MetricaAsociacion`. `IntervalosHistoricos` NO tiene ningún
+    campo `total_sorteos` -a diferencia de `AtrasoObservado` (AE-5),
+    así que este VM deliberadamente NO expone `total_sorteos`: no
+    puede derivarse del JSON serializado sin inventar un valor, y
+    `hasta_numero_sorteo` (el corte) nunca debe confundirse con una
+    cantidad de sorteos -la auditoría previa detectó y corrigió
+    exactamente esta ambigüedad. En su lugar, `cantidad_colores_analizados`
+    (`len(filas)`) sirve como el dato resumen derivable sin ambigüedad.
+
+    `intervalo_promedio`/`intervalo_mediana` se normalizan a `float`
+    vía `_num_o_none` -el serializador protegido puede dejarlos como
+    `int` real de Python en algunos casos (confirmado por ejecución
+    real), y esta normalización de presentación vive aquí, nunca en
+    el serializador. `None` se preserva literalmente en todos los
+    campos numéricos, nunca convertido a 0. Todas las filas
+    (incluidos empates y colores nunca observados) permanecen
+    visibles -ninguna selección arbitraria. La lista completa
+    `intervalos` (tupla cruda de diferencias) NO se expone en la
+    presentación -es un detalle interno de cálculo, mismo criterio
+    que AE-5 no expone listas crudas de apariciones."""
+    filas_serializadas = estadistica.resultado["filas"]
+
+    filas_presentacion = []
+    for f in filas_serializadas:
+        codigo = f["valor"]
+        filas_presentacion.append({
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "cantidad_apariciones": f["cantidad_apariciones"],
+            "cantidad_intervalos": f["cantidad_intervalos"],
+            "intervalo_minimo": f["intervalo_minimo"],
+            "intervalo_maximo": f["intervalo_maximo"],
+            "intervalo_promedio": _num_o_none(f["intervalo_promedio"]),
+            "intervalo_mediana": _num_o_none(f["intervalo_mediana"]),
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "cantidad_colores_analizados": len(filas_presentacion),
+        "chart_labels": [f["nombre"] for f in filas_presentacion],
+        # None (sin intervalos calculables) se serializa como `null`
+        # -Chart.js muestra un hueco real en esa barra, nunca lo
+        # confunde con un intervalo_promedio=0 verdadero.
+        "chart_intervalo_promedio": [f["intervalo_promedio"] for f in filas_presentacion],
+        "chart_colores": [f["color_hex"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
