@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
 
-from app.application.estadisticas.tipos import MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico
+from app.application.estadisticas.tipos import IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico
 from app.application.exceptions import TipoEstadisticaNoSoportadoError
 from app.application.exceptions import ResultadoHistoricoInconsistenteError, TipoInconsistenciaHistorica
 from app.application.interfaces.color_repository import ColorRepository
@@ -2641,7 +2641,7 @@ class TestMotorFrecuenciaNumerosColorLotoSemantica:
 class TestRecetaFrecuenciaNumerosColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("frecuencia_numeros_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -2653,7 +2653,7 @@ class TestRecetaFrecuenciaNumerosColorLoto:
         frecuencia_pares_colorloto, atrasos_numeros_colorloto Y
         atrasos_colores_colorloto), no solo las cuatro anteriores."""
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_numerico
-        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto")
+        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto", "intervalos_historicos_colores_colorloto")
         for nombre, receta in _CATALOGO.items():
             if nombre not in recetas_colorloto:
                 assert receta.obtener_historico is _obtener_historico_numerico, nombre
@@ -2921,7 +2921,7 @@ class TestMotorFrecuenciaColoresColorLotoSemantica:
 class TestRecetaFrecuenciaColoresColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("frecuencia_colores_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -2933,7 +2933,7 @@ class TestRecetaFrecuenciaColoresColorLoto:
         from app.application.use_cases.calcular_y_persistir_estadistica import (
             _obtener_historico_numerico, _obtener_historico_colorloto,
         )
-        recetas_colorloto_con_fuente_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto")
+        recetas_colorloto_con_fuente_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto", "intervalos_historicos_colores_colorloto")
         for nombre, receta in _CATALOGO.items():
             if nombre in recetas_colorloto_con_fuente_colorloto:
                 assert receta.obtener_historico is _obtener_historico_colorloto, nombre
@@ -3206,7 +3206,7 @@ class TestMotorFrecuenciaParesColorLotoSemantica:
 class TestRecetaFrecuenciaParesColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("frecuencia_pares_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -3216,7 +3216,7 @@ class TestRecetaFrecuenciaParesColorLoto:
         """Actualizado en Etapa AE-5: excluye las cinco recetas de
         ColorLoto, no solo las cuatro anteriores."""
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_numerico
-        recetas_colorloto = {"frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto"}
+        recetas_colorloto = {"frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto", "intervalos_historicos_colores_colorloto"}
         for nombre, receta in _CATALOGO.items():
             if nombre not in recetas_colorloto:
                 assert receta.obtener_historico is _obtener_historico_numerico, nombre
@@ -3435,7 +3435,7 @@ class TestMotorAtrasosNumerosColorLotoSemantica:
 class TestRecetaAtrasosNumerosColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("atrasos_numeros_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -3449,7 +3449,7 @@ class TestRecetaAtrasosNumerosColorLoto:
         from app.application.use_cases.calcular_y_persistir_estadistica import (
             _obtener_historico_numerico, _obtener_historico_colorloto,
         )
-        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto")
+        recetas_colorloto = ("frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto", "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto", "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto", "intervalos_historicos_colores_colorloto")
         for nombre, receta in _CATALOGO.items():
             if nombre in recetas_colorloto:
                 assert receta.obtener_historico is _obtener_historico_colorloto, nombre
@@ -4226,7 +4226,7 @@ class TestMotorAtrasosColoresColorLotoSemantica:
 class TestRecetaAtrasosColoresColorLoto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("atrasos_colores_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -4243,7 +4243,7 @@ class TestRecetaAtrasosColoresColorLoto:
         recetas_colorloto = (
             "frecuencia_numeros_colorloto", "frecuencia_colores_colorloto", "frecuencia_pares_colorloto",
             "atrasos_numeros_colorloto", "atrasos_colores_colorloto", "atrasos_pares_colorloto", "repeticiones_entre_sorteos_colorloto", "distribucion_pares_impares_colorloto", "distribucion_altos_bajos_colorloto", "maximo_repeticion_color_por_sorteo_colorloto",
-            "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto",
+            "distribucion_pares_consecutivos_colorloto", "distribucion_racha_maxima_colorloto", "distribucion_trios_consecutivos_colorloto", "coocurrencia_pares_colorloto", "coocurrencia_trios_colorloto", "coocurrencia_pares_colores_colorloto", "coocurrencia_trios_colores_colorloto", "intervalos_historicos_colores_colorloto",
         )
         for nombre, receta in _CATALOGO.items():
             if nombre in recetas_colorloto:
@@ -4502,7 +4502,7 @@ class TestMotorAtrasosParesNumeroColorSemantica:
 class TestRecetaAtrasosParesColorloto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("atrasos_pares_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -4719,7 +4719,7 @@ class TestMotorRepeticionesEntreSorteosColorlotoSemantica:
 class TestRecetaRepeticionesEntreSorteosColorloto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("repeticiones_entre_sorteos_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -4911,7 +4911,7 @@ class TestMotorDistribucionParesImparesColorlotoSemantica:
 class TestRecetaDistribucionParesImparesColorloto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("distribucion_pares_impares_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -5117,7 +5117,7 @@ class TestRecetaDistribucionAltosBajosColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("distribucion_altos_bajos_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -5332,7 +5332,7 @@ class TestRecetaMaximoRepeticionColorPorSorteoColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("maximo_repeticion_color_por_sorteo_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -5574,7 +5574,7 @@ class TestRecetaDistribucionParesConsecutivosColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("distribucion_pares_consecutivos_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -5832,7 +5832,7 @@ class TestRecetaDistribucionRachaMaximaColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("distribucion_racha_maxima_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -6137,7 +6137,7 @@ class TestRecetaDistribucionTriosConsecutivosColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("distribucion_trios_consecutivos_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -6488,7 +6488,7 @@ class TestMotorCoocurrenciaParesColorLotoSemantica:
 class TestRecetaCoocurrenciaParesColorloto:
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("coocurrencia_pares_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -6661,7 +6661,7 @@ class TestRecetaCoocurrenciaTriosColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("coocurrencia_trios_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -6867,7 +6867,7 @@ class TestRecetaCoocurrenciaParesColoresColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("coocurrencia_pares_colores_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -7181,7 +7181,7 @@ class TestRecetaCoocurrenciaTriosColoresColorloto:
 
     def test_receta_registrada_exactamente_una_vez(self):
         assert list(_CATALOGO.keys()).count("coocurrencia_trios_colores_colorloto") == 1
-        assert len(_CATALOGO) == 26
+        assert len(_CATALOGO) == 27
 
     def test_fuente_de_historico_es_colorloto(self):
         from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
@@ -7485,3 +7485,367 @@ class TestSerializarMetricaAsociacionTextoConTresElementos:
         r3 = _serializar_metrica_asociacion(filas_3)
         assert all(isinstance(e, int) for e in r2["filas"][0]["elementos"])
         assert all(isinstance(e, int) for e in r3["filas"][0]["elementos"])
+
+
+class TestRecetaIntervalosHistoricosColoresColorloto:
+    """Etapa AE-18 (PROVISIONAL): candidata aprobada por la
+    auditoria previa (Decision A, corregida). A diferencia de las
+    coocurrencias (AE-14 a AE-17), esta receta SI deriva
+    colores_vigentes -mismo patron exacto ya validado por AE-5- pero
+    usa las CONSTANTES de modulo (_RANGO_REAL_COLORLOTO/
+    _CANTIDAD_NUMEROS_COLORLOTO) para la validacion defensiva, nunca
+    leidas de parametros -la contradiccion detectada en la auditoria
+    (identidad minima vs. lectura de parametros["rango_min"]) queda
+    resuelta aqui: cero lectura de parametros, identidad minima real."""
+
+    def test_receta_registrada_exactamente_una_vez(self):
+        assert list(_CATALOGO.keys()).count("intervalos_historicos_colores_colorloto") == 1
+        assert len(_CATALOGO) == 27
+
+    def test_fuente_de_historico_es_colorloto(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _obtener_historico_colorloto
+        assert _CATALOGO["intervalos_historicos_colores_colorloto"].obtener_historico is _obtener_historico_colorloto
+
+    def test_serializador_es_serializar_atrasos_reutilizado_sin_cambios(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_atrasos
+        assert _CATALOGO["intervalos_historicos_colores_colorloto"].serializar is _serializar_atrasos
+        assert _CATALOGO["atrasos_colores_colorloto"].serializar is _CATALOGO["intervalos_historicos_colores_colorloto"].serializar
+
+    def test_espia_motor_recibe_dos_argumentos_sin_corte(self):
+        """Firma real: calcular_intervalos_historicos_colores(resultados,
+        colores_vigentes, hasta_numero_sorteo=None) -exactamente dos
+        argumentos posicionales, cero kwargs, nunca hasta_numero_sorteo."""
+        import app.application.use_cases.calcular_y_persistir_estadistica as modulo
+        original = modulo.calcular_intervalos_historicos_colores
+        capturado = {}
+
+        def espia(*a, **kw):
+            capturado["args"] = a
+            capturado["kwargs"] = kw
+            return original(*a, **kw)
+
+        modulo.calcular_intervalos_historicos_colores = espia
+        try:
+            orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+            orquestador.ejecutar(
+                juego_id, "intervalos_historicos_colores_colorloto",
+                parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+            )
+        finally:
+            modulo.calcular_intervalos_historicos_colores = original
+        assert len(capturado["args"]) == 2
+        assert capturado["kwargs"] == {}
+        assert "hasta_numero_sorteo" not in capturado["kwargs"]
+
+    def test_receta_no_lee_ninguna_clave_de_parametros_ast_real(self):
+        """Confirma por AST que la receta NUNCA lee parametros[...]
+        -resuelve la contradiccion detectada en la auditoria: usa
+        _RANGO_REAL_COLORLOTO/_CANTIDAD_NUMEROS_COLORLOTO como
+        constantes de modulo, no valores de parametros."""
+        import ast
+        import inspect
+        from app.application.use_cases import calcular_y_persistir_estadistica as modulo
+        codigo_fuente = inspect.getsource(modulo._calcular_intervalos_historicos_colores_colorloto)
+        funcion = ast.parse(codigo_fuente).body[0]
+        claves_parametros = {
+            nodo.slice.value
+            for nodo in ast.walk(funcion)
+            if isinstance(nodo, ast.Subscript)
+            and isinstance(nodo.value, ast.Name)
+            and nodo.value.id == "parametros"
+            and isinstance(nodo.slice, ast.Constant)
+            and isinstance(nodo.slice.value, str)
+        }
+        assert claves_parametros == set(), "esta receta NO debe leer ninguna clave de parametros"
+
+    def test_receta_no_usa_parametros_get(self):
+        import inspect
+        from app.application.use_cases import calcular_y_persistir_estadistica as modulo
+        codigo_fuente = inspect.getsource(modulo._calcular_intervalos_historicos_colores_colorloto)
+        assert "parametros.get(" not in codigo_fuente
+
+    def test_receta_usa_constantes_de_modulo(self):
+        import inspect
+        from app.application.use_cases import calcular_y_persistir_estadistica as modulo
+        codigo_fuente = inspect.getsource(modulo._calcular_intervalos_historicos_colores_colorloto)
+        assert "_RANGO_REAL_COLORLOTO" in codigo_fuente
+        assert "_CANTIDAD_NUMEROS_COLORLOTO" in codigo_fuente
+        assert "_codigos_colores_vigentes_en_referencia" in codigo_fuente
+
+    def test_receta_no_pasa_rango_ni_cantidad_ni_corte_al_motor(self):
+        import ast
+        import inspect
+        from app.application.use_cases import calcular_y_persistir_estadistica as modulo
+        codigo_fuente = inspect.getsource(modulo._calcular_intervalos_historicos_colores_colorloto)
+        funcion = ast.parse(codigo_fuente).body[0]
+        llamada_motor = None
+        for nodo in ast.walk(funcion):
+            if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name) and nodo.func.id == "calcular_intervalos_historicos_colores":
+                llamada_motor = nodo
+        assert llamada_motor is not None
+        assert len(llamada_motor.args) == 2
+        assert len(llamada_motor.keywords) == 0
+
+    def test_ejecucion_real_sin_keyerror_con_identidad_minima(self):
+        """Prueba directa pedida por la auditoria: la receta se
+        ejecuta con la identidad minima real sin KeyError."""
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        resultado = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        assert resultado is not None
+
+    def test_validacion_ocurre_antes_del_motor_cantidad_invalida(self):
+        import app.application.use_cases.calcular_y_persistir_estadistica as modulo
+        original = modulo.calcular_intervalos_historicos_colores
+        llamado = {"v": False}
+
+        def espia(*a, **kw):
+            llamado["v"] = True
+            return original(*a, **kw)
+
+        modulo.calcular_intervalos_historicos_colores = espia
+        try:
+            orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS[:5], date(2024, 1, 1))])
+            try:
+                orquestador.ejecutar(
+                    juego_id, "intervalos_historicos_colores_colorloto",
+                    parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+                )
+            except ResultadoHistoricoInconsistenteError:
+                pass
+        finally:
+            modulo.calcular_intervalos_historicos_colores = original
+        assert llamado["v"] is False
+
+    def test_numero_fuera_de_rango_motor_no_invocado_cache_no_persistida(self):
+        orquestador, _, _, estadistica_repo, juego_id = _orquestador_colorloto([
+            _cl(1, ((1, "ROJO"), (2, "ROJO"), (3, "ROJO"), (4, "ROJO"), (5, "ROJO"), (9, "ROJO")), date(2024, 1, 1))
+        ])
+        try:
+            orquestador.ejecutar(
+                juego_id, "intervalos_historicos_colores_colorloto",
+                parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+            )
+        except ResultadoHistoricoInconsistenteError:
+            pass
+        assert estadistica_repo.guardar_fue_llamado is False
+
+    def test_historico_vacio_valido(self):
+        orquestador, _, _, estadistica_repo, juego_id = _orquestador_colorloto([])
+        orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        assert estadistica_repo.guardar_fue_llamado is True
+
+    def test_colores_vigentes_derivados_por_helper_real(self):
+        """Confirma que colores_vigentes proviene de
+        _codigos_colores_vigentes_en_referencia, no de una lista fija."""
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        resultado = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        valores = {f["valor"] for f in resultado.resultado["filas"]}
+        assert valores == {"ROJO", "AZUL", "VERDE", "NEGRO", "BLANCO", "AMARILLO"}
+
+    def test_colores_retirados_preservados(self):
+        paleta_extendida = list(_PALETA_COLORLOTO) + [_col("MORADO", activo=False)]
+        datos = [_cl(1, ((1, "ROJO"), (2, "AZUL"), (3, "VERDE"), (4, "NEGRO"), (5, "BLANCO"), (6, "MORADO")), date(2020, 1, 1))]
+        orquestador, _, _, _, juego_id = _orquestador_colorloto(datos, colores=paleta_extendida)
+        resultado = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        valores = {f["valor"] for f in resultado.resultado["filas"]}
+        assert "MORADO" in valores
+
+    def test_colores_nunca_observados_incluidos(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        resultado = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        for fila in resultado.resultado["filas"]:
+            assert fila["cantidad_apariciones"] >= 0
+
+    def test_corte_ya_aplicado_produce_caches_distintas(self):
+        datos = [
+            _cl(1, _PARES_VALIDOS, date(2024, 1, 1)),
+            _cl(2, _PARES_VALIDOS, date(2024, 1, 2)),
+        ]
+        orquestador, _, _, _, juego_id = _orquestador_colorloto(datos)
+        r_corte = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto", hasta_numero_sorteo=1,
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        r_completo = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        assert r_corte.hasta_numero_sorteo == 1
+        assert r_completo.hasta_numero_sorteo is None
+
+    def test_determinismo_sin_mutacion(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        r1 = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        assert r1.resultado["filas"] == r1.resultado["filas"]
+
+    def test_serializacion_real_produce_array_json_de_intervalos(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([
+            _cl(1, _PARES_VALIDOS, date(2024, 1, 1)),
+            _cl(2, _PARES_VALIDOS, date(2024, 1, 2)),
+        ])
+        resultado = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        fila = resultado.resultado["filas"][0]
+        # En memoria (antes de la ronda real por JSONB en PostgreSQL)
+        # `dataclasses.asdict` preserva el tipo Python real, una
+        # tupla -se convierte en array JSON solo al pasar por
+        # `json.dumps`, confirmado directamente en
+        # TestSerializarAtrasosConIntervalosHistoricos.
+        assert isinstance(fila["intervalos"], tuple)
+        import json
+        assert isinstance(json.loads(json.dumps(fila["intervalos"])), list)
+        assert set(fila.keys()) == {
+            "valor", "cantidad_apariciones", "cantidad_intervalos", "intervalo_minimo",
+            "intervalo_maximo", "intervalo_promedio", "intervalo_mediana", "intervalos",
+        }
+
+    def test_identidad_exacta_con_politica_sin_claves_redundantes(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        resultado = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        assert resultado.parametros == {"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+        assert "rango_min" not in resultado.parametros
+        assert "rango_max" not in resultado.parametros
+        assert "cantidad_numeros" not in resultado.parametros
+        assert "cantidad_balotas" not in resultado.parametros
+        assert "colores" not in resultado.parametros
+        assert "colores_vigentes" not in resultado.parametros
+        assert "hasta_numero_sorteo" not in resultado.parametros
+
+    def test_politica_distinta_produce_identidad_distinta(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        r_v1 = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        r_v2 = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v2"},
+        )
+        assert r_v1.parametros != r_v2.parametros
+
+    def test_coexiste_con_ae5_y_ae14_a_ae17(self):
+        orquestador, _, _, _, juego_id = _orquestador_colorloto([_cl(1, _PARES_VALIDOS, date(2024, 1, 1))])
+        r_atrasos = orquestador.ejecutar(
+            juego_id, "atrasos_colores_colorloto",
+            parametros_metrica={
+                "rango_min": 1, "rango_max": 7, "cantidad_numeros": 6,
+                "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1",
+            },
+        )
+        r_intervalos = orquestador.ejecutar(
+            juego_id, "intervalos_historicos_colores_colorloto",
+            parametros_metrica={"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"},
+        )
+        r_coocurrencia = orquestador.ejecutar(juego_id, "coocurrencia_pares_colorloto", parametros_metrica={})
+        assert r_atrasos.resultado != r_intervalos.resultado
+        assert r_intervalos.resultado != r_coocurrencia.resultado
+
+    def test_motor_no_modificado(self):
+        import inspect
+        from app.application.estadisticas.motor.atrasos import calcular_intervalos_historicos_colores
+        firma = inspect.signature(calcular_intervalos_historicos_colores)
+        assert list(firma.parameters.keys()) == ["resultados", "colores_vigentes", "hasta_numero_sorteo"]
+
+
+class TestSerializarAtrasosConIntervalosHistoricos:
+    """Etapa AE-18 (PROVISIONAL): pruebas directas de reutilizacion
+    de _serializar_atrasos (protegido, AE-4) con IntervalosHistoricos,
+    sin modificarlo."""
+
+    def test_salida_real_produce_json_exacto(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_atrasos
+        fila = IntervalosHistoricos(
+            valor="ROJO", cantidad_apariciones=3, cantidad_intervalos=2,
+            intervalo_minimo=1, intervalo_maximo=9, intervalo_promedio=5,
+            intervalo_mediana=5.0, intervalos=(9, 1),
+        )
+        resultado = _serializar_atrasos([fila])
+        assert resultado == {"filas": [{
+            "valor": "ROJO", "cantidad_apariciones": 3, "cantidad_intervalos": 2,
+            "intervalo_minimo": 1, "intervalo_maximo": 9, "intervalo_promedio": 5,
+            "intervalo_mediana": 5.0, "intervalos": (9, 1),
+        }]}
+
+    def test_intervalos_se_serializa_como_lista_via_json(self):
+        import json
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_atrasos
+        fila = IntervalosHistoricos(
+            valor="ROJO", cantidad_apariciones=3, cantidad_intervalos=2,
+            intervalo_minimo=1, intervalo_maximo=9, intervalo_promedio=5,
+            intervalo_mediana=5.0, intervalos=(9, 1),
+        )
+        resultado = _serializar_atrasos([fila])
+        texto_json = json.dumps(resultado)
+        reconstruido = json.loads(texto_json)
+        assert reconstruido["filas"][0]["intervalos"] == [9, 1]
+
+    def test_promedio_entero_y_mediana_flotante_permitidos(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_atrasos
+        fila = IntervalosHistoricos(
+            valor="ROJO", cantidad_apariciones=3, cantidad_intervalos=2,
+            intervalo_minimo=1, intervalo_maximo=9, intervalo_promedio=5,
+            intervalo_mediana=5.0, intervalos=(9, 1),
+        )
+        resultado = _serializar_atrasos([fila])
+        assert isinstance(resultado["filas"][0]["intervalo_promedio"], int)
+        assert isinstance(resultado["filas"][0]["intervalo_mediana"], float)
+
+    def test_none_preservado_con_menos_de_dos_apariciones(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_atrasos
+        fila = IntervalosHistoricos(
+            valor="AZUL", cantidad_apariciones=1, cantidad_intervalos=0,
+            intervalo_minimo=None, intervalo_maximo=None, intervalo_promedio=None,
+            intervalo_mediana=None, intervalos=(),
+        )
+        resultado = _serializar_atrasos([fila])
+        f = resultado["filas"][0]
+        assert f["intervalo_minimo"] is None
+        assert f["intervalo_maximo"] is None
+        assert f["intervalo_promedio"] is None
+        assert f["intervalo_mediana"] is None
+        assert f["intervalos"] == ()
+
+    def test_no_muta_la_entrada(self):
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_atrasos
+        fila = IntervalosHistoricos(
+            valor="ROJO", cantidad_apariciones=3, cantidad_intervalos=2,
+            intervalo_minimo=1, intervalo_maximo=9, intervalo_promedio=5,
+            intervalo_mediana=5.0, intervalos=(9, 1),
+        )
+        filas = [fila]
+        _serializar_atrasos(filas)
+        assert filas[0] is fila
+        assert fila.intervalos == (9, 1)
+
+    def test_ae4_5_6_siguen_usando_atrasoobservado_sin_cambios(self):
+        """Regresion: _serializar_atrasos sigue funcionando igual
+        para AtrasoObservado (AE-4/5/6) tras reutilizarse tambien
+        para IntervalosHistoricos."""
+        from app.application.use_cases.calcular_y_persistir_estadistica import _serializar_atrasos
+        from app.application.estadisticas.motor.atrasos import AtrasoObservado
+        fila = AtrasoObservado(valor="ROJO", atraso=5, ultimo_sorteo_aparicion=10, total_sorteos=15)
+        resultado = _serializar_atrasos([fila])
+        assert resultado == {"filas": [{"valor": "ROJO", "atraso": 5, "ultimo_sorteo_aparicion": 10, "total_sorteos": 15}]}
