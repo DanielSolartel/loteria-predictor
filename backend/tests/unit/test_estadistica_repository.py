@@ -2671,3 +2671,153 @@ class TestUpsertConCoocurrenciaParesColoresColorlotoEtapaAE16:
         segunda = repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "actualizada"}))
         assert segunda.id == primera.id
         assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colores_colorloto", None, {}).resultado == {"v": "actualizada"}
+
+
+class TestUpsertConCoocurrenciaTriosColoresColorlotoEtapaAE17:
+    """Mismo patron exacto ya usado para coocurrencia_pares_colores_colorloto
+    (AE-16), adaptado a trios de colores (Etapa AE-17, PROVISIONAL):
+    la identidad de cache tambien es el diccionario VACIO {} -ningun
+    parametro define la identidad matematica de esta metrica. A
+    diferencia de AE-16, aqui 'elementos' contiene TRES cadenas
+    (codigos de color), no dos -mismo repositorio JSONB generico,
+    sin necesidad de cambios."""
+
+    _PARAMS: dict = {}
+
+    def test_hash_de_diccionario_vacio_es_estable(self):
+        from app.application.interfaces.estadistica_repository import calcular_parametros_hash
+        h1 = calcular_parametros_hash({})
+        h2 = calcular_parametros_hash({})
+        assert h1 == h2
+        assert isinstance(h1, str) and len(h1) > 0
+
+    def test_persistencia_con_parametros_vacios(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "nueva"}))
+        assert entrada.parametros == {}
+
+    def test_hit_de_cache_con_parametros_vacios(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "cacheado"}))
+        vigente = repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", None, {})
+        assert vigente is not None
+        assert vigente.id == primera.id
+
+    def test_miss_por_corte_distinto(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        vigente_otro_corte = repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", 100, {})
+        assert vigente_otro_corte is None
+
+    def test_historico_completo_y_corte_cien_son_caches_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=100, parametros={}, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", None, {})
+        corte = repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", 100, {})
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_no_sustitucion_de_vacio_por_parametros_predeterminados(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        assert entrada.parametros == {}
+        assert entrada.parametros is not None
+
+    def test_ausencia_de_claves_prohibidas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        assert "cantidad_numeros" not in entrada.parametros
+        assert "cantidad_balotas" not in entrada.parametros
+        assert "rango_min" not in entrada.parametros
+        assert "rango_max" not in entrada.parametros
+        assert "colores" not in entrada.parametros
+        assert "colores_vigentes" not in entrada.parametros
+        assert "politica_universo_colores" not in entrada.parametros
+        assert "hasta_numero_sorteo" not in entrada.parametros
+
+    def test_una_cache_vigente_por_identidad(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "coocurrencia_trios_colores_colorloto")
+        assert total == 1
+
+    def test_coexistencia_con_las_tres_coocurrencias_previas(self):
+        """Confirma que la identidad vacia de AE-17 convive sin
+        colision con AE-14, AE-15 y AE-16: el tipo_estadistica
+        distinto es suficiente para diferenciar, aun con la misma
+        identidad de parametros {}."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "pares_numeros"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "trios_numeros"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "pares_colores"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "trios_colores"}))
+        assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {}).resultado == {"v": "pares_numeros"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_trios_colorloto", None, {}).resultado == {"v": "trios_numeros"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colores_colorloto", None, {}).resultado == {"v": "pares_colores"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", None, {}).resultado == {"v": "trios_colores"}
+
+    def test_invalidacion_agnostica_cubre_sin_cambios(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "x"}))
+        afectadas = repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        assert afectadas == 1
+        assert repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", None, {}) is None
+
+    def test_tres_cadenas_en_elementos_preservadas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{"elementos": ["AMARILLO", "AZUL", "ROJO"], "soporte": 4, "total_sorteos": 10, "frecuencia_relativa": 0.4, "frecuencia_esperada": None, "lift": None}]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado=resultado))
+        fila = entrada.resultado["filas"][0]
+        assert len(fila["elementos"]) == 3
+        for elemento in fila["elementos"]:
+            assert isinstance(elemento, str)
+        assert fila["elementos"] == ["AMARILLO", "AZUL", "ROJO"]
+
+    def test_codigo_historico_retirado_preservado(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{"elementos": ["AZUL", "MORADO", "ROJO"], "soporte": 1, "total_sorteos": 5, "frecuencia_relativa": 0.2, "frecuencia_esperada": None, "lift": None}]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado=resultado))
+        assert entrada.resultado["filas"][0]["elementos"] == ["AZUL", "MORADO", "ROJO"]
+
+    def test_none_preservado_en_resultado_persistido(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{"elementos": ["AMARILLO", "AZUL", "ROJO"], "soporte": 4, "total_sorteos": 10, "frecuencia_relativa": 0.4, "frecuencia_esperada": None, "lift": None}]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado=resultado))
+        fila = entrada.resultado["filas"][0]
+        assert fila["frecuencia_esperada"] is None
+        assert fila["lift"] is None
+
+    def test_soporte_total_y_frecuencia_relativa_preservados(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{"elementos": ["AMARILLO", "AZUL", "ROJO"], "soporte": 4, "total_sorteos": 10, "frecuencia_relativa": 0.4, "frecuencia_esperada": None, "lift": None}]}
+        entrada = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado=resultado))
+        fila = entrada.resultado["filas"][0]
+        assert fila["soporte"] == 4
+        assert fila["total_sorteos"] == 10
+        assert fila["frecuencia_relativa"] == 0.4
+
+    def test_actualizacion_de_cache_existente(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios_colores_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "actualizada"}))
+        assert segunda.id == primera.id
+        assert repo.buscar_vigente(juego_id, "coocurrencia_trios_colores_colorloto", None, {}).resultado == {"v": "actualizada"}
