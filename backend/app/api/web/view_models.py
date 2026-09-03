@@ -1781,6 +1781,71 @@ def intervalos_historicos_numeros_colorloto_a_vm(estadistica, rango_min: int, ra
     }
 
 
+def intervalos_historicos_pares_numero_color_colorloto_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "intervalos_historicos_pares_numero_color_colorloto" (Etapa
+    AE-21, PROVISIONAL) en un view model listo para la plantilla.
+    Nunca recalcula la métrica, nunca consulta repositorios, nunca
+    llama al motor -transformación pura, mismo patrón que las 20 VM
+    anteriores de ColorLoto.
+
+    Campo real del contrato serializado: `IntervalosHistoricos.valor`
+    (string `"numero-color"`, p.ej. `"5-ROJO"`) -se deserializa aquí
+    con `_deserializar_par_numero_color` (Etapa AE-6, protegido,
+    reutilizado sin ningún cambio -mismo hash AST antes/después de
+    esta etapa), único punto de parseo de este contrato en toda la
+    capa web.
+
+    `cantidad_apariciones`/`cantidad_intervalos` son SIEMPRE enteros
+    reales (`0` cuando corresponde, nunca `None`) -mismo criterio ya
+    corregido y confirmado en AE-20. Se exponen literalmente, sin
+    pasar por `_num_o_none`. `intervalo_minimo`/`intervalo_maximo`
+    también se preservan literalmente (enteros reales o `None`,
+    nunca normalizados a `float`). Solo `intervalo_promedio`/
+    `intervalo_mediana` pasan por `_num_o_none` (Etapa AE-18,
+    reutilizado sin ningún cambio). La lista completa `intervalos`
+    NUNCA se expone aquí -no es necesaria para tabla ni gráfica.
+
+    El orden de presentación es por `(numero, color)` -exclusivo de
+    esta capa, no muta ni depende del orden en que el motor produjo
+    las filas (el motor ya es determinista por sí mismo, confirmado
+    por ejecución real; este ordenamiento es solo para una
+    presentación estable y predecible)."""
+    filas_ordenadas = sorted(
+        estadistica.resultado["filas"],
+        key=lambda f: _deserializar_par_numero_color(f["valor"]),
+    )
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        numero, color = _deserializar_par_numero_color(f["valor"])
+        filas_presentacion.append({
+            "numero": numero,
+            "color": color,
+            "cantidad_apariciones": f["cantidad_apariciones"],
+            "cantidad_intervalos": f["cantidad_intervalos"],
+            "intervalo_minimo": f["intervalo_minimo"],
+            "intervalo_maximo": f["intervalo_maximo"],
+            "intervalo_promedio": _num_o_none(f["intervalo_promedio"]),
+            "intervalo_mediana": _num_o_none(f["intervalo_mediana"]),
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+        "chart_labels": [f"{f['numero']}-{f['color']}" for f in filas_presentacion],
+        # None (sin intervalos calculables) se serializa como `null`
+        # -Chart.js muestra un hueco real en esa barra, nunca lo
+        # confunde con un intervalo_promedio=0 verdadero.
+        "chart_intervalo_promedio": [f["intervalo_promedio"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:

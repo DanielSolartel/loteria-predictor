@@ -52,6 +52,7 @@ from app.api.web.view_models import (
     intervalos_historicos_colores_colorloto_a_vm,
     distribucion_sumas_colorloto_a_vm,
     intervalos_historicos_numeros_colorloto_a_vm,
+    intervalos_historicos_pares_numero_color_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1535,6 +1536,72 @@ def intervalos_historicos_numeros_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/intervalos_historicos_numeros_colorloto.html",
+        context={**contexto_base, "estadistica": vm},
+    )
+
+
+@router.get("/estadisticas/colorloto/intervalos-historicos-pares-numero-color")
+def intervalos_historicos_pares_numero_color_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-21 (PROVISIONAL): vigésima primera visualización
+    descriptiva de ColorLoto -para cada PAR (número, color) como
+    unidad atómica, estadísticos descriptivos de TODOS los
+    intervalos históricos entre apariciones consecutivas del par
+    completo. Reutiliza `calcular_intervalos_historicos_pares_numero_color`
+    sin modificarlo, candidata aprobada tras auditoría exhaustiva
+    post-AE-20 (Decisión: se pospone `calcular_distribucion_conteo_color`
+    -sigue exigiendo un selector de color explícito sin ningún
+    precedente real; no se implementa ningún selector aquí).
+
+    A diferencia de AE-20 (identidad solo con rango), este motor
+    construye su universo con el producto cartesiano
+    `range(rango_min, rango_max+1) × colores_a_reportar`, por lo que
+    la identidad incluye TANTO el rango COMO la política de universo
+    de colores -combinación real de los criterios ya demostrados por
+    AE-20 (rango) y AE-5/AE-18 (política de colores)."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/intervalos-historicos-pares-numero-color",
+        "pagina_colorloto_activa": "intervalos-historicos-pares-numero-color",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/intervalos_historicos_pares_numero_color_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    rango_min, rango_max = juego.rango_min, juego.rango_max
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="intervalos_historicos_pares_numero_color_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "rango_min": rango_min,
+            "rango_max": rango_max,
+            "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL,
+        },
+    )
+
+    vm = intervalos_historicos_pares_numero_color_colorloto_a_vm(resultado, rango_min, rango_max, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/intervalos_historicos_pares_numero_color_colorloto.html",
         context={**contexto_base, "estadistica": vm},
     )
 
