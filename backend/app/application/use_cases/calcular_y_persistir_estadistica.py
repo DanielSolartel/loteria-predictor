@@ -60,10 +60,12 @@ from app.application.estadisticas.motor.repeticiones import (
     calcular_repeticiones_entre_sorteos_colorloto,
 )
 from app.application.estadisticas.motor.distribuciones import (
+    DistribucionSumas,
     calcular_distribucion_altos_bajos,
     calcular_distribucion_altos_bajos_colorloto,
     calcular_distribucion_pares_impares,
     calcular_distribucion_pares_impares_colorloto,
+    calcular_distribucion_sumas_colorloto,
     calcular_maximo_repeticion_color_por_sorteo,
 )
 from app.application.estadisticas.motor.frecuencia import (
@@ -580,7 +582,7 @@ def _serializar_metrica_asociacion_texto(filas: list[MetricaAsociacion]) -> dict
 # cuál de los cuatro produce mediante sus propias anotaciones arriba.
 _ResultadoMotor = (
     list[FrecuenciaObservada] | list[FilaFrecuencia] | list[AtrasoObservado] | list[MetricaAsociacion]
-    | list[IntervalosHistoricos]
+    | list[IntervalosHistoricos] | DistribucionSumas
 )
 
 
@@ -1748,6 +1750,79 @@ def _calcular_intervalos_historicos_colores_colorloto(
     return calcular_intervalos_historicos_colores(historico.pares, colores_vigentes)
 
 
+def _calcular_distribucion_sumas_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> DistribucionSumas:
+    """Distribución de sumas de ColorLoto (Etapa AE-19, PROVISIONAL)
+    -candidata aprobada tras dos auditorías previas (Decisión C: se
+    pospuso `calcular_distribucion_conteo_color` porque su
+    `color_objetivo` exige una decisión de producto -selector
+    explícito o receta agregadora- sin ningún precedente real en las
+    27 rutas ni en las 27 recetas existentes; ninguna decisión de
+    ese tipo se toma aquí). Reutiliza `calcular_distribucion_sumas_colorloto`
+    directamente, sin reimplementar nada ni modificar el motor (ya
+    existía en `motor/distribuciones.py` desde antes de esta etapa).
+
+    A diferencia de AE-5/AE-18, esta receta NO deriva `colores_vigentes`
+    -el motor ignora el color por completo, suma únicamente los
+    NÚMEROS de las 6 balotas (`sum(n for n, _ in r.pares)`),
+    confirmado por lectura directa del motor y por ejecución real en
+    la auditoría previa: el mismo histórico con colores distintos
+    produce exactamente el mismo resultado. Por eso esta receta
+    tampoco necesita `_codigos_colores_vigentes_en_referencia` ni
+    ningún catálogo de colores.
+
+    Identidad de caché `{}` -demostrada, no copiada: la firma real
+    del motor es `(resultados, hasta_numero_sorteo=None)`, sin
+    ningún parámetro de rango, cantidad, catálogo ni selector; la
+    auditoría previa ejecutó la receta exacta con `{}` y confirmó
+    ausencia de `KeyError`. NUNCA se pasa `hasta_numero_sorteo` al
+    motor -mismo precedente exacto de las 27 recetas anteriores: el
+    orquestador ya filtró `historico.pares` por el corte (SQL +
+    `filtrar_por_corte_temporal` defensivo en `_obtener_historico_colorloto`)
+    antes de llegar aquí; pasarlo de nuevo sería redundante.
+
+    El motor retorna un objeto ÚNICO `DistribucionSumas` -a
+    diferencia de las 27 recetas anteriores, que devuelven una
+    lista de filas- por lo que requiere un serializador nuevo,
+    `_serializar_distribucion_sumas` (ver más abajo), en vez de
+    reutilizar `{"filas": [...]}"`. Con histórico vacío,
+    `total_sorteos=0`, `minimo=maximo=None`, pero
+    `media=mediana=desviacion_estandar=0.0` -NUNCA `None`- y
+    `percentiles={}`, comportamiento real del motor, verificado por
+    ejecución directa en la auditoría previa."""
+    return calcular_distribucion_sumas_colorloto(historico.pares)
+
+
+def _serializar_distribucion_sumas(distribucion: DistribucionSumas) -> dict:
+    """Serializador nuevo para AE-19 (PROVISIONAL) -`DistribucionSumas`
+    es un objeto único, no una lista de filas, por lo que NO usa el
+    envoltorio `{"filas": [...]}"` de los demás serializadores.
+    Convierte las claves de `percentiles` a string explícitamente
+    aquí -concern de esquema/persistencia, no de presentación- pero
+    NO normaliza `media`/`mediana`/`desviacion_estandar` a un tipo
+    numérico único: `statistics.mean`/`median`/`pstdev` pueden
+    devolver `int` o `float` reales de Python según el caso
+    (confirmado por ejecución real en la auditoría previa), y esa
+    normalización para presentación es responsabilidad exclusiva del
+    View Model (`_num_o_none`, reutilizado de AE-18 sin cambios),
+    nunca de este serializador. `minimo`/`maximo` se preservan
+    literalmente, incluido `None` con histórico vacío -nunca
+    convertidos a 0."""
+    return {
+        "total_sorteos": distribucion.total_sorteos,
+        "minimo": distribucion.minimo,
+        "maximo": distribucion.maximo,
+        "media": distribucion.media,
+        "mediana": distribucion.mediana,
+        "desviacion_estandar": distribucion.desviacion_estandar,
+        "percentiles": {
+            str(percentil): valor
+            for percentil, valor in sorted(distribucion.percentiles.items())
+        },
+    }
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1850,6 +1925,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "intervalos_historicos_colores_colorloto": _Receta(
         calcular=_calcular_intervalos_historicos_colores_colorloto, serializar=_serializar_atrasos,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "distribucion_sumas_colorloto": _Receta(
+        calcular=_calcular_distribucion_sumas_colorloto, serializar=_serializar_distribucion_sumas,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

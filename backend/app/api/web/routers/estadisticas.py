@@ -50,6 +50,7 @@ from app.api.web.view_models import (
     coocurrencia_pares_colores_colorloto_a_vm,
     coocurrencia_trios_colores_colorloto_a_vm,
     intervalos_historicos_colores_colorloto_a_vm,
+    distribucion_sumas_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1396,6 +1397,74 @@ def intervalos_historicos_colores_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/intervalos_historicos_colores_colorloto.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/distribucion-sumas")
+def distribucion_sumas_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-19 (PROVISIONAL): decimonovena visualización
+    descriptiva de ColorLoto -para el histórico analizado, los
+    estadísticos descriptivos (mínimo, máximo, media, mediana,
+    desviación estándar, percentiles P10/P25/P50/P75/P90) de la
+    suma de los NÚMEROS de las 6 balotas de cada sorteo, ignorando
+    el color por completo. Reutiliza `calcular_distribucion_sumas_colorloto`
+    sin modificarlo, candidata aprobada tras dos auditorías previas
+    (Decisión C: se pospuso `calcular_distribucion_conteo_color`
+    -requiere una decisión de producto sobre selector de color sin
+    ningún precedente real; no se implementa ningún selector ni
+    receta agregadora aquí).
+
+    Identidad de caché **diccionario VACÍO `{}`** -demostrada por
+    ejecución real en la auditoría previa: el motor no recibe ningún
+    parámetro de rango, cantidad, catálogo ni selector de color.
+
+    A diferencia de las 27 páginas anteriores, esta página presenta
+    **tarjetas y gráfica** -`DistribucionSumas` es un objeto único
+    con varios estadísticos escalares (tarjetas) más 5 percentiles
+    que sí forman una serie categórica (barra), no una lista de
+    filas que tabular. Reutiliza `_serializar_distribucion_sumas`
+    (nuevo, ver el caso de uso) y `_num_o_none` (Etapa AE-18,
+    reutilizado sin ningún cambio)."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/distribucion-sumas",
+        "pagina_colorloto_activa": "distribucion-sumas",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_sumas_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="distribucion_sumas_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={},
+    )
+
+    vm = distribucion_sumas_colorloto_a_vm(resultado, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/distribucion_sumas_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Distribución de sumas — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Distribución de sumas — ColorLoto</h3>
+<p class="text-muted">Muestra los estadísticos descriptivos de la suma de los números de las 6 balotas de cada sorteo, ignorando el color por completo. Un número repetido dentro del mismo sorteo se suma tantas veces como aparece -no se deduplica. Esta información es histórica y descriptiva, nunca predictiva: una suma inusualmente alta o baja en el pasado no hace más ni menos probable la suma del próximo sorteo.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Estos estadísticos describen sumas ya ocurridas. No indican que la próxima suma deba "compensar" una desviación observada ni tienen ninguna capacidad predictiva: cada sorteo es un evento independiente.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Suma mínima</div>
+            <div class="fw-bold">{{ estadistica.minimo if estadistica.minimo is not none else "N/D" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Suma máxima</div>
+            <div class="fw-bold">{{ estadistica.maximo if estadistica.maximo is not none else "N/D" }}</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Media</div>
+            <div class="fw-bold">{{ "%.2f"|format(estadistica.media) if estadistica.media is not none else "N/D" }}</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Mediana</div>
+            <div class="fw-bold">{{ "%.2f"|format(estadistica.mediana) if estadistica.mediana is not none else "N/D" }}</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Desviación estándar</div>
+            <div class="fw-bold">{{ "%.2f"|format(estadistica.desviacion_estandar) if estadistica.desviacion_estandar is not none else "N/D" }}</div>
+        </div>
+    </div>
+</div>
+
+{% if estadistica.chart_labels %}
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Percentiles de la suma (P10 / P25 / P50 / P75 / P90)</h6>
+    <canvas id="grafica-percentiles-distribucion-sumas-colorloto" height="180"></canvas>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-distribucion-sumas-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "percentiles": estadistica.chart_percentiles} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-distribucion-sumas-colorloto").textContent);
+        const ctx = document.getElementById("grafica-percentiles-distribucion-sumas-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: "Suma (percentil)",
+                    data: datos.percentiles,
+                    backgroundColor: "rgba(54, 162, 235, 0.6)",
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    borderWidth: 1,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                if (item.raw === null || item.raw === undefined) {
+                                    return "Sin dato";
+                                }
+                                return `Suma: ${item.raw.toFixed(2)}`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        title: { display: true, text: "Suma de las 6 balotas" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos suficientes para calcular percentiles.
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
