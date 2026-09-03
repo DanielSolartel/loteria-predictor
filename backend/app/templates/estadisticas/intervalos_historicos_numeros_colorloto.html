@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Intervalos históricos de números — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-hourglass-split me-2"></i>Intervalos históricos de números — ColorLoto</h3>
+<p class="text-muted">Muestra, para cada número (1 a 7), estadísticos descriptivos de TODOS los intervalos históricos entre apariciones consecutivas (cuántos sorteos separaron una aparición de la siguiente), ignorando el color de las balotas por completo. Un mismo número repetido en varias balotas del mismo sorteo cuenta como una sola aparición. Los intervalos se calculan como la diferencia real entre números de sorteo consecutivos donde el número apareció, nunca por posición en la lista. Con menos de dos apariciones no existe ningún intervalo que calcular, y los estadísticos quedan sin dato (N/D), nunca en cero. Esta información es histórica y no predictiva: un intervalo promedio bajo no implica que el próximo intervalo vaya a ser corto.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada or not estadistica %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta tabla y gráfica describen intervalos ya ocurridos entre apariciones de cada número. No indican que un número "ya le toca" aparecer ni tienen ninguna capacidad predictiva: cada sorteo es un evento independiente, y esta información es puramente descriptiva.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Números analizados</div>
+            <div class="fw-bold">{{ estadistica.filas | length }}</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo or "Histórico completo" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-intervalos-historicos-numeros-colorloto" height="180"></canvas>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-intervalos-historicos-numeros-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "promedios": estadistica.chart_intervalo_promedio} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-intervalos-historicos-numeros-colorloto").textContent);
+        const ctx = document.getElementById("grafica-intervalos-historicos-numeros-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: "Intervalo promedio",
+                    data: datos.promedios,
+                    backgroundColor: "rgba(255, 159, 64, 0.6)",
+                    borderColor: "rgba(255, 159, 64, 1)",
+                    borderWidth: 1,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                if (item.raw === null || item.raw === undefined) {
+                                    return "Sin dato";
+                                }
+                                return `Intervalo promedio: ${item.raw.toFixed(2)}`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        title: { display: true, text: "Sorteos entre apariciones" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por número</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Apariciones</th>
+                    <th>Cantidad de intervalos</th>
+                    <th>Intervalo mínimo</th>
+                    <th>Intervalo máximo</th>
+                    <th>Intervalo promedio</th>
+                    <th>Intervalo mediana</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero }}</td>
+                    <td>{{ fila.cantidad_apariciones }}</td>
+                    <td>{{ fila.cantidad_intervalos }}</td>
+                    <td>{{ fila.intervalo_minimo if fila.intervalo_minimo is not none else "N/D" }}</td>
+                    <td>{{ fila.intervalo_maximo if fila.intervalo_maximo is not none else "N/D" }}</td>
+                    <td>{{ "%.2f"|format(fila.intervalo_promedio) if fila.intervalo_promedio is not none else "N/D" }}</td>
+                    <td>{{ "%.2f"|format(fila.intervalo_mediana) if fila.intervalo_mediana is not none else "N/D" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
