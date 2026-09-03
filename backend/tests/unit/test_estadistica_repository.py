@@ -2978,3 +2978,56 @@ class TestUpsertConIntervalosHistoricosColoresColorlotoEtapaAE18:
         assert segunda.id == primera.id
         recuperada = repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, self._PARAMS)
         assert recuperada.resultado == resultado
+
+
+class TestUpsertConDistribucionSumasColorlotoEtapaAE19:
+    """Etapa AE-19 (PROVISIONAL): identidad diccionario VACIO {} -a
+    diferencia de AE-18, este motor no recibe ningun parametro de
+    rango, cantidad, catalogo ni politica, asi que ninguna clave
+    adicional forma parte de la identidad. resultado["filas"] NO
+    existe -DistribucionSumas es un objeto unico, JSONB generico
+    acepta esta forma sin ningun cambio de repositorio."""
+
+    _PARAMS: dict = {}
+
+    def test_persistencia_objeto_unico(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {
+            "total_sorteos": 3, "minimo": 21, "maximo": 24, "media": 22.333333333333332, "mediana": 22,
+            "desviacion_estandar": 1.247219128924647,
+            "percentiles": {"10": 21.2, "25": 21.5, "50": 22.0, "75": 23.0, "90": 23.6},
+        }
+        entrada = repo.guardar(_entrada(juego_id, tipo="distribucion_sumas_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado=resultado))
+        assert "filas" not in entrada.resultado
+        assert entrada.resultado == resultado
+
+    def test_identidad_vacia_hash_estable(self):
+        from app.application.interfaces.estadistica_repository import calcular_parametros_hash
+        h1 = calcular_parametros_hash({})
+        h2 = calcular_parametros_hash({})
+        assert h1 == h2
+
+    def test_historico_completo_y_corte_cien_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_sumas_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"total_sorteos": 3, "minimo": 21, "maximo": 24, "media": 22.33, "mediana": 22, "desviacion_estandar": 1.24, "percentiles": {}}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_sumas_colorloto", hasta_numero_sorteo=100, parametros={}, resultado={"total_sorteos": 2, "minimo": 21, "maximo": 22, "media": 21.5, "mediana": 21.5, "desviacion_estandar": 0.5, "percentiles": {}}))
+        completo = repo.buscar_vigente(juego_id, "distribucion_sumas_colorloto", None, {})
+        corte = repo.buscar_vigente(juego_id, "distribucion_sumas_colorloto", 100, {})
+        assert completo.resultado["total_sorteos"] == 3
+        assert corte.resultado["total_sorteos"] == 2
+
+    def test_coexistencia_con_ae5_y_ae14_a_ae18(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_ae5 = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+        params_ae18 = {"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+        repo.guardar(_entrada(juego_id, tipo="atrasos_colores_colorloto", hasta_numero_sorteo=None, parametros=params_ae5, resultado={"v": "atrasos"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "pares_num"}))
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=params_ae18, resultado={"v": "intervalos"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_sumas_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "sumas"}))
+        assert repo.buscar_vigente(juego_id, "atrasos_colores_colorloto", None, params_ae5).resultado == {"v": "atrasos"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {}).resultado == {"v": "pares_num"}
+        assert repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, params_ae18).resultado == {"v": "intervalos"}
+        assert repo.buscar_vigente(juego_id, "distribucion_sumas_colorloto", None, {}).resultado == {"v": "sumas"}

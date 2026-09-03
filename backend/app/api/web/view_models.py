@@ -1675,6 +1675,53 @@ def intervalos_historicos_colores_colorloto_a_vm(estadistica, juego: Juego) -> d
     }
 
 
+def distribucion_sumas_colorloto_a_vm(estadistica, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_sumas_colorloto" (Etapa AE-19, PROVISIONAL) en un
+    view model listo para la plantilla. Nunca recalcula la métrica,
+    nunca consulta repositorios, nunca llama al motor -transformación
+    pura, mismo patrón que las 18 VM anteriores de ColorLoto.
+
+    A diferencia de todas las VM anteriores, `estadistica.resultado`
+    aquí NO tiene una clave `"filas"` -es un objeto único
+    (`DistribucionSumas` serializado), no una lista. `percentiles`
+    llega con claves string (`_serializar_distribucion_sumas` las
+    convierte explícitamente); se ordenan aquí numéricamente
+    (`int(clave)`) para presentación, nunca por orden alfabético de
+    string (que pondría "10" antes que "25" pero "50" antes que "75"
+    incorrectamente comparado como texto en casos con más dígitos).
+
+    Reutiliza `_num_o_none` (Etapa AE-18, protegido, sin ningún
+    cambio -mismo objeto función, confirmado por hash AST idéntico
+    antes/después de esta etapa) para normalizar `media`/`mediana`/
+    `desviacion_estandar`/percentiles a `float` -el serializador
+    protegido puede dejarlos como `int` real de Python en algunos
+    casos (confirmado por ejecución real: `statistics.median` de una
+    lista de enteros con longitud impar devuelve el elemento crudo,
+    sin conversión). `minimo`/`maximo` NUNCA se normalizan con
+    `_num_o_none` -se preservan como enteros reales o `None`
+    literal, nunca como float, porque son sumas de balotas (enteros
+    por naturaleza), no promedios."""
+    resultado = estadistica.resultado
+
+    percentiles_ordenados = sorted(resultado["percentiles"].items(), key=lambda elemento: int(elemento[0]))
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos": resultado["total_sorteos"],
+        "minimo": resultado["minimo"],
+        "maximo": resultado["maximo"],
+        "media": _num_o_none(resultado["media"]),
+        "mediana": _num_o_none(resultado["mediana"]),
+        "desviacion_estandar": _num_o_none(resultado["desviacion_estandar"]),
+        "chart_labels": [f"P{percentil}" for percentil, _ in percentiles_ordenados],
+        "chart_percentiles": [_num_o_none(valor) for _, valor in percentiles_ordenados],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
