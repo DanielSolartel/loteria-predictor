@@ -3031,3 +3031,54 @@ class TestUpsertConDistribucionSumasColorlotoEtapaAE19:
         assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {}).resultado == {"v": "pares_num"}
         assert repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, params_ae18).resultado == {"v": "intervalos"}
         assert repo.buscar_vigente(juego_id, "distribucion_sumas_colorloto", None, {}).resultado == {"v": "sumas"}
+
+
+class TestUpsertConIntervalosHistoricosNumerosColorlotoEtapaAE20:
+    """Etapa AE-20 (PROVISIONAL): a diferencia de AE-14/AE-15/AE-16/
+    AE-17/AE-19 (identidad {}), este motor SI construye su universo
+    de filas directamente desde rango_min/rango_max -por eso la
+    identidad real incluye ambas claves, sin cantidad_numeros."""
+
+    _PARAMS = {"rango_min": 1, "rango_max": 7}
+    _PARAMS_V2 = {"rango_min": 1, "rango_max": 8}
+
+    def test_persistencia_con_identidad_rango(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_numeros_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS
+        assert "cantidad_numeros" not in entrada.parametros
+
+    def test_identidad_vacia_o_rango_distinto_produce_hash_distinto(self):
+        from app.application.interfaces.estadistica_repository import calcular_parametros_hash
+        h1 = calcular_parametros_hash(self._PARAMS)
+        h2 = calcular_parametros_hash({})
+        h3 = calcular_parametros_hash(self._PARAMS_V2)
+        assert h1 != h2
+        assert h1 != h3
+
+    def test_historico_completo_y_corte_cien_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_numeros_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_numeros_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "intervalos_historicos_numeros_colorloto", None, self._PARAMS)
+        corte = repo.buscar_vigente(juego_id, "intervalos_historicos_numeros_colorloto", 100, self._PARAMS)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_coexistencia_con_etapas_anteriores(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_ae5 = {"rango_min": 1, "rango_max": 7, "cantidad_numeros": 6, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+        params_ae18 = {"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+        repo.guardar(_entrada(juego_id, tipo="atrasos_colores_colorloto", hasta_numero_sorteo=None, parametros=params_ae5, resultado={"v": "atrasos"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "pares_num"}))
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_colores_colorloto", hasta_numero_sorteo=None, parametros=params_ae18, resultado={"v": "intervalos_col"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_sumas_colorloto", hasta_numero_sorteo=None, parametros={}, resultado={"v": "sumas"}))
+        repo.guardar(_entrada(juego_id, tipo="intervalos_historicos_numeros_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS, resultado={"v": "intervalos_num"}))
+        assert repo.buscar_vigente(juego_id, "atrasos_colores_colorloto", None, params_ae5).resultado == {"v": "atrasos"}
+        assert repo.buscar_vigente(juego_id, "coocurrencia_pares_colorloto", None, {}).resultado == {"v": "pares_num"}
+        assert repo.buscar_vigente(juego_id, "intervalos_historicos_colores_colorloto", None, params_ae18).resultado == {"v": "intervalos_col"}
+        assert repo.buscar_vigente(juego_id, "distribucion_sumas_colorloto", None, {}).resultado == {"v": "sumas"}
+        assert repo.buscar_vigente(juego_id, "intervalos_historicos_numeros_colorloto", None, self._PARAMS).resultado == {"v": "intervalos_num"}

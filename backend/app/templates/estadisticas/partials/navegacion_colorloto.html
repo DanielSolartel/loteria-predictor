@@ -113,4 +113,10 @@
             Distribución de sumas
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'intervalos-historicos-numeros' %}active{% endif %}"
+           href="/estadisticas/colorloto/intervalos-historicos-numeros{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Intervalos históricos de números
+        </a>
+    </li>
 </ul>

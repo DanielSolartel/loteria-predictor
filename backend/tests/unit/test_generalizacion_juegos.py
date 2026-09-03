@@ -927,7 +927,7 @@ class TestDistribucionParesImparesRouterYManejoDeErrores:
         que la firma de las 20 rutas (9 numéricas + 11 de ColorLoto,
         Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8/AE-9/AE-10/AE-11) sigue intacta."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 28
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 29
 
     def test_manejar_error_dominio_no_duplicado_para_500(self):
         """No se agregó un handler nuevo -el mecanismo genérico de
@@ -1762,7 +1762,7 @@ class TestColorLotoAislamientoDeSlugs:
 
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         rutas_en_orden = re.findall(r'@router\.get\("([^"]+)"\)', codigo_fuente)
-        assert len(rutas_en_orden) == 28
+        assert len(rutas_en_orden) == 29
 
         def compilar_como_starlette(path):
             patron = re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", path)
@@ -1993,12 +1993,12 @@ class TestColorLotoAislamientoDeSlugs:
 
     def test_veinte_rutas_totales_nueve_genericas_mas_once_colorloto(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 28
+        assert codigo_fuente.count("@router.get(") == 29
         assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 9
 
     def test_veinte_query_totales(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 28
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 29
 
     def test_no_construye_gamefactory_ni_llama_has_superballot_para_colorloto(self):
         """El docstring del handler EXPLICA en prosa que no usa estos
@@ -2721,9 +2721,9 @@ class TestColorLotoNavegacionCuatroMetricas:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert contenido.count("hasta_numero_sorteo") >= 4
 
-    def test_partial_tiene_exactamente_diecinueve_items_de_navegacion(self):
+    def test_partial_tiene_exactamente_veinte_items_de_navegacion(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
-        assert contenido.count('<li class="nav-item">') == 19
+        assert contenido.count('<li class="nav-item">') == 20
 
 
 # =====================================================================
@@ -4612,17 +4612,18 @@ class TestColorLotoCoocurrenciaParesRuta:
         for sufijo in sufijos_con_colision:
             assert f'@router.get("/estadisticas/{{juego_slug}}/{sufijo}")' in codigo_fuente
 
-    def test_grupo_sin_colision_pasa_a_doce(self):
+    def test_grupo_sin_colision_pasa_a_trece(self):
         """maximo-repeticion-color (AE-10), distribucion-pares-consecutivos
         NO -ese sí colisiona-, distribucion-trios-consecutivos (AE-13),
         coocurrencia-pares (AE-14), coocurrencia-trios (AE-15),
         coocurrencia-pares-colores (AE-16), coocurrencia-trios-colores
-        (AE-17), intervalos-historicos-colores (AE-18) y
-        distribucion-sumas (AE-19): confirma el grupo real sin
-        colisión, que pasa de once a doce con esta etapa."""
+        (AE-17), intervalos-historicos-colores (AE-18),
+        distribucion-sumas (AE-19) e intervalos-historicos-numeros
+        (AE-20): confirma el grupo real sin colisión, que pasa de
+        doce a trece con esta etapa."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        sufijos_sin_colision_colorloto = ("frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-colores", "atrasos-pares-numero-color", "maximo-repeticion-color", "distribucion-trios-consecutivos", "coocurrencia-pares", "coocurrencia-trios", "coocurrencia-pares-colores", "coocurrencia-trios-colores", "intervalos-historicos-colores", "distribucion-sumas")
-        assert len(sufijos_sin_colision_colorloto) == 12
+        sufijos_sin_colision_colorloto = ("frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-colores", "atrasos-pares-numero-color", "maximo-repeticion-color", "distribucion-trios-consecutivos", "coocurrencia-pares", "coocurrencia-trios", "coocurrencia-pares-colores", "coocurrencia-trios-colores", "intervalos-historicos-colores", "distribucion-sumas", "intervalos-historicos-numeros")
+        assert len(sufijos_sin_colision_colorloto) == 13
         for sufijo in sufijos_sin_colision_colorloto:
             assert f'@router.get("/estadisticas/colorloto/{sufijo}")' in codigo_fuente
             assert f'@router.get("/estadisticas/{{juego_slug}}/{sufijo}")' not in codigo_fuente
@@ -4942,25 +4943,26 @@ class TestColorLotoCoocurrenciaParesTemplate:
         contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
         assert "partials/control_corte_temporal.html" in contenido
 
-    def test_las_veinticuatro_paginas_graficas_conservan_su_canvas(self):
+    def test_las_veinticinco_paginas_graficas_conservan_su_canvas(self):
         """Confirma que la excepción tabular de AE-14 a AE-17 no
         afecta a ninguna de las páginas que sí usan gráfica -incluida
-        la de AE-18 (intervalos históricos de colores) y la de AE-19
-        (distribución de sumas, tarjetas y gráfica de percentiles,
-        segundo incremento de canvas desde AE-14)."""
+        la de AE-18 (intervalos históricos de colores), la de AE-19
+        (distribución de sumas, tarjetas y gráfica de percentiles) y
+        la de AE-20 (intervalos históricos de números, tabla y
+        gráfica, tercer incremento de canvas desde AE-14)."""
         directorio = Path("app/templates/estadisticas")
         templates_con_canvas = [
             f for f in directorio.glob("*.html")
             if 'height="180"' in f.read_text(encoding="utf-8")
         ]
-        assert len(templates_con_canvas) == 24
+        assert len(templates_con_canvas) == 25
 
-    def test_veintiocho_templates_estadisticos_veinticuatro_canvas(self):
+    def test_veintinueve_templates_estadisticos_veinticinco_canvas(self):
         directorio = Path("app/templates/estadisticas")
         todos = list(directorio.glob("*.html"))
         con_canvas = [f for f in todos if 'height="180"' in f.read_text(encoding="utf-8")]
-        assert len(todos) == 28
-        assert len(con_canvas) == 24
+        assert len(todos) == 29
+        assert len(con_canvas) == 25
 
 
 class TestColorLotoCoocurrenciaParesColoresRuta:
@@ -5636,7 +5638,7 @@ class TestColorLotoDistribucionSumasRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert '@router.get("/estadisticas/{juego_slug}/distribucion-sumas")' not in codigo_fuente
 
-    def test_grupo_sin_colision_pasa_a_doce(self):
+    def test_grupo_sin_colision_pasa_a_trece(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/distribucion-sumas")') == 1
 
@@ -5720,3 +5722,214 @@ class TestColorLotoDistribucionSumasTemplate:
         assert "<canvas" not in bloque_vacio
         assert "new Chart(" not in bloque_vacio
         assert "No hay sorteos suficientes para calcular percentiles." in bloque_vacio
+
+
+class TestColorLotoIntervalosHistoricosNumerosRuta:
+    def test_ruta_dedicada_registrada(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/colorloto/intervalos-historicos-numeros")' in codigo_fuente
+
+    def test_sin_ruta_generica_equivalente(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/{juego_slug}/intervalos-historicos-numeros")' not in codigo_fuente
+
+    def test_grupo_sin_colision_pasa_a_trece(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert codigo_fuente.count('@router.get("/estadisticas/colorloto/intervalos-historicos-numeros")') == 1
+
+
+class TestColorLotoIntervalosHistoricosNumerosVM:
+    def _juego(self):
+        return Juego(id=uuid4(), codigo="COLORLOTO", nombre="ColorLoto", rango_min=1, rango_max=7, cantidad_numeros=6, tiene_superbalota=False, superbalota_min=None, superbalota_max=None, tiene_color=True, permite_repeticion=True, activo=True)
+
+    def _fake_est(self, filas, hasta=None):
+        class FakeEst:
+            def __init__(self, filas, hasta):
+                self.resultado = {"filas": filas}
+                self.hasta_numero_sorteo = hasta
+                self.calculado_en = None
+        return FakeEst(filas, hasta)
+
+    def _fila(self, valor="5", cantidad_apariciones=2, cantidad_intervalos=1, intervalo_minimo=4,
+              intervalo_maximo=4, intervalo_promedio=4, intervalo_mediana=4.0, intervalos=(4,)):
+        return {
+            "valor": valor, "cantidad_apariciones": cantidad_apariciones, "cantidad_intervalos": cantidad_intervalos,
+            "intervalo_minimo": intervalo_minimo, "intervalo_maximo": intervalo_maximo,
+            "intervalo_promedio": intervalo_promedio, "intervalo_mediana": intervalo_mediana,
+            "intervalos": list(intervalos),
+        }
+
+    def test_numero_como_entero_real(self):
+        from app.api.web.view_models import intervalos_historicos_numeros_colorloto_a_vm
+        vm = intervalos_historicos_numeros_colorloto_a_vm(self._fake_est([self._fila()]), 1, 7, self._juego())
+        fila = vm["filas"][0]
+        assert fila["numero"] == 5
+        assert isinstance(fila["numero"], int)
+
+    def test_normalizacion_a_float_intervalo_promedio(self):
+        """Confirma normalizacion Y que el VM reutiliza el MISMO
+        _num_o_none existente (Etapa AE-18), no una copia ni una
+        redefinicion."""
+        import inspect
+        from app.api.web.view_models import intervalos_historicos_numeros_colorloto_a_vm
+        codigo_fuente = inspect.getsource(intervalos_historicos_numeros_colorloto_a_vm)
+        assert "_num_o_none(" in codigo_fuente
+        vm = intervalos_historicos_numeros_colorloto_a_vm(self._fake_est([self._fila()]), 1, 7, self._juego())
+        fila = vm["filas"][0]
+        assert isinstance(fila["intervalo_promedio"], float)
+        assert fila["intervalo_promedio"] == 4.0
+
+    def test_none_preservado_no_convertido_a_cero(self):
+        from app.api.web.view_models import intervalos_historicos_numeros_colorloto_a_vm
+        fila_vacia = self._fila(valor="3", cantidad_apariciones=0, cantidad_intervalos=0,
+                                 intervalo_minimo=None, intervalo_maximo=None,
+                                 intervalo_promedio=None, intervalo_mediana=None, intervalos=())
+        vm = intervalos_historicos_numeros_colorloto_a_vm(self._fake_est([fila_vacia]), 1, 7, self._juego())
+        fila = vm["filas"][0]
+        assert fila["intervalo_minimo"] is None
+        assert fila["intervalo_maximo"] is None
+        assert fila["intervalo_promedio"] is None
+        assert fila["intervalo_mediana"] is None
+
+    def test_conteos_siempre_enteros_nunca_none(self):
+        from app.api.web.view_models import intervalos_historicos_numeros_colorloto_a_vm
+        fila_vacia = self._fila(valor="3", cantidad_apariciones=0, cantidad_intervalos=0,
+                                 intervalo_minimo=None, intervalo_maximo=None,
+                                 intervalo_promedio=None, intervalo_mediana=None, intervalos=())
+        vm = intervalos_historicos_numeros_colorloto_a_vm(self._fake_est([fila_vacia]), 1, 7, self._juego())
+        fila = vm["filas"][0]
+        assert fila["cantidad_apariciones"] == 0
+        assert fila["cantidad_intervalos"] == 0
+        assert isinstance(fila["cantidad_apariciones"], int)
+        assert isinstance(fila["cantidad_intervalos"], int)
+        assert fila["cantidad_apariciones"] is not None
+        assert fila["cantidad_intervalos"] is not None
+
+
+class TestColorLotoIntervalosHistoricosNumerosTemplate:
+    _TEMPLATE = "app/templates/estadisticas/intervalos_historicos_numeros_colorloto.html"
+
+    def test_exactamente_un_canvas(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert contenido.count("<canvas") == 1
+
+    def test_sin_cdn_sin_safe(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "/static/vendor/chartjs/chart.umd.min.js" in contenido
+        assert "cdnjs.cloudflare.com" not in contenido
+        assert "cdn." not in contenido.lower()
+        assert "|safe" not in contenido
+
+    def test_renderizado_sin_conexion_no_incluye_canvas_ni_chart(self):
+        """Sin conexion o sin estadistica: aviso correspondiente, sin
+        <canvas> renderizado, sin new Chart(."""
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+        class FakeURL:
+            path = "/estadisticas/colorloto/intervalos-historicos-numeros"
+
+        class FakeRequest:
+            url = FakeURL()
+
+        env = Environment(loader=FileSystemLoader("app/templates"), autoescape=select_autoescape(["html"]))
+        tpl = env.get_template("estadisticas/intervalos_historicos_numeros_colorloto.html")
+        html = tpl.render(
+            request=FakeRequest(), db_conectada=False, estadistica=None,
+            hasta_numero_sorteo=None, active_page="estadisticas", pagina_colorloto_activa="intervalos-historicos-numeros",
+        )
+        assert "<canvas" not in html
+        assert "new Chart(" not in html
+        assert "Sin conexión a la base de datos" in html
+
+    def test_renderizado_sin_datos_o_sin_intervalos_suficientes_siete_filas_nd(self):
+        """Historico vacio y 'ningun numero con dos apariciones'
+        producen el mismo resultado renderizado: siete filas, todas
+        en N/D, canvas presente con siete huecos -mismo test cubre
+        ambos casos porque el resultado renderizado es identico,
+        evitando duplicar sin justificacion."""
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+        class FakeURL:
+            path = "/estadisticas/colorloto/intervalos-historicos-numeros"
+
+        class FakeRequest:
+            url = FakeURL()
+
+        env = Environment(loader=FileSystemLoader("app/templates"), autoescape=select_autoescape(["html"]))
+        tpl = env.get_template("estadisticas/intervalos_historicos_numeros_colorloto.html")
+        filas_vacias = [{
+            "numero": n, "cantidad_apariciones": 0, "cantidad_intervalos": 0,
+            "intervalo_minimo": None, "intervalo_maximo": None, "intervalo_promedio": None, "intervalo_mediana": None,
+        } for n in range(1, 8)]
+        estadistica = {
+            "juego_codigo": "COLORLOTO", "juego_nombre": "ColorLoto", "rango_min": 1, "rango_max": 7,
+            "hasta_numero_sorteo": None, "calculado_en": None, "filas": filas_vacias,
+            "chart_labels": [str(n) for n in range(1, 8)], "chart_intervalo_promedio": [None] * 7,
+        }
+        html = tpl.render(
+            request=FakeRequest(), db_conectada=True, estadistica=estadistica,
+            hasta_numero_sorteo=None, active_page="estadisticas", pagina_colorloto_activa="intervalos-historicos-numeros",
+        )
+        assert "<canvas" in html
+        assert "new Chart(" in html
+        assert html.count("N/D") >= 7 * 4
+        assert "null" in html or "None" not in html.split("datos-intervalos")[1][:500]
+
+    def test_renderizado_mezcla_parcial_y_datos_completos(self):
+        """Mezcla de numeros con y sin intervalos: etiquetas
+        completas, valores reales o null, nunca null sustituido por
+        cero. Tambien cubre el caso de datos completos como variante
+        del mismo test (todas las filas con datos reales)."""
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+        class FakeURL:
+            path = "/estadisticas/colorloto/intervalos-historicos-numeros"
+
+        class FakeRequest:
+            url = FakeURL()
+
+        env = Environment(loader=FileSystemLoader("app/templates"), autoescape=select_autoescape(["html"]))
+        tpl = env.get_template("estadisticas/intervalos_historicos_numeros_colorloto.html")
+        filas_mixtas = []
+        for n in range(1, 8):
+            if n % 2 == 0:
+                filas_mixtas.append({
+                    "numero": n, "cantidad_apariciones": 3, "cantidad_intervalos": 2,
+                    "intervalo_minimo": 2, "intervalo_maximo": 5, "intervalo_promedio": 3.5, "intervalo_mediana": 3.5,
+                })
+            else:
+                filas_mixtas.append({
+                    "numero": n, "cantidad_apariciones": 0, "cantidad_intervalos": 0,
+                    "intervalo_minimo": None, "intervalo_maximo": None, "intervalo_promedio": None, "intervalo_mediana": None,
+                })
+        estadistica_mixta = {
+            "juego_codigo": "COLORLOTO", "juego_nombre": "ColorLoto", "rango_min": 1, "rango_max": 7,
+            "hasta_numero_sorteo": None, "calculado_en": None, "filas": filas_mixtas,
+            "chart_labels": [str(n) for n in range(1, 8)],
+            "chart_intervalo_promedio": [3.5 if n % 2 == 0 else None for n in range(1, 8)],
+        }
+        html_mixto = tpl.render(
+            request=FakeRequest(), db_conectada=True, estadistica=estadistica_mixta,
+            hasta_numero_sorteo=None, active_page="estadisticas", pagina_colorloto_activa="intervalos-historicos-numeros",
+        )
+        assert "3.50" in html_mixto
+        assert "N/D" in html_mixto
+        assert "<canvas" in html_mixto
+
+        filas_completas = [{
+            "numero": n, "cantidad_apariciones": 5, "cantidad_intervalos": 4,
+            "intervalo_minimo": 1, "intervalo_maximo": 9, "intervalo_promedio": 5.0, "intervalo_mediana": 5.0,
+        } for n in range(1, 8)]
+        estadistica_completa = {
+            "juego_codigo": "COLORLOTO", "juego_nombre": "ColorLoto", "rango_min": 1, "rango_max": 7,
+            "hasta_numero_sorteo": None, "calculado_en": None, "filas": filas_completas,
+            "chart_labels": [str(n) for n in range(1, 8)], "chart_intervalo_promedio": [5.0] * 7,
+        }
+        html_completo = tpl.render(
+            request=FakeRequest(), db_conectada=True, estadistica=estadistica_completa,
+            hasta_numero_sorteo=None, active_page="estadisticas", pagina_colorloto_activa="intervalos-historicos-numeros",
+        )
+        tabla_completa = html_completo[html_completo.index("<tbody>"):html_completo.index("</tbody>")]
+        assert "N/D" not in tabla_completa
+        assert "<canvas" in html_completo
+        assert "new Chart(" in html_completo

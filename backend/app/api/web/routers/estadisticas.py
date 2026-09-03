@@ -51,6 +51,7 @@ from app.api.web.view_models import (
     coocurrencia_trios_colores_colorloto_a_vm,
     intervalos_historicos_colores_colorloto_a_vm,
     distribucion_sumas_colorloto_a_vm,
+    intervalos_historicos_numeros_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1466,6 +1467,75 @@ def distribucion_sumas_colorloto(
     return templates.TemplateResponse(
         request=request, name="estadisticas/distribucion_sumas_colorloto.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/colorloto/intervalos-historicos-numeros")
+def intervalos_historicos_numeros_colorloto(
+    request: Request,
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-20 (PROVISIONAL): vigésima visualización descriptiva
+    de ColorLoto -para cada número (1 a 7), estadísticos descriptivos
+    de TODOS los intervalos históricos entre apariciones consecutivas
+    (cuántos sorteos separaron una aparición de la siguiente),
+    ignorando el color por completo. Reutiliza
+    `calcular_intervalos_historicos_numeros_colorloto` sin
+    modificarlo, candidata aprobada tras tres auditorías previas.
+
+    A diferencia de AE-14/AE-15/AE-16/AE-17/AE-19 (identidad `{}`),
+    este motor SÍ construye su universo de filas directamente desde
+    `rango_min`/`rango_max` (`range(rango_min, rango_max+1)`) -mismo
+    criterio real ya demostrado por `frecuencia_numeros_colorloto`
+    (AE-1) y `atrasos_numeros_colorloto` (AE-4). Por eso la identidad
+    de esta etapa SÍ incluye `rango_min`/`rango_max`, tomados de la
+    entidad `Juego` real (nunca de una constante privada del caso de
+    uso, que no está importada aquí) -mismo patrón exacto ya usado
+    por las rutas de AE-1/AE-4/AE-6. `cantidad_numeros` NO forma
+    parte de la identidad: el motor de esta etapa no la recibe en
+    absoluto, solo se usa dentro de la receta para validación
+    defensiva."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "url_historico_completo": "/estadisticas/colorloto/intervalos-historicos-numeros",
+        "pagina_colorloto_activa": "intervalos-historicos-numeros",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/intervalos_historicos_numeros_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    rango_min, rango_max = juego.rango_min, juego.rango_max
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="intervalos_historicos_numeros_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "rango_min": rango_min,
+            "rango_max": rango_max,
+        },
+    )
+
+    vm = intervalos_historicos_numeros_colorloto_a_vm(resultado, rango_min, rango_max, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/intervalos_historicos_numeros_colorloto.html",
+        context={**contexto_base, "estadistica": vm},
     )
 
 

@@ -40,6 +40,7 @@ from app.application.estadisticas.motor.atrasos import (
     calcular_atrasos_numeros_colorloto,
     calcular_atrasos_pares_numero_color,
     calcular_intervalos_historicos_colores,
+    calcular_intervalos_historicos_numeros_colorloto,
 )
 from app.application.estadisticas.motor.coocurrencia import (
     calcular_coocurrencia_pares_colores,
@@ -1823,6 +1824,58 @@ def _serializar_distribucion_sumas(distribucion: DistribucionSumas) -> dict:
     }
 
 
+def _calcular_intervalos_historicos_numeros_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[IntervalosHistoricos]:
+    """Intervalos históricos de números de ColorLoto (Etapa AE-20,
+    PROVISIONAL) -candidata aprobada tras tres auditorías previas.
+    Reutiliza `calcular_intervalos_historicos_numeros_colorloto`
+    directamente, sin reimplementar nada ni modificar el motor (ya
+    existía en `motor/atrasos.py` desde antes de esta etapa, con 6
+    tests de motor propios en `TestCalcularIntervalosHistoricosNumerosColorLoto`).
+
+    A diferencia de AE-14 a AE-19, este motor SÍ construye su
+    universo de filas directamente a partir de `rango_min`/`rango_max`
+    (`for n in range(rango_min, rango_max + 1)`, confirmado por
+    lectura directa del motor real) -no solo los usa para validar.
+    Por eso, a diferencia de AE-14/AE-15/AE-16/AE-17/AE-19 (identidad
+    `{}`), la identidad de esta etapa SÍ incluye `rango_min`/`rango_max`
+    -mismo criterio real ya demostrado por `frecuencia_numeros_colorloto`
+    (Etapa AE-1) y `atrasos_numeros_colorloto` (Etapa AE-4), cuyos
+    motores construyen su universo exactamente de la misma forma.
+    `cantidad_numeros`/`_CANTIDAD_NUMEROS_COLORLOTO` en cambio NO
+    forma parte de la identidad -el motor de esta etapa ni siquiera
+    la recibe como argumento; solo se usa aquí para la validación
+    defensiva del histórico, sin influir en absoluto en qué filas
+    produce el motor ni en su contenido.
+
+    Reutiliza `_validar_historico_colorloto_consistente` -confirmado
+    por auditoría (AST real sobre las 19 recetas de ColorLoto ya
+    conectadas): 18 de 19 la llaman, la única excepción es
+    `_calcular_distribucion_sumas_colorloto` (AE-19), cuyo motor no
+    recibe ni rango ni cantidad en absoluto. El motor de esta etapa
+    SÍ valida por sí mismo el rango numérico (`ValueError` real,
+    confirmado por ejecución directa), pero NUNCA valida la cantidad
+    de balotas por sorteo ni el color -confirmado por ejecución real
+    en la auditoría previa: sin este helper, un sorteo con una
+    cantidad incorrecta de balotas o un color inventado se procesa
+    silenciosamente, sin ningún aviso, sesgando `cantidad_apariciones`
+    sin que nada lo detecte. La validación ocurre SIEMPRE antes de
+    invocar el motor: si falla, ni el motor se invoca ni se persiste
+    ninguna caché.
+
+    NUNCA se pasa `hasta_numero_sorteo` al motor -mismo precedente
+    exacto de las 19 recetas anteriores: el orquestador ya filtró
+    `historico.pares` por el corte (SQL + `filtrar_por_corte_temporal`
+    defensivo en `_obtener_historico_colorloto`) antes de llegar
+    aquí."""
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    return calcular_intervalos_historicos_numeros_colorloto(historico.pares, rango_min, rango_max)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -1929,6 +1982,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "distribucion_sumas_colorloto": _Receta(
         calcular=_calcular_distribucion_sumas_colorloto, serializar=_serializar_distribucion_sumas,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "intervalos_historicos_numeros_colorloto": _Receta(
+        calcular=_calcular_intervalos_historicos_numeros_colorloto, serializar=_serializar_atrasos,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }
