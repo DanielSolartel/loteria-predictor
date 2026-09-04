@@ -3,7 +3,16 @@
    lectura, nunca debería ser POST. El action apunta a la ruta ACTUAL
    exacta (request.url.path, ya disponible en el contexto de las 4
    rutas) -así el formulario nunca necesita conocer el juego_slug ni
-   la métrica por su cuenta. #}
+   la métrica por su cuenta.
+
+   Extensión AE-22: el campo oculto `anio` se emite ÚNICAMENTE cuando
+   el contexto de la ruta actual realmente lo define (`is defined`,
+   nunca lanza `UndefinedError` en las otras 30 páginas, que jamás
+   pasan `anio` en su contexto) y su valor no es `None` -así "Aplicar
+   corte" desde AE-22 conserva el año ya elegido, sin que este partial
+   compartido conozca ni propague ningún otro parámetro arbitrario, y
+   sin alterar en absoluto el comportamiento de las páginas que no
+   definen `anio`. #}
 <form method="get" action="{{ request.url.path }}" class="mb-3 d-flex flex-wrap align-items-end gap-2">
     <div>
         <label for="hasta_numero_sorteo" class="form-label small mb-1">Corte por número de sorteo</label>
@@ -14,6 +23,9 @@
             class="form-control form-control-sm" style="width: 10rem;"
         >
     </div>
+    {% if anio is defined and anio is not none %}
+    <input type="hidden" name="anio" value="{{ anio }}">
+    {% endif %}
     <button type="submit" class="btn btn-sm btn-primary">Aplicar corte</button>
     <a href="{{ url_historico_completo }}" class="btn btn-sm btn-outline-secondary">Histórico completo</a>
     {% if hasta_numero_sorteo is not none %}
