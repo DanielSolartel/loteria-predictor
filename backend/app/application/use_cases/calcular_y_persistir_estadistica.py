@@ -78,7 +78,7 @@ from app.application.estadisticas.motor.frecuencia import (
     calcular_frecuencia_superbalota,
     construir_tabla_frecuencia,
 )
-from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio
+from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio, calcular_frecuencia_colores_por_mes
 from app.application.estadisticas.tipos import (
     FilaFrecuencia, FrecuenciaObservada, IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
@@ -1980,6 +1980,49 @@ def _calcular_frecuencia_colores_por_anio_colorloto(
     return calcular_frecuencia_colores_por_anio(historico.pares, colores_vigentes, anio)
 
 
+def _calcular_frecuencia_colores_por_mes_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Frecuencia de colores de ColorLoto restringida a un mes
+    calendario seleccionado por el usuario, agregado a través de
+    TODOS los años del histórico (Etapa AE-23, PROVISIONAL) -mismo
+    precedente de selector ya validado por AE-22 (año), decisión de
+    producto reutilizada explícitamente: "mes" es el mismo mes
+    calendario (enero, febrero, ...) combinando los sorteos de ese
+    mes en cada año disponible, nunca un año-mes concreto -confirmado
+    por lectura directa de `_filtrar_por_mes` (`r.fecha.month == mes`,
+    sin ningún agrupamiento por año).
+
+    Mismo motivo estructural que AE-22 para leer `parametros["mes"]`
+    explícitamente (`ejecutar()` solo entrega valores variables por
+    consulta a través de `parametros_metrica`, único canal real) -la
+    receta lee **únicamente** esa clave, ningún parámetro oculto
+    adicional.
+
+    Reutiliza `calcular_frecuencia_colores_por_mes` sin modificar el
+    motor (vive en `motor/frecuencia_temporal.py`, ya existía desde
+    antes de esta etapa, comparte `_filtrar_por_mes`/`_validar_mes`
+    con la función numérica equivalente, con tests de motor propios
+    en `TestFrecuenciaColoresTemporal`). Reutiliza
+    `_validar_historico_colorloto_consistente` y
+    `_codigos_colores_vigentes_en_referencia` (ambos protegidos, sin
+    cambios) -misma validación defensiva antes del motor ya usada 20
+    veces. Reutiliza `_serializar_frecuencia_observada` (protegido,
+    sin cambios) -mismo dataclass `FrecuenciaObservada` ya usado por
+    AE-2 y AE-22. NUNCA se pasa `hasta_numero_sorteo` al motor -mismo
+    precedente exacto de las 22 recetas anteriores: el orquestador ya
+    filtró `historico.pares` por el corte general antes de llegar
+    aquí; el motor aplica únicamente el filtro adicional por mes
+    sobre ese subconjunto ya acotado."""
+    mes = parametros["mes"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    colores_vigentes = _codigos_colores_vigentes_en_referencia(historico)
+    return calcular_frecuencia_colores_por_mes(historico.pares, colores_vigentes, mes)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -2098,6 +2141,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "frecuencia_colores_por_anio_colorloto": _Receta(
         calcular=_calcular_frecuencia_colores_por_anio_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "frecuencia_colores_por_mes_colorloto": _Receta(
+        calcular=_calcular_frecuencia_colores_por_mes_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }
