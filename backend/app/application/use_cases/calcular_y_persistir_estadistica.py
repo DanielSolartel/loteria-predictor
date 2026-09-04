@@ -78,6 +78,7 @@ from app.application.estadisticas.motor.frecuencia import (
     calcular_frecuencia_superbalota,
     construir_tabla_frecuencia,
 )
+from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio
 from app.application.estadisticas.tipos import (
     FilaFrecuencia, FrecuenciaObservada, IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
@@ -1932,6 +1933,53 @@ def _calcular_intervalos_historicos_pares_numero_color_colorloto(
     )
 
 
+def _calcular_frecuencia_colores_por_anio_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Frecuencia de colores de ColorLoto restringida a un año
+    seleccionado por el usuario (Etapa AE-22, PROVISIONAL) -primera
+    página de ColorLoto con un control de interfaz adicional al
+    corte temporal, decisión de producto autorizada explícitamente
+    tras la auditoría previa de las diez candidatas pendientes:
+    ninguna otra podía resolverse sin un selector o un agregador de
+    motor en bucle (0 de 30 recetas ya conectadas tenían ese
+    precedente), y esta identidad de producto elige el selector de
+    año en lugar de posponer la etapa.
+
+    A diferencia de las 21 recetas anteriores, `anio` es un valor
+    genuinamente variable por cada consulta -no una constante de
+    juego como `_RANGO_REAL_COLORLOTO`, ni derivable de la fecha de
+    referencia del histórico como `colores_vigentes`- por lo que NO
+    puede resolverse con una constante de módulo. Confirmado por
+    lectura real de `ejecutar()` (`calcular_y_persistir_estadistica.py`):
+    `receta.calcular(historico, parametros_metrica)` es el ÚNICO
+    canal por el que cualquier valor específico de esta consulta
+    puede llegar hasta aquí -por tanto, y solo por esta razón
+    estructural real, esta receta SÍ lee `parametros["anio"]`
+    explícitamente, sin inventar ningún parámetro oculto adicional.
+
+    Reutiliza `calcular_frecuencia_colores_por_anio` directamente,
+    sin modificar el motor (vive en `motor/frecuencia_temporal.py`,
+    ya existía desde antes de esta etapa, con 7 tests de motor
+    propios en `TestFrecuenciaColoresTemporal`). Reutiliza
+    `_validar_historico_colorloto_consistente` y
+    `_codigos_colores_vigentes_en_referencia` (ambos protegidos, sin
+    cambios) -mismo patrón exacto ya usado 19 veces. NUNCA se pasa
+    `hasta_numero_sorteo` al motor -mismo precedente exacto de las
+    21 recetas anteriores: el orquestador ya filtró `historico.pares`
+    por el corte general antes de llegar aquí; el motor aplica
+    únicamente el filtro adicional por año sobre ese subconjunto ya
+    acotado, exactamente la secuencia semántica ya establecida
+    (corte general primero, filtro temporal después)."""
+    anio = parametros["anio"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    colores_vigentes = _codigos_colores_vigentes_en_referencia(historico)
+    return calcular_frecuencia_colores_por_anio(historico.pares, colores_vigentes, anio)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -2046,6 +2094,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "intervalos_historicos_pares_numero_color_colorloto": _Receta(
         calcular=_calcular_intervalos_historicos_pares_numero_color_colorloto, serializar=_serializar_atrasos,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "frecuencia_colores_por_anio_colorloto": _Receta(
+        calcular=_calcular_frecuencia_colores_por_anio_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

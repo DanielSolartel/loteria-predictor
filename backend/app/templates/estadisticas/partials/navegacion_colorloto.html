@@ -125,4 +125,10 @@
             Intervalos históricos de pares número-color
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'frecuencia-colores-por-anio' %}active{% endif %}"
+           href="/estadisticas/colorloto/frecuencia-colores-por-anio{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Frecuencia de colores por año
+        </a>
+    </li>
 </ul>
