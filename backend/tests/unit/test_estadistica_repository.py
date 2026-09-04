@@ -3180,3 +3180,49 @@ class TestUpsertConFrecuenciaColoresPorAnioColorlotoEtapaAE22:
         entrada = repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2024, resultado={"v": "nueva"}))
         assert entrada.parametros == self._PARAMS_2024
         assert set(entrada.parametros.keys()) == {"anio", "politica_universo_colores"}
+
+
+class TestUpsertConFrecuenciaColoresPorMesColorlotoEtapaAE23:
+    """Etapa AE-23 (PROVISIONAL): mismo precedente exacto de AE-22
+    -identidad de dos claves, `mes` (valor variable por consulta,
+    elegido por el usuario) y `politica_universo_colores`."""
+
+    _PARAMS_MARZO = {"mes": 3, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+    _PARAMS_JUNIO = {"mes": 6, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+
+    def test_upsert_misma_identidad_reemplaza(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_mes_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_MARZO, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_mes_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_MARZO, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "frecuencia_colores_por_mes_colorloto")
+        assert total == 1
+
+    def test_meses_distintos_permanecen_separados(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_mes_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_MARZO, resultado={"v": "marzo"}))
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_mes_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_JUNIO, resultado={"v": "junio"}))
+        rmarzo = repo.buscar_vigente(juego_id, "frecuencia_colores_por_mes_colorloto", None, self._PARAMS_MARZO)
+        rjunio = repo.buscar_vigente(juego_id, "frecuencia_colores_por_mes_colorloto", None, self._PARAMS_JUNIO)
+        assert rmarzo.resultado == {"v": "marzo"}
+        assert rjunio.resultado == {"v": "junio"}
+
+    def test_corte_completo_y_especifico_permanecen_separados(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_mes_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_MARZO, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_mes_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_MARZO, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "frecuencia_colores_por_mes_colorloto", None, self._PARAMS_MARZO)
+        corte = repo.buscar_vigente(juego_id, "frecuencia_colores_por_mes_colorloto", 100, self._PARAMS_MARZO)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_parametros_exactos_persistidos(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="frecuencia_colores_por_mes_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_MARZO, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS_MARZO
+        assert set(entrada.parametros.keys()) == {"mes", "politica_universo_colores"}

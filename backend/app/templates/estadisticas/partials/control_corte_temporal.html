@@ -12,7 +12,14 @@
    corte" desde AE-22 conserva el año ya elegido, sin que este partial
    compartido conozca ni propague ningún otro parámetro arbitrario, y
    sin alterar en absoluto el comportamiento de las páginas que no
-   definen `anio`. #}
+   definen `anio`.
+
+   Extensión AE-23: mismo mecanismo exacto para `mes` -campo oculto
+   emitido ÚNICAMENTE cuando el contexto lo define y no es `None`.
+   Cada página define como máximo uno de los dos (`anio` o `mes`),
+   nunca ambos a la vez -ninguna página propaga simultáneamente año
+   y mes, ambos bloques son independientes y no interfieren entre
+   sí. #}
 <form method="get" action="{{ request.url.path }}" class="mb-3 d-flex flex-wrap align-items-end gap-2">
     <div>
         <label for="hasta_numero_sorteo" class="form-label small mb-1">Corte por número de sorteo</label>
@@ -25,6 +32,9 @@
     </div>
     {% if anio is defined and anio is not none %}
     <input type="hidden" name="anio" value="{{ anio }}">
+    {% endif %}
+    {% if mes is defined and mes is not none %}
+    <input type="hidden" name="mes" value="{{ mes }}">
     {% endif %}
     <button type="submit" class="btn btn-sm btn-primary">Aplicar corte</button>
     <a href="{{ url_historico_completo }}" class="btn btn-sm btn-outline-secondary">Histórico completo</a>

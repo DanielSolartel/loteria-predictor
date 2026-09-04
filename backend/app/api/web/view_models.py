@@ -1904,6 +1904,76 @@ def frecuencia_colores_por_anio_colorloto_a_vm(estadistica, anio: int, juego: Ju
     }
 
 
+_NOMBRES_MESES_ES = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
+    7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+}
+
+
+def frecuencia_colores_por_mes_colorloto_a_vm(estadistica, mes: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "frecuencia_colores_por_mes_colorloto" (Etapa AE-23,
+    PROVISIONAL) en un view model listo para la plantilla. Nunca
+    recalcula la métrica, nunca consulta repositorios, nunca llama
+    al motor -transformación pura, mismo patrón que
+    `frecuencia_colores_por_anio_colorloto_a_vm` (Etapa AE-22,
+    mismo precedente de selector reutilizado). Solo se invoca cuando
+    `estadistica` ya existe (mes válido seleccionado) -el router
+    nunca llama a esta función en el estado sin mes.
+
+    "Mes" es el mismo mes calendario (enero, febrero, ...) agregado a
+    través de TODOS los años del histórico, nunca un año-mes
+    concreto -confirmado por lectura directa de `_filtrar_por_mes`
+    (`r.fecha.month == mes`, sin agrupar por año). `_NOMBRES_MESES_ES`
+    es exclusivamente de presentación -nunca se usa en la identidad
+    de caché ni en el cálculo, que siempre trabaja con el entero
+    `1..12`.
+
+    Mismo criterio semántico ya establecido por AE-2/AE-22: mismo
+    dataclass `FrecuenciaObservada`, mismo campo `frecuencia_relativa`:
+    **"apariciones promedio por sorteo" del mes, nunca "porcentaje"**
+    -puede legítimamente superar 1.0 porque un color puede repetirse
+    dentro de un mismo sorteo (balotas físicas, no apariciones
+    deduplicadas por sorteo). Se expone como `apariciones_promedio`
+    (float crudo) y `apariciones_promedio_texto` (`.2f`), exactamente
+    el mismo par de campos que AE-2/AE-22.
+
+    Orden determinista: se conserva tal cual llega en `resultado` -ya
+    ordenado alfabéticamente por código por el propio motor, nunca
+    reordenado aquí. `apariciones`/`total_sorteos` son enteros reales;
+    `total_sorteos` puede ser `0` si el mes no tuvo sorteos en ningún
+    año -en ese caso `frecuencia_relativa` ya llega en `0.0` desde el
+    motor (nunca `None`), preservado tal cual."""
+    filas_ordenadas = estadistica.resultado["filas"]
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        codigo = f["valor"]
+        filas_presentacion.append({
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "apariciones": f["apariciones"],
+            "apariciones_promedio": f["frecuencia_relativa"],
+            "apariciones_promedio_texto": f"{f['frecuencia_relativa']:.2f}",
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "mes": mes,
+        "mes_nombre": _NOMBRES_MESES_ES[mes],
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos": total_sorteos,
+        "filas": filas_presentacion,
+        "chart_labels": [f["nombre"] for f in filas_presentacion],
+        "chart_apariciones_promedio": [f["apariciones_promedio"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:

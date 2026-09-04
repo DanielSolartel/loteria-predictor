@@ -131,4 +131,10 @@
             Frecuencia de colores por año
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'frecuencia-colores-por-mes' %}active{% endif %}"
+           href="/estadisticas/colorloto/frecuencia-colores-por-mes{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Frecuencia de colores por mes
+        </a>
+    </li>
 </ul>
