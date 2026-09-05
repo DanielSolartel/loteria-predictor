@@ -137,4 +137,10 @@
             Frecuencia de colores por mes
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'frecuencia-colores-por-dia-semana' %}active{% endif %}"
+           href="/estadisticas/colorloto/frecuencia-colores-por-dia-semana{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Frecuencia de colores por día de semana
+        </a>
+    </li>
 </ul>
