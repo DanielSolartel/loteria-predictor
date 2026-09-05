@@ -1974,6 +1974,83 @@ def frecuencia_colores_por_mes_colorloto_a_vm(estadistica, mes: int, juego: Jueg
     }
 
 
+_NOMBRES_DIAS_SEMANA_ES = {
+    "lunes": "Lunes", "martes": "Martes", "miercoles": "Miércoles", "jueves": "Jueves",
+    "viernes": "Viernes", "sabado": "Sábado", "domingo": "Domingo",
+}
+
+
+def frecuencia_colores_por_dia_semana_colorloto_a_vm(estadistica, dia_semana: str, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "frecuencia_colores_por_dia_semana_colorloto" (Etapa AE-24,
+    PROVISIONAL) en un view model listo para la plantilla. Nunca
+    recalcula la métrica, nunca consulta repositorios, nunca llama
+    al motor -transformación pura, mismo patrón que
+    `frecuencia_colores_por_anio_colorloto_a_vm` (AE-22) y
+    `frecuencia_colores_por_mes_colorloto_a_vm` (AE-23). Solo se
+    invoca cuando `estadistica` ya existe (día válido seleccionado)
+    -el router nunca llama a esta función en el estado sin día.
+
+    Dominio real confirmado por auditoría: `dia_semana` es el string
+    literal ya almacenado en `ResultadoColorLoto.dia_semana`
+    (`{"lunes","martes","miercoles","jueves","viernes","sabado","domingo"}`,
+    minúsculas, sin tildes -mismo dominio exacto que `_DIAS_SEMANA_VALIDOS`
+    del motor), NUNCA un entero. `_NOMBRES_DIAS_SEMANA_ES` es
+    exclusivamente de presentación (capitalización y tildes propias
+    del español) -nunca se usa en la identidad de caché ni en el
+    cálculo, que siempre trabaja con el string crudo del dominio
+    real. "Día de la semana" agrega ese mismo día a través de TODOS
+    los meses y años del histórico, nunca representa una fecha
+    concreta -confirmado por lectura directa de `_filtrar_por_dia_semana`
+    (`r.dia_semana == dia_semana`, comparación exacta contra el
+    string ya persistido, sin invocar `weekday()` en absoluto dentro
+    del motor de estadísticas).
+
+    Mismo criterio semántico ya establecido por AE-2/AE-22/AE-23:
+    mismo dataclass `FrecuenciaObservada`, mismo campo
+    `frecuencia_relativa`: **"apariciones promedio por sorteo" del
+    día, nunca "porcentaje"** -puede legítimamente superar 1.0 porque
+    un color puede repetirse dentro de un mismo sorteo (balotas
+    físicas, no apariciones deduplicadas por sorteo). Se expone como
+    `apariciones_promedio` (float crudo) y `apariciones_promedio_texto`
+    (`.2f`), exactamente el mismo par de campos que AE-2/AE-22/AE-23.
+
+    Orden determinista: se conserva tal cual llega en `resultado` -ya
+    ordenado alfabéticamente por código por el propio motor, nunca
+    reordenado aquí. `apariciones`/`total_sorteos` son enteros reales;
+    `total_sorteos` puede ser `0` si el día no tuvo sorteos en ningún
+    mes/año -en ese caso `frecuencia_relativa` ya llega en `0.0` desde
+    el motor (nunca `None`), preservado tal cual."""
+    filas_ordenadas = estadistica.resultado["filas"]
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        codigo = f["valor"]
+        filas_presentacion.append({
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "apariciones": f["apariciones"],
+            "apariciones_promedio": f["frecuencia_relativa"],
+            "apariciones_promedio_texto": f"{f['frecuencia_relativa']:.2f}",
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "dia_semana": dia_semana,
+        "dia_semana_nombre": _NOMBRES_DIAS_SEMANA_ES[dia_semana],
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos": total_sorteos,
+        "filas": filas_presentacion,
+        "chart_labels": [f["nombre"] for f in filas_presentacion],
+        "chart_apariciones_promedio": [f["apariciones_promedio"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:

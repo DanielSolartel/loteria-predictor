@@ -78,7 +78,7 @@ from app.application.estadisticas.motor.frecuencia import (
     calcular_frecuencia_superbalota,
     construir_tabla_frecuencia,
 )
-from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio, calcular_frecuencia_colores_por_mes
+from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio, calcular_frecuencia_colores_por_mes, calcular_frecuencia_colores_por_dia_semana
 from app.application.estadisticas.tipos import (
     FilaFrecuencia, FrecuenciaObservada, IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
@@ -2023,6 +2023,58 @@ def _calcular_frecuencia_colores_por_mes_colorloto(
     return calcular_frecuencia_colores_por_mes(historico.pares, colores_vigentes, mes)
 
 
+def _calcular_frecuencia_colores_por_dia_semana_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Frecuencia de colores de ColorLoto restringida a un día de la
+    semana seleccionado por el usuario, agregado a través de TODOS
+    los meses y años del histórico (Etapa AE-24, PROVISIONAL) -mismo
+    precedente de selector ya validado por AE-22 (año) y AE-23 (mes).
+
+    Dominio real confirmado por auditoría (código real, no asumido):
+    `dia_semana` es un STRING literal en español, minúsculas, SIN
+    tildes -`{"lunes","martes","miercoles","jueves","viernes","sabado","domingo"}`,
+    NUNCA un entero `0..6` ni `1..7`. `lunes` corresponde a
+    `date.weekday()==0`, `domingo` a `date.weekday()==6` -mismo orden
+    exacto que `DIAS_SEMANA_ES` en `registrar_sorteo.py`/`editar_sorteo.py`,
+    único lugar donde `weekday()` se invoca realmente (al registrar o
+    editar un sorteo, para poblar el campo ya persistido); el motor
+    de esta etapa nunca llama a `weekday()` -solo compara el string
+    ya almacenado en `ResultadoColorLoto.dia_semana` por igualdad
+    exacta (`_filtrar_por_dia_semana`, confirmado por lectura directa
+    y por ejecución real: lunes de 2023-06 y 2024-01 se agregaron en
+    un único subconjunto, excluyendo correctamente un sorteo de
+    martes).
+
+    Mismo motivo estructural que AE-22/AE-23 para leer
+    `parametros["dia_semana"]` explícitamente (`ejecutar()` solo
+    entrega valores variables por consulta a través de
+    `parametros_metrica`, único canal real) -la receta lee
+    **únicamente** esa clave, ningún parámetro oculto adicional.
+
+    Reutiliza `calcular_frecuencia_colores_por_dia_semana` sin
+    modificar el motor (vive en `motor/frecuencia_temporal.py`, ya
+    existía desde antes de esta etapa, con test de motor propio
+    `test_por_dia_semana` en `TestFrecuenciaColoresTemporal`).
+    Reutiliza `_validar_historico_colorloto_consistente` y
+    `_codigos_colores_vigentes_en_referencia` (ambos protegidos, sin
+    cambios) -misma validación defensiva antes del motor ya usada 22
+    veces. Reutiliza también `_serializar_frecuencia_observada`
+    (protegido, sin cambios) -mismo dataclass `FrecuenciaObservada`
+    ya usado por AE-2/AE-22/AE-23. NUNCA se pasa `hasta_numero_sorteo`
+    al motor -mismo precedente exacto de las 23 recetas anteriores:
+    el orquestador ya filtró `historico.pares` por el corte general
+    antes de llegar aquí; el motor aplica únicamente el filtro
+    adicional por día de semana sobre ese subconjunto ya acotado."""
+    dia_semana = parametros["dia_semana"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    colores_vigentes = _codigos_colores_vigentes_en_referencia(historico)
+    return calcular_frecuencia_colores_por_dia_semana(historico.pares, colores_vigentes, dia_semana)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -2145,6 +2197,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "frecuencia_colores_por_mes_colorloto": _Receta(
         calcular=_calcular_frecuencia_colores_por_mes_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "frecuencia_colores_por_dia_semana_colorloto": _Receta(
+        calcular=_calcular_frecuencia_colores_por_dia_semana_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

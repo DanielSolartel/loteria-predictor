@@ -22,6 +22,8 @@ antes de esta generalización.
 """
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
@@ -55,6 +57,7 @@ from app.api.web.view_models import (
     intervalos_historicos_pares_numero_color_colorloto_a_vm,
     frecuencia_colores_por_anio_colorloto_a_vm,
     frecuencia_colores_por_mes_colorloto_a_vm,
+    frecuencia_colores_por_dia_semana_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1784,6 +1787,108 @@ def frecuencia_colores_por_mes_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/frecuencia_colores_por_mes_colorloto.html",
+        context={**contexto_base, "estadistica": vm},
+    )
+
+
+@router.get("/estadisticas/colorloto/frecuencia-colores-por-dia-semana")
+def frecuencia_colores_por_dia_semana_colorloto(
+    request: Request,
+    dia_semana: Literal["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"] | None = Query(default=None),
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-24 (PROVISIONAL): vigesimocuarta visualización
+    descriptiva de ColorLoto -frecuencia de colores restringida a un
+    día de la semana elegido por el usuario, agregado a través de
+    TODOS los meses y años del histórico. Mismo precedente de
+    selector ya validado por AE-22 (año) y AE-23 (mes), decisión de
+    producto reutilizada explícitamente: "día de la semana" combina
+    ese mismo día calendario (p. ej. todos los lunes) de cada mes y
+    año disponible, nunca una fecha concreta.
+
+    Dominio real confirmado por auditoría (código real, no asumido):
+    `dia_semana` es un STRING literal en español, minúsculas, SIN
+    tildes -`{"lunes","martes","miercoles","jueves","viernes","sabado","domingo"}`,
+    NUNCA un entero `0..6` ni `1..7` -mismo dominio exacto ya
+    almacenado en `ResultadoColorLoto.dia_semana` (poblado una única
+    vez, al registrar o editar un sorteo, con `DIAS_SEMANA_ES[fecha.weekday()]`).
+    `Literal[...]` produce `422` nativo de FastAPI para cualquier
+    valor fuera de esas siete cadenas exactas, sin necesidad de
+    `ge`/`le` (que solo aplican a tipos numéricos, no al dominio real
+    de esta etapa).
+
+    Sin `dia_semana`: responde `200` mostrando únicamente el
+    selector, sin ejecutar el orquestador, sin invocar el motor, sin
+    consultar ni persistir ninguna caché -nunca se elige
+    automáticamente el día actual (decisión de producto explícita).
+    Con `dia_semana` válido, incluso sin sorteos ese día en ningún
+    mes/año: `200` con el universo completo de colores en cero -nunca
+    un `404`.
+
+    Reutiliza `calcular_frecuencia_colores_por_dia_semana` sin
+    modificarlo. Identidad `{"dia_semana": dia_semana, "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL}`
+    -solo existe cuando hay día seleccionado; `dia_semana` cambia
+    matemáticamente el resultado (determina el subconjunto exacto
+    analizado), por lo que forma parte de la identidad, a diferencia
+    de `hasta_numero_sorteo`, que permanece en su propia columna.
+    Esta página nunca coloca `anio` ni `mes` en su contexto -ninguna
+    página propaga simultáneamente más de uno entre `anio`, `mes` y
+    `dia_semana`."""
+    db_conectada = _verificar_conexion(db)
+
+    # Misma extensión de bidireccionalidad ya validada por AE-22/AE-23:
+    # "Histórico completo" limpia el corte pero preserva el día ya
+    # seleccionado -el valor viene siempre validado por FastAPI como
+    # uno de los siete literales exactos del dominio real (nunca
+    # texto arbitrario sin validar), por lo que construirlo aquí con
+    # un f-string es seguro.
+    url_historico_completo = "/estadisticas/colorloto/frecuencia-colores-por-dia-semana"
+    if dia_semana is not None:
+        url_historico_completo = f"{url_historico_completo}?dia_semana={dia_semana}"
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "dia_semana": dia_semana,
+        "url_historico_completo": url_historico_completo,
+        "pagina_colorloto_activa": "frecuencia-colores-por-dia-semana",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/frecuencia_colores_por_dia_semana_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    if dia_semana is None:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/frecuencia_colores_por_dia_semana_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="frecuencia_colores_por_dia_semana_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "dia_semana": dia_semana,
+            "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL,
+        },
+    )
+
+    vm = frecuencia_colores_por_dia_semana_colorloto_a_vm(resultado, dia_semana, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/frecuencia_colores_por_dia_semana_colorloto.html",
         context={**contexto_base, "estadistica": vm},
     )
 
