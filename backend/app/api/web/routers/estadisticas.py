@@ -58,6 +58,7 @@ from app.api.web.view_models import (
     frecuencia_colores_por_anio_colorloto_a_vm,
     frecuencia_colores_por_mes_colorloto_a_vm,
     frecuencia_colores_por_dia_semana_colorloto_a_vm,
+    frecuencia_pares_numero_color_por_anio_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -1889,6 +1890,102 @@ def frecuencia_colores_por_dia_semana_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/frecuencia_colores_por_dia_semana_colorloto.html",
+        context={**contexto_base, "estadistica": vm},
+    )
+
+
+@router.get("/estadisticas/colorloto/frecuencia-pares-numero-color-por-anio")
+def frecuencia_pares_numero_color_por_anio_colorloto(
+    request: Request,
+    anio: int | None = Query(default=None, ge=1, le=9999),
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-25 (PROVISIONAL): vigesimoquinta visualización
+    descriptiva de ColorLoto -frecuencia del PAR (número, color) como
+    unidad atómica, restringida a un año elegido por el usuario.
+    Mismo precedente exacto de selector ya validado por AE-22
+    (año), aplicado esta vez sobre pares en lugar de colores.
+
+    Sin `anio`: responde `200` mostrando únicamente el selector, sin
+    ejecutar el orquestador, sin invocar el motor, sin consultar ni
+    persistir ninguna caché -nunca se elige automáticamente un año
+    (decisión de producto explícita). Con `anio` fuera de `1..9999`:
+    `422` nativo de FastAPI, antes de que el handler se ejecute. Con
+    `anio` válido, incluso sin sorteos ese año: `200` con el universo
+    completo de pares en cero -nunca un `404`.
+
+    Reutiliza `calcular_frecuencia_pares_numero_color_por_anio` sin
+    modificarlo. Identidad
+    `{"anio": anio, "rango_min": juego.rango_min, "rango_max": juego.rango_max, "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL}`
+    -a diferencia de AE-22/AE-23/AE-24 (identidad solo con el
+    selector + política de colores), este motor SÍ construye su
+    universo con el producto cartesiano `rango × colores`, por lo que
+    el rango forma parte de la identidad -mismo criterio ya
+    demostrado por AE-20/AE-21, construido aquí desde `juego.rango_min`/
+    `juego.rango_max` (la entidad real, nunca la constante privada
+    `_RANGO_REAL_COLORLOTO`, inaccesible fuera del caso de uso).
+    `anio` cambia matemáticamente el resultado (determina el
+    subconjunto exacto analizado), por lo que también forma parte de
+    la identidad, a diferencia de `hasta_numero_sorteo`, que
+    permanece en su propia columna. Esta página nunca coloca `mes`
+    ni `dia_semana` en su contexto -ninguna página propaga
+    simultáneamente más de uno entre `anio`, `mes` y `dia_semana`."""
+    db_conectada = _verificar_conexion(db)
+
+    # Misma extensión de bidireccionalidad ya validada por AE-22:
+    # "Histórico completo" limpia el corte pero preserva el año ya
+    # seleccionado -el valor viene siempre validado como entero por
+    # FastAPI (Query(ge=1, le=9999)), por lo que construirlo aquí con
+    # un f-string es seguro.
+    url_historico_completo = "/estadisticas/colorloto/frecuencia-pares-numero-color-por-anio"
+    if anio is not None:
+        url_historico_completo = f"{url_historico_completo}?anio={anio}"
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "anio": anio,
+        "url_historico_completo": url_historico_completo,
+        "pagina_colorloto_activa": "frecuencia-pares-numero-color-por-anio",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/frecuencia_pares_numero_color_por_anio_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    if anio is None:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/frecuencia_pares_numero_color_por_anio_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="frecuencia_pares_numero_color_por_anio_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "anio": anio,
+            "rango_min": juego.rango_min,
+            "rango_max": juego.rango_max,
+            "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL,
+        },
+    )
+
+    vm = frecuencia_pares_numero_color_por_anio_colorloto_a_vm(resultado, anio, juego.rango_min, juego.rango_max, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/frecuencia_pares_numero_color_por_anio_colorloto.html",
         context={**contexto_base, "estadistica": vm},
     )
 

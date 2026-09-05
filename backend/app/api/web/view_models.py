@@ -2051,6 +2051,88 @@ def frecuencia_colores_por_dia_semana_colorloto_a_vm(estadistica, dia_semana: st
     }
 
 
+def frecuencia_pares_numero_color_por_anio_colorloto_a_vm(estadistica, anio: int, rango_min: int, rango_max: int, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "frecuencia_pares_numero_color_por_anio_colorloto" (Etapa AE-25,
+    PROVISIONAL) en un view model listo para la plantilla. Nunca
+    recalcula la métrica, nunca consulta repositorios, nunca llama
+    al motor -transformación pura. Combina el precedente de selector
+    de año ya validado por AE-22 con el patrón de presentación de
+    pares ya validado por `frecuencia_pares_colorloto_a_vm` (AE-3),
+    replicado aquí de forma mínima sin modificar esa función. Solo
+    se invoca cuando `estadistica` ya existe (año válido
+    seleccionado) -el router nunca llama a esta función en el
+    estado sin año.
+
+    Mismo criterio semántico ya establecido por AE-2/AE-3/AE-22/AE-23/AE-24:
+    mismo dataclass `FrecuenciaObservada`, mismo campo
+    `frecuencia_relativa`, mismo formato `valor=f"{numero}-{color}"`
+    ya usado por AE-3: **"Apariciones promedio por sorteo" del año,
+    nunca "porcentaje"** -puede legítimamente superar 1.0 porque el
+    mismo par exacto puede repetirse dentro de un sorteo (balotas
+    físicas, no apariciones deduplicadas). Reutiliza
+    `_deserializar_par_numero_color` como único punto de
+    interpretación del valor par -protegido, sin cambios.
+
+    Orden determinista: se conserva tal cual llega en `resultado` -ya
+    ordenado por (número, código) ascendente por el propio motor
+    (`sorted(universo)`), nunca reordenado aquí. Datasets AGRUPADOS
+    por color para la gráfica de barras agrupadas (eje X = números
+    del rango real, un dataset por color) -construidos dinámicamente
+    a partir de los colores REALES presentes en el resultado, nunca
+    seis códigos fijados a mano, mismo patrón exacto que AE-3."""
+    filas_crudas = estadistica.resultado["filas"]
+    total_sorteos = filas_crudas[0]["total_sorteos"] if filas_crudas else 0
+
+    filas_presentacion = []
+    for f in filas_crudas:
+        numero, codigo = _deserializar_par_numero_color(f["valor"])
+        filas_presentacion.append({
+            "numero": numero,
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "apariciones": f["apariciones"],
+            "apariciones_promedio": f["frecuencia_relativa"],
+            "apariciones_promedio_texto": f"{f['frecuencia_relativa']:.2f}",
+        })
+
+    colores_presentes: list[str] = []
+    vistos: set[str] = set()
+    for f in filas_presentacion:
+        if f["codigo"] not in vistos:
+            vistos.add(f["codigo"])
+            colores_presentes.append(f["codigo"])
+
+    numeros_presentes = sorted({f["numero"] for f in filas_presentacion})
+
+    datasets = []
+    for codigo_color in colores_presentes:
+        filas_de_este_color = {f["numero"]: f for f in filas_presentacion if f["codigo"] == codigo_color}
+        datasets.append({
+            "label": codigo_color.title(),
+            "color_hex": _color_hex_seguro(codigo_color),
+            "data": [
+                filas_de_este_color[n]["apariciones_promedio"] if n in filas_de_este_color else 0.0
+                for n in numeros_presentes
+            ],
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "anio": anio,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos": total_sorteos,
+        "filas": filas_presentacion,
+        "chart_labels": [str(n) for n in numeros_presentes],
+        "chart_datasets": datasets,
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
