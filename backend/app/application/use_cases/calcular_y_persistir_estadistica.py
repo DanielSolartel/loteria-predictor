@@ -78,7 +78,7 @@ from app.application.estadisticas.motor.frecuencia import (
     calcular_frecuencia_superbalota,
     construir_tabla_frecuencia,
 )
-from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio, calcular_frecuencia_colores_por_mes, calcular_frecuencia_colores_por_dia_semana
+from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio, calcular_frecuencia_colores_por_mes, calcular_frecuencia_colores_por_dia_semana, calcular_frecuencia_pares_numero_color_por_anio
 from app.application.estadisticas.tipos import (
     FilaFrecuencia, FrecuenciaObservada, IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
@@ -2075,6 +2075,77 @@ def _calcular_frecuencia_colores_por_dia_semana_colorloto(
     return calcular_frecuencia_colores_por_dia_semana(historico.pares, colores_vigentes, dia_semana)
 
 
+def _calcular_frecuencia_pares_numero_color_por_anio_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Frecuencia del PAR (número, color) como unidad atómica,
+    restringida a un año seleccionado por el usuario (Etapa AE-25,
+    PROVISIONAL) -mismo precedente exacto de selector ya validado
+    por AE-22/AE-23/AE-24, aplicado esta vez sobre pares en lugar de
+    colores. "Año" agrega TODOS los sorteos de ese año, excluyendo
+    los demás -confirmado por lectura directa de `_filtrar_por_anio`
+    (`r.fecha.year == anio`) y por ejecución real.
+
+    A diferencia de AE-22/AE-23/AE-24 (identidad solo con el
+    selector temporal + política de colores), este motor construye
+    su universo con el producto cartesiano
+    `range(rango_min, rango_max+1) × colores_a_reportar` -confirmado
+    por lectura directa de `calcular_frecuencia_pares_numero_color`
+    (la función base reutilizada por el motor temporal sin
+    modificarla)- por lo que la identidad de esta etapa combina el
+    criterio ya demostrado por AE-20/AE-21 (rango, desde
+    `juego.rango_min`/`juego.rango_max`) con el criterio de
+    AE-22 (`anio` como valor genuinamente variable por consulta) y
+    la política de colores ya usada por AE-5/AE-18/AE-21.
+    `cantidad_numeros` excluida de la identidad -el motor no la
+    recibe, solo se usa aquí para validación defensiva.
+
+    Mismo motivo estructural que AE-22/AE-23/AE-24 para leer
+    `parametros["anio"]` explícitamente (`ejecutar()` solo entrega
+    valores variables por consulta a través de `parametros_metrica`,
+    único canal real) -la receta lee **únicamente** esa clave, ningún
+    parámetro oculto adicional.
+
+    Reutiliza `calcular_frecuencia_pares_numero_color_por_anio` sin
+    modificar el motor (vive en `motor/frecuencia_temporal.py`, ya
+    existía desde antes de esta etapa, con 7 tests de motor propios
+    en `TestFrecuenciaParesNumeroColorTemporal`, incluido
+    `test_numero_fuera_de_rango_lanza_value_error` -confirmado real
+    que el motor mismo valida el rango con `ValueError`, pero la
+    validación defensiva de esta receta lo intercepta primero, mismo
+    comportamiento exacto ya documentado en AE-20/AE-21). El motor NO
+    valida `anio` internamente -confirmado por ejecución real con
+    valores `0`, `-1` y `10000`, que no producen ninguna excepción
+    propia, solo un universo completo en cero (ningún sorteo real
+    coincide); la validación real de dominio (`1..9999`) ocurre
+    exclusivamente en la capa `Query` del router, igual que AE-22.
+
+    Reutiliza `_validar_historico_colorloto_consistente` y
+    `_codigos_colores_vigentes_en_referencia` (ambos protegidos, sin
+    cambios) -misma validación defensiva antes del motor ya usada 23
+    veces; caracterización empírica confirmada con motor espiado:
+    número fuera de rango, cantidad de balotas incorrecta y color
+    inválido son interceptados antes del motor, con
+    `ResultadoHistoricoInconsistenteError`, motor nunca invocado,
+    caché nunca persistida. Reutiliza también
+    `_serializar_frecuencia_observada` (protegido, sin cambios)
+    -mismo dataclass `FrecuenciaObservada`, mismo formato
+    `valor=f"{numero}-{color}"` ya usado por `frecuencia_pares_colorloto`
+    (AE-3), confirmado que sobrevive intacto al round-trip JSON.
+    NUNCA se pasa `hasta_numero_sorteo` al motor -mismo precedente
+    exacto de las 24 recetas anteriores: el orquestador ya filtró
+    `historico.pares` por el corte general antes de llegar aquí."""
+    anio = parametros["anio"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    colores_vigentes = _codigos_colores_vigentes_en_referencia(historico)
+    return calcular_frecuencia_pares_numero_color_por_anio(
+        historico.pares, rango_min, rango_max, colores_vigentes, anio,
+    )
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -2201,6 +2272,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "frecuencia_colores_por_dia_semana_colorloto": _Receta(
         calcular=_calcular_frecuencia_colores_por_dia_semana_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "frecuencia_pares_numero_color_por_anio_colorloto": _Receta(
+        calcular=_calcular_frecuencia_pares_numero_color_por_anio_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

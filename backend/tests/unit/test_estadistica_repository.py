@@ -3282,3 +3282,66 @@ class TestUpsertConFrecuenciaColoresPorDiaSemanaColorlotoEtapaAE24:
         recuperada = repo.buscar_vigente(juego_id, "frecuencia_colores_por_dia_semana_colorloto", None, self._PARAMS_LUNES)
         assert recuperada.resultado == resultado
         assert recuperada.resultado["filas"][0]["valor"] == "ROJO"
+
+
+class TestUpsertConFrecuenciaParesNumeroColorPorAnioColorlotoEtapaAE25:
+    """Etapa AE-25 (PROVISIONAL): identidad de cuatro claves -`anio`,
+    `rango_min`, `rango_max` y `politica_universo_colores`- a
+    diferencia de AE-22/AE-23/AE-24, este motor SI construye su
+    universo con el producto cartesiano rango x colores, por lo que
+    el rango forma parte de la identidad, mismo criterio ya
+    demostrado por AE-20/AE-21."""
+
+    _PARAMS_2024 = {"anio": 2024, "rango_min": 1, "rango_max": 7, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+    _PARAMS_2023 = {"anio": 2023, "rango_min": 1, "rango_max": 7, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+
+    def test_upsert_misma_identidad_reemplaza(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2024, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2024, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "frecuencia_pares_numero_color_por_anio_colorloto")
+        assert total == 1
+
+    def test_anios_distintos_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2024, resultado={"v": "2024"}))
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2023, resultado={"v": "2023"}))
+        r2024 = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_anio_colorloto", None, self._PARAMS_2024)
+        r2023 = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_anio_colorloto", None, self._PARAMS_2023)
+        assert r2024.resultado == {"v": "2024"}
+        assert r2023.resultado == {"v": "2023"}
+
+    def test_historico_completo_y_corte_temporal_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2024, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_2024, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_anio_colorloto", None, self._PARAMS_2024)
+        corte = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_anio_colorloto", 100, self._PARAMS_2024)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_parametros_exactos_persistidos_orden_no_relevante(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2024, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS_2024
+        assert set(entrada.parametros.keys()) == {"anio", "rango_min", "rango_max", "politica_universo_colores"}
+        parametros_desordenados = {"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1", "rango_max": 7, "anio": 2024, "rango_min": 1}
+        assert entrada.parametros == parametros_desordenados
+
+    def test_round_trip_del_valor_par_serializado(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{"valor": "5-ROJO", "apariciones": 3, "total_sorteos": 2, "frecuencia_relativa": 1.5}]}
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_anio_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_2024, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_anio_colorloto", None, self._PARAMS_2024)
+        assert recuperada.resultado == resultado
+        assert recuperada.resultado["filas"][0]["valor"] == "5-ROJO"
+        numero_str, color = recuperada.resultado["filas"][0]["valor"].split("-")
+        assert int(numero_str) == 5
+        assert color == "ROJO"

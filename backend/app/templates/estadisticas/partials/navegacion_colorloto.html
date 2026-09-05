@@ -143,4 +143,10 @@
             Frecuencia de colores por día de semana
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'frecuencia-pares-numero-color-por-anio' %}active{% endif %}"
+           href="/estadisticas/colorloto/frecuencia-pares-numero-color-por-anio{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Frecuencia de pares número-color por año
+        </a>
+    </li>
 </ul>
