@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Frecuencia de pares número-color por mes — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Frecuencia de pares número-color por mes — ColorLoto</h3>
+<p class="text-muted">Muestra, para un mes calendario seleccionado, la frecuencia de cada PAR número-color -la balota exacta con su número y su color juntos, no el número ni el color por separado- agregando los sorteos de ese mes a través de TODOS los años disponibles del histórico. Se cuentan balotas físicas contadas individualmente; el mismo par puede repetirse dentro de un sorteo y cada repetición cuenta. El denominador es la cantidad de sorteos de ese mes a través de todos los años, no el histórico completo. Esta información es histórica y descriptiva, nunca predictiva.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% else %}
+
+<div class="card stat-card p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-auto">
+            <label for="mes" class="form-label">Mes</label>
+            <select class="form-select" id="mes" name="mes" required>
+                <option value="" {% if mes is none %}selected{% endif %} disabled>Seleccione un mes</option>
+                <option value="1" {% if mes == 1 %}selected{% endif %}>Enero</option>
+                <option value="2" {% if mes == 2 %}selected{% endif %}>Febrero</option>
+                <option value="3" {% if mes == 3 %}selected{% endif %}>Marzo</option>
+                <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                <option value="5" {% if mes == 5 %}selected{% endif %}>Mayo</option>
+                <option value="6" {% if mes == 6 %}selected{% endif %}>Junio</option>
+                <option value="7" {% if mes == 7 %}selected{% endif %}>Julio</option>
+                <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                <option value="9" {% if mes == 9 %}selected{% endif %}>Septiembre</option>
+                <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
+                <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
+                <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
+            </select>
+        </div>
+        {% if hasta_numero_sorteo %}
+        <input type="hidden" name="hasta_numero_sorteo" value="{{ hasta_numero_sorteo }}">
+        {% endif %}
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Calcular</button>
+        </div>
+    </form>
+    <p class="text-muted small mt-2 mb-0">Elige un mes para calcular la frecuencia de pares número-color de ese mes, agregada a través de todos los años. No se aplica ningún mes por defecto.</p>
+</div>
+
+{% if not estadistica %}
+<div class="alert alert-secondary">
+    <i class="bi bi-info-circle me-2"></i>Selecciona un mes para ver la frecuencia de pares número-color correspondiente.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Estos valores describen lo ya ocurrido en {{ estadistica.mes_nombre }} a través de todos los años disponibles. El mismo par número-color puede repetirse dentro de un sorteo, y cada repetición cuenta -por eso las apariciones promedio por sorteo pueden superar 1. Esta cifra no es un porcentaje ni una probabilidad y no tiene ninguna capacidad predictiva sobre próximos sorteos.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Mes</div>
+            <div class="fw-bold">{{ estadistica.mes_nombre }}</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados en {{ estadistica.mes_nombre }} (todos los años)</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+</div>
+
+{% if estadistica.total_sorteos == 0 %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos registrados para {{ estadistica.mes_nombre }} en ningún año del histórico. Se muestra el universo completo de pares número-color en cero.
+</div>
+{% endif %}
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-frecuencia-pares-numero-color-por-mes-colorloto" height="180"></canvas>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-frecuencia-pares-numero-color-por-mes-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "datasets": estadistica.chart_datasets, "totalSorteos": estadistica.total_sorteos} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-frecuencia-pares-numero-color-por-mes-colorloto").textContent);
+        const ctx = document.getElementById("grafica-frecuencia-pares-numero-color-por-mes-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: datos.datasets.map((d) => ({
+                    label: d.label,
+                    data: d.data,
+                    backgroundColor: d.color_hex,
+                    borderColor: "rgba(0, 0, 0, 0.15)",
+                    borderWidth: 1,
+                })),
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: "bottom" },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const promedio = item.raw.toFixed(2);
+                                return `${item.dataset.label}: ${promedio} apariciones promedio por sorteo (número ${item.label}, ${datos.totalSorteos} sorteos)`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: { title: { display: true, text: "Número" } },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Apariciones promedio por sorteo" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por par número-color</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Color</th>
+                    <th>Apariciones</th>
+                    <th>Sorteos del mes</th>
+                    <th>Apariciones promedio por sorteo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero }}</td>
+                    <td>
+                        <span class="d-inline-block rounded-circle border me-2" style="width:0.9rem;height:0.9rem;background-color:{{ fila.color_hex }};"></span>
+                        {{ fila.nombre }}
+                    </td>
+                    <td>{{ fila.apariciones }}</td>
+                    <td>{{ estadistica.total_sorteos }}</td>
+                    <td>{{ fila.apariciones_promedio_texto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
