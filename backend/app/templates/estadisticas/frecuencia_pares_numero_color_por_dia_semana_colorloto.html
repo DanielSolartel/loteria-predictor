@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Frecuencia de pares número-color por día de semana — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Frecuencia de pares número-color por día de semana — ColorLoto</h3>
+<p class="text-muted">Muestra, para un día de la semana seleccionado, la frecuencia de cada PAR número-color -la balota exacta con su número y su color juntos, no el número ni el color por separado- agregando los sorteos de ese día a través de TODOS los meses y años disponibles del histórico. Se cuentan balotas físicas contadas individualmente; el mismo par puede repetirse dentro de un sorteo y cada repetición cuenta. El denominador es la cantidad de sorteos de ese día de la semana a través de todos los meses y años, no el histórico completo. Esta información es histórica y descriptiva, nunca predictiva.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% else %}
+
+<div class="card stat-card p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-auto">
+            <label for="dia_semana" class="form-label">Día de la semana</label>
+            <select class="form-select" id="dia_semana" name="dia_semana" required>
+                <option value="" {% if dia_semana is none %}selected{% endif %} disabled>Seleccione un día</option>
+                <option value="lunes" {% if dia_semana == "lunes" %}selected{% endif %}>Lunes</option>
+                <option value="martes" {% if dia_semana == "martes" %}selected{% endif %}>Martes</option>
+                <option value="miercoles" {% if dia_semana == "miercoles" %}selected{% endif %}>Miércoles</option>
+                <option value="jueves" {% if dia_semana == "jueves" %}selected{% endif %}>Jueves</option>
+                <option value="viernes" {% if dia_semana == "viernes" %}selected{% endif %}>Viernes</option>
+                <option value="sabado" {% if dia_semana == "sabado" %}selected{% endif %}>Sábado</option>
+                <option value="domingo" {% if dia_semana == "domingo" %}selected{% endif %}>Domingo</option>
+            </select>
+        </div>
+        {% if hasta_numero_sorteo %}
+        <input type="hidden" name="hasta_numero_sorteo" value="{{ hasta_numero_sorteo }}">
+        {% endif %}
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Calcular</button>
+        </div>
+    </form>
+    <p class="text-muted small mt-2 mb-0">Elige un día de la semana para calcular la frecuencia de pares número-color de ese día, agregada a través de todos los meses y años. No se aplica ningún día por defecto.</p>
+</div>
+
+{% if not estadistica %}
+<div class="alert alert-secondary">
+    <i class="bi bi-info-circle me-2"></i>Selecciona un día de la semana para ver la frecuencia de pares número-color correspondiente.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Estos valores describen lo ya ocurrido los {{ estadistica.dia_semana_nombre }} a través de todos los meses y años disponibles. El mismo par número-color puede repetirse dentro de un sorteo, y cada repetición cuenta -por eso las apariciones promedio por sorteo pueden superar 1. Esta cifra no es un porcentaje ni una probabilidad y no tiene ninguna capacidad predictiva sobre próximos sorteos.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Día de la semana</div>
+            <div class="fw-bold">{{ estadistica.dia_semana_nombre }}</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados en {{ estadistica.dia_semana_nombre }} (todos los meses y años)</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+</div>
+
+{% if estadistica.total_sorteos == 0 %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos registrados para los {{ estadistica.dia_semana_nombre }} en ningún mes o año del histórico. Se muestra el universo completo de pares número-color en cero.
+</div>
+{% endif %}
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-frecuencia-pares-numero-color-por-dia-semana-colorloto" height="180"></canvas>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-frecuencia-pares-numero-color-por-dia-semana-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "datasets": estadistica.chart_datasets, "totalSorteos": estadistica.total_sorteos} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-frecuencia-pares-numero-color-por-dia-semana-colorloto").textContent);
+        const ctx = document.getElementById("grafica-frecuencia-pares-numero-color-por-dia-semana-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: datos.datasets.map((d) => ({
+                    label: d.label,
+                    data: d.data,
+                    backgroundColor: d.color_hex,
+                    borderColor: "rgba(0, 0, 0, 0.15)",
+                    borderWidth: 1,
+                })),
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: "bottom" },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const promedio = item.raw.toFixed(2);
+                                return `${item.dataset.label}: ${promedio} apariciones promedio por sorteo (número ${item.label}, ${datos.totalSorteos} sorteos)`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: { title: { display: true, text: "Número" } },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Apariciones promedio por sorteo" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por par número-color</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Color</th>
+                    <th>Apariciones</th>
+                    <th>Sorteos del día</th>
+                    <th>Apariciones promedio por sorteo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero }}</td>
+                    <td>
+                        <span class="d-inline-block rounded-circle border me-2" style="width:0.9rem;height:0.9rem;background-color:{{ fila.color_hex }};"></span>
+                        {{ fila.nombre }}
+                    </td>
+                    <td>{{ fila.apariciones }}</td>
+                    <td>{{ estadistica.total_sorteos }}</td>
+                    <td>{{ fila.apariciones_promedio_texto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
