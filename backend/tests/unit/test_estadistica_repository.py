@@ -3422,3 +3422,80 @@ class TestUpsertConFrecuenciaParesNumeroColorPorMesColorlotoEtapaAE26:
         numero_str, color = recuperada.resultado["filas"][0]["valor"].split("-")
         assert int(numero_str) == 5
         assert color == "ROJO"
+
+
+class TestUpsertConFrecuenciaParesNumeroColorPorDiaSemanaColorlotoEtapaAE27:
+    """Etapa AE-27 (PROVISIONAL): mismo precedente exacto de AE-26
+    (identidad con rango, pares) combinado con el selector de dia de
+    semana ya validado por AE-24. Usa los indices unicos parciales ya
+    existentes -ninguna migracion nueva."""
+
+    _PARAMS_LUNES = {"dia_semana": "lunes", "rango_min": 1, "rango_max": 7, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+    _PARAMS_VIERNES = {"dia_semana": "viernes", "rango_min": 1, "rango_max": 7, "politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1"}
+
+    def test_upsert_misma_identidad_reemplaza(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_LUNES, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_LUNES, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "frecuencia_pares_numero_color_por_dia_semana_colorloto")
+        assert total == 1
+
+    def test_dias_distintos_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_LUNES, resultado={"v": "lunes"}))
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_VIERNES, resultado={"v": "viernes"}))
+        rlunes = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_dia_semana_colorloto", None, self._PARAMS_LUNES)
+        rviernes = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_dia_semana_colorloto", None, self._PARAMS_VIERNES)
+        assert rlunes.resultado == {"v": "lunes"}
+        assert rviernes.resultado == {"v": "viernes"}
+
+    def test_historico_completo_y_corte_temporal_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_LUNES, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_LUNES, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_dia_semana_colorloto", None, self._PARAMS_LUNES)
+        corte = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_dia_semana_colorloto", 100, self._PARAMS_LUNES)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_parametros_exactos_persistidos_orden_no_relevante(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_LUNES, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS_LUNES
+        assert set(entrada.parametros.keys()) == {"dia_semana", "rango_min", "rango_max", "politica_universo_colores"}
+        parametros_desordenados = {"politica_universo_colores": "vigentes_ultimo_sorteo_mas_observados_v1", "rango_max": 7, "dia_semana": "lunes", "rango_min": 1}
+        assert entrada.parametros == parametros_desordenados
+
+    def test_round_trip_42_filas_enteros_y_flotantes_conservados(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        filas = [
+            {"valor": f"{n}-{c}", "apariciones": n, "total_sorteos": 10, "frecuencia_relativa": n / 10.0}
+            for n in range(1, 8)
+            for c in ["ROJO", "AZUL", "VERDE", "NEGRO", "BLANCO", "AMARILLO"]
+        ]
+        resultado = {"filas": filas}
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_LUNES, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_dia_semana_colorloto", None, self._PARAMS_LUNES)
+        assert recuperada.resultado == resultado
+        assert len(recuperada.resultado["filas"]) == 42
+        assert isinstance(recuperada.resultado["filas"][0]["apariciones"], int)
+        assert isinstance(recuperada.resultado["filas"][0]["frecuencia_relativa"], float)
+
+    def test_round_trip_del_valor_par_serializado(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{"valor": "5-ROJO", "apariciones": 3, "total_sorteos": 2, "frecuencia_relativa": 1.5}]}
+        repo.guardar(_entrada(juego_id, tipo="frecuencia_pares_numero_color_por_dia_semana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_LUNES, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "frecuencia_pares_numero_color_por_dia_semana_colorloto", None, self._PARAMS_LUNES)
+        assert recuperada.resultado == resultado
+        assert recuperada.resultado["filas"][0]["valor"] == "5-ROJO"
+        numero_str, color = recuperada.resultado["filas"][0]["valor"].split("-")
+        assert int(numero_str) == 5
+        assert color == "ROJO"

@@ -154,7 +154,7 @@ class EstadisticaORM(Base):
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     juego_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("juegos.id"), nullable=False, index=True)
-    tipo_estadistica: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    tipo_estadistica: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     hasta_numero_sorteo: Mapped[int | None] = mapped_column(Integer, nullable=True)
     parametros: Mapped[dict] = mapped_column(JSONB, default=dict)
     parametros_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)

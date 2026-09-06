@@ -60,6 +60,7 @@ from app.api.web.view_models import (
     frecuencia_colores_por_dia_semana_colorloto_a_vm,
     frecuencia_pares_numero_color_por_anio_colorloto_a_vm,
     frecuencia_pares_numero_color_por_mes_colorloto_a_vm,
+    frecuencia_pares_numero_color_por_dia_semana_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -2084,6 +2085,111 @@ def frecuencia_pares_numero_color_por_mes_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/frecuencia_pares_numero_color_por_mes_colorloto.html",
+        context={**contexto_base, "estadistica": vm},
+    )
+
+
+@router.get("/estadisticas/colorloto/frecuencia-pares-numero-color-por-dia-semana")
+def frecuencia_pares_numero_color_por_dia_semana_colorloto(
+    request: Request,
+    dia_semana: Literal["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"] | None = Query(default=None),
+    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-27 (PROVISIONAL): vigesimoséptima visualización
+    descriptiva de ColorLoto -frecuencia del PAR (número, color) como
+    unidad atómica, restringida a un día de la semana elegido por el
+    usuario, agregado a través de TODOS los meses y años del
+    histórico. Mismo precedente de selector ya validado por AE-24
+    (día, sobre colores) y AE-25/AE-26 (pares, sobre año/mes),
+    combinado aquí.
+
+    Dominio real confirmado por auditoría (mismo dominio exacto ya
+    usado por AE-24): string literal en español, minúsculas, sin
+    tildes -`{"lunes","martes","miercoles","jueves","viernes","sabado","domingo"}`,
+    NUNCA un entero. `Literal[...]` en el tipo del `Query` produce
+    `422` nativo de FastAPI para el dominio real, sin `ge`/`le`.
+
+    Sin `dia_semana`: responde `200` mostrando únicamente el
+    selector, sin ejecutar el orquestador, sin invocar el motor, sin
+    consultar ni persistir ninguna caché -nunca se elige
+    automáticamente un día (decisión de producto explícita). Con
+    `dia_semana` fuera del dominio real: `422` nativo de FastAPI,
+    antes de que el handler se ejecute. Con `dia_semana` válido,
+    incluso sin sorteos ese día en ningún mes/año: `200` con el
+    universo completo de 42 pares en cero -nunca un `404`.
+
+    Reutiliza `calcular_frecuencia_pares_numero_color_por_dia_semana`
+    sin modificarlo. Identidad
+    `{"dia_semana": dia_semana, "rango_min": juego.rango_min, "rango_max": juego.rango_max, "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL}`
+    -mismo criterio de AE-25/AE-26 (no AE-22/AE-23/AE-24): este motor
+    SÍ construye su universo con el producto cartesiano `rango ×
+    colores`, por lo que el rango forma parte de la identidad,
+    construido aquí desde `juego.rango_min`/`juego.rango_max` (la
+    entidad real, nunca la constante privada `_RANGO_REAL_COLORLOTO`,
+    inaccesible fuera del caso de uso). `dia_semana` cambia
+    matemáticamente el resultado (determina el subconjunto exacto
+    analizado), por lo que también forma parte de la identidad, a
+    diferencia de `hasta_numero_sorteo`, que permanece en su propia
+    columna. Esta página nunca coloca `anio` ni `mes` en su contexto
+    -ninguna página propaga simultáneamente más de uno entre `anio`,
+    `mes` y `dia_semana`."""
+    db_conectada = _verificar_conexion(db)
+
+    # Misma extensión de bidireccionalidad ya validada por AE-24:
+    # "Histórico completo" limpia el corte pero preserva el día ya
+    # seleccionado -el valor viene siempre validado por FastAPI como
+    # uno de los siete literales exactos del dominio real (nunca
+    # texto arbitrario sin validar), por lo que construirlo aquí con
+    # un f-string es seguro.
+    url_historico_completo = "/estadisticas/colorloto/frecuencia-pares-numero-color-por-dia-semana"
+    if dia_semana is not None:
+        url_historico_completo = f"{url_historico_completo}?dia_semana={dia_semana}"
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "dia_semana": dia_semana,
+        "url_historico_completo": url_historico_completo,
+        "pagina_colorloto_activa": "frecuencia-pares-numero-color-por-dia-semana",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/frecuencia_pares_numero_color_por_dia_semana_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    if dia_semana is None:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/frecuencia_pares_numero_color_por_dia_semana_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="frecuencia_pares_numero_color_por_dia_semana_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "dia_semana": dia_semana,
+            "rango_min": juego.rango_min,
+            "rango_max": juego.rango_max,
+            "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL,
+        },
+    )
+
+    vm = frecuencia_pares_numero_color_por_dia_semana_colorloto_a_vm(resultado, dia_semana, juego.rango_min, juego.rango_max, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/frecuencia_pares_numero_color_por_dia_semana_colorloto.html",
         context={**contexto_base, "estadistica": vm},
     )
 
