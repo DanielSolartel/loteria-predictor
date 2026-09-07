@@ -928,7 +928,7 @@ class TestDistribucionParesImparesRouterYManejoDeErrores:
         que la firma de las 20 rutas (9 numéricas + 11 de ColorLoto,
         Etapas AE-1/AE-2/AE-3/AE-4/AE-5/AE-6/AE-7/AE-8/AE-9/AE-10/AE-11) sigue intacta."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 36
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
 
     def test_manejar_error_dominio_no_duplicado_para_500(self):
         """No se agregó un handler nuevo -el mecanismo genérico de
@@ -1999,7 +1999,7 @@ class TestColorLotoAislamientoDeSlugs:
 
     def test_veinte_query_totales(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 36
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
 
     def test_no_construye_gamefactory_ni_llama_has_superballot_para_colorloto(self):
         """El docstring del handler EXPLICA en prosa que no usa estos
@@ -5457,8 +5457,8 @@ class TestColorLotoIntervalosHistoricosColoresRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         indice = codigo_fuente.index('def intervalos_historicos_colores_colorloto(')
         bloque = codigo_fuente[indice:indice + 400]
-        assert bloque.count("Query(") == 1
-        assert "hasta_numero_sorteo: int | None = Query(default=None, ge=1)" in bloque
+        assert bloque.count("Query(") == 0
+        assert "hasta_numero_sorteo: _CorteOpcional = None" in bloque
 
     def test_ruta_literal_registrada_una_sola_vez(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
@@ -8600,16 +8600,24 @@ class TestColorLotoDistribucionConteoColorCorteVacioRegresion:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         indice = codigo_fuente.index("def distribucion_conteo_color_colorloto(")
         bloque = codigo_fuente[indice:indice + 500]
-        assert "hasta_numero_sorteo: _CorteDesdeFormularioCombinado = None" in bloque
+        assert "hasta_numero_sorteo: _CorteOpcional = None" in bloque
         assert "hasta_numero_sorteo: int | None = Query(default=None, ge=1)" not in bloque
 
-    def test_las_otras_treintayseis_rutas_conservan_el_query_nativo_sin_cambios(self):
+    def test_las_otras_treintayseis_rutas_ahora_comparten_el_mismo_tipo_normalizado(self):
+        """Corrección de mantenimiento previa a AE-29: el tipo antes
+        exclusivo de AE-28 (`_CorteDesdeFormularioCombinado`) se
+        generalizó y renombró a `_CorteOpcional`, compartido ahora por
+        las 37 rutas reales -incluida AE-28, sin alterar su
+        comportamiento ya validado. Cero declaraciones nativas
+        `Query(default=None, ge=1)` restantes."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 36
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
+        assert codigo_fuente.count("hasta_numero_sorteo: _CorteOpcional = None") == 37
+        assert "_CorteDesdeFormularioCombinado" not in codigo_fuente
 
     def test_before_validator_aplicado_solo_sobre_la_rama_int(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        indice = codigo_fuente.index("_CorteDesdeFormularioCombinado = Annotated[")
+        indice = codigo_fuente.index("_CorteOpcional = Annotated[")
         bloque = codigo_fuente[indice:indice + 250]
         assert "Field(ge=1)" in bloque
         assert "BeforeValidator(_corte_vacio_a_none)" in bloque
@@ -8672,14 +8680,15 @@ class TestColorLotoDistribucionConteoColorCorteVacioHTTPReal:
         assert r.status_code == 200, r.text
 
     def test_otras_rutas_no_afectadas_corte_vacio_en_ruta_de_ae22(self):
-        """Confirma que la corrección es exclusiva de AE-28: una ruta
-        anterior con el `Query` nativo sigue rechazando el corte
-        vacío exactamente como antes -si esto empezara a devolver
-        `200`, indicaría que el cambio se filtró accidentalmente a
-        otras rutas."""
+        """Corrección de mantenimiento previa a AE-29: el mismo
+        contrato de corte vacío -tratado como ausente- ahora se aplica
+        globalmente a las 37 rutas reales, no solo a AE-28. Una ruta
+        anterior con el corte vacío ahora responde `200`, exactamente
+        igual que AE-28 -si esto volviera a devolver `422`, indicaría
+        una regresión de la corrección de mantenimiento."""
         client = self._client()
         r = client.get("/estadisticas/colorloto/frecuencia-colores-por-anio?hasta_numero_sorteo=")
-        assert r.status_code == 422
+        assert r.status_code == 200, r.text
 
     def test_escenario_1_cambiar_solo_color_con_corte_vacio(self):
         """Envío real del formulario combinado: el usuario cambia
@@ -8710,3 +8719,159 @@ class TestColorLotoDistribucionConteoColorCorteVacioHTTPReal:
         client = self._client()
         r = client.get(f"{self._URL}?color_objetivo=BLANCO")
         assert r.status_code == 200, r.text
+
+
+class TestMantenimientoCorteVacioGlobalPreviaAE29:
+    """Corrección de mantenimiento independiente, previa a AE-29
+    (todavía PROVISIONAL / NO VALIDADA por el usuario): generaliza a
+    las 37 rutas reales el mismo contrato de corte vacío ya validado
+    en AE-28 -`""` se trata como ausencia de corte, nunca como `422`.
+    Motivo: el defecto original de AE-28 (`hasta_numero_sorteo=""`
+    producía `422` real vía `int_parsing` de Pydantic) resultó ser un
+    patrón LATENTE en las 36 rutas restantes, incluidas todas las que
+    reutilizan `control_corte_temporal.html` -su campo de corte nunca
+    tuvo `required`, así que un usuario que pulsa "Aplicar corte" con
+    el campo vacío dispara exactamente el mismo defecto en cualquier
+    página. No implementa AE-29 ni ninguna comparación por ventana."""
+
+    def test_estructural_las_37_rutas_reales_usan_el_tipo_compartido(self):
+        """Prueba estructural real sobre el AST completo -no dos
+        rutas representativas: enumera CADA handler decorado con
+        `@router.get` que declara un parámetro `hasta_numero_sorteo`
+        y confirma, uno por uno, que su anotación es `_CorteOpcional`,
+        nunca el `Query` nativo desnudo."""
+        import ast
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        arbol = ast.parse(codigo_fuente)
+        handlers_con_corte = []
+        for nodo in arbol.body:
+            if isinstance(nodo, ast.FunctionDef) and any(
+                isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute) and d.func.attr == "get"
+                for d in nodo.decorator_list
+            ):
+                for arg, anotacion in zip(nodo.args.args, [a.annotation for a in nodo.args.args]):
+                    if arg.arg == "hasta_numero_sorteo":
+                        handlers_con_corte.append((nodo.name, ast.unparse(anotacion) if anotacion else None))
+
+        assert len(handlers_con_corte) == 37
+        for nombre, anotacion in handlers_con_corte:
+            assert anotacion == "_CorteOpcional", f"{nombre} usa {anotacion!r}, no _CorteOpcional"
+
+    def test_cero_declaraciones_nativas_restantes(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
+        assert "_CorteDesdeFormularioCombinado" not in codigo_fuente
+
+    def test_alias_compartido_declarado_una_sola_vez(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert codigo_fuente.count("_CorteOpcional = Annotated[") == 1
+
+
+class TestMantenimientoCorteVacioGlobalHTTPReal:
+    """Pruebas HTTP reales vía `TestClient`, sobre una muestra
+    representativa de las distintas familias de rutas: numérica
+    genérica (`{juego_slug}`), ColorLoto sin selector adicional
+    (AE-1), y ColorLoto con selector (`anio`/`mes`/`dia_semana`,
+    AE-22/23/24). `httpx` no es dependencia declarada -esta clase se
+    omite si no está instalado."""
+
+    @staticmethod
+    def _client():
+        pytest.importorskip("httpx")
+        pytest.importorskip("fastapi.testclient")
+        from fastapi.testclient import TestClient
+        from app.main import app
+        return TestClient(app)
+
+    _RUTAS_MUESTRA = [
+        "/estadisticas/baloto/frecuencia-numeros",
+        "/estadisticas/colorloto/frecuencia-numeros",
+        "/estadisticas/colorloto/frecuencia-colores-por-anio",
+        "/estadisticas/colorloto/frecuencia-colores-por-mes",
+        "/estadisticas/colorloto/frecuencia-colores-por-dia-semana",
+    ]
+
+    def test_parametro_ausente_200_en_toda_la_muestra(self):
+        client = self._client()
+        for ruta in self._RUTAS_MUESTRA:
+            r = client.get(ruta)
+            assert r.status_code == 200, f"{ruta}: {r.status_code}"
+
+    def test_parametro_vacio_200_equivale_a_historico_completo_en_toda_la_muestra(self):
+        client = self._client()
+        for ruta in self._RUTAS_MUESTRA:
+            r_vacio = client.get(f"{ruta}?hasta_numero_sorteo=")
+            r_ausente = client.get(ruta)
+            assert r_vacio.status_code == 200, f"{ruta}: {r_vacio.status_code}"
+            assert r_vacio.status_code == r_ausente.status_code
+
+    def test_corte_cero_422_en_toda_la_muestra(self):
+        client = self._client()
+        for ruta in self._RUTAS_MUESTRA:
+            r = client.get(f"{ruta}?hasta_numero_sorteo=0")
+            assert r.status_code == 422, f"{ruta}: {r.status_code}"
+
+    def test_corte_negativo_422_en_toda_la_muestra(self):
+        client = self._client()
+        for ruta in self._RUTAS_MUESTRA:
+            r = client.get(f"{ruta}?hasta_numero_sorteo=-1")
+            assert r.status_code == 422, f"{ruta}: {r.status_code}"
+
+    def test_corte_texto_422_en_toda_la_muestra(self):
+        client = self._client()
+        for ruta in self._RUTAS_MUESTRA:
+            r = client.get(f"{ruta}?hasta_numero_sorteo=texto")
+            assert r.status_code == 422, f"{ruta}: {r.status_code}"
+
+    def test_corte_valido_continua_aceptado_en_toda_la_muestra(self):
+        client = self._client()
+        for ruta in self._RUTAS_MUESTRA:
+            r = client.get(f"{ruta}?hasta_numero_sorteo=100")
+            assert r.status_code == 200, f"{ruta}: {r.status_code}"
+
+    def test_valores_invalidos_nunca_llegan_al_caso_de_uso(self):
+        """La validación de Pydantic/FastAPI ocurre en la capa de
+        dependencias, ANTES de que el cuerpo del handler se ejecute
+        -confirmado real: sin conexión a base de datos en este
+        sandbox, un `422` para un corte inválido no requiere ninguna
+        conexión real (a diferencia de un `200`, que si el handler
+        llegara a ejecutarse intentaría `_verificar_conexion`); si el
+        caso de uso se hubiera invocado incorrectamente antes de la
+        validación, este mismo request fallaría con `500` en vez de
+        `422` en este entorno sin PostgreSQL."""
+        client = self._client()
+        for valor in ("0", "-1", "texto"):
+            r = client.get(f"/estadisticas/colorloto/frecuencia-numeros?hasta_numero_sorteo={valor}")
+            assert r.status_code == 422, f"{valor}: {r.status_code}"
+
+    def test_anio_se_preserva_correctamente_con_corte_valido_tras_la_correccion(self):
+        client = self._client()
+        r = client.get("/estadisticas/colorloto/frecuencia-colores-por-anio?anio=2024&hasta_numero_sorteo=100")
+        assert r.status_code == 200, r.text
+
+    def test_mes_se_preserva_correctamente_con_corte_valido_tras_la_correccion(self):
+        client = self._client()
+        r = client.get("/estadisticas/colorloto/frecuencia-colores-por-mes?mes=3&hasta_numero_sorteo=100")
+        assert r.status_code == 200, r.text
+
+    def test_dia_semana_se_preserva_correctamente_con_corte_valido_tras_la_correccion(self):
+        client = self._client()
+        r = client.get("/estadisticas/colorloto/frecuencia-colores-por-dia-semana?dia_semana=lunes&hasta_numero_sorteo=100")
+        assert r.status_code == 200, r.text
+
+    def test_ae28_conserva_sus_cuatro_escenarios_ya_validados(self):
+        """Reconfirmación explícita de mantenimiento: AE-28 no debe
+        alterar su comportamiento ya validado por el usuario en
+        Windows/PostgreSQL -mismos cuatro escenarios de su propio
+        formulario combinado."""
+        client = self._client()
+        base = "/estadisticas/colorloto/distribucion-conteo-color"
+        casos = [
+            f"{base}?color_objetivo=BLANCO&hasta_numero_sorteo=",
+            f"{base}?color_objetivo=BLANCO&hasta_numero_sorteo=100",
+            f"{base}?color_objetivo=AZUL&hasta_numero_sorteo=50",
+            f"{base}?color_objetivo=BLANCO",
+        ]
+        for url in casos:
+            r = client.get(url)
+            assert r.status_code == 200, f"{url}: {r.status_code}"
