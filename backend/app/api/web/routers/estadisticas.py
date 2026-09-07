@@ -133,13 +133,18 @@ def _verificar_conexion(db: Session) -> bool:
 
 def _corte_vacio_a_none(valor):
     """Normaliza EXCLUSIVAMENTE la cadena vacía (`""`) a `None` antes de
-    que Pydantic intente convertirla a `int` -corrección de un defecto
-    real de AE-28, descubierto por validación visual real en el
-    navegador (nunca por las pruebas automatizadas previas, que
-    construían la URL omitiendo el parámetro por completo en vez de
-    incluirlo vacío, como sí hace la serialización nativa de un
-    formulario GET real: todo campo `<input>` con `name` se envía
-    SIEMPRE en la query string, incluso vacío).
+    que Pydantic intente convertirla a `int` -corrección de mantenimiento
+    global, previa a AE-29. Defecto real descubierto originalmente por
+    validación visual real en el navegador durante AE-28 (nunca por las
+    pruebas automatizadas previas de esa etapa, que construían la URL
+    omitiendo el parámetro por completo en vez de incluirlo vacío, como
+    sí hace la serialización nativa de un formulario GET real: todo
+    campo `<input>` con `name` se envía SIEMPRE en la query string,
+    incluso vacío). Auditoría real posterior (previa a AE-29) confirmó
+    que el mismo defecto era LATENTE en las 36 rutas restantes -incluidas
+    todas las que reutilizan `control_corte_temporal.html`, cuyo campo
+    de corte nunca tuvo `required`- así que esta corrección deja de ser
+    exclusiva de AE-28 y se generaliza a las 37 rutas reales.
 
     Se usa como `BeforeValidator` -corre ANTES de que Pydantic intente
     el `int_parsing`, así que nunca compite con él ni con `ge=1`
@@ -150,15 +155,14 @@ def _corte_vacio_a_none(valor):
     NUNCA convierte ningún otro valor -`"0"`, `"-1"`, `"texto"`, `" "`
     (con espacio) pasan intactos a la validación de tipo/rango normal,
     que los sigue rechazando con `422`; solo la cadena vacía exacta se
-    normaliza. Aplicado ÚNICAMENTE a la ruta de AE-28 (vía el alias de
-    tipo `_CorteDesdeFormularioCombinado`, local a este módulo) -las
-    otras 36 rutas conservan exactamente su declaración original con
-    `Query` nativo y `ge=1` directo, sin ningún cambio de
-    comportamiento, confirmado por AST real."""
+    normaliza. Aplicado ahora a las 37 rutas reales (vía el alias de
+    tipo compartido `_CorteOpcional`, local a este módulo) -mismo
+    contrato exacto para todas, confirmado por AST real: cero
+    declaraciones nativas `Query(default=None, ge=1)` restantes."""
     return None if valor == "" else valor
 
 
-_CorteDesdeFormularioCombinado = Annotated[
+_CorteOpcional = Annotated[
     Annotated[int, Field(ge=1)] | None, BeforeValidator(_corte_vacio_a_none), Query(),
 ]
 
@@ -166,7 +170,7 @@ _CorteDesdeFormularioCombinado = Annotated[
 @router.get("/estadisticas/colorloto/frecuencia-numeros")
 def frecuencia_numeros_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -235,7 +239,7 @@ def frecuencia_numeros_colorloto(
 @router.get("/estadisticas/colorloto/frecuencia-colores")
 def frecuencia_colores_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -295,7 +299,7 @@ def frecuencia_colores_colorloto(
 @router.get("/estadisticas/colorloto/frecuencia-pares-numero-color")
 def frecuencia_pares_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -354,7 +358,7 @@ def frecuencia_pares_colorloto(
 @router.get("/estadisticas/colorloto/atrasos-numeros")
 def atrasos_numeros_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -414,7 +418,7 @@ def atrasos_numeros_colorloto(
 @router.get("/estadisticas/colorloto/atrasos-colores")
 def atrasos_colores_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -477,7 +481,7 @@ def atrasos_colores_colorloto(
 @router.get("/estadisticas/colorloto/atrasos-pares-numero-color")
 def atrasos_pares_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -541,7 +545,7 @@ def atrasos_pares_colorloto(
 @router.get("/estadisticas/colorloto/repeticiones-entre-sorteos")
 def repeticiones_entre_sorteos_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -614,7 +618,7 @@ def repeticiones_entre_sorteos_colorloto(
 @router.get("/estadisticas/colorloto/distribucion-pares-impares")
 def distribucion_pares_impares_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -683,7 +687,7 @@ def distribucion_pares_impares_colorloto(
 @router.get("/estadisticas/colorloto/distribucion-altos-bajos")
 def distribucion_altos_bajos_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -756,7 +760,7 @@ def distribucion_altos_bajos_colorloto(
 @router.get("/estadisticas/colorloto/maximo-repeticion-color")
 def maximo_repeticion_color_por_sorteo_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -820,7 +824,7 @@ def maximo_repeticion_color_por_sorteo_colorloto(
 @router.get("/estadisticas/colorloto/distribucion-pares-consecutivos")
 def distribucion_pares_consecutivos_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -893,7 +897,7 @@ def distribucion_pares_consecutivos_colorloto(
 @router.get("/estadisticas/colorloto/distribucion-racha-maxima")
 def distribucion_racha_maxima_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -967,7 +971,7 @@ def distribucion_racha_maxima_colorloto(
 @router.get("/estadisticas/colorloto/distribucion-trios-consecutivos")
 def distribucion_trios_consecutivos_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1047,7 +1051,7 @@ def distribucion_trios_consecutivos_colorloto(
 @router.get("/estadisticas/colorloto/coocurrencia-pares")
 def coocurrencia_pares_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1139,7 +1143,7 @@ def coocurrencia_pares_colorloto(
 @router.get("/estadisticas/colorloto/coocurrencia-trios")
 def coocurrencia_trios_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1213,7 +1217,7 @@ def coocurrencia_trios_colorloto(
 @router.get("/estadisticas/colorloto/coocurrencia-pares-colores")
 def coocurrencia_pares_colores_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1300,7 +1304,7 @@ def coocurrencia_pares_colores_colorloto(
 @router.get("/estadisticas/colorloto/coocurrencia-trios-colores")
 def coocurrencia_trios_colores_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1377,7 +1381,7 @@ def coocurrencia_trios_colores_colorloto(
 @router.get("/estadisticas/colorloto/intervalos-historicos-colores")
 def intervalos_historicos_colores_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1454,7 +1458,7 @@ def intervalos_historicos_colores_colorloto(
 @router.get("/estadisticas/colorloto/distribucion-sumas")
 def distribucion_sumas_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1522,7 +1526,7 @@ def distribucion_sumas_colorloto(
 @router.get("/estadisticas/colorloto/intervalos-historicos-numeros")
 def intervalos_historicos_numeros_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1591,7 +1595,7 @@ def intervalos_historicos_numeros_colorloto(
 @router.get("/estadisticas/colorloto/intervalos-historicos-pares-numero-color")
 def intervalos_historicos_pares_numero_color_colorloto(
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1658,7 +1662,7 @@ def intervalos_historicos_pares_numero_color_colorloto(
 def frecuencia_colores_por_anio_colorloto(
     request: Request,
     anio: int | None = Query(default=None, ge=1, le=9999),
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1749,7 +1753,7 @@ def frecuencia_colores_por_anio_colorloto(
 def frecuencia_colores_por_mes_colorloto(
     request: Request,
     mes: int | None = Query(default=None, ge=1, le=12),
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1838,7 +1842,7 @@ def frecuencia_colores_por_mes_colorloto(
 def frecuencia_colores_por_dia_semana_colorloto(
     request: Request,
     dia_semana: Literal["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"] | None = Query(default=None),
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -1940,7 +1944,7 @@ def frecuencia_colores_por_dia_semana_colorloto(
 def frecuencia_pares_numero_color_por_anio_colorloto(
     request: Request,
     anio: int | None = Query(default=None, ge=1, le=9999),
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -2036,7 +2040,7 @@ def frecuencia_pares_numero_color_por_anio_colorloto(
 def frecuencia_pares_numero_color_por_mes_colorloto(
     request: Request,
     mes: int | None = Query(default=None, ge=1, le=12),
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -2133,7 +2137,7 @@ def frecuencia_pares_numero_color_por_mes_colorloto(
 def frecuencia_pares_numero_color_por_dia_semana_colorloto(
     request: Request,
     dia_semana: Literal["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"] | None = Query(default=None),
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
@@ -2238,7 +2242,7 @@ def frecuencia_pares_numero_color_por_dia_semana_colorloto(
 def distribucion_conteo_color_colorloto(
     request: Request,
     color_objetivo: str | None = Query(default=None),
-    hasta_numero_sorteo: _CorteDesdeFormularioCombinado = None,
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     color_repository: ColorRepository = Depends(get_color_repository),
@@ -2393,7 +2397,7 @@ def distribucion_conteo_color_colorloto(
 def frecuencia_numeros(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2445,7 +2449,7 @@ def frecuencia_numeros(
 def frecuencia_superbalota(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2506,7 +2510,7 @@ def frecuencia_superbalota(
 def frecuencia_observada_esperada(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2562,7 +2566,7 @@ def frecuencia_observada_esperada(
 def atrasos_numeros(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2629,7 +2633,7 @@ def atrasos_numeros(
 def distribucion_pares_impares(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2694,7 +2698,7 @@ def distribucion_pares_impares(
 def distribucion_altos_bajos(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2763,7 +2767,7 @@ def distribucion_altos_bajos(
 def distribucion_pares_consecutivos(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2828,7 +2832,7 @@ def distribucion_pares_consecutivos(
 def distribucion_racha_maxima(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
@@ -2897,7 +2901,7 @@ def distribucion_racha_maxima(
 def repeticiones_entre_sorteos(
     juego_slug: str,
     request: Request,
-    hasta_numero_sorteo: int | None = Query(default=None, ge=1),
+    hasta_numero_sorteo: _CorteOpcional = None,
     db: Session = Depends(get_db),
     juego_repository: JuegoRepository = Depends(get_juego_repository),
     game_factory: GameFactory = Depends(get_game_factory),
