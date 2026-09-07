@@ -161,4 +161,10 @@
             Frecuencia de pares número-color por día de semana
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'distribucion-conteo-color' %}active{% endif %}"
+           href="/estadisticas/colorloto/distribucion-conteo-color{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Distribución del conteo por color
+        </a>
+    </li>
 </ul>

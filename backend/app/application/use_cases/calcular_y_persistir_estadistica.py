@@ -65,6 +65,7 @@ from app.application.estadisticas.motor.distribuciones import (
     DistribucionSumas,
     calcular_distribucion_altos_bajos,
     calcular_distribucion_altos_bajos_colorloto,
+    calcular_distribucion_conteo_color,
     calcular_distribucion_pares_impares,
     calcular_distribucion_pares_impares_colorloto,
     calcular_distribucion_sumas_colorloto,
@@ -2294,6 +2295,77 @@ def _calcular_frecuencia_pares_numero_color_por_dia_semana_colorloto(
     )
 
 
+def _calcular_distribucion_conteo_color_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Distribución de cuántas balotas de un color elegido por el
+    usuario (`color_objetivo`) aparecen por sorteo, tabulado
+    `0..cantidad_balotas` (Etapa AE-28, PROVISIONAL) -primera receta
+    de ColorLoto con un selector de dominio genuinamente DINÁMICO
+    (los códigos de color vienen de la base de datos, a diferencia
+    de `anio`/`mes`/`dia_semana`, cuyos dominios son estáticos y ya
+    validables con `Query`/`Literal` nativos de FastAPI).
+
+    Reutiliza `calcular_distribucion_conteo_color` sin modificar el
+    motor (vive en `motor/distribuciones.py`, ya existía desde antes
+    de esta etapa, con 9 tests de motor propios). Firma real
+    confirmada por auditoría: `(resultados, color_objetivo,
+    cantidad_balotas, hasta_numero_sorteo=None)` -3 argumentos
+    obligatorios, NUNCA un `colores_vigentes` como en AE-2/AE-3/AE-5/
+    AE-18/AE-21 a AE-27: este motor no construye ningún universo
+    multi-color, tabula el conteo de UN SOLO color por sorteo. Con
+    multiplicidad de balotas físicas (3 balotas del mismo color en un
+    sorteo cuentan 3, no 1) -confirmado por lectura directa y por
+    ejecución real. Universo `0..cantidad_balotas` siempre completo,
+    incluso si `color_objetivo` nunca aparece -confirmado real.
+
+    Semántica de `frecuencia_relativa` GENUINAMENTE DISTINTA de
+    AE-2/AE-22 a AE-27: aquí es una partición real de los sorteos
+    (`apariciones` = cantidad de SORTEOS con exactamente ese conteo,
+    no de balotas) -la suma de las filas da `1.0` con sorteos,
+    confirmado real- por lo que sí es una proporción/porcentaje
+    legítimo de sorteos, a diferencia del "apariciones promedio por
+    sorteo" de las etapas anteriores (que puede superar 1.0 y nunca
+    sumaría 1.0). La capa de presentación (VM/plantilla) debe reflejar
+    esta diferencia con el lenguaje correcto.
+
+    La validación de que `color_objetivo` pertenece al universo
+    seleccionable (vigentes en la referencia ∪ observados dentro del
+    corte) ocurre en el ROUTER, antes de invocar esta receta -mismo
+    motivo por el que el dominio dinámico no puede validarse con
+    `Query`/`Literal` nativos; esta receta recibe siempre un
+    `color_objetivo` ya validado por el router, y NUNCA repite esa
+    validación de vigencia (sería una regla de negocio duplicada) -sí
+    conserva la validación defensiva de integridad estructural del
+    histórico (`_validar_historico_colorloto_consistente`, protegida,
+    sin cambios), igual que las 27 recetas anteriores.
+
+    Identidad de DOS claves -NO tres: `cantidad_balotas` SÍ forma
+    parte de la identidad (determina matemáticamente el universo
+    `0..cantidad_balotas`, mismo criterio ya establecido por AE-20/
+    AE-21/AE-25/AE-26/AE-27 para `rango_min`/`rango_max`), pero
+    `politica_universo_colores` NO: el motor de esta etapa no recibe
+    ni consume esa política en ningún punto de su firma ni de su
+    cuerpo -a diferencia de AE-2/AE-3/AE-5/AE-18/AE-21 a AE-27, que sí
+    la usan para construir un universo MULTI-color, esta etapa
+    calcula la distribución de UN SOLO color ya elegido, y el
+    resultado cacheado depende matemáticamente solo de
+    `(historico.pares filtrado por corte, color_objetivo,
+    cantidad_balotas)` -incluir esa clave fragmentaría la caché sin
+    ningún efecto real sobre el resultado. NUNCA se pasa
+    `hasta_numero_sorteo` al motor como argumento explícito -mismo
+    precedente exacto de las 27 recetas anteriores: el orquestador ya
+    filtró `historico.pares` por el corte general antes de llegar
+    aquí."""
+    color_objetivo = parametros["color_objetivo"]
+    cantidad_balotas = parametros["cantidad_balotas"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    return calcular_distribucion_conteo_color(historico.pares, color_objetivo, cantidad_balotas)
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -2432,6 +2504,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "frecuencia_pares_numero_color_por_dia_semana_colorloto": _Receta(
         calcular=_calcular_frecuencia_pares_numero_color_por_dia_semana_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "distribucion_conteo_color_colorloto": _Receta(
+        calcular=_calcular_distribucion_conteo_color_colorloto, serializar=_serializar_frecuencia_observada,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

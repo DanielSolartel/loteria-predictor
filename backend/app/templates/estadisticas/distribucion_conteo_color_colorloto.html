@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Distribución del conteo por color — ColorLoto{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-bar-chart-fill me-2"></i>Distribución del conteo por color — ColorLoto</h3>
+<p class="text-muted">Para el color elegido, muestra cuántos sorteos tuvieron exactamente 0, 1, 2... hasta el máximo de balotas de ese color en un mismo sorteo. Se cuentan balotas físicas: si el color elegido aparece tres veces en un sorteo, ese sorteo aporta el conteo 3, no 1. A diferencia de otras páginas de ColorLoto, aquí cada valor SÍ es un porcentaje real de sorteos -las categorías suman 100% entre sí. Esta información es histórica y descriptiva, nunca predictiva.</p>
+
+{% include "estadisticas/partials/navegacion_colorloto.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif sin_colores_disponibles %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay ningún color disponible para seleccionar -no existen colores vigentes ni observados dentro del corte actual.
+</div>
+
+{% else %}
+
+<div class="card stat-card p-3 mb-4">
+    <form method="get" action="{{ request.url.path }}" class="row g-3 align-items-end">
+        <div class="col-auto">
+            <label for="color_objetivo" class="form-label">Color</label>
+            <select class="form-select" id="color_objetivo" name="color_objetivo">
+                {% for color in estadistica.colores_seleccionables %}
+                <option value="{{ color.codigo }}" {% if color.codigo == color_objetivo %}selected{% endif %}>{{ color.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <label for="hasta_numero_sorteo" class="form-label small mb-1">Corte por número de sorteo</label>
+            <input
+                type="number" id="hasta_numero_sorteo" name="hasta_numero_sorteo"
+                step="1" min="1"
+                value="{{ hasta_numero_sorteo if hasta_numero_sorteo is not none else '' }}"
+                class="form-control form-control-sm" style="width: 10rem;"
+            >
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Aplicar</button>
+        </div>
+        <div class="col-auto">
+            <a href="{{ request.url.path }}?color_objetivo={{ color_objetivo }}" class="btn btn-outline-secondary">Histórico completo</a>
+        </div>
+        {% if hasta_numero_sorteo is not none %}
+        <div class="col-auto">
+            <span class="badge text-bg-secondary align-self-center">Corte activo: {{ hasta_numero_sorteo }}</span>
+        </div>
+        {% endif %}
+    </form>
+    <p class="text-muted small mt-2 mb-0">
+        El color y el corte se conservan juntos al aplicar cualquiera de los dos, en el mismo formulario -sin necesidad de un color por defecto oculto.
+        Si no se elige ningún color, se selecciona automáticamente el primero en orden alfabético del universo disponible (vigentes en la fecha de referencia más colores observados dentro del corte).
+        El número de corte pertenece al juego actual. Se incluyen los sorteos con número de sorteo menor o igual al corte. Un corte posterior al último sorteo disponible utiliza todo el histórico disponible. El corte no predice resultados.
+    </p>
+</div>
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Cada barra representa el porcentaje real de sorteos que tuvieron exactamente esa cantidad de balotas de {{ estadistica.color_objetivo_nombre }} -las categorías suman 100% entre sí. Esta cifra es una proporción real de sorteos, no un promedio de apariciones, y no tiene ninguna capacidad predictiva sobre próximos sorteos.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Color seleccionado</div>
+            <div class="fw-bold">
+                <span class="d-inline-block rounded-circle border me-2" style="width:0.9rem;height:0.9rem;background-color:{{ estadistica.color_objetivo_hex }};"></span>
+                {{ estadistica.color_objetivo_nombre }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+</div>
+
+{% if estadistica.total_sorteos == 0 %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos registrados en el corte actual. Se muestra el universo completo de conteos en cero.
+</div>
+{% endif %}
+
+<div class="card stat-card p-3 mb-4">
+    <canvas id="grafica-distribucion-conteo-color-colorloto" height="180"></canvas>
+</div>
+
+<script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+<script id="datos-distribucion-conteo-color-colorloto" type="application/json">
+    {{ {"labels": estadistica.chart_labels, "data": estadistica.chart_data, "colorHex": estadistica.color_objetivo_hex, "colorNombre": estadistica.color_objetivo_nombre, "totalSorteos": estadistica.total_sorteos} | tojson }}
+</script>
+<script>
+    (function () {
+        const datos = JSON.parse(document.getElementById("datos-distribucion-conteo-color-colorloto").textContent);
+        const ctx = document.getElementById("grafica-distribucion-conteo-color-colorloto");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    label: datos.colorNombre,
+                    data: datos.data.map((v) => v * 100),
+                    backgroundColor: datos.colorHex,
+                    borderColor: "rgba(0, 0, 0, 0.15)",
+                    borderWidth: 1,
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const porcentaje = item.raw.toFixed(2);
+                                return `${porcentaje}% de los sorteos (conteo ${item.label}, ${datos.totalSorteos} sorteos)`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: { title: { display: true, text: "Cantidad de apariciones en el sorteo" } },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Porcentaje de sorteos" },
+                        ticks: { callback: (value) => value + "%" },
+                    },
+                },
+            },
+        });
+    })();
+</script>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle por conteo</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Conteo por sorteo</th>
+                    <th>Sorteos</th>
+                    <th>Porcentaje de sorteos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.conteo }}</td>
+                    <td>{{ fila.sorteos }}</td>
+                    <td>{{ fila.porcentaje_sorteos_texto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

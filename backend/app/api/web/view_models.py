@@ -2317,6 +2317,74 @@ def frecuencia_pares_numero_color_por_dia_semana_colorloto_a_vm(estadistica, dia
     }
 
 
+def distribucion_conteo_color_colorloto_a_vm(
+    estadistica, color_objetivo: str, cantidad_balotas: int, colores_seleccionables: list[str], juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_conteo_color_colorloto" (Etapa AE-28, PROVISIONAL)
+    en un view model listo para la plantilla. Nunca recalcula la
+    métrica, nunca consulta repositorios, nunca llama al motor -misma
+    transformación pura ya validada por las 27 VM anteriores.
+
+    Primera VM de ColorLoto con un selector de dominio DINÁMICO:
+    `colores_seleccionables` llega ya resuelto por el router (unión
+    de vigentes en la referencia y observados dentro del corte,
+    ordenada), esta función nunca consulta `ColorRepository` -mismo
+    principio ya establecido por todas las VM anteriores (transformación
+    pura, sin efectos secundarios).
+
+    **Semántica GENUINAMENTE DISTINTA de AE-2/AE-22 a AE-27**: aquí
+    `frecuencia_relativa` es una proporción real de sorteos (las
+    filas suman `1.0` con sorteos), NUNCA "apariciones promedio por
+    sorteo" -por eso el campo de presentación se llama
+    `proporcion_sorteos` (fracción `0..1`) y `porcentaje_sorteos_texto`
+    (cadena con símbolo `%`), nunca reutilizando el lenguaje de
+    "apariciones promedio" de las 6 etapas anteriores, que aquí sería
+    matemáticamente incorrecto -confirmado por auditoría real del
+    motor (`calcular_distribucion_conteo_color` tabula SORTEOS por
+    conteo exacto, no balotas por sorteo).
+
+    Un único dataset (no datasets agrupados por color como en
+    AE-25/AE-26/AE-27): esta etapa analiza UN SOLO color a la vez,
+    elegido por el usuario -nunca varios colores simultáneos, así que
+    no hay ninguna agrupación que construir dinámicamente aquí; el
+    color ya es un escalar (`color_objetivo`), no una dimensión de la
+    gráfica. Eje X = conteo de apariciones del color por sorteo
+    (`0..cantidad_balotas`, ya en orden real de `estadistica.resultado`,
+    nunca reordenado); eje Y = proporción de sorteos, derivada
+    únicamente de esta VM, nunca recalculada en JavaScript."""
+    filas_crudas = estadistica.resultado["filas"]
+    total_sorteos = filas_crudas[0]["total_sorteos"] if filas_crudas else 0
+
+    filas_presentacion = []
+    for f in filas_crudas:
+        filas_presentacion.append({
+            "conteo": int(f["valor"]),
+            "sorteos": f["apariciones"],
+            "proporcion_sorteos": f["frecuencia_relativa"],
+            "porcentaje_sorteos_texto": f"{f['frecuencia_relativa'] * 100:.2f}%",
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "color_objetivo": color_objetivo,
+        "color_objetivo_nombre": color_objetivo.title(),
+        "color_objetivo_hex": _color_hex_seguro(color_objetivo),
+        "colores_seleccionables": [
+            {"codigo": codigo, "nombre": codigo.title(), "hex": _color_hex_seguro(codigo)}
+            for codigo in colores_seleccionables
+        ],
+        "cantidad_balotas": cantidad_balotas,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos": total_sorteos,
+        "filas": filas_presentacion,
+        "chart_labels": [str(f["conteo"]) for f in filas_presentacion],
+        "chart_data": [f["proporcion_sorteos"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:

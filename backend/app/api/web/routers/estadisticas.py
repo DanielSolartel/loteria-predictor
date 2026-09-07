@@ -22,17 +22,20 @@ antes de esta generalización.
 """
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BeforeValidator, Field
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import (
     get_calcular_y_persistir_estadistica,
+    get_color_repository,
     get_game_factory,
     get_juego_repository,
+    get_resultados_historicos_repository,
 )
 from app.api.web.estadisticas_slugs import CAPACIDAD_SUPERBALOTA_POR_SLUG, resolver_codigo
 from app.api.web.view_models import (
@@ -61,6 +64,7 @@ from app.api.web.view_models import (
     frecuencia_pares_numero_color_por_anio_colorloto_a_vm,
     frecuencia_pares_numero_color_por_mes_colorloto_a_vm,
     frecuencia_pares_numero_color_por_dia_semana_colorloto_a_vm,
+    distribucion_conteo_color_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -74,11 +78,15 @@ from app.api.web.view_models import (
     frecuencia_superbalota_a_vm,
     tabla_frecuencia_numeros_a_vm,
 )
-from app.application.exceptions import JuegoNoEncontradoError, JuegoSinSuperbalotaError
+from app.application.exceptions import ColorNoVigenteError, JuegoNoEncontradoError, JuegoSinSuperbalotaError
+from app.application.interfaces.color_repository import ColorRepository
 from app.application.interfaces.juego_repository import JuegoRepository
+from app.application.interfaces.resultados_historicos_repository import ResultadosHistoricosRepository
 from app.application.use_cases.calcular_y_persistir_estadistica import (
     POLITICA_UNIVERSO_COLORES_ACTUAL,
     CalcularYPersistirEstadistica,
+    _codigos_colores_vigentes_en_referencia,
+    _obtener_historico_colorloto,
 )
 from app.application.use_cases.game_factory import GameFactory
 from app.infrastructure.db.session import get_db
@@ -121,6 +129,38 @@ def _verificar_conexion(db: Session) -> bool:
         return True
     except Exception:
         return False
+
+
+def _corte_vacio_a_none(valor):
+    """Normaliza EXCLUSIVAMENTE la cadena vacía (`""`) a `None` antes de
+    que Pydantic intente convertirla a `int` -corrección de un defecto
+    real de AE-28, descubierto por validación visual real en el
+    navegador (nunca por las pruebas automatizadas previas, que
+    construían la URL omitiendo el parámetro por completo en vez de
+    incluirlo vacío, como sí hace la serialización nativa de un
+    formulario GET real: todo campo `<input>` con `name` se envía
+    SIEMPRE en la query string, incluso vacío).
+
+    Se usa como `BeforeValidator` -corre ANTES de que Pydantic intente
+    el `int_parsing`, así que nunca compite con él ni con `ge=1`
+    (aplicado únicamente sobre la rama `int` mediante
+    `Annotated[int, Field(ge=1)] | None`, confirmado real: `0`, `-1` y
+    `"texto"` siguen produciendo `422` exactamente igual que antes,
+    `""` y la ausencia total del parámetro producen ambos `None`).
+    NUNCA convierte ningún otro valor -`"0"`, `"-1"`, `"texto"`, `" "`
+    (con espacio) pasan intactos a la validación de tipo/rango normal,
+    que los sigue rechazando con `422`; solo la cadena vacía exacta se
+    normaliza. Aplicado ÚNICAMENTE a la ruta de AE-28 (vía el alias de
+    tipo `_CorteDesdeFormularioCombinado`, local a este módulo) -las
+    otras 36 rutas conservan exactamente su declaración original con
+    `Query` nativo y `ge=1` directo, sin ningún cambio de
+    comportamiento, confirmado por AST real."""
+    return None if valor == "" else valor
+
+
+_CorteDesdeFormularioCombinado = Annotated[
+    Annotated[int, Field(ge=1)] | None, BeforeValidator(_corte_vacio_a_none), Query(),
+]
 
 
 @router.get("/estadisticas/colorloto/frecuencia-numeros")
@@ -2191,6 +2231,161 @@ def frecuencia_pares_numero_color_por_dia_semana_colorloto(
     return templates.TemplateResponse(
         request=request, name="estadisticas/frecuencia_pares_numero_color_por_dia_semana_colorloto.html",
         context={**contexto_base, "estadistica": vm},
+    )
+
+
+@router.get("/estadisticas/colorloto/distribucion-conteo-color")
+def distribucion_conteo_color_colorloto(
+    request: Request,
+    color_objetivo: str | None = Query(default=None),
+    hasta_numero_sorteo: _CorteDesdeFormularioCombinado = None,
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    color_repository: ColorRepository = Depends(get_color_repository),
+    historico_repo: ResultadosHistoricosRepository = Depends(get_resultados_historicos_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-28 (PROVISIONAL): vigesimooctava visualización
+    descriptiva de ColorLoto -distribución de cuántas balotas de un
+    color ELEGIDO POR EL USUARIO aparecen por sorteo, tabulado
+    `0..cantidad_balotas`. Autorizada explícitamente tras una
+    auditoría que se detuvo: `calcular_distribucion_conteo_color`
+    exige `color_objetivo: str` obligatorio -primer selector de
+    ColorLoto con dominio genuinamente DINÁMICO (códigos de color
+    reales de la base de datos), a diferencia de `anio`/`mes`/
+    `dia_semana`, cuyos dominios son estáticos y validables con
+    `Query`/`Literal` nativos de FastAPI.
+
+    **Universo seleccionable, construido en el router**: vigentes en
+    la fecha de referencia (`_codigos_colores_vigentes_en_referencia`,
+    protegida, sin cambios) UNIÓN observados dentro del corte
+    (`{c for r in historico.pares for _, c in r.pares}`) -mismo
+    criterio de unión ya usado internamente por los motores de AE-2/
+    AE-3/AE-5/AE-18/AE-21 a AE-27, aplicado aquí para construir la
+    lista de opciones del SELECTOR, no el universo del motor (que
+    solo recibe UN color). Esto requiere que el router construya
+    `historico` una vez para resolver el universo y validar/
+    determinar el color efectivo ANTES de invocar al orquestador
+    -que construye su propio `historico` internamente una segunda
+    vez al ejecutar la receta-; es un costo arquitectónico honesto y
+    documentado, específico de este primer selector con dominio
+    dinámico: ningún selector anterior necesitaba consultar el
+    histórico antes de invocar el orquestador, porque sus dominios
+    ya eran validables de forma nativa por FastAPI.
+
+    **Sin `color_objetivo` en la query string**: la página base
+    responde igualmente con resultados reales -se elige
+    automáticamente el PRIMERO en orden alfabético del universo
+    seleccionable (mismo criterio de orden ya usado por
+    `_codigos_colores_vigentes_en_referencia`, `sorted(...)`), regla
+    determinista y documentada aquí explícitamente. Nunca se inventa
+    un color: si el universo seleccionable está vacío (sin colores
+    vigentes ni observados en el corte actual), la página responde
+    `200` con un estado explícito de "sin colores disponibles",
+    `estadistica=None`, sin invocar el orquestador.
+
+    **`color_objetivo` inválido**: un valor que no coincide EXACTAMENTE
+    (sin normalizar mayúsculas, tildes ni alias) con el universo
+    seleccionable real produce `ColorNoVigenteError` -excepción de
+    dominio protegida, ya existente y ya mapeada a HTTP `422` en
+    `main.py`, nunca antes utilizada en el código real: mismo patrón
+    HTTP ya establecido por el proyecto para entradas de usuario
+    inválidas, sin necesitar ningún cambio a `exceptions.py` ni a
+    `main.py`. El motor nunca se invoca y ninguna caché se persiste
+    en este caso -confirmado por AST real: la comprobación de
+    membresía ocurre antes de cualquier llamada a `.ejecutar`.
+
+    **Identidad de caché con DOS claves, no tres**: `{"color_objetivo":
+    <string>, "cantidad_balotas": <entero>}`. `cantidad_balotas` SÍ
+    forma parte de la identidad (determina matemáticamente el
+    universo `0..cantidad_balotas`, mismo criterio ya establecido por
+    AE-20/AE-21/AE-25/AE-26/AE-27 para `rango_min`/`rango_max`),
+    construida aquí desde `juego.cantidad_numeros` (la entidad real,
+    nunca una constante privada). `politica_universo_colores` se
+    EXCLUYE deliberadamente -a diferencia de AE-2/AE-3/AE-5/AE-18/
+    AE-21 a AE-27, el motor de esta etapa no recibe ni consume esa
+    política en ningún punto de su firma ni de su cuerpo (nunca
+    construye un universo MULTI-color); el resultado cacheado depende
+    matemáticamente solo de `(historico.pares filtrado por corte,
+    color_objetivo, cantidad_balotas)`, así que incluir esa clave
+    fragmentaría la caché sin ningún efecto real sobre el resultado
+    -confirmado por auditoría real de la firma del motor.
+    `hasta_numero_sorteo` permanece en su propia columna, nunca
+    duplicado dentro de `parametros_metrica`.
+
+    **`control_corte_temporal.html` NO se incluye en esta página**:
+    su formulario, protegido y sin modificar, no tiene ningún
+    mecanismo para conservar `color_objetivo` al enviarse (el
+    `<form method="get">` compartido reemplaza toda la query string
+    con sus propios campos al enviarse, y solo conoce `anio`/`mes`/
+    `dia_semana`, nunca `color_objetivo`) -usarlo tal cual violaría
+    el requisito explícito de conservar el color elegido al aplicar
+    o retirar el corte. En su lugar, la plantilla nueva construye su
+    propio formulario combinado (corte + color) en un único
+    `<form method="get">`, con el mismo campo `hasta_numero_sorteo`,
+    la misma etiqueta y el mismo criterio de corte -mismo
+    comportamiento funcional exacto que el partial compartido, solo
+    que ambos campos viajan juntos en la misma solicitud."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "pagina_colorloto_activa": "distribucion-conteo-color",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_conteo_color_colorloto.html",
+            context={
+                **contexto_base, "estadistica": None, "color_objetivo": None,
+                "colores_seleccionables": [], "sin_colores_disponibles": False,
+            },
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    historico = _obtener_historico_colorloto(historico_repo, color_repository, juego.id, hasta_numero_sorteo)
+    vigentes = set(_codigos_colores_vigentes_en_referencia(historico))
+    observados = {c for r in historico.pares for _, c in r.pares}
+    colores_seleccionables = sorted(vigentes | observados)
+
+    if not colores_seleccionables:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_conteo_color_colorloto.html",
+            context={
+                **contexto_base, "estadistica": None, "color_objetivo": None,
+                "colores_seleccionables": [], "sin_colores_disponibles": True,
+            },
+        )
+
+    if color_objetivo is None:
+        color_objetivo = colores_seleccionables[0]
+    elif color_objetivo not in colores_seleccionables:
+        raise ColorNoVigenteError(color_objetivo)
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="distribucion_conteo_color_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "color_objetivo": color_objetivo,
+            "cantidad_balotas": juego.cantidad_numeros,
+        },
+    )
+
+    vm = distribucion_conteo_color_colorloto_a_vm(resultado, color_objetivo, juego.cantidad_numeros, colores_seleccionables, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/distribucion_conteo_color_colorloto.html",
+        context={
+            **contexto_base, "estadistica": vm, "color_objetivo": color_objetivo,
+            "colores_seleccionables": colores_seleccionables, "sin_colores_disponibles": False,
+        },
     )
 
 
