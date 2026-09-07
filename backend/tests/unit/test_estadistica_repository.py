@@ -3499,3 +3499,78 @@ class TestUpsertConFrecuenciaParesNumeroColorPorDiaSemanaColorlotoEtapaAE27:
         numero_str, color = recuperada.resultado["filas"][0]["valor"].split("-")
         assert int(numero_str) == 5
         assert color == "ROJO"
+
+
+class TestUpsertConDistribucionConteoColorColorlotoEtapaAE28:
+    """Etapa AE-28 (PROVISIONAL): primera identidad de ColorLoto con
+    SOLO DOS claves -sin `politica_universo_colores`, porque el motor
+    de esta etapa no la consume (confirmado por auditoría real de la
+    firma del motor); usa los indices unicos parciales ya existentes
+    -ninguna migracion nueva."""
+
+    _PARAMS_ROJO = {"color_objetivo": "ROJO", "cantidad_balotas": 6}
+    _PARAMS_AZUL = {"color_objetivo": "AZUL", "cantidad_balotas": 6}
+
+    def test_upsert_misma_identidad_reemplaza(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_ROJO, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_ROJO, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "distribucion_conteo_color_colorloto")
+        assert total == 1
+
+    def test_colores_distintos_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_ROJO, resultado={"v": "rojo"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_AZUL, resultado={"v": "azul"}))
+        rrojo = repo.buscar_vigente(juego_id, "distribucion_conteo_color_colorloto", None, self._PARAMS_ROJO)
+        razul = repo.buscar_vigente(juego_id, "distribucion_conteo_color_colorloto", None, self._PARAMS_AZUL)
+        assert rrojo.resultado == {"v": "rojo"}
+        assert razul.resultado == {"v": "azul"}
+
+    def test_historico_completo_y_corte_temporal_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_ROJO, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_ROJO, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "distribucion_conteo_color_colorloto", None, self._PARAMS_ROJO)
+        corte = repo.buscar_vigente(juego_id, "distribucion_conteo_color_colorloto", 100, self._PARAMS_ROJO)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_parametros_exactos_persistidos_orden_no_relevante_solo_dos_claves(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_ROJO, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS_ROJO
+        assert set(entrada.parametros.keys()) == {"color_objetivo", "cantidad_balotas"}
+        parametros_desordenados = {"cantidad_balotas": 6, "color_objetivo": "ROJO"}
+        assert entrada.parametros == parametros_desordenados
+
+    def test_round_trip_siete_filas_enteros_y_flotantes_conservados(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        filas = [
+            {"valor": str(n), "apariciones": n, "total_sorteos": 21, "frecuencia_relativa": n / 21.0}
+            for n in range(7)
+        ]
+        resultado = {"filas": filas}
+        repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_ROJO, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "distribucion_conteo_color_colorloto", None, self._PARAMS_ROJO)
+        assert recuperada.resultado == resultado
+        assert len(recuperada.resultado["filas"]) == 7
+        assert isinstance(recuperada.resultado["filas"][0]["apariciones"], int)
+        assert isinstance(recuperada.resultado["filas"][-1]["frecuencia_relativa"], float)
+
+    def test_round_trip_del_valor_conteo_serializado(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [{"valor": "3", "apariciones": 2, "total_sorteos": 10, "frecuencia_relativa": 0.2}]}
+        repo.guardar(_entrada(juego_id, tipo="distribucion_conteo_color_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_ROJO, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "distribucion_conteo_color_colorloto", None, self._PARAMS_ROJO)
+        assert recuperada.resultado == resultado
+        assert recuperada.resultado["filas"][0]["valor"] == "3"
+        assert int(recuperada.resultado["filas"][0]["valor"]) == 3
