@@ -1763,7 +1763,7 @@ class TestColorLotoAislamientoDeSlugs:
 
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         rutas_en_orden = re.findall(r'@router\.get\("([^"]+)"\)', codigo_fuente)
-        assert len(rutas_en_orden) == 37
+        assert len(rutas_en_orden) == 38
 
         def compilar_como_starlette(path):
             patron = re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", path)
@@ -1994,7 +1994,7 @@ class TestColorLotoAislamientoDeSlugs:
 
     def test_veinte_rutas_totales_nueve_genericas_mas_once_colorloto(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 37
+        assert codigo_fuente.count("@router.get(") == 38
         assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 9
 
     def test_veinte_query_totales(self):
@@ -2722,9 +2722,9 @@ class TestColorLotoNavegacionCuatroMetricas:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert contenido.count("hasta_numero_sorteo") >= 4
 
-    def test_partial_tiene_exactamente_veintiocho_items_de_navegacion(self):
+    def test_partial_tiene_exactamente_veintinueve_items_de_navegacion(self):
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
-        assert contenido.count('<li class="nav-item">') == 28
+        assert contenido.count('<li class="nav-item">') == 29
 
 
 # =====================================================================
@@ -4613,7 +4613,7 @@ class TestColorLotoCoocurrenciaParesRuta:
         for sufijo in sufijos_con_colision:
             assert f'@router.get("/estadisticas/{{juego_slug}}/{sufijo}")' in codigo_fuente
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         """maximo-repeticion-color (AE-10), distribucion-pares-consecutivos
         NO -ese sí colisiona-, distribucion-trios-consecutivos (AE-13),
         coocurrencia-pares (AE-14), coocurrencia-trios (AE-15),
@@ -4625,14 +4625,15 @@ class TestColorLotoCoocurrenciaParesRuta:
         (AE-23), frecuencia-colores-por-dia-semana (AE-24),
         frecuencia-pares-numero-color-por-anio (AE-25),
         frecuencia-pares-numero-color-por-mes (AE-26),
-        frecuencia-pares-numero-color-por-dia-semana (AE-27) y
-        distribucion-conteo-color (AE-28, ningún juego numérico tiene
-        concepto de color, así que tampoco existe ninguna ruta
-        genérica que pudiera colisionar): confirma el grupo real sin
-        colisión, que pasa de veinte a veintiuno con esta etapa."""
+        frecuencia-pares-numero-color-por-dia-semana (AE-27),
+        distribucion-conteo-color (AE-28) y
+        comparacion-frecuencia-numeros-por-ventana (AE-29, ningún
+        juego numérico tiene una ruta genérica equivalente para esta
+        métrica): confirma el grupo real sin colisión, que pasa de
+        veintiuno a veintidós con esta etapa."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        sufijos_sin_colision_colorloto = ("frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-colores", "atrasos-pares-numero-color", "maximo-repeticion-color", "distribucion-trios-consecutivos", "coocurrencia-pares", "coocurrencia-trios", "coocurrencia-pares-colores", "coocurrencia-trios-colores", "intervalos-historicos-colores", "distribucion-sumas", "intervalos-historicos-numeros", "intervalos-historicos-pares-numero-color", "frecuencia-colores-por-anio", "frecuencia-colores-por-mes", "frecuencia-colores-por-dia-semana", "frecuencia-pares-numero-color-por-anio", "frecuencia-pares-numero-color-por-mes", "frecuencia-pares-numero-color-por-dia-semana", "distribucion-conteo-color")
-        assert len(sufijos_sin_colision_colorloto) == 21
+        sufijos_sin_colision_colorloto = ("frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-colores", "atrasos-pares-numero-color", "maximo-repeticion-color", "distribucion-trios-consecutivos", "coocurrencia-pares", "coocurrencia-trios", "coocurrencia-pares-colores", "coocurrencia-trios-colores", "intervalos-historicos-colores", "distribucion-sumas", "intervalos-historicos-numeros", "intervalos-historicos-pares-numero-color", "frecuencia-colores-por-anio", "frecuencia-colores-por-mes", "frecuencia-colores-por-dia-semana", "frecuencia-pares-numero-color-por-anio", "frecuencia-pares-numero-color-por-mes", "frecuencia-pares-numero-color-por-dia-semana", "distribucion-conteo-color", "comparacion-frecuencia-numeros-por-ventana")
+        assert len(sufijos_sin_colision_colorloto) == 22
         for sufijo in sufijos_sin_colision_colorloto:
             assert f'@router.get("/estadisticas/colorloto/{sufijo}")' in codigo_fuente
             assert f'@router.get("/estadisticas/{{juego_slug}}/{sufijo}")' not in codigo_fuente
@@ -4952,7 +4953,7 @@ class TestColorLotoCoocurrenciaParesTemplate:
         contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
         assert "partials/control_corte_temporal.html" in contenido
 
-    def test_las_treintaytres_paginas_graficas_conservan_su_canvas(self):
+    def test_las_treintaycuatro_paginas_graficas_conservan_su_canvas(self):
         """Confirma que la excepción tabular de AE-14 a AE-17 no
         afecta a ninguna de las páginas que sí usan gráfica -incluida
         la de AE-18 (intervalos históricos de colores), la de AE-19
@@ -4970,24 +4971,27 @@ class TestColorLotoCoocurrenciaParesTemplate:
         de AE-26 (frecuencia de pares número-color por mes, misma
         condición con un mes seleccionado), la de AE-27 (frecuencia
         de pares número-color por día de semana, misma condición con
-        un día seleccionado) y la de AE-28 (distribución del conteo
+        un día seleccionado), la de AE-28 (distribución del conteo
         por color, un solo dataset -no agrupado por color, ya que el
         color es un escalar elegido, no una dimensión de la gráfica-,
-        condicionada a la existencia de un color seleccionable,
-        undécimo incremento de canvas desde AE-14)."""
+        condicionada a la existencia de un color seleccionable) y la
+        de AE-29 (comparación de frecuencia de números por ventana,
+        dos datasets fijos -"Histórico" y "Últimos N sorteos"-,
+        siempre presente porque la ventana tiene un valor por defecto,
+        duodécimo incremento de canvas desde AE-14)."""
         directorio = Path("app/templates/estadisticas")
         templates_con_canvas = [
             f for f in directorio.glob("*.html")
             if 'height="180"' in f.read_text(encoding="utf-8")
         ]
-        assert len(templates_con_canvas) == 33
+        assert len(templates_con_canvas) == 34
 
-    def test_treintaysiete_templates_estadisticos_treintaytres_canvas(self):
+    def test_treintayocho_templates_estadisticos_treintaycuatro_canvas(self):
         directorio = Path("app/templates/estadisticas")
         todos = list(directorio.glob("*.html"))
         con_canvas = [f for f in todos if 'height="180"' in f.read_text(encoding="utf-8")]
-        assert len(todos) == 37
-        assert len(con_canvas) == 33
+        assert len(todos) == 38
+        assert len(con_canvas) == 34
 
 
 class TestColorLotoCoocurrenciaParesColoresRuta:
@@ -5663,7 +5667,7 @@ class TestColorLotoDistribucionSumasRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert '@router.get("/estadisticas/{juego_slug}/distribucion-sumas")' not in codigo_fuente
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/distribucion-sumas")') == 1
 
@@ -5758,7 +5762,7 @@ class TestColorLotoIntervalosHistoricosNumerosRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert '@router.get("/estadisticas/{juego_slug}/intervalos-historicos-numeros")' not in codigo_fuente
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/intervalos-historicos-numeros")') == 1
 
@@ -6463,7 +6467,7 @@ class TestColorLotoFrecuenciaColoresPorAnioPreservacionBidireccional:
         assert "{{ mes" not in contenido
         assert "dia_semana=" not in contenido
         assert "{{ dia_semana" not in contenido
-        assert contenido.count("hasta_numero_sorteo") == 3 * 28
+        assert contenido.count("hasta_numero_sorteo") == 3 * 29
 
 
 class TestColorLotoFrecuenciaColoresPorMesRuta:
@@ -6529,7 +6533,7 @@ class TestColorLotoFrecuenciaColoresPorMesRuta:
         assert "hasta_numero_sorteo" not in bloque.split("parametros_metrica")[1]
         assert "anio" not in bloque
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/frecuencia-colores-por-mes")') == 1
 
@@ -6859,7 +6863,7 @@ class TestColorLotoFrecuenciaColoresPorDiaSemanaRuta:
         assert "anio" not in bloque
         assert '"mes"' not in bloque
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/frecuencia-colores-por-dia-semana")') == 1
 
@@ -7142,7 +7146,7 @@ class TestColorLotoFrecuenciaColoresPorDiaSemanaPreservacionBidireccional:
         assert "{{ mes" not in contenido
         assert "dia_semana=" not in contenido
         assert "{{ dia_semana" not in contenido
-        assert contenido.count("hasta_numero_sorteo") == 3 * 28
+        assert contenido.count("hasta_numero_sorteo") == 3 * 29
 
 
 class TestColorLotoFrecuenciaParesNumeroColorPorAnioRuta:
@@ -7213,7 +7217,7 @@ class TestColorLotoFrecuenciaParesNumeroColorPorAnioRuta:
         assert '"mes"' not in bloque
         assert '"dia_semana"' not in bloque
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/frecuencia-pares-numero-color-por-anio")') == 1
 
@@ -7476,7 +7480,7 @@ class TestColorLotoFrecuenciaParesNumeroColorPorAnioPreservacionBidireccional:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert "anio=" not in contenido
         assert "{{ anio" not in contenido
-        assert contenido.count("hasta_numero_sorteo") == 3 * 28
+        assert contenido.count("hasta_numero_sorteo") == 3 * 29
 
 
 class TestColorLotoFrecuenciaParesNumeroColorPorMesRuta:
@@ -7547,7 +7551,7 @@ class TestColorLotoFrecuenciaParesNumeroColorPorMesRuta:
         assert '"anio"' not in bloque
         assert '"dia_semana"' not in bloque
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/frecuencia-pares-numero-color-por-mes")') == 1
 
@@ -7835,7 +7839,7 @@ class TestColorLotoFrecuenciaParesNumeroColorPorMesPreservacionBidireccional:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert "mes=" not in contenido
         assert "{{ mes" not in contenido
-        assert contenido.count("hasta_numero_sorteo") == 3 * 28
+        assert contenido.count("hasta_numero_sorteo") == 3 * 29
 
 
 class TestColorLotoFrecuenciaParesNumeroColorPorDiaSemanaRuta:
@@ -7906,7 +7910,7 @@ class TestColorLotoFrecuenciaParesNumeroColorPorDiaSemanaRuta:
         assert '"anio"' not in bloque
         assert '"mes"' not in bloque
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/frecuencia-pares-numero-color-por-dia-semana")') == 1
 
@@ -8238,7 +8242,7 @@ class TestColorLotoFrecuenciaParesNumeroColorPorDiaSemanaPreservacionBidireccion
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert "dia_semana=" not in contenido
         assert "{{ dia_semana" not in contenido
-        assert contenido.count("hasta_numero_sorteo") == 3 * 28
+        assert contenido.count("hasta_numero_sorteo") == 3 * 29
 
 
 class TestColorLotoDistribucionConteoColorRuta:
@@ -8293,7 +8297,7 @@ class TestColorLotoDistribucionConteoColorRuta:
         assert "hasta_numero_sorteo" not in bloque.split("parametros_metrica")[1]
         assert "politica_universo_colores" not in bloque
 
-    def test_grupo_sin_colision_pasa_a_veintiuno(self):
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/distribucion-conteo-color")') == 1
 
@@ -8304,9 +8308,9 @@ class TestColorLotoDistribucionConteoColorRuta:
         assert '@router.get("/estadisticas/miloto/distribucion-conteo-color")' not in codigo_fuente
         assert '@router.get("/estadisticas/colorloto/distribucion-conteo-color/extra")' not in codigo_fuente
 
-    def test_las_treintaysiete_rutas_previas_permanecen_intactas(self):
+    def test_las_treintayocho_rutas_reales_permanecen_intactas(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 37
+        assert codigo_fuente.count("@router.get(") == 38
 
 
 class TestColorLotoDistribucionConteoColorVM:
@@ -8568,7 +8572,7 @@ class TestColorLotoDistribucionConteoColorPreservacionYRegresiones:
         contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
         assert "color_objetivo=" not in contenido
         assert "{{ color_objetivo" not in contenido
-        assert contenido.count("hasta_numero_sorteo") == 3 * 28
+        assert contenido.count("hasta_numero_sorteo") == 3 * 29
 
 
 class TestColorLotoDistribucionConteoColorCorteVacioRegresion:
@@ -8603,16 +8607,16 @@ class TestColorLotoDistribucionConteoColorCorteVacioRegresion:
         assert "hasta_numero_sorteo: _CorteOpcional = None" in bloque
         assert "hasta_numero_sorteo: int | None = Query(default=None, ge=1)" not in bloque
 
-    def test_las_otras_treintayseis_rutas_ahora_comparten_el_mismo_tipo_normalizado(self):
+    def test_las_treintayocho_rutas_reales_comparten_el_mismo_tipo_normalizado(self):
         """Corrección de mantenimiento previa a AE-29: el tipo antes
         exclusivo de AE-28 (`_CorteDesdeFormularioCombinado`) se
         generalizó y renombró a `_CorteOpcional`, compartido ahora por
-        las 37 rutas reales -incluida AE-28, sin alterar su
+        las 38 rutas reales -incluidas AE-28 y AE-29, sin alterar su
         comportamiento ya validado. Cero declaraciones nativas
         `Query(default=None, ge=1)` restantes."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
-        assert codigo_fuente.count("hasta_numero_sorteo: _CorteOpcional = None") == 37
+        assert codigo_fuente.count("hasta_numero_sorteo: _CorteOpcional = None") == 38
         assert "_CorteDesdeFormularioCombinado" not in codigo_fuente
 
     def test_before_validator_aplicado_solo_sobre_la_rama_int(self):
@@ -8734,7 +8738,7 @@ class TestMantenimientoCorteVacioGlobalPreviaAE29:
     el campo vacío dispara exactamente el mismo defecto en cualquier
     página. No implementa AE-29 ni ninguna comparación por ventana."""
 
-    def test_estructural_las_37_rutas_reales_usan_el_tipo_compartido(self):
+    def test_estructural_las_38_rutas_reales_usan_el_tipo_compartido(self):
         """Prueba estructural real sobre el AST completo -no dos
         rutas representativas: enumera CADA handler decorado con
         `@router.get` que declara un parámetro `hasta_numero_sorteo`
@@ -8753,7 +8757,7 @@ class TestMantenimientoCorteVacioGlobalPreviaAE29:
                     if arg.arg == "hasta_numero_sorteo":
                         handlers_con_corte.append((nodo.name, ast.unparse(anotacion) if anotacion else None))
 
-        assert len(handlers_con_corte) == 37
+        assert len(handlers_con_corte) == 38
         for nombre, anotacion in handlers_con_corte:
             assert anotacion == "_CorteOpcional", f"{nombre} usa {anotacion!r}, no _CorteOpcional"
 
@@ -8875,3 +8879,456 @@ class TestMantenimientoCorteVacioGlobalHTTPReal:
         for url in casos:
             r = client.get(url)
             assert r.status_code == 200, f"{url}: {r.status_code}"
+
+
+class TestColorLotoComparacionFrecuenciaNumerosPorVentanaRuta:
+    def test_ruta_dedicada_registrada(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana")' in codigo_fuente
+
+    def test_sin_ruta_generica_equivalente(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/{juego_slug}/comparacion-frecuencia-numeros-por-ventana")' not in codigo_fuente
+
+    def test_query_ventana_dominio_cerrado_validado_correctamente(self):
+        """`Literal[5, 10, 20, 50]` directo sobre un query parameter
+        produce `422` real para TODOS los valores en la versión real
+        de FastAPI/Pydantic instalada (confirmado real con
+        `TestClient`). Un intento posterior, `int` puro más
+        `AfterValidator`, tampoco fue léxicamente estricto -aceptaba
+        silenciosamente `"5.0"`/`"5.00"`/`"20.0"` como enteros válidos
+        (confirmado real con `TestClient` antes de esta corrección,
+        auditoría independiente). La implementación real corregida
+        usa un `BeforeValidator` que compara la representación léxica
+        exacta de la query string contra las cuatro cadenas
+        canónicas, antes de que Pydantic intente ninguna coacción de
+        tipo."""
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index("def comparacion_frecuencia_numeros_por_ventana_colorloto(")
+        bloque = codigo_fuente[indice:indice + 600]
+        assert "ventana: _VentanaValida = 20" in bloque
+        assert "ventana: Literal[5, 10, 20, 50] = Query(default=20)" not in bloque
+
+    def test_validador_de_ventana_usa_beforevalidator_no_aftervalidator(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index("_VentanaValida = Annotated[")
+        bloque = codigo_fuente[indice:indice + 200]
+        assert "BeforeValidator(_validar_ventana)" in bloque
+        assert "AfterValidator" not in bloque
+
+    def test_validador_de_ventana_acepta_solo_cadenas_canonicas_exactas(self):
+        """Confirma real, con el propio validador, la corrección del
+        defecto de decimales enteros: `_validar_ventana` recibe la
+        representación LÉXICA de la query string (siempre `str` en
+        HTTP real) y rechaza cualquier forma que no sea exactamente
+        una de las cuatro cadenas canónicas -incluidas las
+        representaciones decimales enteras que el `int` de Pydantic
+        aceptaría silenciosamente."""
+        from app.api.web.routers.estadisticas import _validar_ventana
+        for texto, esperado in [("5", 5), ("10", 10), ("20", 20), ("50", 50)]:
+            assert _validar_ventana(texto) == esperado
+        for texto in ("5.0", "5.00", "20.0", "5.5", "", "7", "0", "-5", "texto", " ", "05", " 5", "+5"):
+            with pytest.raises(ValueError):
+                _validar_ventana(texto)
+
+    def test_validador_de_ventana_rechaza_fuera_del_conjunto_cerrado(self):
+        from app.api.web.routers.estadisticas import _validar_ventana
+        for v in (5, 10, 20, 50):
+            assert _validar_ventana(v) == v
+        for v in (0, -1, 7, 100):
+            with pytest.raises(ValueError):
+                _validar_ventana(v)
+
+    def test_usa_el_alias_compartido_no_crea_uno_nuevo(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index("def comparacion_frecuencia_numeros_por_ventana_colorloto(")
+        bloque = codigo_fuente[indice:indice + 600]
+        assert "hasta_numero_sorteo: _CorteOpcional = None" in bloque
+
+    def test_identidad_exacta_construida_por_el_router_sin_etiqueta(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('tipo_estadistica="comparacion_frecuencia_numeros_por_ventana_colorloto"')
+        bloque = codigo_fuente[indice:indice + 400]
+        assert '"ventana": ventana' in bloque
+        assert '"rango_min": juego.rango_min' in bloque
+        assert '"rango_max": juego.rango_max' in bloque
+        assert "hasta_numero_sorteo" not in bloque.split("parametros_metrica")[1]
+        assert "etiqueta_ventana" not in bloque
+        assert "politica_universo_colores" not in bloque
+        assert "cantidad_numeros" not in bloque
+
+    def test_ejecutar_llamado_exactamente_una_vez_ast_real(self):
+        import ast
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        arbol = ast.parse(codigo_fuente)
+        funcion = next(n for n in arbol.body if isinstance(n, ast.FunctionDef) and n.name == "comparacion_frecuencia_numeros_por_ventana_colorloto")
+        llamadas = [n for n in ast.walk(funcion) if isinstance(n, ast.Attribute) and n.attr == "ejecutar"]
+        assert len(llamadas) == 1
+
+    def test_grupo_sin_colision_pasa_a_veintidos(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert codigo_fuente.count('@router.get("/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana")') == 1
+
+    def test_las_treintayocho_rutas_permanecen_intactas(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert codigo_fuente.count("@router.get(") == 38
+
+
+class TestColorLotoComparacionFrecuenciaNumerosPorVentanaVM:
+    def _juego(self):
+        return Juego(id=uuid4(), codigo="COLORLOTO", nombre="ColorLoto", rango_min=1, rango_max=7, cantidad_numeros=6, tiene_superbalota=False, superbalota_min=None, superbalota_max=None, tiene_color=True, permite_repeticion=True, activo=True)
+
+    def _fake_est(self, filas, hasta=None):
+        class FakeEst:
+            def __init__(self, filas, hasta):
+                self.resultado = {"filas": filas}
+                self.hasta_numero_sorteo = hasta
+                self.calculado_en = None
+        return FakeEst(filas, hasta)
+
+    def _fila(self, valor, hist_apar, hist_total, hist_rel, rec_apar, rec_total, rec_rel, etiqueta="ultimos_20"):
+        return {
+            "valor": valor,
+            "frecuencia_historica": {"valor": valor, "apariciones": hist_apar, "total_sorteos": hist_total, "frecuencia_relativa": hist_rel},
+            "frecuencia_reciente": {"valor": valor, "apariciones": rec_apar, "total_sorteos": rec_total, "frecuencia_relativa": rec_rel},
+            "ventana": etiqueta,
+            "diferencia": rec_rel - hist_rel,
+        }
+
+    def test_orden_numerico_ascendente_independiente_del_orden_recibido(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila("3", 1, 10, 0.1, 1, 5, 0.2), self._fila("1", 1, 10, 0.1, 1, 5, 0.2), self._fila("2", 1, 10, 0.1, 1, 5, 0.2)]
+        vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 20, 1, 7, self._juego())
+        assert [f["numero"] for f in vm["filas"]] == [1, 2, 3]
+
+    def test_dos_series_independientes_y_alineadas(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila("1", 2, 10, 0.2, 3, 5, 0.6), self._fila("2", 4, 10, 0.4, 1, 5, 0.2)]
+        vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 20, 1, 7, self._juego())
+        assert vm["chart_labels"] == ["1", "2"]
+        assert vm["chart_data_historico"] == [0.2, 0.4]
+        assert vm["chart_data_reciente"] == [0.6, 0.2]
+
+    def test_diferencia_positiva_negativa_y_cero_preservadas(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila("1", 5, 10, 0.5, 8, 5, 1.6), self._fila("2", 5, 10, 0.5, 2, 5, 0.4), self._fila("3", 5, 10, 0.5, 5, 5, 0.5)]
+        vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 20, 1, 7, self._juego())
+        assert vm["filas"][0]["diferencia"] > 0
+        assert vm["filas"][0]["diferencia_texto"] == "+1.10"
+        assert vm["filas"][1]["diferencia"] < 0
+        assert vm["filas"][1]["diferencia_texto"] == "-0.10"
+        assert vm["filas"][2]["diferencia"] == 0.0
+
+    def test_formato_texto_sin_porcentaje(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila("1", 5, 10, 1.5, 8, 5, 1.6)]
+        vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 20, 1, 7, self._juego())
+        assert "%" not in vm["filas"][0]["promedio_historico_texto"]
+        assert "%" not in vm["filas"][0]["promedio_reciente_texto"]
+        assert vm["filas"][0]["promedio_historico"] == 1.5
+
+    def test_denominadores_historico_y_reciente_correctos(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila("1", 5, 15, 0.33, 3, 5, 0.6)]
+        vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 5, 1, 7, self._juego())
+        assert vm["total_sorteos_historicos"] == 15
+        assert vm["total_sorteos_recientes"] == 5
+
+    def test_ventana_mayor_que_historico_refleja_cantidad_real_usada(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila("1", 2, 3, 0.66, 2, 3, 0.66, etiqueta="ultimos_50")]
+        vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 50, 1, 7, self._juego())
+        assert vm["total_sorteos_recientes"] == 3
+
+    def test_historico_vacio_universo_completo_en_cero(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila(str(n), 0, 0, 0.0, 0, 0, 0.0) for n in range(1, 8)]
+        vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 20, 1, 7, self._juego())
+        assert vm["total_sorteos_historicos"] == 0
+        assert vm["total_sorteos_recientes"] == 0
+        assert len(vm["filas"]) == 7
+        assert all(f["diferencia"] == 0.0 for f in vm["filas"])
+
+    def test_determinismo_y_no_mutacion(self):
+        from app.api.web.view_models import comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm
+        filas = [self._fila("2", 1, 10, 0.1, 1, 5, 0.2), self._fila("1", 1, 10, 0.1, 1, 5, 0.2)]
+        copia = [dict(f) for f in filas]
+        vm1 = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 20, 1, 7, self._juego())
+        vm2 = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(self._fake_est(filas), 20, 1, 7, self._juego())
+        assert vm1 == vm2
+        assert filas == copia
+
+
+class TestColorLotoComparacionFrecuenciaNumerosPorVentanaTemplate:
+    _TEMPLATE = "app/templates/estadisticas/comparacion_frecuencia_numeros_por_ventana_colorloto.html"
+
+    def test_no_incluye_control_corte_temporal_compartido(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "control_corte_temporal" not in contenido
+
+    def test_formulario_combinado_ventana_y_corte_en_un_solo_form(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert contenido.count("<form") == 1
+        bloque_form = contenido[contenido.index("<form"):contenido.index("</form>")]
+        assert 'name="ventana"' in bloque_form
+        assert 'name="hasta_numero_sorteo"' in bloque_form
+
+    def test_selector_ventana_tiene_exactamente_las_cuatro_opciones(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        for v in ("5", "10", "20", "50"):
+            assert f'value="{v}"' in contenido
+
+    def test_sin_cdn_sin_safe(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "/static/vendor/chartjs/chart.umd.min.js" in contenido
+        assert "cdnjs.cloudflare.com" not in contenido
+        assert "cdn." not in contenido.lower()
+        assert "|safe" not in contenido
+
+    def test_mecanismo_json_seguro(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert 'type="application/json"' in contenido
+        assert "JSON.parse(" in contenido
+        assert "| tojson" in contenido
+
+    def test_exactamente_un_canvas_dos_datasets(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert contenido.count("<canvas") == 1
+        assert "Histórico" in contenido
+        assert "Últimos" in contenido
+
+    def test_texto_sin_porcentaje_y_advertencia_descriptiva(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "apariciones promedio" in contenido.lower()
+        assert "predic" in contenido.lower()
+        assert "%'" not in contenido and "% '" not in contenido
+
+    def test_renderizado_real_en_los_estados(self):
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+        class FakeURL:
+            path = "/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana"
+
+        class FakeRequest:
+            url = FakeURL()
+
+        env = Environment(loader=FileSystemLoader("app/templates"), autoescape=select_autoescape(["html"]))
+        tpl = env.get_template("estadisticas/comparacion_frecuencia_numeros_por_ventana_colorloto.html")
+
+        html_sin_conexion = tpl.render(
+            request=FakeRequest(), db_conectada=False, estadistica=None,
+            ventana=20, hasta_numero_sorteo=None, active_page="estadisticas",
+            pagina_colorloto_activa="comparacion-frecuencia-numeros-por-ventana",
+        )
+        assert "<canvas" not in html_sin_conexion
+
+        estadistica_real = {
+            "juego_codigo": "COLORLOTO", "juego_nombre": "ColorLoto",
+            "rango_min": 1, "rango_max": 7, "ventana": 20,
+            "hasta_numero_sorteo": None, "calculado_en": None,
+            "total_sorteos_historicos": 10, "total_sorteos_recientes": 10,
+            "filas": [{
+                "numero": 1, "apariciones_historicas": 5, "total_sorteos_historicos": 10,
+                "promedio_historico": 0.5, "promedio_historico_texto": "0.50",
+                "apariciones_recientes": 5, "total_sorteos_recientes": 10,
+                "promedio_reciente": 0.5, "promedio_reciente_texto": "0.50",
+                "diferencia": 0.0, "diferencia_texto": "+0.00", "etiqueta_ventana": "ultimos_20",
+            }],
+            "chart_labels": ["1"], "chart_data_historico": [0.5], "chart_data_reciente": [0.5],
+        }
+        html_con_resultados = tpl.render(
+            request=FakeRequest(), db_conectada=True, estadistica=estadistica_real,
+            ventana=20, hasta_numero_sorteo=None, active_page="estadisticas",
+            pagina_colorloto_activa="comparacion-frecuencia-numeros-por-ventana",
+        )
+        assert "<canvas" in html_con_resultados
+        assert "new Chart(" in html_con_resultados
+        bloque_select = html_con_resultados[html_con_resultados.index("<select"):html_con_resultados.index("</select>")]
+        idx = bloque_select.index('value="20"')
+        assert "selected" in bloque_select[idx:idx + 30]
+
+        html_con_corte = tpl.render(
+            request=FakeRequest(), db_conectada=True, estadistica=estadistica_real,
+            ventana=20, hasta_numero_sorteo=100, active_page="estadisticas",
+            pagina_colorloto_activa="comparacion-frecuencia-numeros-por-ventana",
+        )
+        assert 'value="100"' in html_con_corte
+
+
+class TestColorLotoComparacionFrecuenciaNumerosPorVentanaHTTPReal:
+    """Pruebas HTTP reales vía `TestClient` -`httpx` no es dependencia
+    declarada del proyecto, esta clase se omite si no está
+    instalado."""
+
+    @staticmethod
+    def _client():
+        pytest.importorskip("httpx")
+        pytest.importorskip("fastapi.testclient")
+        from fastapi.testclient import TestClient
+        from app.main import app
+        return TestClient(app)
+
+    _URL = "/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana"
+
+    def test_ruta_base_sin_parametros_200(self):
+        """Sin `ventana` en la query string, la página responde `200`
+        usando el valor por defecto `20` -el `<option>` de `20`
+        marcado `selected` se verifica por separado con un
+        renderizado Jinja2 real (`TestColorLotoComparacionFrecuencia
+        NumerosPorVentanaTemplate.test_renderizado_real_en_los_estados`),
+        ya que este sandbox no tiene conexión real a PostgreSQL y la
+        página "sin conexión" no renderiza el formulario."""
+        client = self._client()
+        r = client.get(self._URL)
+        assert r.status_code == 200, r.text
+
+    def test_las_cuatro_ventanas_validas_200(self):
+        client = self._client()
+        for v in (5, 10, 20, 50):
+            r = client.get(f"{self._URL}?ventana={v}")
+            assert r.status_code == 200, f"{v}: {r.status_code}"
+
+    def test_ventana_vacia_422(self):
+        client = self._client()
+        r = client.get(f"{self._URL}?ventana=")
+        assert r.status_code == 422
+
+    def test_ventana_fuera_del_conjunto_422(self):
+        client = self._client()
+        for v in ("0", "-1", "1", "100", "7.5", "texto"):
+            r = client.get(f"{self._URL}?ventana={v}")
+            assert r.status_code == 422, f"{v}: {r.status_code}"
+
+    def test_ventana_decimales_enteros_422(self):
+        """Regresión real del defecto encontrado por auditoría
+        independiente: `ventana=5.0`/`5.00`/`20.0` respondían `200`
+        (convertidos silenciosamente a `5`/`5`/`20`) con la
+        implementación provisional original -confirmado real con
+        `TestClient` antes de corregir. Deben responder `422`."""
+        client = self._client()
+        for v in ("5.0", "5.00", "20.0", "5.5"):
+            r = client.get(f"{self._URL}?ventana={v}")
+            assert r.status_code == 422, f"{v}: {r.status_code}"
+
+    def test_ventana_espacios_y_formas_no_canonicas_422(self):
+        client = self._client()
+        for v in ("%20", "+5", "05", "%205"):
+            r = client.get(f"{self._URL}?ventana={v}")
+            assert r.status_code == 422, f"{v}: {r.status_code}"
+
+    def test_corte_ausente_y_vacio_ambos_200_equivalentes(self):
+        client = self._client()
+        r_ausente = client.get(self._URL)
+        r_vacio = client.get(f"{self._URL}?hasta_numero_sorteo=")
+        assert r_ausente.status_code == 200
+        assert r_vacio.status_code == 200
+
+    def test_corte_invalido_422(self):
+        client = self._client()
+        for v in ("0", "-1", "texto", " "):
+            r = client.get(f"{self._URL}?hasta_numero_sorteo={v}")
+            assert r.status_code == 422, f"{v!r}: {r.status_code}"
+
+    def test_ventana_y_corte_validos_juntos_200(self):
+        client = self._client()
+        r = client.get(f"{self._URL}?ventana=50&hasta_numero_sorteo=100")
+        assert r.status_code == 200, r.text
+
+    def test_valores_de_ventana_invalidos_nunca_llegan_al_caso_de_uso(self):
+        """La validación de Pydantic/FastAPI ocurre en la capa de
+        dependencias, ANTES de que el cuerpo del handler se ejecute
+        -confirmado real: sin conexión a base de datos en este
+        sandbox, un `422` para una ventana inválida no requiere
+        ninguna conexión real (a diferencia de un `200`, que si el
+        handler llegara a ejecutarse intentaría `_verificar_conexion`
+        y, más adelante, invocaría el caso de uso); si el caso de uso
+        se hubiera invocado incorrectamente antes de la validación,
+        este mismo request fallaría con `500` en vez de `422` en este
+        entorno sin PostgreSQL."""
+        client = self._client()
+        for v in ("5.0", "5.00", "20.0", "5.5", "0", "-5", "7", "texto", ""):
+            r = client.get(f"{self._URL}?ventana={v}")
+            assert r.status_code == 422, f"{v}: {r.status_code}"
+
+    def test_aislamiento_404_baloto_revancha_miloto(self):
+        client = self._client()
+        for juego in ("baloto", "baloto-revancha", "miloto"):
+            r = client.get(f"/estadisticas/{juego}/comparacion-frecuencia-numeros-por-ventana")
+            assert r.status_code == 404, f"{juego}: {r.status_code}"
+
+
+class TestColorLotoComparacionFrecuenciaNumerosPorVentanaPreservacionYRegresiones:
+    def _env(self):
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+        return Environment(loader=FileSystemLoader("app/templates"), autoescape=select_autoescape(["html"]))
+
+    class _FakeRequest:
+        class _URL:
+            path = "/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana"
+        url = _URL()
+
+    def test_control_corte_temporal_sigue_sin_conocer_ventana(self):
+        tpl = self._env().get_template("estadisticas/partials/control_corte_temporal.html")
+        html = tpl.render(
+            request=self._FakeRequest(), hasta_numero_sorteo=None, ventana=20,
+            url_historico_completo="/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana?ventana=20",
+        )
+        assert 'name="ventana"' not in html
+
+    def test_regresion_anio_ae22_sigue_intacta(self):
+        tpl = self._env().get_template("estadisticas/partials/control_corte_temporal.html")
+        html = tpl.render(
+            request=self._FakeRequest(), hasta_numero_sorteo=None, anio=2024,
+            url_historico_completo="/estadisticas/colorloto/frecuencia-colores-por-anio?anio=2024",
+        )
+        assert '<input type="hidden" name="anio" value="2024">' in html
+
+    def test_regresion_mes_ae23_sigue_intacta(self):
+        tpl = self._env().get_template("estadisticas/partials/control_corte_temporal.html")
+        html = tpl.render(
+            request=self._FakeRequest(), hasta_numero_sorteo=None, mes=3,
+            url_historico_completo="/estadisticas/colorloto/frecuencia-colores-por-mes?mes=3",
+        )
+        assert '<input type="hidden" name="mes" value="3">' in html
+
+    def test_regresion_dia_semana_ae24_sigue_intacta(self):
+        tpl = self._env().get_template("estadisticas/partials/control_corte_temporal.html")
+        html = tpl.render(
+            request=self._FakeRequest(), hasta_numero_sorteo=None, dia_semana="lunes",
+            url_historico_completo="/estadisticas/colorloto/frecuencia-colores-por-dia-semana?dia_semana=lunes",
+        )
+        assert '<input type="hidden" name="dia_semana" value="lunes">' in html
+
+    def test_regresion_pares_por_anio_ae25_sigue_intacta(self):
+        tpl = self._env().get_template("estadisticas/partials/control_corte_temporal.html")
+        html = tpl.render(
+            request=self._FakeRequest(), hasta_numero_sorteo=None, anio=2024,
+            url_historico_completo="/estadisticas/colorloto/frecuencia-pares-numero-color-por-anio?anio=2024",
+        )
+        assert '<input type="hidden" name="anio" value="2024">' in html
+
+    def test_regresion_pares_por_mes_ae26_sigue_intacta(self):
+        tpl = self._env().get_template("estadisticas/partials/control_corte_temporal.html")
+        html = tpl.render(
+            request=self._FakeRequest(), hasta_numero_sorteo=None, mes=3,
+            url_historico_completo="/estadisticas/colorloto/frecuencia-pares-numero-color-por-mes?mes=3",
+        )
+        assert '<input type="hidden" name="mes" value="3">' in html
+
+    def test_regresion_pares_por_dia_semana_ae27_sigue_intacta(self):
+        tpl = self._env().get_template("estadisticas/partials/control_corte_temporal.html")
+        html = tpl.render(
+            request=self._FakeRequest(), hasta_numero_sorteo=None, dia_semana="lunes",
+            url_historico_completo="/estadisticas/colorloto/frecuencia-pares-numero-color-por-dia-semana?dia_semana=lunes",
+        )
+        assert '<input type="hidden" name="dia_semana" value="lunes">' in html
+
+    def test_navegando_a_otra_metrica_no_propaga_ventana_de_ae29(self):
+        contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
+        assert "ventana=" not in contenido
+        assert "{{ ventana" not in contenido
+        assert contenido.count("hasta_numero_sorteo") == 3 * 29
+
+    def test_pestana_de_ae29_marca_activa_correctamente(self):
+        contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
+        assert "pagina_colorloto_activa == 'comparacion-frecuencia-numeros-por-ventana'" in contenido

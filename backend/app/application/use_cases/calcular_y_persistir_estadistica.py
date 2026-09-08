@@ -80,6 +80,7 @@ from app.application.estadisticas.motor.frecuencia import (
     construir_tabla_frecuencia,
 )
 from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio, calcular_frecuencia_colores_por_mes, calcular_frecuencia_colores_por_dia_semana, calcular_frecuencia_pares_numero_color_por_anio, calcular_frecuencia_pares_numero_color_por_mes, calcular_frecuencia_pares_numero_color_por_dia_semana
+from app.application.estadisticas.motor.recencia import ComparacionRecencia, comparar_frecuencia_numeros_colorloto_por_ventana
 from app.application.estadisticas.tipos import (
     FilaFrecuencia, FrecuenciaObservada, IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
@@ -488,6 +489,18 @@ def _serializar_frecuencia_observada(filas: list[FrecuenciaObservada]) -> dict:
     return {"filas": [dataclasses.asdict(f) for f in filas]}
 
 
+def _serializar_comparacion_recencia(filas: list[ComparacionRecencia]) -> dict:
+    """`dataclasses.asdict` es recursivo -conserva íntegramente cada
+    `ComparacionRecencia`, incluidos los DOS `FrecuenciaObservada`
+    anidados (`frecuencia_historica`, `frecuencia_reciente`) SIN
+    aplanarlos ni fusionarlos, más la etiqueta y la diferencia con su
+    signo -confirmado real por round-trip JSON exacto (Etapa AE-29,
+    PROVISIONAL). Primer serializador de esta forma en el proyecto;
+    ningún serializador anterior sirve porque `ComparacionRecencia`
+    nunca existió conectada hasta esta etapa."""
+    return {"filas": [dataclasses.asdict(f) for f in filas]}
+
+
 def _serializar_tabla_frecuencia(filas: list[FilaFrecuencia]) -> dict:
     """dataclasses.asdict es recursivo: serializa también los
     dataclasses anidados (frecuencia_observada, probabilidad_teorica)
@@ -586,7 +599,7 @@ def _serializar_metrica_asociacion_texto(filas: list[MetricaAsociacion]) -> dict
 # cuál de los cuatro produce mediante sus propias anotaciones arriba.
 _ResultadoMotor = (
     list[FrecuenciaObservada] | list[FilaFrecuencia] | list[AtrasoObservado] | list[MetricaAsociacion]
-    | list[IntervalosHistoricos] | DistribucionSumas
+    | list[IntervalosHistoricos] | DistribucionSumas | list[ComparacionRecencia]
 )
 
 
@@ -2366,6 +2379,92 @@ def _calcular_distribucion_conteo_color_colorloto(
     return calcular_distribucion_conteo_color(historico.pares, color_objetivo, cantidad_balotas)
 
 
+def _calcular_comparacion_frecuencia_numeros_por_ventana_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[ComparacionRecencia]:
+    """Compara, para cada número del rango indicado por la propia
+    identidad de caché, su frecuencia en TODO el histórico disponible
+    (ya filtrado por el corte) contra su frecuencia en los últimos
+    `ventana` sorteos reales de ese mismo histórico (Etapa AE-29,
+    PROVISIONAL) -primera receta de ColorLoto que reutiliza
+    `motor/recencia.py`, hasta ahora sin conectar. Analiza el NÚMERO
+    de la balota ignorando su color -mismo alcance exacto que
+    `calcular_atrasos_numeros_colorloto` (Etapa D); el par
+    número-color completo tendría su propia función
+    (`comparar_frecuencia_pares_numero_color_por_ventana`, Etapa L,
+    todavía sin conectar) y queda fuera de esta etapa.
+
+    Reutiliza `comparar_frecuencia_numeros_colorloto_por_ventana` sin
+    modificar el motor (vive en `motor/recencia.py`, ya existía desde
+    antes de esta etapa, con 32 tests de motor propios, ninguno de
+    ellos tocado). Firma real confirmada por auditoría: `(resultados,
+    rango_min, rango_max, ventana, etiqueta_ventana,
+    hasta_numero_sorteo=None) -> list[ComparacionRecencia]` -5
+    argumentos obligatorios, llamado aquí con exactamente 5
+    argumentos posicionales y CERO kwargs, nunca pasando
+    `hasta_numero_sorteo` por segunda vez: el orquestador ya filtró
+    `historico.pares` por el corte general antes de llegar aquí,
+    mismo precedente exacto de las 37 recetas anteriores.
+
+    **Corrección real de un defecto encontrado por auditoría
+    independiente del parche provisional original**: `rango_min` y
+    `rango_max` se leen EXACTAMENTE de `parametros["rango_min"]` y
+    `parametros["rango_max"]` -las mismas dos claves que el router ya
+    guarda en la identidad de caché desde `juego.rango_min`/
+    `juego.rango_max`. El parche provisional original las
+    "rederivaba" internamente desde la constante privada
+    `_RANGO_REAL_COLORLOTO`, ignorando por completo los dos valores
+    reales de la identidad -contradicción real: dos claves que
+    supuestamente determinan matemáticamente la salida nunca eran
+    consumidas por el cálculo, confirmado real con histórico vacío y
+    `{"rango_min": 2, "rango_max": 3}`, que producía incorrectamente
+    las 7 filas de `1` a `7` en vez de únicamente `2` y `3`. Esta es
+    la única receta de ColorLoto que NO rederiva su rango desde la
+    constante privada -a diferencia de AE-1/AE-4/AE-20/AE-21/AE-25/
+    AE-26/AE-27/AE-28, cuya identidad y cálculo real coinciden
+    siempre matemáticamente con `_RANGO_REAL_COLORLOTO`, así que
+    rederivar es equivalente allí; aquí el contrato aprobado exige
+    que la identidad sea la única fuente de verdad para el rango,
+    así que rederivar sería estructuralmente incorrecto, no solo una
+    preferencia de estilo. `_CANTIDAD_NUMEROS_COLORLOTO` se sigue
+    usando exclusivamente para la validación defensiva de cantidad
+    -nunca para el rango.
+
+    `etiqueta_ventana` se deriva SIEMPRE internamente, de forma
+    determinista, a partir de `ventana` (`f"ultimos_{ventana}"`)
+    -NUNCA se acepta desde HTTP, formulario, VM ni ningún otro dato
+    externo, y NUNCA forma parte de `parametros` ni de la identidad
+    de caché: es presentación derivada, no una dimensión matemática
+    del resultado.
+
+    Identidad de TRES claves, las tres genuinamente consumidas por
+    el cálculo: `{"ventana", "rango_min", "rango_max"}`.
+    `cantidad_numeros` se excluye de la identidad -el motor de esta
+    etapa no la recibe ni modifica matemáticamente su salida; se
+    reutiliza únicamente para la validación defensiva interna, vía
+    `_CANTIDAD_NUMEROS_COLORLOTO`, mismo precedente de las 37 recetas
+    anteriores. `politica_universo_colores` se excluye -esta métrica
+    ignora el color por completo, su motor nunca construye un
+    universo de colores (mismo razonamiento ya aplicado en AE-28).
+
+    Reutiliza `_validar_historico_colorloto_consistente` (protegida,
+    sin cambios) sobre el histórico COMPLETO, con el rango real de la
+    identidad, antes de invocar al motor -igual que las 37 recetas
+    anteriores, la validación de integridad estructural precede
+    siempre al cálculo, y el motor nunca se invoca si el histórico es
+    inconsistente."""
+    ventana = parametros["ventana"]
+    rango_min = parametros["rango_min"]
+    rango_max = parametros["rango_max"]
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    etiqueta_ventana = f"ultimos_{ventana}"
+    return comparar_frecuencia_numeros_colorloto_por_ventana(
+        historico.pares, rango_min, rango_max, ventana, etiqueta_ventana,
+    )
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -2508,6 +2607,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "distribucion_conteo_color_colorloto": _Receta(
         calcular=_calcular_distribucion_conteo_color_colorloto, serializar=_serializar_frecuencia_observada,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "comparacion_frecuencia_numeros_por_ventana_colorloto": _Receta(
+        calcular=_calcular_comparacion_frecuencia_numeros_por_ventana_colorloto, serializar=_serializar_comparacion_recencia,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

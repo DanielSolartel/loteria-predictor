@@ -65,6 +65,7 @@ from app.api.web.view_models import (
     frecuencia_pares_numero_color_por_mes_colorloto_a_vm,
     frecuencia_pares_numero_color_por_dia_semana_colorloto_a_vm,
     distribucion_conteo_color_colorloto_a_vm,
+    comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -2390,6 +2391,168 @@ def distribucion_conteo_color_colorloto(
             **contexto_base, "estadistica": vm, "color_objetivo": color_objetivo,
             "colores_seleccionables": colores_seleccionables, "sin_colores_disponibles": False,
         },
+    )
+
+
+_VENTANAS_VALIDAS = (5, 10, 20, 50)
+_VENTANAS_VALIDAS_TEXTO = {"5", "10", "20", "50"}
+
+
+def _validar_ventana(valor):
+    """Corrección real de un defecto encontrado por auditoría
+    independiente del parche provisional original: `int` puro más
+    `AfterValidator` NO es léxicamente estricto -Pydantic, al
+    coaccionar una cadena a `int`, acepta primero como `float` y
+    luego confirma que es un número entero, así que `"5.0"`,
+    `"5.00"` y `"20.0"` se convertían silenciosamente a `5`/`5`/`20`
+    reales, confirmado real con `TestClient` antes de corregir -la
+    afirmación "cualquier decimal produce 422" era falsa.
+
+    Esta función es un `BeforeValidator`: recibe el valor ANTES de
+    que Pydantic intente cualquier coacción de tipo, así que nunca
+    pierde su forma léxica original. Si el valor es una cadena
+    (siempre el caso real para un query parameter), se compara
+    literalmente contra las CUATRO cadenas canónicas exactas -`"5"`,
+    `"10"`, `"20"`, `"50"`- y solo esas cuatro se convierten con
+    `int(...)`; cualquier otra representación de esos mismos números
+    (`"5.0"`, `"05"`, `" 5"`, `"+5"`...) se rechaza explícitamente,
+    porque nunca coincide con la comparación de cadenas exacta. Si el
+    valor ya es un `int` (caso de pruebas internas que invocan el
+    tipo directamente en Python, nunca a través de HTTP), se acepta
+    solo si pertenece al conjunto `{5, 10, 20, 50}` -mismos cuatro
+    valores, misma restricción, sin pasar por ninguna cadena.
+    Cualquier otro caso -incluida la cadena vacía, texto, espacios,
+    `"0"`, negativos, y cualquier entero fuera del conjunto- produce
+    `ValueError`, que Pydantic traduce a `422` real antes de que el
+    handler se ejecute."""
+    if isinstance(valor, str):
+        if valor in _VENTANAS_VALIDAS_TEXTO:
+            return int(valor)
+        raise ValueError("Input should be 5, 10, 20 or 50")
+    if isinstance(valor, int) and not isinstance(valor, bool) and valor in _VENTANAS_VALIDAS:
+        return valor
+    raise ValueError("Input should be 5, 10, 20 or 50")
+
+
+_VentanaValida = Annotated[int, BeforeValidator(_validar_ventana), Query()]
+
+
+@router.get("/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana")
+def comparacion_frecuencia_numeros_por_ventana_colorloto(
+    request: Request,
+    ventana: _VentanaValida = 20,
+    hasta_numero_sorteo: _CorteOpcional = None,
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-29 (PROVISIONAL): vigesimonovena visualización
+    descriptiva de ColorLoto -compara, para cada número del rango
+    real, su frecuencia en TODO el histórico disponible (ya filtrado
+    por el corte) contra su frecuencia en los últimos `ventana`
+    sorteos reales de ese mismo histórico. Primera etapa que conecta
+    `motor/recencia.py`, hasta ahora sin integración web. Analiza el
+    NÚMERO de la balota ignorando su color -nunca compara colores ni
+    pares número-color, ambas etapas distintas y todavía sin
+    conectar.
+
+    **Selector cerrado, decisión de producto ya aprobada, corregido
+    por auditoría independiente**: `ventana: _VentanaValida = 20`
+    -dominio fijo `{5, 10, 20, 50}`, validado con un
+    `BeforeValidator(_validar_ventana)` que compara la representación
+    LÉXICA exacta de la query string contra las cuatro cadenas
+    canónicas (`"5"`, `"10"`, `"20"`, `"50"`) antes de que Pydantic
+    intente ninguna coacción de tipo -`422` real para cualquier otra
+    representación de esos mismos números (`"5.0"`, `"5.00"`,
+    `"20.0"`, `"05"`, `" 5"`), para cualquier entero fuera del
+    conjunto, para `0`, negativos, texto, espacios y cadena vacía,
+    confirmado real con `TestClient`, ANTES de que el handler se
+    ejecute; sin `ventana` en la query string, se usa el valor por
+    defecto `20` y la página responde `200` con resultados reales de
+    inmediato -mismo patrón de "página siempre útil" ya establecido
+    por AE-28 para `color_objetivo`, aplicado aquí a un dominio
+    cerrado en vez de dinámico. `hasta_numero_sorteo` usa el mismo
+    alias compartido `_CorteOpcional` ya validado por las 37 rutas
+    anteriores y por el mantenimiento global -sin crear ningún alias
+    nuevo.
+
+    **Etiqueta interna siempre determinista**: `etiqueta_ventana` se
+    deriva dentro de la receta (`f"ultimos_{ventana}"`), NUNCA se
+    acepta desde HTTP, formulario ni VM -no forma parte de esta
+    firma, de `parametros_metrica` ni de la identidad de caché.
+
+    **Identidad de caché con TRES claves, las tres genuinamente
+    consumidas por el cálculo -corregido por auditoría
+    independiente**: `{"ventana": ventana, "rango_min":
+    juego.rango_min, "rango_max": juego.rango_max}`, construida
+    desde la entidad `Juego` real. El parche provisional original
+    guardaba correctamente estas tres claves en la identidad, pero la
+    receta ignoraba `rango_min`/`rango_max` y rederivaba un rango
+    fijo internamente -contradicción real corregida: ahora la receta
+    lee exactamente las tres claves de `parametros`, así que el
+    universo de números realmente calculado coincide siempre con el
+    que determina la identidad de caché. `ventana` forma parte de la
+    identidad porque cambia materialmente la muestra reciente
+    comparada; `rango_min`/`rango_max` porque determinan el universo
+    numérico del resultado (mismo criterio ya establecido por
+    AE-20/AE-21/AE-25/AE-26/AE-27/AE-28). `cantidad_numeros` y
+    `politica_universo_colores` se excluyen deliberadamente -el
+    motor de esta etapa no recibe la primera ni consume la segunda
+    en ningún punto de su firma ni de su cuerpo (nunca construye un
+    universo de colores, ignora el color por completo).
+    `hasta_numero_sorteo` permanece en su propia columna, nunca
+    duplicado dentro de `parametros_metrica` -mismo precedente exacto
+    de las 37 rutas anteriores: el orquestador ya filtra el histórico
+    por el corte general antes de invocar la receta, que aplica la
+    ventana sobre ese subconjunto ya acotado, sin volver a introducir
+    el corte por una segunda vía.
+
+    **`control_corte_temporal.html` NO se incluye en esta página,
+    deliberadamente**: ese partial no conoce `ventana` -mismo motivo
+    exacto ya documentado en AE-28 para `color_objetivo`. La
+    plantilla nueva construye su propio formulario combinado
+    (ventana + corte) en un único `<form method="get">`, con el
+    mismo campo `hasta_numero_sorteo` y el mismo criterio de corte;
+    "Histórico completo" retira únicamente `hasta_numero_sorteo` y
+    conserva `ventana` en la URL. Sin selección explícita de
+    `ventana`, la URL base usa el valor por defecto `20`."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "ventana": ventana,
+        "pagina_colorloto_activa": "comparacion-frecuencia-numeros-por-ventana",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/comparacion_frecuencia_numeros_por_ventana_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="comparacion_frecuencia_numeros_por_ventana_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "ventana": ventana,
+            "rango_min": juego.rango_min,
+            "rango_max": juego.rango_max,
+        },
+    )
+
+    vm = comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(resultado, ventana, juego.rango_min, juego.rango_max, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/comparacion_frecuencia_numeros_por_ventana_colorloto.html",
+        context={**contexto_base, "estadistica": vm},
     )
 
 

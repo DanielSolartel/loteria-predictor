@@ -167,4 +167,10 @@
             Distribución del conteo por color
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pagina_colorloto_activa == 'comparacion-frecuencia-numeros-por-ventana' %}active{% endif %}"
+           href="/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">
+            Comparación de frecuencia de números por ventana
+        </a>
+    </li>
 </ul>

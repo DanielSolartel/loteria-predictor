@@ -2385,6 +2385,93 @@ def distribucion_conteo_color_colorloto_a_vm(
     }
 
 
+def comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm(
+    estadistica, ventana: int, rango_min: int, rango_max: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "comparacion_frecuencia_numeros_por_ventana_colorloto" (Etapa
+    AE-29, PROVISIONAL) en un view model listo para la plantilla.
+    Nunca recalcula la métrica, nunca consulta repositorios, nunca
+    llama al motor -misma transformación pura ya validada por las 37
+    VM anteriores; reconstruye cada fila directamente desde el JSON
+    serializado anidado (`dataclasses.asdict` de `ComparacionRecencia`,
+    con sus dos `FrecuenciaObservada` intactos), nunca recalcula
+    ningún conteo ni frecuencia que el motor ya produjo.
+
+    Orden determinista: SIEMPRE ascendente por número, ordenado aquí
+    explícitamente (`sorted(..., key=lambda f: int(f["valor"]))`),
+    independientemente del orden con el que haya llegado el resultado
+    -a diferencia de AE-2/AE-22 a AE-28, que confían en el orden que
+    ya entrega el motor, este resultado no tiene garantía de orden
+    documentada en `ComparacionRecencia`, así que la VM lo fuerza.
+
+    Semántica GENUINAMENTE la misma que AE-2/AE-22 a AE-27 (nunca la
+    de AE-28): `frecuencia_relativa` es "apariciones promedio por
+    sorteo" -puede superar 1.0, nunca se multiplica por 100 ni se le
+    agrega "%". La diferencia (`reciente.frecuencia_relativa -
+    historica.frecuencia_relativa`) conserva signo y precisión
+    numérica completa en `diferencia`; `diferencia_texto` es
+    únicamente una representación con signo explícito para lectura
+    (`+0.40`, `-0.15`, `+0.00`), nunca una clasificación "subió"/
+    "bajó" inventada -el signo se deriva exclusivamente del dato ya
+    calculado por el motor.
+
+    `total_sorteos_historicos` y `total_sorteos_recientes` se leen de
+    la primera fila (todas las filas comparten el mismo denominador
+    histórico entre sí, y el mismo denominador reciente entre sí,
+    porque ambos denominadores dependen únicamente del tamaño del
+    subconjunto de sorteos, no del número analizado) -si `ventana`
+    excede el histórico disponible, `total_sorteos_recientes` refleja
+    la cantidad REAL usada (el motor ya lo resuelve así, confirmado
+    real, nunca un error). Histórico vacío: el motor ya devuelve las
+    filas completas del universo `rango_min..rango_max` en cero
+    -confirmado real- así que esta función no necesita ningún caso
+    especial adicional. Datos de gráfica ya preparados en Python: dos
+    series alineadas por la misma lista de etiquetas (`chart_labels`),
+    nunca recalculadas en JavaScript."""
+    filas_crudas = estadistica.resultado["filas"]
+    filas_ordenadas = sorted(filas_crudas, key=lambda f: int(f["valor"]))
+
+    total_sorteos_historicos = filas_ordenadas[0]["frecuencia_historica"]["total_sorteos"] if filas_ordenadas else 0
+    total_sorteos_recientes = filas_ordenadas[0]["frecuencia_reciente"]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        historica = f["frecuencia_historica"]
+        reciente = f["frecuencia_reciente"]
+        diferencia = f["diferencia"]
+        filas_presentacion.append({
+            "numero": int(f["valor"]),
+            "apariciones_historicas": historica["apariciones"],
+            "total_sorteos_historicos": historica["total_sorteos"],
+            "promedio_historico": historica["frecuencia_relativa"],
+            "promedio_historico_texto": f"{historica['frecuencia_relativa']:.2f}",
+            "apariciones_recientes": reciente["apariciones"],
+            "total_sorteos_recientes": reciente["total_sorteos"],
+            "promedio_reciente": reciente["frecuencia_relativa"],
+            "promedio_reciente_texto": f"{reciente['frecuencia_relativa']:.2f}",
+            "diferencia": diferencia,
+            "diferencia_texto": f"{diferencia:+.2f}",
+            "etiqueta_ventana": f["ventana"],
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "ventana": ventana,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos_historicos": total_sorteos_historicos,
+        "total_sorteos_recientes": total_sorteos_recientes,
+        "filas": filas_presentacion,
+        "chart_labels": [str(f["numero"]) for f in filas_presentacion],
+        "chart_data_historico": [f["promedio_historico"] for f in filas_presentacion],
+        "chart_data_reciente": [f["promedio_reciente"] for f in filas_presentacion],
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
