@@ -80,7 +80,9 @@ from app.application.estadisticas.motor.frecuencia import (
     construir_tabla_frecuencia,
 )
 from app.application.estadisticas.motor.frecuencia_temporal import calcular_frecuencia_colores_por_anio, calcular_frecuencia_colores_por_mes, calcular_frecuencia_colores_por_dia_semana, calcular_frecuencia_pares_numero_color_por_anio, calcular_frecuencia_pares_numero_color_por_mes, calcular_frecuencia_pares_numero_color_por_dia_semana
-from app.application.estadisticas.motor.recencia import ComparacionRecencia, comparar_frecuencia_numeros_colorloto_por_ventana
+from app.application.estadisticas.motor.recencia import (
+    ComparacionRecencia, comparar_frecuencia_colores_por_ventana, comparar_frecuencia_numeros_colorloto_por_ventana,
+)
 from app.application.estadisticas.tipos import (
     FilaFrecuencia, FrecuenciaObservada, IntervalosHistoricos, MetricaAsociacion, ResultadoColorLoto, ResultadoNumerico,
 )
@@ -2465,6 +2467,103 @@ def _calcular_comparacion_frecuencia_numeros_por_ventana_colorloto(
     )
 
 
+def _calcular_comparacion_frecuencia_colores_por_ventana_colorloto(
+    historico: "_HistoricoColorLoto", parametros: dict,
+) -> list[ComparacionRecencia]:
+    """Compara, para cada color del universo real (vigentes en la
+    fecha de referencia UNIÓN observados en el histórico ya
+    filtrado), su frecuencia en TODO el histórico disponible contra
+    su frecuencia en los últimos `ventana` sorteos reales de ese
+    mismo histórico (Etapa AE-30, PROVISIONAL) -segunda receta de
+    ColorLoto que reutiliza `motor/recencia.py`, tras AE-29. Analiza
+    el COLOR ignorando el número -mismo alcance exacto que
+    `calcular_frecuencia_colores_colorloto` en la Etapa AE-2; el par
+    número-color completo tiene su propia función
+    (`comparar_frecuencia_pares_numero_color_por_ventana`), corregida
+    como mantenimiento del módulo en esta misma etapa pero todavía
+    sin página web conectada -etapa posterior explícita.
+
+    **Precedida por una auditoría previa que detectó y confirmó
+    real un defecto material en el motor candidato**: `KeyError:
+    'ROJO'`, reproducido real con histórico vacío y un caso mínimo
+    antes de implementar esta receta -causa raíz: `calcular_frecuencia_colores`
+    construye su propio universo dependiendo de qué se observa en
+    cada porción recibida (`historico` completo vs. `reciente`,
+    llamadas por separado), así que un color observado en el
+    histórico pero ausente de la ventana reciente y no vigente
+    generaba universos divergentes. **Corregido en el motor mismo
+    (Opción B autorizada: corrección simétrica de las dos funciones
+    de `recencia.py` dependientes de color), no aquí**: esta receta
+    nunca oculta el defecto ni lo evita con lógica propia -reutiliza
+    `comparar_frecuencia_colores_por_ventana` ya corregido, sin
+    ninguna adaptación adicional.
+
+    Reutiliza `comparar_frecuencia_colores_por_ventana` sin
+    modificar su firma real: `(resultados, colores_vigentes, ventana,
+    etiqueta_ventana, hasta_numero_sorteo=None) -> list[ComparacionRecencia]`
+    -4 argumentos obligatorios, llamado aquí con exactamente 4
+    argumentos posicionales y CERO kwargs, nunca pasando
+    `hasta_numero_sorteo` por segunda vez: el orquestador ya filtró
+    `historico.pares` por el corte general antes de llegar aquí,
+    mismo precedente exacto de las 38 recetas anteriores.
+
+    `colores_vigentes` para el motor se deriva de
+    `_codigos_colores_vigentes_en_referencia` (protegida, sin
+    cambios, Etapa AE-4P) -mismo criterio exacto ya usado por AE-2/
+    AE-22/AE-23/AE-24: colores VIGENTES en la fecha del último
+    sorteo real del histórico ya filtrado, nunca el catálogo
+    completo sin filtrar. Los colores retirados realmente observados
+    se preservan gracias a la unión que el propio motor ya realiza
+    internamente (ahora corregida para ser consistente entre ambas
+    llamadas), nunca porque esta receta agregue nada por su cuenta.
+
+    `etiqueta_ventana` se deriva SIEMPRE internamente, de forma
+    determinista, a partir de `ventana` (`f"ultimos_{ventana}"`)
+    -NUNCA se acepta desde HTTP, formulario ni VM, y nunca forma
+    parte de `parametros` ni de la identidad de caché.
+
+    **Identidad de caché con DOS claves, siguiendo el precedente real
+    de AE-22/AE-23/AE-24 (NO el de AE-2)**: `{"ventana",
+    "politica_universo_colores"}`. `rango_min`/`rango_max`/
+    `cantidad_numeros` se EXCLUYEN deliberadamente y se rederivan
+    aquí desde las constantes privadas `_RANGO_REAL_COLORLOTO`/
+    `_CANTIDAD_NUMEROS_COLORLOTO` -el motor de esta etapa no las
+    recibe como argumentos matemáticos (`comparar_frecuencia_colores_por_ventana`
+    no tiene parámetros de rango en absoluto), y ColorLoto tiene un
+    único rango fijo que nunca varía en la práctica: mismo
+    razonamiento estructural real que ya justifica la exclusión en
+    AE-22/23/24 (donde `anio`/`mes`/`dia_semana` sí son valores
+    genuinamente variables por consulta y por eso sí forman parte de
+    la identidad, mientras que el rango numérico no lo es y se
+    rederiva). AE-2, la única receta de "solo colores" que SÍ incluye
+    rango/cantidad en su identidad, es la excepción temprana, no la
+    norma seguida por las etapas posteriores -confirmado por lectura
+    real de su propio código. `politica_universo_colores` versiona el
+    algoritmo que construye `colores_vigentes`; si ese algoritmo
+    cambiara, el resultado cambiaría, así que sí forma parte de la
+    identidad. Ninguna lista dinámica de códigos de color entra en la
+    identidad -el marcador estático ya cubre cualquier cambio de
+    algoritmo, y una mutación real de paleta se cubre por el
+    mecanismo de invalidación explícita ya validado del proyecto.
+
+    Reutiliza `_validar_historico_colorloto_consistente` (protegida,
+    sin cambios) sobre el histórico COMPLETO, con el rango real de la
+    constante privada, antes de invocar al motor -igual que las 38
+    recetas anteriores, la validación de integridad estructural
+    precede siempre al cálculo, y el motor nunca se invoca si el
+    histórico es inconsistente."""
+    ventana = parametros["ventana"]
+    rango_min, rango_max = _RANGO_REAL_COLORLOTO
+    _validar_historico_colorloto_consistente(
+        historico.pares, historico.catalogo_colores, _CANTIDAD_NUMEROS_COLORLOTO, rango_min, rango_max,
+    )
+    colores_vigentes = _codigos_colores_vigentes_en_referencia(historico)
+    etiqueta_ventana = f"ultimos_{ventana}"
+    return comparar_frecuencia_colores_por_ventana(
+        historico.pares, colores_vigentes, ventana, etiqueta_ventana,
+    )
+
+
 class _Receta(NamedTuple):
     calcular: Callable[[Sequence[ResultadoNumerico], dict], _ResultadoMotor]
     serializar: Callable[[_ResultadoMotor], dict]
@@ -2611,6 +2710,10 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "comparacion_frecuencia_numeros_por_ventana_colorloto": _Receta(
         calcular=_calcular_comparacion_frecuencia_numeros_por_ventana_colorloto, serializar=_serializar_comparacion_recencia,
+        obtener_historico=_obtener_historico_colorloto,
+    ),
+    "comparacion_frecuencia_colores_por_ventana_colorloto": _Receta(
+        calcular=_calcular_comparacion_frecuencia_colores_por_ventana_colorloto, serializar=_serializar_comparacion_recencia,
         obtener_historico=_obtener_historico_colorloto,
     ),
 }

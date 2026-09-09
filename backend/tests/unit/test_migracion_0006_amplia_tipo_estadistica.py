@@ -145,7 +145,7 @@ class TestContratosFuncionalesAE22aAE27Intactos:
     AE-27, ni de sus identificadores de `tipo_estadistica`."""
 
     def test_treintayseis_recetas_registradas(self):
-        assert len(_CATALOGO) == 38
+        assert len(_CATALOGO) == 39
 
     def test_identificadores_ae22_a_ae27_sin_cambios(self):
         esperados = {

@@ -66,6 +66,7 @@ from app.api.web.view_models import (
     frecuencia_pares_numero_color_por_dia_semana_colorloto_a_vm,
     distribucion_conteo_color_colorloto_a_vm,
     comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm,
+    comparacion_frecuencia_colores_por_ventana_colorloto_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -2552,6 +2553,119 @@ def comparacion_frecuencia_numeros_por_ventana_colorloto(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/comparacion_frecuencia_numeros_por_ventana_colorloto.html",
+        context={**contexto_base, "estadistica": vm},
+    )
+
+
+@router.get("/estadisticas/colorloto/comparacion-frecuencia-colores-por-ventana")
+def comparacion_frecuencia_colores_por_ventana_colorloto(
+    request: Request,
+    ventana: _VentanaValida = 20,
+    hasta_numero_sorteo: _CorteOpcional = None,
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-30 (PROVISIONAL): trigésima visualización descriptiva
+    de ColorLoto -compara, para cada color del universo real
+    (vigentes en la fecha de referencia UNIÓN observados en el
+    histórico ya filtrado), su frecuencia en TODO el histórico
+    disponible contra su frecuencia en los últimos `ventana` sorteos
+    reales de ese mismo histórico. Segunda etapa que conecta
+    `motor/recencia.py`, tras AE-29. Analiza el COLOR ignorando el
+    número -sin selector individual de color: esta métrica compara
+    TODOS los colores del universo válido a la vez, a diferencia de
+    AE-28 (`distribucion_conteo_color_colorloto`), que sí elige un
+    único color.
+
+    **Defecto material confirmado por auditoría previa, corregido en
+    el motor antes de esta etapa (Opción B autorizada)**:
+    `comparar_frecuencia_colores_por_ventana` y
+    `comparar_frecuencia_pares_numero_color_por_ventana` construían
+    universos divergentes entre la porción histórica y la reciente
+    -reproducido real: `KeyError: 'ROJO'` y `KeyError: '1-ROJO'`.
+    Ambas funciones de `motor/recencia.py` fueron corregidas
+    simétricamente para construir un único universo compartido
+    (`colores_vigentes` unido con todos los colores observados en el
+    histórico ya filtrado) y reutilizarlo en ambas llamadas -la
+    función de pares queda corregida como mantenimiento del módulo,
+    pero su página web NO se conecta en esta etapa, sigue siendo
+    trabajo de una etapa posterior explícita.
+
+    **Selector cerrado, mismo contrato exacto que AE-29, reutilizado
+    sin duplicar ni relajar**: `ventana` (tipo `_VentanaValida`,
+    default `20`) y `hasta_numero_sorteo` (tipo `_CorteOpcional`,
+    default `None`) son los mismos símbolos de módulo ya definidos y
+    validados por AE-29 -nunca se crea un alias nuevo ni una copia.
+    Mismo dominio cerrado `{5, 10, 20, 50}`, mismo rechazo de
+    decimales/formas no
+    canónicas/texto/espacios/`0`/negativos con `422` antes de que el
+    handler se ejecute, mismo comportamiento de corte ausente/vacío
+    equivalente a histórico completo.
+
+    **Etiqueta interna siempre determinista**: `etiqueta_ventana` se
+    deriva dentro de la receta (`f"ultimos_{ventana}"`), NUNCA se
+    acepta desde HTTP, formulario ni VM -no forma parte de esta
+    firma, de `parametros_metrica` ni de la identidad de caché.
+
+    **Identidad de caché con DOS claves, siguiendo el precedente real
+    de AE-22/AE-23/AE-24 (nunca el de AE-2, la excepción temprana)**:
+    `{"ventana": ventana, "politica_universo_colores":
+    POLITICA_UNIVERSO_COLORES_ACTUAL}`. `rango_min`/`rango_max`/
+    `cantidad_numeros` se excluyen deliberadamente -el motor de esta
+    etapa no los recibe como argumentos matemáticos en absoluto
+    (`comparar_frecuencia_colores_por_ventana` no tiene parámetros de
+    rango), y se rederivan en la receta desde las constantes privadas
+    ya validadas, mismo patrón exacto de AE-22/23/24. Ninguna lista
+    dinámica de códigos de color entra en la identidad -el marcador
+    estático ya cubre cualquier cambio de algoritmo. `hasta_numero_sorteo`
+    permanece en su propia columna, nunca duplicado dentro de
+    `parametros_metrica`.
+
+    **`control_corte_temporal.html` NO se incluye en esta página,
+    deliberadamente**: ese partial no conoce `ventana` -mismo motivo
+    exacto ya documentado en AE-28/AE-29. La plantilla nueva
+    construye su propio formulario combinado (ventana + corte) en un
+    único `<form method="get">`, con el mismo campo
+    `hasta_numero_sorteo` y el mismo criterio de corte; "Histórico
+    completo" retira únicamente `hasta_numero_sorteo` y conserva
+    `ventana` en la URL. Sin selección explícita de `ventana`, la URL
+    base usa el valor por defecto `20`."""
+    db_conectada = _verificar_conexion(db)
+
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "ventana": ventana,
+        "pagina_colorloto_activa": "comparacion-frecuencia-colores-por-ventana",
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/comparacion_frecuencia_colores_por_ventana_colorloto.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego = juego_repository.obtener_por_codigo("COLORLOTO")
+    if juego is None:
+        raise JuegoNoEncontradoError("COLORLOTO")
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="comparacion_frecuencia_colores_por_ventana_colorloto",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={
+            "ventana": ventana,
+            "politica_universo_colores": POLITICA_UNIVERSO_COLORES_ACTUAL,
+        },
+    )
+
+    vm = comparacion_frecuencia_colores_por_ventana_colorloto_a_vm(resultado, ventana, juego)
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/comparacion_frecuencia_colores_por_ventana_colorloto.html",
         context={**contexto_base, "estadistica": vm},
     )
 

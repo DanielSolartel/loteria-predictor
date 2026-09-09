@@ -263,6 +263,94 @@ class TestCompararFrecuenciaColoresPorVentana:
         )
         assert "MORADO" in _por_valor(filas)
 
+    def test_regresion_keyerror_rojo_color_historico_ausente_de_vigentes_y_de_reciente(self):
+        """Reproduce exactamente el defecto real confirmado por
+        auditoría independiente antes de AE-30 (Etapa AE-30):
+        `KeyError: 'ROJO'`. ROJO se observa únicamente en el sorteo
+        más antiguo, no está en `colores_vigentes`, y la ventana
+        reciente (tamaño 1) solo contiene AZUL -antes de la
+        corrección, `calcular_frecuencia_colores` construía un
+        universo distinto para cada llamada y `_construir_comparaciones`
+        fallaba al buscar ROJO en las frecuencias recientes."""
+        historico = [
+            _cl(1, ((1, "ROJO"),)),
+            _cl(2, ((2, "AZUL"),)),
+        ]
+        filas = comparar_frecuencia_colores_por_ventana(
+            historico, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1",
+        )
+        por_valor = _por_valor(filas)
+        assert set(por_valor.keys()) == {"ROJO", "AZUL"}
+        assert por_valor["ROJO"].frecuencia_historica.apariciones == 1
+        assert por_valor["ROJO"].frecuencia_historica.total_sorteos == 2
+        assert por_valor["ROJO"].frecuencia_reciente.apariciones == 0
+        assert por_valor["ROJO"].frecuencia_reciente.total_sorteos == 1
+        assert por_valor["AZUL"].frecuencia_reciente.apariciones == 1
+
+    def test_universo_identico_entre_historico_y_reciente(self):
+        historico = [_cl(1, ((1, "ROJO"),)), _cl(2, ((2, "AZUL"),)), _cl(3, ((3, "VERDE"),))]
+        filas = comparar_frecuencia_colores_por_ventana(
+            historico, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1",
+        )
+        assert {f.frecuencia_historica.valor for f in filas} == {f.frecuencia_reciente.valor for f in filas}
+        assert set(_por_valor(filas).keys()) == {"ROJO", "AZUL", "VERDE"}
+
+    def test_mismo_denominador_reciente_en_todas_las_filas(self):
+        historico = [_cl(1, ((1, "ROJO"),)), _cl(2, ((2, "AZUL"),)), _cl(3, ((3, "VERDE"), (3, "VERDE")))]
+        filas = comparar_frecuencia_colores_por_ventana(
+            historico, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1",
+        )
+        denominadores_recientes = {f.frecuencia_reciente.total_sorteos for f in filas}
+        assert denominadores_recientes == {1}
+
+    def test_color_futuro_no_vigente_y_no_observado_excluido(self):
+        historico = [_cl(1, ((1, "ROJO"),))]
+        filas = comparar_frecuencia_colores_por_ventana(
+            historico, colores_vigentes=["ROJO", "DORADO"], ventana=1, etiqueta_ventana="ultimos_1",
+        )
+        por_valor = _por_valor(filas)
+        assert "DORADO" in por_valor
+        assert por_valor["DORADO"].frecuencia_historica.apariciones == 0
+        assert por_valor["DORADO"].frecuencia_reciente.apariciones == 0
+
+    def test_color_retirado_observado_dentro_de_la_ventana_contado_correctamente(self):
+        historico = [_cl(1, ((1, "AZUL"),)), _cl(2, ((1, "ROJO"),))]
+        filas = comparar_frecuencia_colores_por_ventana(
+            historico, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1",
+        )
+        por_valor = _por_valor(filas)
+        assert por_valor["ROJO"].frecuencia_reciente.apariciones == 1
+
+    def test_historico_vacio(self):
+        filas = comparar_frecuencia_colores_por_ventana(
+            [], colores_vigentes=["ROJO", "AZUL"], ventana=5, etiqueta_ventana="ultimos_5",
+        )
+        assert set(_por_valor(filas).keys()) == {"ROJO", "AZUL"}
+        assert all(f.frecuencia_historica.apariciones == 0 and f.frecuencia_reciente.apariciones == 0 for f in filas)
+
+    def test_ventana_mayor_que_el_historico_usa_todos_los_disponibles(self):
+        historico = [_cl(1, ((1, "ROJO"),)), _cl(2, ((2, "AZUL"),))]
+        filas = comparar_frecuencia_colores_por_ventana(
+            historico, colores_vigentes=["ROJO", "AZUL"], ventana=50, etiqueta_ventana="ultimos_50",
+        )
+        assert all(f.frecuencia_reciente.total_sorteos == 2 for f in filas)
+
+    def test_corte_antifuga(self):
+        historico = [_cl(1, ((1, "ROJO"),)), _cl(2, ((2, "AZUL"),)), _cl(3, ((3, "VERDE"),))]
+        filas = comparar_frecuencia_colores_por_ventana(
+            historico, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1", hasta_numero_sorteo=2,
+        )
+        por_valor = _por_valor(filas)
+        assert "VERDE" not in por_valor
+
+    def test_no_mutacion_y_determinismo(self):
+        historico = [_cl(1, ((1, "ROJO"),)), _cl(2, ((2, "AZUL"),))]
+        copia = list(historico)
+        r1 = comparar_frecuencia_colores_por_ventana(historico, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1")
+        r2 = comparar_frecuencia_colores_por_ventana(historico, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1")
+        assert r1 == r2
+        assert historico == copia
+
 
 class TestCompararFrecuenciaParesNumeroColorPorVentana:
     # Dataset: 4 sorteos, donde el par (2,ROJO) solo aparece en los 2
@@ -299,6 +387,34 @@ class TestCompararFrecuenciaParesNumeroColorPorVentana:
         assert isinstance(fila.frecuencia_historica, FrecuenciaObservada)
         assert isinstance(fila.frecuencia_reciente, FrecuenciaObservada)
         assert fila.frecuencia_historica is not fila.frecuencia_reciente
+
+    def test_regresion_keyerror_1_rojo_par_historico_ausente_de_vigentes_y_de_reciente(self):
+        """Reproduce exactamente el defecto real confirmado por
+        auditoría independiente antes de AE-30 (mantenimiento del
+        módulo -esta función todavía no tiene página web conectada):
+        `KeyError: '1-ROJO'`. Mismo defecto estructural que en
+        `comparar_frecuencia_colores_por_ventana`: `calcular_frecuencia_pares_numero_color`
+        construye su universo de colores dependiendo de la porción
+        recibida."""
+        historico = [
+            _cl(1, ((1, "ROJO"),)),
+            _cl(2, ((2, "AZUL"),)),
+        ]
+        filas = comparar_frecuencia_pares_numero_color_por_ventana(
+            historico, rango_min=1, rango_max=2, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1",
+        )
+        por_valor = {f.valor: f for f in filas}
+        assert "1-ROJO" in por_valor
+        assert por_valor["1-ROJO"].frecuencia_historica.apariciones == 1
+        assert por_valor["1-ROJO"].frecuencia_reciente.apariciones == 0
+        assert por_valor["1-ROJO"].frecuencia_reciente.total_sorteos == 1
+
+    def test_universo_de_colores_identico_entre_historico_y_reciente_en_pares(self):
+        historico = [_cl(1, ((1, "ROJO"),)), _cl(2, ((2, "AZUL"),)), _cl(3, ((1, "VERDE"),))]
+        filas = comparar_frecuencia_pares_numero_color_por_ventana(
+            historico, rango_min=1, rango_max=2, colores_vigentes=["AZUL"], ventana=1, etiqueta_ventana="ultimos_1",
+        )
+        assert {f.frecuencia_historica.valor for f in filas} == {f.frecuencia_reciente.valor for f in filas}
 
     def test_etiqueta_ventana_se_preserva(self):
         filas = comparar_frecuencia_pares_numero_color_por_ventana(

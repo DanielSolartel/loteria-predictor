@@ -145,12 +145,43 @@ def comparar_frecuencia_colores_por_ventana(
     """Reutiliza calcular_frecuencia_colores para ambos conteos.
     `colores_vigentes` se recibe desde afuera, igual que en
     frecuencia.py -este módulo tampoco conoce la paleta por su
-    cuenta."""
+    cuenta.
+
+    **Corrección real de un defecto confirmado por auditoría
+    independiente antes de AE-30** (Etapa AE-30): `calcular_frecuencia_colores`
+    construye su propio universo por llamada como `set(colores_vigentes)
+    | set(observados-en-ESA-porción)` (confirmado real en
+    `frecuencia.py`) -como este motor la invoca DOS VECES con
+    porciones distintas (`historico` completo vs. `reciente`, un
+    subconjunto temporal siempre incluido en `historico`), un color
+    observado en `historico` pero ausente de `colores_vigentes` Y
+    ausente de `reciente` (retirado y no vigente, o simplemente sin
+    apariciones recientes) generaba universos DIVERGENTES entre
+    ambas llamadas -reproducido real: `KeyError: 'ROJO'` en
+    `_construir_comparaciones`, que asume el mismo universo en
+    ambos lados. **Corrección real**: se calcula un ÚNICO universo
+    compartido -`colores_vigentes` UNIDO con TODOS los colores
+    observados en `historico` (nunca en `reciente`, que es siempre
+    un subconjunto del mismo `resultados` ya filtrado por el corte,
+    así que `historico` ya lo cubre por completo)- y se pasa ESE
+    MISMO universo, ordenado de forma determinista, a AMBAS
+    llamadas. Como `reciente ⊆ historico`, el universo que
+    `calcular_frecuencia_colores` calcularía internamente para la
+    llamada reciente (`universo_compartido ∪ observados-en-reciente`)
+    es siempre igual a `universo_compartido` -garantizando universos
+    idénticos por construcción, sin modificar `calcular_frecuencia_colores`
+    ni `_construir_comparaciones`. Un color histórico ausente de la
+    ventana reciente obtiene correctamente `apariciones=0` con el
+    `total_sorteos` reciente real (nunca inventado). Nunca se oculta
+    el error con `try/except`, nunca se descarta una fila histórica,
+    nunca se usa `dict.get()` sin universo compartido."""
     historico = filtrar_por_corte_temporal(resultados, hasta_numero_sorteo)
     reciente = tomar_ultimos_n_sorteos(resultados, ventana, hasta_numero_sorteo)
 
-    frecuencias_historicas = calcular_frecuencia_colores(historico, colores_vigentes)
-    frecuencias_recientes = calcular_frecuencia_colores(reciente, colores_vigentes)
+    universo_compartido = sorted(set(colores_vigentes) | {color for r in historico for _, color in r.pares})
+
+    frecuencias_historicas = calcular_frecuencia_colores(historico, universo_compartido)
+    frecuencias_recientes = calcular_frecuencia_colores(reciente, universo_compartido)
 
     return _construir_comparaciones(frecuencias_historicas, frecuencias_recientes, etiqueta_ventana)
 
@@ -162,11 +193,27 @@ def comparar_frecuencia_pares_numero_color_por_ventana(
     """Reutiliza calcular_frecuencia_pares_numero_color (Etapa C)
     para ambos conteos -mismo patrón exacto que las demás funciones
     de este módulo, cerrando la deuda del Paso 13 señalada desde la
-    Etapa E."""
+    Etapa E.
+
+    **Corrección real del mismo defecto estructural que
+    `comparar_frecuencia_colores_por_ventana` (Etapa AE-30,
+    mantenimiento del módulo -esta función todavía no tiene página
+    web conectada, pero conservaba el mismo defecto latente que
+    habría bloqueado su propia conexión futura)**: `calcular_frecuencia_pares_numero_color`
+    construye `colores_a_reportar` de la misma forma dependiente de
+    la porción recibida (confirmado real en `frecuencia.py`) -mismo
+    `KeyError` reproducido real: `KeyError: '1-ROJO'`. Misma
+    corrección real: universo de colores compartido -`colores_vigentes`
+    unido con todos los colores observados en `historico`- pasado a
+    ambas llamadas; `rango_min`/`rango_max` (el eje numérico del par)
+    ya eran fijos por argumento en ambas llamadas y nunca formaron
+    parte del defecto."""
     historico = filtrar_por_corte_temporal(resultados, hasta_numero_sorteo)
     reciente = tomar_ultimos_n_sorteos(resultados, ventana, hasta_numero_sorteo)
 
-    frecuencias_historicas = calcular_frecuencia_pares_numero_color(historico, rango_min, rango_max, colores_vigentes)
-    frecuencias_recientes = calcular_frecuencia_pares_numero_color(reciente, rango_min, rango_max, colores_vigentes)
+    universo_compartido = sorted(set(colores_vigentes) | {color for r in historico for _, color in r.pares})
+
+    frecuencias_historicas = calcular_frecuencia_pares_numero_color(historico, rango_min, rango_max, universo_compartido)
+    frecuencias_recientes = calcular_frecuencia_pares_numero_color(reciente, rango_min, rango_max, universo_compartido)
 
     return _construir_comparaciones(frecuencias_historicas, frecuencias_recientes, etiqueta_ventana)
