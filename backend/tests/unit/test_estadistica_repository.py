@@ -3779,3 +3779,132 @@ class TestUpsertConComparacionFrecuenciaColoresPorVentanaColorlotoEtapaAE30:
         assert recuperada.resultado == resultado
         assert recuperada.resultado["filas"][0]["frecuencia_reciente"]["apariciones"] == 0
         assert recuperada.resultado["filas"][0]["diferencia"] == -0.15
+
+
+class TestUpsertConComparacionFrecuenciaParesNumeroColorPorVentanaColorlotoEtapaAE31:
+    """Etapa AE-31 (PROVISIONAL): identidad de CUATRO claves -distinta
+    de AE-29 (tres) y AE-30 (dos)- `ventana`, `rango_min`, `rango_max`
+    y `politica_universo_colores`, las cuatro genuinamente leídas de
+    `parametros` por la receta. Usa los índices únicos parciales ya
+    existentes -ninguna migración nueva. Mismo resultado anidado real
+    (`frecuencia_historica`/`frecuencia_reciente`) que AE-29/AE-30,
+    ahora con valores de par (texto `"numero-color"`)."""
+
+    _POLITICA = "vigentes_ultimo_sorteo_mas_observados_v1"
+    _PARAMS_20 = {"ventana": 20, "rango_min": 1, "rango_max": 7, "politica_universo_colores": _POLITICA}
+    _PARAMS_50 = {"ventana": 50, "rango_min": 1, "rango_max": 7, "politica_universo_colores": _POLITICA}
+
+    def test_upsert_misma_identidad_reemplaza(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=0)
+        segunda = repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto")
+        assert total == 1
+
+    def test_ventanas_distintas_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "veinte"}))
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_50, resultado={"v": "cincuenta"}))
+        r20 = repo.buscar_vigente(juego_id, "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", None, self._PARAMS_20)
+        r50 = repo.buscar_vigente(juego_id, "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", None, self._PARAMS_50)
+        assert r20.resultado == {"v": "veinte"}
+        assert r50.resultado == {"v": "cincuenta"}
+
+    def test_no_colisiona_con_ae29_ni_ae30_mismo_juego_misma_ventana(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        params_ae29 = {"ventana": 20, "rango_min": 1, "rango_max": 7}
+        params_ae30 = {"ventana": 20, "politica_universo_colores": self._POLITICA}
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_numeros_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=params_ae29, resultado={"v": "numeros"}))
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_colores_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=params_ae30, resultado={"v": "colores"}))
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "pares"}))
+        r_numeros = repo.buscar_vigente(juego_id, "comparacion_frecuencia_numeros_por_ventana_colorloto", None, params_ae29)
+        r_colores = repo.buscar_vigente(juego_id, "comparacion_frecuencia_colores_por_ventana_colorloto", None, params_ae30)
+        r_pares = repo.buscar_vigente(juego_id, "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", None, self._PARAMS_20)
+        assert r_numeros.resultado == {"v": "numeros"}
+        assert r_colores.resultado == {"v": "colores"}
+        assert r_pares.resultado == {"v": "pares"}
+
+    def test_historico_completo_y_corte_temporal_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_20, resultado={"v": "corte"}))
+        completo = repo.buscar_vigente(juego_id, "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", None, self._PARAMS_20)
+        corte = repo.buscar_vigente(juego_id, "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", 100, self._PARAMS_20)
+        assert completo.resultado == {"v": "completo"}
+        assert corte.resultado == {"v": "corte"}
+
+    def test_mismo_hash_de_parametros_identidades_distintas_por_corte(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "completo"}))
+        segunda = repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=100, parametros=self._PARAMS_20, resultado={"v": "corte"}))
+        assert primera.parametros_hash == segunda.parametros_hash
+        assert primera.id != segunda.id
+        assert primera.hasta_numero_sorteo != segunda.hasta_numero_sorteo
+
+    def test_parametros_exactos_persistidos_orden_no_relevante_cuatro_claves(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "nueva"}))
+        assert entrada.parametros == self._PARAMS_20
+        assert set(entrada.parametros.keys()) == {"ventana", "rango_min", "rango_max", "politica_universo_colores"}
+        parametros_desordenados = {"politica_universo_colores": self._POLITICA, "rango_max": 7, "rango_min": 1, "ventana": 20}
+        assert entrada.parametros == parametros_desordenados
+
+    def test_round_trip_estructura_anidada_con_valores_de_par(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        pares = [(n, c) for n in range(1, 3) for c in ("ROJO", "AZUL")]
+        filas = [
+            {
+                "valor": f"{n}-{c}",
+                "frecuencia_historica": {"valor": f"{n}-{c}", "apariciones": n, "total_sorteos": 21, "frecuencia_relativa": n / 21.0},
+                "frecuencia_reciente": {"valor": f"{n}-{c}", "apariciones": n // 2, "total_sorteos": 20, "frecuencia_relativa": (n // 2) / 20.0},
+                "ventana": "ultimos_20",
+                "diferencia": (n // 2) / 20.0 - n / 21.0,
+            }
+            for n, c in pares
+        ]
+        resultado = {"filas": filas}
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", None, self._PARAMS_20)
+        assert recuperada.resultado == resultado
+        assert len(recuperada.resultado["filas"]) == 4
+        fila = recuperada.resultado["filas"][0]
+        assert isinstance(fila["valor"], str)
+        assert "-" in fila["valor"]
+        assert isinstance(fila["frecuencia_historica"], dict)
+        assert isinstance(fila["frecuencia_reciente"], dict)
+        assert isinstance(fila["diferencia"], float)
+
+    def test_round_trip_par_ausente_con_reciente_cero(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {
+            "filas": [{
+                "valor": "5-MORADO",
+                "frecuencia_historica": {"valor": "5-MORADO", "apariciones": 3, "total_sorteos": 20, "frecuencia_relativa": 0.15},
+                "frecuencia_reciente": {"valor": "5-MORADO", "apariciones": 0, "total_sorteos": 20, "frecuencia_relativa": 0.0},
+                "ventana": "ultimos_20",
+                "diferencia": -0.15,
+            }],
+        }
+        repo.guardar(_entrada(juego_id, tipo="comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto", None, self._PARAMS_20)
+        assert recuperada.resultado == resultado
+        assert recuperada.resultado["filas"][0]["frecuencia_reciente"]["apariciones"] == 0
+        assert recuperada.resultado["filas"][0]["diferencia"] == -0.15
+
+    def test_identificador_de_63_caracteres_cabe_en_string_100(self):
+        identificador = "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto"
+        assert len(identificador) == 63
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo=identificador, hasta_numero_sorteo=None, parametros=self._PARAMS_20, resultado={"v": "ok"}))
+        assert entrada.tipo_estadistica == identificador

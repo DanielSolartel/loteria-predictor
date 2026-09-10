@@ -293,7 +293,7 @@ class TestValidacionDeCorteEnElRouter:
     def test_las_veintitres_rutas_usan_query_con_ge_1(self):
         codigo_fuente = Path(_ROUTER).read_text(encoding="utf-8")
         ocurrencias = codigo_fuente.count("hasta_numero_sorteo: _CorteOpcional = None")
-        assert ocurrencias == 39
+        assert ocurrencias == 40
         assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
 
     def test_solo_se_agrego_la_ruta_esperada_de_etapa_ac(self):
