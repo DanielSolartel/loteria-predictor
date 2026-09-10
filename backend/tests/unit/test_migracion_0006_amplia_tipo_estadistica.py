@@ -82,8 +82,20 @@ class TestModeloTipoEstadisticaCapacidad:
         anterior (50), que ya no tenía ningún margen antes de AE-27
         (el segundo más largo, de AE-21, medía exactamente 50)."""
         mas_largo = max(len(clave) for clave in _CATALOGO)
-        assert mas_largo == 54
+        assert mas_largo == 63
         assert mas_largo < 100
+
+    def test_identificador_ae31_es_ahora_el_mas_largo_del_catalogo(self):
+        """AE-31 (\"comparacion_frecuencia_pares_numero_color_por_ventana_colorloto\",
+        63 caracteres) desplaza a AE-27 (54 caracteres) como el
+        identificador más largo real -confirmado real, nunca por
+        aritmética textual."""
+        identificador_ae31 = "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto"
+        assert len(identificador_ae31) == 63
+        assert identificador_ae31 in _CATALOGO
+        assert identificador_ae31 == max(_CATALOGO, key=len)
+        columna = EstadisticaORM.__table__.columns["tipo_estadistica"]
+        assert len(identificador_ae31) <= columna.type.length
 
 
 class TestMigracion0006AmpliaTipoEstadistica:
@@ -145,7 +157,7 @@ class TestContratosFuncionalesAE22aAE27Intactos:
     AE-27, ni de sus identificadores de `tipo_estadistica`."""
 
     def test_treintayseis_recetas_registradas(self):
-        assert len(_CATALOGO) == 39
+        assert len(_CATALOGO) == 40
 
     def test_identificadores_ae22_a_ae27_sin_cambios(self):
         esperados = {

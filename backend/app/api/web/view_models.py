@@ -2583,6 +2583,144 @@ def comparacion_frecuencia_colores_por_ventana_colorloto_a_vm(
     }
 
 
+def comparacion_frecuencia_pares_numero_color_por_ventana_colorloto_a_vm(
+    estadistica, ventana: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "comparacion_frecuencia_pares_numero_color_por_ventana_colorloto"
+    (Etapa AE-31, PROVISIONAL) en un view model listo para la
+    plantilla. Nunca recalcula la métrica, nunca consulta
+    repositorios, nunca llama al motor -misma transformación pura ya
+    validada por las 39 VM anteriores; reconstruye cada fila
+    directamente desde el JSON serializado anidado (`dataclasses.asdict`
+    de `ComparacionRecencia`, con sus dos `FrecuenciaObservada`
+    intactos), nunca recalcula ningún conteo ni frecuencia que el
+    motor ya produjo.
+
+    **Único punto de parseo real**: `_deserializar_par_numero_color`
+    (protegida, sin cambios, ya validada desde la Etapa AE-3) separa
+    `valor=f"{numero}-{color}"` con `maxsplit=1` sobre el PRIMER
+    guión -correcto siempre porque el número nunca contiene un guión
+    propio, así que un código de color que sí contuviera guiones se
+    preserva íntegro como segundo elemento; nunca se reimplementa
+    este parseo aquí.
+
+    Orden determinista: SIEMPRE ascendente por `(numero, codigo)`,
+    ordenado aquí explícitamente (`sorted(..., key=lambda f: (f[0],
+    f[1]))` sobre la tupla ya deserializada), independientemente del
+    orden con el que haya llegado el resultado -mismo criterio
+    defensivo ya aplicado por AE-29 (orden numérico) y AE-30 (orden
+    alfabético de color); aquí ambos ejes combinados, número primero.
+
+    Semántica GENUINAMENTE la misma que AE-2/AE-3/AE-22 a AE-27/AE-29/
+    AE-30: `frecuencia_relativa` es "apariciones promedio por
+    sorteo" -puede superar 1.0, nunca se multiplica por 100 ni se le
+    agrega "%". La diferencia (`reciente.frecuencia_relativa -
+    historica.frecuencia_relativa`) conserva signo y precisión
+    numérica completa en `diferencia`; `diferencia_texto` es
+    únicamente una representación con signo explícito para lectura,
+    nunca una clasificación "par caliente", recomendación ni señal
+    para elegir números o colores.
+
+    Código y nombre legibles: mismo criterio ya usado por AE-30
+    -`nombre` se deriva de `codigo` con `.title()`, `color_hex` vía
+    `_color_hex_seguro` (ambos protegidos, sin cambios). Un par
+    histórico ausente de la ventana reciente permanece con
+    `apariciones_recientes=0` y el `total_sorteos_recientes` real
+    -nunca desaparece ni provoca un error, gracias a la corrección
+    real del motor ya aplicada en AE-30.
+
+    `total_sorteos_historicos`/`total_sorteos_recientes` se leen de
+    la primera fila -todas comparten el mismo denominador histórico
+    entre sí, y el mismo denominador reciente entre sí, mismo
+    criterio ya establecido por AE-29/AE-30. Histórico vacío: el
+    motor ya devuelve el universo completo (rango × colores vigentes)
+    en cero -confirmado real- así que esta función no necesita
+    ningún caso especial adicional.
+
+    **Dos gráficos coordinados, decisión de producto cerrada -NUNCA
+    un único gráfico con doce datasets superpuestos ni 42 etiquetas
+    ilegibles**: `chart_labels` son los números del rango real (eje
+    X, compartido por ambos gráficos); `chart_datasets_historico`/
+    `chart_datasets_reciente` son listas de datasets, UNO POR COLOR
+    REAL -construidos dinámicamente iterando los colores realmente
+    presentes en el resultado, nunca fijando seis colores a mano, así
+    que un universo con más o menos colores reales sigue funcionando
+    sin cambiar esta función. Mismo orden de números en ambos ejes X,
+    mismo color visual (`_color_hex_seguro`) para un mismo código en
+    ambos gráficos -JavaScript solo renderiza, nunca reconstruye,
+    agrupa ni recalcula la estadística. `_construir_datasets` usa
+    `dict.get((numero, codigo), 0.0)` -defensivo ante un resultado
+    que no fuera un producto cruzado completo `rango × colores`; en
+    la práctica el motor siempre entrega el universo completo
+    (confirmado real), así que este valor por defecto nunca se
+    activa con datos reales, pero la VM nunca debe fallar con
+    `KeyError` ante datos incompletos."""
+    filas_crudas = estadistica.resultado["filas"]
+
+    def _clave_orden(f):
+        numero, codigo = _deserializar_par_numero_color(f["valor"])
+        return (numero, codigo)
+
+    filas_ordenadas = sorted(filas_crudas, key=_clave_orden)
+
+    total_sorteos_historicos = filas_ordenadas[0]["frecuencia_historica"]["total_sorteos"] if filas_ordenadas else 0
+    total_sorteos_recientes = filas_ordenadas[0]["frecuencia_reciente"]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        numero, codigo = _deserializar_par_numero_color(f["valor"])
+        historica = f["frecuencia_historica"]
+        reciente = f["frecuencia_reciente"]
+        diferencia = f["diferencia"]
+        filas_presentacion.append({
+            "numero": numero,
+            "codigo": codigo,
+            "nombre": codigo.title(),
+            "color_hex": _color_hex_seguro(codigo),
+            "apariciones_historicas": historica["apariciones"],
+            "total_sorteos_historicos": historica["total_sorteos"],
+            "promedio_historico": historica["frecuencia_relativa"],
+            "promedio_historico_texto": f"{historica['frecuencia_relativa']:.2f}",
+            "apariciones_recientes": reciente["apariciones"],
+            "total_sorteos_recientes": reciente["total_sorteos"],
+            "promedio_reciente": reciente["frecuencia_relativa"],
+            "promedio_reciente_texto": f"{reciente['frecuencia_relativa']:.2f}",
+            "diferencia": diferencia,
+            "diferencia_texto": f"{diferencia:+.2f}",
+            "etiqueta_ventana": f["ventana"],
+        })
+
+    numeros_ordenados = sorted({f["numero"] for f in filas_presentacion})
+    codigos_ordenados = sorted({f["codigo"] for f in filas_presentacion})
+    chart_labels = [str(n) for n in numeros_ordenados]
+
+    def _construir_datasets(clave_promedio):
+        por_par = {(f["numero"], f["codigo"]): f[clave_promedio] for f in filas_presentacion}
+        datasets = []
+        for codigo in codigos_ordenados:
+            datasets.append({
+                "label": codigo.title(),
+                "color_hex": _color_hex_seguro(codigo),
+                "data": [por_par.get((n, codigo), 0.0) for n in numeros_ordenados],
+            })
+        return datasets
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "ventana": ventana,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos_historicos": total_sorteos_historicos,
+        "total_sorteos_recientes": total_sorteos_recientes,
+        "filas": filas_presentacion,
+        "chart_labels": chart_labels,
+        "chart_datasets_historico": _construir_datasets("promedio_historico"),
+        "chart_datasets_reciente": _construir_datasets("promedio_reciente"),
+    }
+
+
 def distribucion_racha_maxima_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
