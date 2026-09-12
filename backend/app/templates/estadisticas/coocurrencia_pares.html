@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Coocurrencia de pares de números — {{ juego_nombre_actual }}{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-diagram-3-fill me-2"></i>Coocurrencia de pares de números — {{ juego_nombre_actual }}</h3>
+<p class="text-muted">Coocurrencia mide cuántas veces dos números principales aparecieron juntos dentro del mismo sorteo. Solo se muestran los pares que aparecieron juntos al menos una vez -el número total de pares posibles es mucho mayor y en su mayoría nunca se ha observado. Esta información es histórica y descriptiva -nunca implica que dos números "deban" salir juntos de nuevo, ni que un par con alta coocurrencia tenga mayor probabilidad en el próximo sorteo: cada sorteo es un evento independiente.</p>
+
+<ul class="nav nav-pills mb-2">
+    {% for j in juegos_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<ul class="nav nav-pills mb-4">
+    {% for m in metricas_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if m.activo %}active{% endif %}" href="{{ m.url }}">{{ m.etiqueta }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de {{ juego_nombre_actual }} disponibles todavía para calcular esta coocurrencia -sin pares observados.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>
+    Se listan únicamente los pares observados al menos una vez, ordenados por soporte descendente (y, en caso de empate, por los propios números en orden ascendente). La frecuencia esperada y el "lift" se calculan bajo el supuesto de extracción uniforme sin reemplazo -un lift mayor a 1 significa que el par coocurrió con más frecuencia de la esperada bajo azar puro, y menor a 1 significa lo contrario; ninguno de los dos valores predice el próximo sorteo, y una coocurrencia alta no implica ninguna ventaja de juego.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Pares observados al menos una vez</div>
+            <div class="fw-bold">{{ estadistica.total_pares_observados }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo if estadistica.hasta_numero_sorteo is not none else "Histórico completo" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle completo de pares observados</h6>
+    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+        <table class="table table-sm table-hover">
+            <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
+                <tr>
+                    <th>Par</th>
+                    <th>Soporte (sorteos conjuntos)</th>
+                    <th>Frecuencia relativa</th>
+                    <th>Frecuencia esperada</th>
+                    <th>Lift</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero_1 }} — {{ fila.numero_2 }}</td>
+                    <td>{{ fila.soporte }}</td>
+                    <td>{{ fila.frecuencia_relativa_texto }}</td>
+                    <td>{{ fila.frecuencia_esperada_texto }}</td>
+                    <td>{{ fila.lift_texto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
