@@ -206,6 +206,7 @@ _ETIQUETA_METRICA: dict[str, str] = {
     "distribucion-pares-consecutivos": "Distribución de pares consecutivos",
     "distribucion-racha-maxima": "Racha máxima de números consecutivos",
     "repeticiones-entre-sorteos": "Repeticiones entre sorteos consecutivos",
+    "coocurrencia-pares": "Coocurrencia de pares de numeros",
 }
 
 
@@ -2893,6 +2894,86 @@ def distribucion_altos_bajos_a_vm(
     }
 
 
+def coocurrencia_pares_a_vm(estadistica, juego: Juego) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "coocurrencia_pares" (Etapa AE-32, PROVISIONAL) en un view model
+    listo para la plantilla. Nunca recalcula la metrica, nunca
+    consulta repositorios, nunca llama al motor -mismo patron ya
+    validado por las 40 VM anteriores; reconstruye cada fila
+    directamente desde el JSON serializado (`_serializar_metrica_asociacion`,
+    Etapa AE-14), con `elementos` ya como enteros reales.
+
+    Primera VM de este proyecto para juegos numericos genericos
+    consumiendo `MetricaAsociacion` -el precedente estructural es la
+    VM de ColorLoto de AE-14 (misma forma de dato), pero esta funcion
+    es nueva: ninguna VM anterior de Baloto/Revancha/MiLoto tenia
+    pares como unidad de presentacion.
+
+    Orden determinista, forzado aqui, nunca confiado al orden de
+    llegada: SIEMPRE soporte descendente y, en empate, por los
+    numeros del propio par en orden ascendente -el motor
+    (`_tabular_coocurrencia`) solo garantiza el primer criterio
+    (`filas.sort(key=lambda f: f.soporte, reverse=True)`, sin
+    desempate), asi que un empate en soporte quedaria en un orden
+    dependiente del orden de iteracion interno del motor si esta VM
+    no lo corrigiera explicitamente -mismo criterio defensivo ya
+    aplicado por las VM de AE-29/AE-30/AE-31 sobre el orden de sus
+    propios resultados.
+
+    Cada par se representa siempre en orden numerico ascendente -ya
+    garantizado por el motor (`combinations` sobre una lista
+    deduplicada y ordenada), reconfirmado aqui sin volver a ordenar
+    los dos elementos entre si, solo las FILAS completas entre si.
+
+    `frecuencia_esperada`/`lift` se preservan tal cual -`None` se
+    mantiene como `None` (nunca sustituido por `0`, que seria un dato
+    matematicamente distinto) en los casos limite donde el motor no
+    puede derivarlos; para Baloto/Revancha/MiLoto (sin repeticion)
+    ambos campos SI vienen calculados via distribucion
+    hipergeometrica, a diferencia de las VM de coocurrencia de
+    ColorLoto.
+
+    Historico vacio: el motor ya devuelve una lista vacia (nunca
+    universo completo con ceros, decision deliberada del propio motor
+    para evitar tablas de cientos de filas en cero) -esta VM no
+    necesita ningun caso especial adicional; la plantilla distingue
+    "sin sorteos" expresamente mediante `total_sorteos`.
+
+    Sin gráfica: esta etapa no agrega canvas ni resumen de "par mas
+    frecuente" -decision de producto explicita (escala de cientos de
+    pares hace una grafica completa poco legible, y no existe
+    autorizacion para truncar a un top-N)."""
+    filas_crudas = estadistica.resultado["filas"]
+    filas_ordenadas = sorted(filas_crudas, key=lambda f: (-f["soporte"], f["elementos"][0], f["elementos"][1]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else estadistica.resultado.get("total_sorteos", 0)
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        filas_presentacion.append({
+            "numero_1": f["elementos"][0],
+            "numero_2": f["elementos"][1],
+            "soporte": f["soporte"],
+            "total_sorteos": f["total_sorteos"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+            "frecuencia_relativa_texto": f"{f['frecuencia_relativa']:.4f}",
+            "frecuencia_esperada": f["frecuencia_esperada"],
+            "frecuencia_esperada_texto": (f"{f['frecuencia_esperada']:.4f}" if f["frecuencia_esperada"] is not None else "-"),
+            "lift": f["lift"],
+            "lift_texto": (f"{f['lift']:.2f}" if f["lift"] is not None else "-"),
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos": total_sorteos,
+        "total_pares_observados": len(filas_presentacion),
+        "filas": filas_presentacion,
+    }
+
+
 def atrasos_numeros_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
     """Transforma una `EstadisticaCalculada` de tipo "atrasos_numeros"
     (Etapa W) en un view model listo para la plantilla. Nunca
@@ -3028,6 +3109,11 @@ def construir_navegacion_estadisticas(
         "id": "repeticiones-entre-sorteos", "etiqueta": _ETIQUETA_METRICA["repeticiones-entre-sorteos"],
         "url": _url_metrica("repeticiones-entre-sorteos"),
         "activo": metrica_actual == "repeticiones-entre-sorteos",
+    })
+    metricas_nav.append({
+        "id": "coocurrencia-pares", "etiqueta": _ETIQUETA_METRICA["coocurrencia-pares"],
+        "url": _url_metrica("coocurrencia-pares"),
+        "activo": metrica_actual == "coocurrencia-pares",
     })
 
     return {

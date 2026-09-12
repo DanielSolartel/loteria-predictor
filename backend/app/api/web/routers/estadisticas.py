@@ -68,6 +68,7 @@ from app.api.web.view_models import (
     comparacion_frecuencia_numeros_por_ventana_colorloto_a_vm,
     comparacion_frecuencia_colores_por_ventana_colorloto_a_vm,
     comparacion_frecuencia_pares_numero_color_por_ventana_colorloto_a_vm,
+    coocurrencia_pares_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -3350,4 +3351,83 @@ def repeticiones_entre_sorteos(
     return templates.TemplateResponse(
         request=request, name="estadisticas/repeticiones_entre_sorteos.html",
         context={**contexto_base, "estadistica": vm, "tiene_transiciones": tiene_transiciones},
+    )
+
+
+@router.get("/estadisticas/{juego_slug}/coocurrencia-pares")
+def coocurrencia_pares(
+    juego_slug: str,
+    request: Request,
+    hasta_numero_sorteo: _CorteOpcional = None,
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    game_factory: GameFactory = Depends(get_game_factory),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-32 (PROVISIONAL): decima visualizacion generica -que
+    pares de numeros principales aparecieron JUNTOS dentro del mismo
+    sorteo, y con que frecuencia, sobre los 3 juegos numericos
+    soportados (Baloto, Baloto Revancha, MiLoto; sin superbalota, sin
+    ColorLoto). ColorLoto ya conecta el equivalente exacto de este
+    mismo motor desde AE-14/AE-16 -mismo patron de conexion, motor
+    real distinto (`calcular_coocurrencia_pares`, sin repeticion, con
+    `frecuencia_esperada`/`lift` reales via hipergeometrica, a
+    diferencia de la version de ColorLoto).
+
+    `rango_min`/`rango_max`/`cantidad_numeros` vienen de
+    `juego_dominio`, nunca hardcodeados -aunque hoy Baloto/Revancha
+    comparten 1-43/K=5 y MiLoto usa 1-39/K=5, se leen del dominio en
+    cada request. Validacion defensiva completa (cantidad, duplicados
+    Y rango) en la receta, doble defensa deliberada con la validacion
+    de rango ya existente en el motor -mismo patron exacto de las
+    ultimas recetas genericas conectadas.
+
+    Identidad de caché con EXACTAMENTE tres claves
+    `{"rango_min", "rango_max", "cantidad_numeros"}` -ninguna clave
+    de presentacion, orden, paginacion ni exclusiva de ColorLoto.
+
+    Sin canvas: la escala de hasta 903 pares (Baloto/Revancha) o 741
+    (MiLoto) hace una grafica completa poco legible, y no existe
+    autorizacion de producto para truncar a un top-N -decision de
+    producto explicita de esta etapa, no una omision."""
+    _resolver_codigo(juego_slug)
+    db_conectada = _verificar_conexion(db)
+
+    navegacion = construir_navegacion_estadisticas(
+        juego_slug, "coocurrencia-pares", CAPACIDAD_SUPERBALOTA_POR_SLUG,
+        _nombres_reales(juego_repository, db_conectada), hasta_numero_sorteo=hasta_numero_sorteo,
+    )
+    juego_nombre_actual = next(j["nombre"] for j in navegacion["juegos_nav"] if j["activo"])
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "juego_nombre_actual": juego_nombre_actual,
+        **navegacion,
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/coocurrencia_pares.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego, juego_dominio = _resolver_juego(juego_slug, juego_repository, game_factory)
+    rango_min, rango_max = juego_dominio.number_range
+    cantidad_numeros = juego_dominio.numbers_to_pick
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="coocurrencia_pares",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"rango_min": rango_min, "rango_max": rango_max, "cantidad_numeros": cantidad_numeros},
+    )
+
+    vm = coocurrencia_pares_a_vm(resultado, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/coocurrencia_pares.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
