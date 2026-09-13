@@ -333,6 +333,8 @@ flowchart TD
 
 El rango histórico y la cobertura son propiedades del estado actual de los datos, no de una corrida puntual — por eso el reporte combina ambas fuentes en vez de fusionarlas en una sola entidad.
 
+**Etapa AE-35 (validada) ejecutó realmente este reporte, con evidencia real del usuario sobre PostgreSQL -confirmando en la práctica lo que el docstring de `GenerarReporteCalidadDatos` ya declaraba desde su creación: es el gate real de entrada a Machine Learning, nunca la Fase 5 (estadísticas descriptivas).** Resultado real: BALOTO 625 sorteos (`2081`-`2705`), BALOTO_REVANCHA 625 sorteos (mismo rango numérico y de fechas, juego independiente), COLORLOTO 215 sorteos (`1`-`215`), MILOTO 70 sorteos (`532`-`601`) -los cuatro con 100% de cobertura y cero huecos en su rango real; once controles de integridad independientes (duplicados, cantidades, rangos, superbalota, colores, fechas, orden temporal) en cero incidencias. Decisión emitida: **GO CONDICIONAL** -GO para Baloto y Baloto Revancha (modelos independientes en AE-36, nunca mezclados pese a compartir fechas de sorteo), NO-GO temporal para MiLoto (70 sorteos, histórico insuficiente), pospuesto para ColorLoto (215 sorteos, representación del objetivo estructuralmente distinta a los juegos numéricos). `sorteos_incompletos` (contador de `EjecucionSincronizacion`) se incrementa por `DrawDetail.advertencias` no vacío -verificado directamente que esto nunca implica un sorteo inválido persistido: `RegistrarSorteo` ya desvía cualquier combinación inválida a `errores`, nunca a `importados`; el texto exacto de cada advertencia no queda persistido en `detalle_errores`, limitación real documentada, no inventada.
+
 ---
 
 ## Motor estadístico y caché persistido
