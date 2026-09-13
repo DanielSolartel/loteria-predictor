@@ -73,7 +73,7 @@ class TestCorteConservadoEntreMetricasDelMismoJuego:
         assert ids == [
             "frecuencia-numeros", "frecuencia-observada-esperada", "atrasos-numeros",
             "distribucion-pares-impares", "distribucion-altos-bajos", "distribucion-pares-consecutivos",
-            "distribucion-racha-maxima", "repeticiones-entre-sorteos", "coocurrencia-pares",
+            "distribucion-racha-maxima", "repeticiones-entre-sorteos", "coocurrencia-pares", "coocurrencia-trios",
         ]
         for m in nav["metricas_nav"]:
             assert m["url"].endswith("?hasta_numero_sorteo=588")
@@ -293,12 +293,12 @@ class TestValidacionDeCorteEnElRouter:
     def test_las_veintitres_rutas_usan_query_con_ge_1(self):
         codigo_fuente = Path(_ROUTER).read_text(encoding="utf-8")
         ocurrencias = codigo_fuente.count("hasta_numero_sorteo: _CorteOpcional = None")
-        assert ocurrencias == 41
+        assert ocurrencias == 42
         assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
 
     def test_solo_se_agrego_la_ruta_esperada_de_etapa_ac(self):
         codigo_fuente = Path(_ROUTER).read_text(encoding="utf-8")
-        assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 10
+        assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 11
 
     def test_las_cuatro_rutas_existentes_siguen_presentes(self):
         codigo_fuente = Path(_ROUTER).read_text(encoding="utf-8")

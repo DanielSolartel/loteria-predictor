@@ -47,6 +47,7 @@ from app.application.estadisticas.motor.coocurrencia import (
     calcular_coocurrencia_pares,
     calcular_coocurrencia_pares_colores,
     calcular_coocurrencia_pares_colorloto,
+    calcular_coocurrencia_trios,
     calcular_coocurrencia_trios_colores,
     calcular_coocurrencia_trios_colorloto,
 )
@@ -431,6 +432,55 @@ def _calcular_coocurrencia_pares(
     cantidad_numeros = parametros["cantidad_numeros"]
     _validar_historico_consistente(historico, cantidad_numeros, rango_min=rango_min, rango_max=rango_max)
     return calcular_coocurrencia_pares(historico, rango_min, rango_max, cantidad_numeros)
+
+
+def _calcular_coocurrencia_trios(
+    historico: Sequence[ResultadoNumerico], parametros: dict,
+) -> list[MetricaAsociacion]:
+    """Reutiliza calcular_coocurrencia_trios (Paso 11) SIN modificar
+    el motor -Etapa AE-33, PROVISIONAL, segunda conexion de
+    coocurrencia para los juegos numericos genericos (Baloto, Baloto
+    Revancha, MiLoto), mismo patron exacto que AE-32 (coocurrencia de
+    pares): identidad de tres claves, validacion defensiva completa,
+    reutilizacion sin cambios del motor y del serializador.
+    ColorLoto ya conecta el equivalente exacto de este mismo motor
+    desde AE-15 -ese precedente confirma el patron de conexion, pero
+    esta receta no copia ningun supuesto exclusivo de ColorLoto: el
+    motor de esta etapa (`calcular_coocurrencia_trios`, sobre
+    `ResultadoNumerico`, sin repeticion) es una funcion real y
+    distinta de `calcular_coocurrencia_trios_colorloto`, con su
+    propia combinatoria hipergeometrica segura (`frecuencia_esperada`/
+    `lift` SI se calculan aqui, a diferencia de ColorLoto).
+
+    Validacion defensiva completa (cantidad, duplicados Y rango) via
+    el mismo helper compartido `_validar_historico_consistente` ya
+    usado por `_calcular_coocurrencia_pares` -doble defensa
+    deliberada: el motor tambien valida el rango internamente
+    (`_validar_rango`), pero la receta nunca depende unicamente de
+    esa validacion interna. No se pasa `hasta_numero_sorteo` al
+    motor -el orquestador ya filtro `historico` por el corte antes de
+    invocar esta receta, mismo criterio de todas las recetas
+    anteriores.
+
+    Historico vacio: `_validar_historico_consistente` lo acepta (nada
+    que validar) y el motor devuelve una lista vacia -ningun trio
+    inventado, ninguna excepcion espuria.
+
+    `parametros_metrica` de esta receta es EXACTAMENTE `{"rango_min",
+    "rango_max", "cantidad_numeros"}` -las tres claves que definen el
+    calculo real, identicas a AE-32; nunca incluye `pagina`, que es
+    exclusivamente un parametro de presentacion, jamas leido por esta
+    receta ni persistido como parte de la identidad -la paginacion se
+    aplica en el View Model, DESPUES de recuperar el resultado
+    completo del motor. Se leen las tres claves directamente de
+    `parametros`, nunca rederivadas desde una constante despues de
+    construir la identidad -mismo criterio que corrigio el defecto
+    real de AE-29."""
+    rango_min = parametros["rango_min"]
+    rango_max = parametros["rango_max"]
+    cantidad_numeros = parametros["cantidad_numeros"]
+    _validar_historico_consistente(historico, cantidad_numeros, rango_min=rango_min, rango_max=rango_max)
+    return calcular_coocurrencia_trios(historico, rango_min, rango_max, cantidad_numeros)
 
 
 def _calcular_distribucion_pares_consecutivos(
@@ -2736,6 +2786,9 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "coocurrencia_pares": _Receta(
         calcular=_calcular_coocurrencia_pares, serializar=_serializar_metrica_asociacion,
+    ),
+    "coocurrencia_trios": _Receta(
+        calcular=_calcular_coocurrencia_trios, serializar=_serializar_metrica_asociacion,
     ),
     "frecuencia_numeros_colorloto": _Receta(
         calcular=_calcular_frecuencia_numeros_colorloto, serializar=_serializar_frecuencia_observada,

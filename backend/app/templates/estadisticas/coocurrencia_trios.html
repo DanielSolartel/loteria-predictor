@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Coocurrencia de tríos de números — {{ juego_nombre_actual }}{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-diagram-3-fill me-2"></i>Coocurrencia de tríos de números — {{ juego_nombre_actual }}</h3>
+<p class="text-muted">Coocurrencia mide cuántas veces tres números principales aparecieron juntos dentro del mismo sorteo. Solo se muestran los tríos que aparecieron juntos al menos una vez; los tríos que nunca fueron observados no forman parte de esta tabla. Esta información es histórica y descriptiva -nunca implica que tres números "deban" salir juntos de nuevo, ni que un trío con alta coocurrencia tenga mayor probabilidad en el próximo sorteo: cada sorteo es un evento independiente. El resultado completo se calcula y guarda una sola vez; la paginación de esta página afecta únicamente cómo se muestra, nunca qué se calcula ni qué se guarda.</p>
+
+<ul class="nav nav-pills mb-2">
+    {% for j in juegos_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<ul class="nav nav-pills mb-4">
+    {% for m in metricas_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if m.activo %}active{% endif %}" href="{{ m.url }}">{{ m.etiqueta }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de {{ juego_nombre_actual }} disponibles todavía para calcular esta coocurrencia -sin tríos observados.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>
+    Se listan únicamente los tríos observados al menos una vez, ordenados por soporte descendente (y, en caso de empate, por los tres números del trío en orden ascendente) sobre el resultado completo -esta ordenación se aplica antes de dividir en páginas, nunca dentro de cada página por separado. La frecuencia esperada y el "lift" se calculan bajo el supuesto de extracción uniforme sin reemplazo -un lift mayor a 1 significa que el trío coocurrió con más frecuencia de la esperada bajo azar puro, y menor a 1 significa lo contrario; ninguno de los dos valores predice el próximo sorteo, y una coocurrencia alta no implica ninguna ventaja de juego.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Tríos observados al menos una vez</div>
+            <div class="fw-bold">{{ estadistica.total_filas }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Página</div>
+            <div class="fw-bold">{{ estadistica.pagina_actual }} de {{ estadistica.total_paginas }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo if estadistica.hasta_numero_sorteo is not none else "Histórico completo" }}</div>
+        </div>
+    </div>
+</div>
+
+{% if estadistica.total_paginas > 1 %}
+<p class="small text-muted">Hay más resultados de los que caben en una sola página -use los enlaces de abajo para recorrer las {{ estadistica.total_paginas }} páginas disponibles.</p>
+{% endif %}
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Detalle de tríos observados (máximo {{ estadistica.tamano_pagina }} por página)</h6>
+    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+        <table class="table table-sm table-hover">
+            <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
+                <tr>
+                    <th>Trío</th>
+                    <th>Soporte (sorteos conjuntos)</th>
+                    <th>Frecuencia relativa</th>
+                    <th>Frecuencia esperada</th>
+                    <th>Lift</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.numero_1 }} — {{ fila.numero_2 }} — {{ fila.numero_3 }}</td>
+                    <td>{{ fila.soporte }}</td>
+                    <td>{{ fila.frecuencia_relativa_texto }}</td>
+                    <td>{{ fila.frecuencia_esperada_texto }}</td>
+                    <td>{{ fila.lift_texto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="mt-3" aria-label="Paginación de tríos">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+            <li class="page-item {% if not estadistica.tiene_anterior %}disabled{% endif %}">
+                {% if estadistica.tiene_anterior %}
+                <a class="page-link" href="{{ request.url.path }}?pagina={{ estadistica.pagina_anterior }}{% if hasta_numero_sorteo is not none %}&hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">Anterior</a>
+                {% else %}
+                <span class="page-link">Anterior</span>
+                {% endif %}
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">Página {{ estadistica.pagina_actual }} de {{ estadistica.total_paginas }}</span>
+            </li>
+            <li class="page-item {% if not estadistica.tiene_siguiente %}disabled{% endif %}">
+                {% if estadistica.tiene_siguiente %}
+                <a class="page-link" href="{{ request.url.path }}?pagina={{ estadistica.pagina_siguiente }}{% if hasta_numero_sorteo is not none %}&hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">Siguiente</a>
+                {% else %}
+                <span class="page-link">Siguiente</span>
+                {% endif %}
+            </li>
+        </ul>
+    </nav>
+</div>
+
+{% endif %}
+
+{% endblock %}
