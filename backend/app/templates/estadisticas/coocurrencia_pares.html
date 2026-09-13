@@ -3,7 +3,7 @@
 {% block content %}
 
 <h3 class="mb-3"><i class="bi bi-diagram-3-fill me-2"></i>Coocurrencia de pares de números — {{ juego_nombre_actual }}</h3>
-<p class="text-muted">Coocurrencia mide cuántas veces dos números principales aparecieron juntos dentro del mismo sorteo. Solo se muestran los pares que aparecieron juntos al menos una vez -el número total de pares posibles es mucho mayor y en su mayoría nunca se ha observado. Esta información es histórica y descriptiva -nunca implica que dos números "deban" salir juntos de nuevo, ni que un par con alta coocurrencia tenga mayor probabilidad en el próximo sorteo: cada sorteo es un evento independiente.</p>
+<p class="text-muted">Coocurrencia mide cuántas veces dos números principales aparecieron juntos dentro del mismo sorteo. Solo se muestran los pares que aparecieron juntos al menos una vez; los pares que nunca fueron observados no forman parte de esta tabla. Esta información es histórica y descriptiva -nunca implica que dos números "deban" salir juntos de nuevo, ni que un par con alta coocurrencia tenga mayor probabilidad en el próximo sorteo: cada sorteo es un evento independiente.</p>
 
 <ul class="nav nav-pills mb-2">
     {% for j in juegos_nav %}

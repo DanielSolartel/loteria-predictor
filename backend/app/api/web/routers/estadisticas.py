@@ -22,6 +22,8 @@ antes de esta generalización.
 """
 from __future__ import annotations
 
+import re
+
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -69,6 +71,7 @@ from app.api.web.view_models import (
     comparacion_frecuencia_colores_por_ventana_colorloto_a_vm,
     comparacion_frecuencia_pares_numero_color_por_ventana_colorloto_a_vm,
     coocurrencia_pares_a_vm,
+    coocurrencia_trios_a_vm,
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
@@ -81,6 +84,7 @@ from app.api.web.view_models import (
     frecuencia_pares_colorloto_a_vm,
     frecuencia_superbalota_a_vm,
     tabla_frecuencia_numeros_a_vm,
+    PaginaFueraDeRangoError,
 )
 from app.application.exceptions import ColorNoVigenteError, JuegoNoEncontradoError, JuegoSinSuperbalotaError
 from app.application.interfaces.color_repository import ColorRepository
@@ -168,6 +172,40 @@ def _corte_vacio_a_none(valor):
 
 _CorteOpcional = Annotated[
     Annotated[int, Field(ge=1)] | None, BeforeValidator(_corte_vacio_a_none), Query(),
+]
+
+
+_PAGINA_CANONICA = re.compile(r"^[1-9][0-9]*$")
+
+
+def _pagina_lexica_estricta(valor):
+    """Etapa AE-33: valida `pagina` con la misma disciplina lexica ya
+    establecida por `_corte_vacio_a_none` -auditado primero el
+    comportamiento REAL de Pydantic antes de escribir esto (nunca
+    asumido): por defecto acepta silenciosamente "1.0", "01" y "+1"
+    como equivalentes a 1, sin ningun BeforeValidator -confirmado con
+    un TestClient real antes de implementar. Ese comportamiento no es
+    el que necesitamos: solo la forma canonica de un entero positivo
+    (`^[1-9][0-9]*$`, sin signo, sin ceros a la izquierda, sin parte
+    decimal) es valida.
+
+    Cadena vacia se trata como ausencia del parametro -mismo
+    precedente exacto de `_CorteOpcional`, adaptado a un valor por
+    defecto de 1 en vez de None (la pagina, a diferencia del corte,
+    siempre tiene un valor real). NUNCA se toca `_CorteOpcional`."""
+    if valor is None or valor == "":
+        return 1
+    if isinstance(valor, str) and _PAGINA_CANONICA.fullmatch(valor):
+        return valor
+    if isinstance(valor, str):
+        raise ValueError(
+            "pagina debe ser un entero positivo en forma canonica (sin signo, sin ceros a la izquierda, sin decimales)"
+        )
+    return valor
+
+
+_PaginaValida = Annotated[
+    Annotated[int, Field(ge=1)], BeforeValidator(_pagina_lexica_estricta), Query(),
 ]
 
 
@@ -3429,5 +3467,93 @@ def coocurrencia_pares(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/coocurrencia_pares.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/{juego_slug}/coocurrencia-trios")
+def coocurrencia_trios(
+    juego_slug: str,
+    request: Request,
+    hasta_numero_sorteo: _CorteOpcional = None,
+    pagina: _PaginaValida = 1,
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    game_factory: GameFactory = Depends(get_game_factory),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-33 (PROVISIONAL): decimoprimera visualizacion generica
+    -que trios de numeros principales aparecieron JUNTOS dentro del
+    mismo sorteo, y con que frecuencia, sobre los 3 juegos numericos
+    soportados (Baloto, Baloto Revancha, MiLoto; sin superbalota, sin
+    ColorLoto). ColorLoto ya conecta el equivalente exacto de este
+    mismo motor desde AE-15 -mismo patron de conexion, motor real
+    distinto (`calcular_coocurrencia_trios`, sin repeticion, con
+    `frecuencia_esperada`/`lift` reales via hipergeometrica).
+
+    `rango_min`/`rango_max`/`cantidad_numeros` vienen de
+    `juego_dominio`, nunca hardcodeados. Identidad de caché con
+    EXACTAMENTE tres claves `{"rango_min", "rango_max",
+    "cantidad_numeros"}` -identica a AE-32; `pagina` NUNCA forma parte
+    de `parametros_metrica`, ni se pasa al orquestador: el resultado
+    completo del motor se persiste una unica vez por identidad y
+    corte, y la paginacion se aplica exclusivamente en el View Model,
+    sobre el resultado ya recuperado.
+
+    Paginacion del lado del servidor, sin JavaScript: 100 filas fijas
+    por pagina (`_PaginaValida`, validacion lexica estricta propia de
+    esta etapa -auditado el comportamiento real de Pydantic antes de
+    escribir el validador, ver docstring de `_pagina_lexica_estricta`).
+    `PaginaFueraDeRangoError` (deliberadamente NO una excepcion de
+    dominio de texto libre) se traduce aqui a `422` con un mensaje
+    estable -la unica responsabilidad HTTP que le corresponde a este
+    handler, nunca a la VM.
+
+    Escala real: hasta 12341 trios teoricos en Baloto/Revancha, 9139
+    en MiLoto -el motor solo devuelve los observados, pero incluso
+    ese subconjunto puede alcanzar miles de filas; de ahi la
+    paginacion obligatoria de esta etapa, a diferencia de AE-32."""
+    _resolver_codigo(juego_slug)
+    db_conectada = _verificar_conexion(db)
+
+    navegacion = construir_navegacion_estadisticas(
+        juego_slug, "coocurrencia-trios", CAPACIDAD_SUPERBALOTA_POR_SLUG,
+        _nombres_reales(juego_repository, db_conectada), hasta_numero_sorteo=hasta_numero_sorteo,
+    )
+    juego_nombre_actual = next(j["nombre"] for j in navegacion["juegos_nav"] if j["activo"])
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "juego_nombre_actual": juego_nombre_actual,
+        **navegacion,
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/coocurrencia_trios.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego, juego_dominio = _resolver_juego(juego_slug, juego_repository, game_factory)
+    rango_min, rango_max = juego_dominio.number_range
+    cantidad_numeros = juego_dominio.numbers_to_pick
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="coocurrencia_trios",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"rango_min": rango_min, "rango_max": rango_max, "cantidad_numeros": cantidad_numeros},
+    )
+
+    try:
+        vm = coocurrencia_trios_a_vm(resultado, juego, pagina)
+    except PaginaFueraDeRangoError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/coocurrencia_trios.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )

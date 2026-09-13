@@ -1041,6 +1041,150 @@ class TestUpsertConCoocurrenciaParesEtapaAE32:
         assert isinstance(recuperada.resultado["filas"][0]["elementos"][0], int)
 
 
+class TestUpsertConCoocurrenciaTriosEtapaAE33:
+    """Etapa AE-33 (PROVISIONAL): identidad con EXACTAMENTE tres
+    claves {"rango_min", "rango_max", "cantidad_numeros"}, mismo
+    contrato exacto ya validado por coocurrencia_pares (Etapa AE-32)
+    -el upsert genérico por identidad no requiere ningún cambio.
+    `pagina` NUNCA forma parte de la identidad ni del resultado
+    persistido: cambiar de página nunca crea una fila nueva ni afecta
+    el hash."""
+
+    _PARAMS_BALOTO = {"rango_min": 1, "rango_max": 43, "cantidad_numeros": 5}
+    _PARAMS_MILOTO = {"rango_min": 1, "rango_max": 39, "cantidad_numeros": 5}
+
+    def test_receta_real_genera_exactamente_las_tres_claves(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('tipo_estadistica="coocurrencia_trios"')
+        fin = codigo_fuente.index(")", indice)
+        bloque = codigo_fuente[indice:fin]
+        assert '"rango_min": rango_min, "rango_max": rango_max, "cantidad_numeros": cantidad_numeros' in bloque
+        assert "pagina" not in bloque
+
+    def test_guardar_y_buscar_con_los_tres_parametros_recupera_la_misma_fila(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "correcta"},
+        ))
+        recuperada = repo.buscar_vigente(juego_id, "coocurrencia_trios", None, self._PARAMS_BALOTO)
+        assert recuperada is not None
+        assert recuperada.resultado == {"v": "correcta"}
+
+    def test_cache_hit_no_crea_nueva_fila(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "primera"},
+        ))
+        recuperada = repo.buscar_vigente(juego_id, "coocurrencia_trios", None, self._PARAMS_BALOTO)
+        assert recuperada.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "coocurrencia_trios")
+        assert total == 1
+
+    def test_baloto_y_miloto_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_baloto = uuid4()
+        juego_miloto = uuid4()
+        repo.guardar(_entrada(
+            juego_baloto, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "baloto"},
+        ))
+        repo.guardar(_entrada(
+            juego_miloto, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_MILOTO, resultado={"v": "miloto"},
+        ))
+        r_baloto = repo.buscar_vigente(juego_baloto, "coocurrencia_trios", None, self._PARAMS_BALOTO)
+        r_miloto = repo.buscar_vigente(juego_miloto, "coocurrencia_trios", None, self._PARAMS_MILOTO)
+        assert r_baloto.resultado == {"v": "baloto"}
+        assert r_miloto.resultado == {"v": "miloto"}
+        assert r_baloto.parametros_hash != r_miloto.parametros_hash
+
+    def test_coocurrencia_trios_historico_y_corte_son_identidades_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "completo"},
+        ))
+        repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=2694,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "con_corte"},
+        ))
+        completo = repo.buscar_vigente(juego_id, "coocurrencia_trios", None, self._PARAMS_BALOTO)
+        con_corte = repo.buscar_vigente(juego_id, "coocurrencia_trios", 2694, self._PARAMS_BALOTO)
+        assert completo.resultado == {"v": "completo"}
+        assert con_corte.resultado == {"v": "con_corte"}
+
+    def test_no_colisiona_con_coocurrencia_pares_ni_con_coocurrencia_trios_colorloto(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_pares", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "pares"},
+        ))
+        repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "trios"},
+        ))
+        pares = repo.buscar_vigente(juego_id, "coocurrencia_pares", None, self._PARAMS_BALOTO)
+        trios = repo.buscar_vigente(juego_id, "coocurrencia_trios", None, self._PARAMS_BALOTO)
+        assert pares.resultado == {"v": "pares"}
+        assert trios.resultado == {"v": "trios"}
+
+    def test_identidad_exacta_tres_claves_ni_mas_ni_menos_sin_pagina(self):
+        assert set(self._PARAMS_BALOTO.keys()) == {"rango_min", "rango_max", "cantidad_numeros"}
+        assert "pagina" not in self._PARAMS_BALOTO
+
+    def test_hash_identico_independientemente_de_la_pagina_solicitada_en_la_ruta(self):
+        """La identidad de caché nunca incluye `pagina` -dos requests
+        a distintas páginas del MISMO resultado deben producir el
+        mismo `parametros_hash`, porque la receta nunca recibe ni
+        procesa `pagina` en absoluto: la paginación ocurre enteramente
+        después, en el View Model, sobre el resultado ya recuperado."""
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "pagina_1_o_cualquiera"},
+        ))
+        segunda = repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "pagina_1_o_cualquiera"},
+        ))
+        assert primera.parametros_hash == segunda.parametros_hash
+        assert primera.id == segunda.id
+
+    def test_resultado_persistido_completo_no_truncado_por_pagina(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        filas = [
+            {"elementos": [i, i + 1, i + 2], "soporte": 1, "total_sorteos": 10, "frecuencia_relativa": 0.1, "frecuencia_esperada": 0.001, "lift": 100.0}
+            for i in range(1, 251)
+        ]
+        resultado = {"filas": filas}
+        repo.guardar(_entrada(
+            juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado=resultado,
+        ))
+        recuperada = repo.buscar_vigente(juego_id, "coocurrencia_trios", None, self._PARAMS_BALOTO)
+        assert len(recuperada.resultado["filas"]) == 250
+        assert isinstance(recuperada.resultado["filas"][0]["elementos"][0], int)
+
+    def test_identificador_compatible_con_string_100(self):
+        identificador = "coocurrencia_trios"
+        assert len(identificador) == 18
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(
+            juego_id, tipo=identificador, hasta_numero_sorteo=None,
+            parametros=self._PARAMS_BALOTO, resultado={"v": "ok"},
+        ))
+        assert entrada.tipo_estadistica == identificador
+
+
 class TestUpsertConDistribucionParesConsecutivosEtapaAA:
     """Mismo patrón exacto ya usado para distribucion_altos_bajos en
     Etapa Z -parámetros completos, coherentes con la receta real de

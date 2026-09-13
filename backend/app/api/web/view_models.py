@@ -207,6 +207,7 @@ _ETIQUETA_METRICA: dict[str, str] = {
     "distribucion-racha-maxima": "Racha máxima de números consecutivos",
     "repeticiones-entre-sorteos": "Repeticiones entre sorteos consecutivos",
     "coocurrencia-pares": "Coocurrencia de pares de numeros",
+    "coocurrencia-trios": "Coocurrencia de trios de numeros",
 }
 
 
@@ -2974,6 +2975,116 @@ def coocurrencia_pares_a_vm(estadistica, juego: Juego) -> dict:
     }
 
 
+_TAMANO_PAGINA_COOCURRENCIA_TRIOS = 100
+
+
+class PaginaFueraDeRangoError(Exception):
+    """Etapa AE-33: excepcion pequena y especifica -deliberadamente
+    NUNCA una excepcion de dominio de texto libre (el proyecto
+    reserva ese patron, con su enum CERRADO de razones, exclusivamente
+    para inconsistencias reales del historico -ver
+    ResultadoHistoricoInconsistenteError/TipoInconsistenciaHistorica).
+    Esta excepcion no describe una razon de negocio: describe un
+    parametro de presentacion fuera de rango, y el router la traduce
+    directamente a un 422 con un mensaje estable."""
+
+
+def coocurrencia_trios_a_vm(estadistica, juego: Juego, pagina: int) -> dict:
+    '''Transforma una `EstadisticaCalculada` de tipo
+    "coocurrencia_trios" (Etapa AE-33, PROVISIONAL) en un view model
+    paginado, listo para la plantilla. Nunca recalcula la metrica,
+    nunca consulta repositorios, nunca llama al motor -mismo patron ya
+    validado por coocurrencia_pares_a_vm (AE-32); reconstruye cada
+    fila directamente desde el JSON serializado
+    (`_serializar_metrica_asociacion`, reutilizado sin cambios,
+    `elementos` ya como tres enteros reales).
+
+    Orden GLOBAL, forzado aqui antes de paginar, nunca confiado al
+    orden de llegada ni aplicado pagina por pagina: SIEMPRE soporte
+    descendente y, en empate, por los tres numeros del propio trio en
+    orden ascendente (numero_1, numero_2, numero_3) -mismo hallazgo
+    real ya confirmado para pares (Etapa AE-32): el motor
+    (`_tabular_coocurrencia`, la MISMA funcion compartida que pares)
+    solo garantiza soporte descendente
+    (`filas.sort(key=lambda f: f.soporte, reverse=True)`, sin
+    desempate). Ordenar DESPUES de paginar, o paginar antes de
+    ordenar globalmente, produciria un orden incorrecto y
+    dependiente de que pagina se pida primero -por eso el orden
+    completo se aplica sobre TODAS las filas antes de tomar
+    cualquier segmento.
+
+    Paginacion exclusivamente de presentacion: la identidad de cache
+    y el resultado persistido nunca conocen `pagina` -el resultado
+    completo ya fue recuperado por el orquestador antes de llamar a
+    esta funcion; esta VM nunca vuelve a consultar la base de datos
+    ni trunca lo que se persiste, solo lo que se muestra. Tamano fijo
+    de 100 filas por pagina, no configurable en esta etapa.
+
+    `total_paginas` nunca es cero, incluso con el resultado vacio -
+    convencion determinista: una pagina 1 vacia es siempre valida
+    (`total_paginas = max(1, ceil(total_filas / 100))`).
+    Una `pagina` mayor que `total_paginas` -incluida pagina 2 con
+    resultado vacio- levanta `PaginaFueraDeRangoError`, que el router
+    traduce a `422` con un mensaje estable; esta VM nunca decide el
+    codigo HTTP.
+
+    `frecuencia_esperada`/`lift` se preservan tal cual -`None` se
+    mantiene como `None`, nunca sustituido por `0`. Ningun canvas ni
+    resumen agregado: decision de producto explicita de esta etapa,
+    igual que AE-32.'''
+    filas_crudas = estadistica.resultado["filas"]
+    filas_ordenadas = sorted(
+        filas_crudas,
+        key=lambda f: (-f["soporte"], f["elementos"][0], f["elementos"][1], f["elementos"][2]),
+    )
+
+    total_filas = len(filas_ordenadas)
+    total_paginas = max(1, -(-total_filas // _TAMANO_PAGINA_COOCURRENCIA_TRIOS))
+    if pagina > total_paginas:
+        raise PaginaFueraDeRangoError(
+            f"La pagina {pagina} excede el total de paginas disponibles ({total_paginas})"
+        )
+
+    inicio = (pagina - 1) * _TAMANO_PAGINA_COOCURRENCIA_TRIOS
+    fin = inicio + _TAMANO_PAGINA_COOCURRENCIA_TRIOS
+    filas_de_la_pagina = filas_ordenadas[inicio:fin]
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else estadistica.resultado.get("total_sorteos", 0)
+
+    filas_presentacion = []
+    for f in filas_de_la_pagina:
+        filas_presentacion.append({
+            "numero_1": f["elementos"][0],
+            "numero_2": f["elementos"][1],
+            "numero_3": f["elementos"][2],
+            "soporte": f["soporte"],
+            "total_sorteos": f["total_sorteos"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+            "frecuencia_relativa_texto": f"{f['frecuencia_relativa']:.4f}",
+            "frecuencia_esperada": f["frecuencia_esperada"],
+            "frecuencia_esperada_texto": (f"{f['frecuencia_esperada']:.4f}" if f["frecuencia_esperada"] is not None else "-"),
+            "lift": f["lift"],
+            "lift_texto": (f"{f['lift']:.2f}" if f["lift"] is not None else "-"),
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "total_sorteos": total_sorteos,
+        "filas": filas_presentacion,
+        "pagina_actual": pagina,
+        "tamano_pagina": _TAMANO_PAGINA_COOCURRENCIA_TRIOS,
+        "total_filas": total_filas,
+        "total_paginas": total_paginas,
+        "tiene_anterior": pagina > 1,
+        "tiene_siguiente": pagina < total_paginas,
+        "pagina_anterior": pagina - 1 if pagina > 1 else None,
+        "pagina_siguiente": pagina + 1 if pagina < total_paginas else None,
+    }
+
+
 def atrasos_numeros_a_vm(estadistica, rango_min: int, rango_max: int, juego: Juego) -> dict:
     """Transforma una `EstadisticaCalculada` de tipo "atrasos_numeros"
     (Etapa W) en un view model listo para la plantilla. Nunca
@@ -3114,6 +3225,11 @@ def construir_navegacion_estadisticas(
         "id": "coocurrencia-pares", "etiqueta": _ETIQUETA_METRICA["coocurrencia-pares"],
         "url": _url_metrica("coocurrencia-pares"),
         "activo": metrica_actual == "coocurrencia-pares",
+    })
+    metricas_nav.append({
+        "id": "coocurrencia-trios", "etiqueta": _ETIQUETA_METRICA["coocurrencia-trios"],
+        "url": _url_metrica("coocurrencia-trios"),
+        "activo": metrica_actual == "coocurrencia-trios",
     })
 
     return {
