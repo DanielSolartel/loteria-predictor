@@ -208,6 +208,7 @@ _ETIQUETA_METRICA: dict[str, str] = {
     "repeticiones-entre-sorteos": "Repeticiones entre sorteos consecutivos",
     "coocurrencia-pares": "Coocurrencia de pares de numeros",
     "coocurrencia-trios": "Coocurrencia de trios de numeros",
+    "distribucion-trios-consecutivos": "Distribucion de trios consecutivos",
 }
 
 
@@ -2829,6 +2830,52 @@ def distribucion_pares_consecutivos_a_vm(
     }
 
 
+def distribucion_trios_consecutivos_a_vm(
+    estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
+) -> dict:
+    """Transforma una `EstadisticaCalculada` de tipo
+    "distribucion_trios_consecutivos" (Etapa AE-34, PROVISIONAL) en
+    un view model listo para la plantilla. Nunca recalcula la
+    metrica, nunca consulta repositorios, nunca aplica ningun calculo
+    estadistico nuevo (ni composicion mas frecuente, ni resumen
+    agregado) -decision de producto explicita de esta etapa: la
+    tabla es de solo 4 filas, sin necesidad de ningun resumen.
+
+    Orden: el propio motor ya garantiza ascendente 0..max(0,
+    cantidad_numeros-2) (`tabular_conteo_por_sorteo` itera
+    `range(valor_maximo + 1)`) -esta VM reordena explicitamente de
+    todas formas (`sorted(..., key=lambda f: int(f["valor"]))`) como
+    defensa adicional, nunca confiando implicitamente en el orden de
+    llegada del JSON serializado, mismo criterio ya aplicado por las
+    VM anteriores. Ninguna categoria con cero apariciones se oculta
+    -las 4 filas siempre se muestran completas."""
+    filas_ordenadas = sorted(estadistica.resultado["filas"], key=lambda f: int(f["valor"]))
+
+    total_sorteos = filas_ordenadas[0]["total_sorteos"] if filas_ordenadas else 0
+
+    filas_presentacion = []
+    for f in filas_ordenadas:
+        filas_presentacion.append({
+            "cantidad_trios_consecutivos": int(f["valor"]),
+            "apariciones": f["apariciones"],
+            "total_sorteos": f["total_sorteos"],
+            "frecuencia_relativa": f["frecuencia_relativa"],
+            "frecuencia_relativa_texto": f"{f['frecuencia_relativa']:.4f}",
+        })
+
+    return {
+        "juego_codigo": juego.codigo,
+        "juego_nombre": juego.nombre,
+        "rango_min": rango_min,
+        "rango_max": rango_max,
+        "cantidad_numeros": cantidad_numeros,
+        "hasta_numero_sorteo": estadistica.hasta_numero_sorteo,
+        "total_sorteos": total_sorteos,
+        "calculado_en": estadistica.calculado_en.isoformat() if estadistica.calculado_en else None,
+        "filas": filas_presentacion,
+    }
+
+
 def distribucion_altos_bajos_a_vm(
     estadistica, rango_min: int, rango_max: int, cantidad_numeros: int, juego: Juego,
 ) -> dict:
@@ -3230,6 +3277,11 @@ def construir_navegacion_estadisticas(
         "id": "coocurrencia-trios", "etiqueta": _ETIQUETA_METRICA["coocurrencia-trios"],
         "url": _url_metrica("coocurrencia-trios"),
         "activo": metrica_actual == "coocurrencia-trios",
+    })
+    metricas_nav.append({
+        "id": "distribucion-trios-consecutivos", "etiqueta": _ETIQUETA_METRICA["distribucion-trios-consecutivos"],
+        "url": _url_metrica("distribucion-trios-consecutivos"),
+        "activo": metrica_actual == "distribucion-trios-consecutivos",
     })
 
     return {

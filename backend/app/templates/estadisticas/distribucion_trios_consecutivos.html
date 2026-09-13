@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Distribución de tríos consecutivos — {{ juego_nombre_actual }}{% endblock %}
+{% block content %}
+
+<h3 class="mb-3"><i class="bi bi-table me-2"></i>Distribución de tríos consecutivos — {{ juego_nombre_actual }}</h3>
+<p class="text-muted">En una secuencia como 1, 2, 3, 4 se cuentan dos tríos consecutivos: (1,2,3) y (2,3,4). Cada sorteo se clasifica según la cantidad de tríos de números consecutivos que contiene -los tríos pueden solaparse.</p>
+
+<ul class="nav nav-pills mb-2">
+    {% for j in juegos_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<ul class="nav nav-pills mb-4">
+    {% for m in metricas_nav %}
+    <li class="nav-item">
+        <a class="nav-link {% if m.activo %}active{% endif %}" href="{{ m.url }}">{{ m.etiqueta }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% include "estadisticas/partials/control_corte_temporal.html" %}
+
+{% if not db_conectada %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Sin conexión a la base de datos -no se puede calcular la estadística en este momento.
+</div>
+
+{% elif not tiene_sorteos %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>No hay sorteos de {{ juego_nombre_actual }} disponibles todavía para calcular esta distribución.
+</div>
+
+{% else %}
+
+<div class="alert alert-secondary small">
+    <i class="bi bi-info-circle me-2"></i>Esta distribución describe el histórico. La presencia o ausencia de tríos consecutivos no permite predecir sorteos futuros ni significa que un sorteo sea menos aleatorio.
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Sorteos analizados</div>
+            <div class="fw-bold">{{ estadistica.total_sorteos }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Corte temporal</div>
+            <div class="fw-bold">{{ estadistica.hasta_numero_sorteo if estadistica.hasta_numero_sorteo is not none else "Histórico completo" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-3">
+    <h6 class="mb-3">Tabla completa por cantidad de tríos consecutivos</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Cantidad de tríos consecutivos</th>
+                    <th>Apariciones</th>
+                    <th>Total de sorteos</th>
+                    <th>Frecuencia relativa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in estadistica.filas %}
+                <tr>
+                    <td>{{ fila.cantidad_trios_consecutivos }}</td>
+                    <td>{{ fila.apariciones }}</td>
+                    <td>{{ fila.total_sorteos }}</td>
+                    <td>{{ fila.frecuencia_relativa_texto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

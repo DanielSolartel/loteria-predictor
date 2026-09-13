@@ -57,6 +57,7 @@ from app.application.estadisticas.motor.consecutivos import (
     calcular_distribucion_pares_consecutivos_colorloto,
     calcular_distribucion_racha_maxima,
     calcular_distribucion_racha_maxima_colorloto,
+    calcular_distribucion_trios_consecutivos,
     calcular_distribucion_trios_consecutivos_colorloto,
 )
 from app.application.estadisticas.motor.repeticiones import (
@@ -515,6 +516,51 @@ def _calcular_distribucion_pares_consecutivos(
     cantidad_numeros = parametros["cantidad_numeros"]
     _validar_historico_consistente(historico, cantidad_numeros, rango_min=rango_min, rango_max=rango_max)
     return calcular_distribucion_pares_consecutivos(historico, rango_min, rango_max, cantidad_numeros)
+
+
+def _calcular_distribucion_trios_consecutivos(
+    historico: Sequence[ResultadoNumerico], parametros: dict,
+) -> list[FrecuenciaObservada]:
+    """Reutiliza calcular_distribucion_trios_consecutivos SIN
+    modificar el motor -Etapa AE-34, PROVISIONAL, mismo patron
+    defensivo exacto que _calcular_distribucion_pares_consecutivos
+    (Etapa AA): el motor tambien valida el rango internamente
+    (_validar_rango), pero esta receta nunca depende unicamente de
+    esa validacion interna -misma doble defensa deliberada, no
+    redundancia accidental.
+
+    Resultado: list[FrecuenciaObservada], mismo tipo ya usado por
+    distribucion_pares_impares/frecuencia_superbalota -reutiliza el
+    serializador generico _serializar_frecuencia_observada sin
+    ningun cambio. Categorias reales: "0" a str(max(0,
+    cantidad_numeros - 2)) -para Baloto/Revancha/MiLoto (K=5), cuatro
+    filas (0,1,2,3), orden ascendente ya garantizado por el propio
+    motor (tabular_conteo_por_sorteo itera range(valor_maximo + 1)).
+
+    No se pasa hasta_numero_sorteo al motor -el orquestador ya filtro
+    historico por el corte antes de invocar esta receta, mismo
+    criterio de todas las recetas anteriores; el filtro interno del
+    motor (filtrar_por_corte_temporal) actua como defensa adicional
+    sin filtrar dos veces de forma efectiva, porque recibe None.
+
+    ColorLoto ya conecta el equivalente exacto de este mismo motor
+    desde AE-13 (calcular_distribucion_trios_consecutivos_colorloto,
+    funcion real y distinta, sobre ResultadoColorLoto) -esta receta
+    no copia ningun supuesto exclusivo de ColorLoto: no existe ningun
+    supuesto estadistico, normativo ni reglamentario en este motor,
+    solo conteo determinista.
+
+    `parametros_metrica` de esta receta es EXACTAMENTE {"rango_min",
+    "rango_max", "cantidad_numeros"} -identica a coocurrencia_pares
+    (AE-32) y coocurrencia_trios (AE-33); ninguna clave de
+    presentacion, orden ni exclusiva de ColorLoto. Se leen las tres
+    directamente de `parametros`, nunca rederivadas desde una
+    constante despues de construir la identidad."""
+    rango_min = parametros["rango_min"]
+    rango_max = parametros["rango_max"]
+    cantidad_numeros = parametros["cantidad_numeros"]
+    _validar_historico_consistente(historico, cantidad_numeros, rango_min=rango_min, rango_max=rango_max)
+    return calcular_distribucion_trios_consecutivos(historico, rango_min, rango_max, cantidad_numeros)
 
 
 def _calcular_distribucion_racha_maxima(
@@ -2789,6 +2835,9 @@ _CATALOGO: dict[str, _Receta] = {
     ),
     "coocurrencia_trios": _Receta(
         calcular=_calcular_coocurrencia_trios, serializar=_serializar_metrica_asociacion,
+    ),
+    "distribucion_trios_consecutivos": _Receta(
+        calcular=_calcular_distribucion_trios_consecutivos, serializar=_serializar_frecuencia_observada,
     ),
     "frecuencia_numeros_colorloto": _Receta(
         calcular=_calcular_frecuencia_numeros_colorloto, serializar=_serializar_frecuencia_observada,
