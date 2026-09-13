@@ -664,7 +664,7 @@ class TestAtrasosNumerosNavegacion:
             "frecuencia-numeros", "frecuencia-superbalota", "frecuencia-observada-esperada",
             "atrasos-numeros", "distribucion-pares-impares", "distribucion-altos-bajos",
             "distribucion-pares-consecutivos", "distribucion-racha-maxima", "repeticiones-entre-sorteos",
-            "coocurrencia-pares", "coocurrencia-trios",
+            "coocurrencia-pares", "coocurrencia-trios", "distribucion-trios-consecutivos",
         ]
 
     def test_miloto_sigue_sin_superbalota_tras_agregar_atrasos(self):
@@ -675,6 +675,7 @@ class TestAtrasosNumerosNavegacion:
             "frecuencia-numeros", "frecuencia-observada-esperada", "atrasos-numeros",
             "distribucion-pares-impares", "distribucion-altos-bajos", "distribucion-pares-consecutivos",
             "distribucion-racha-maxima", "repeticiones-entre-sorteos", "coocurrencia-pares", "coocurrencia-trios",
+            "distribucion-trios-consecutivos",
         ]
 
 
@@ -689,7 +690,7 @@ class TestAtrasosNumerosRouterEstatico:
 
     def test_exactamente_nueve_rutas_no_veintisiete(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 11
+        assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 12
 
     def test_router_no_pasa_hasta_numero_sorteo_a_parametros_metrica_de_atrasos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
@@ -1460,7 +1461,7 @@ class TestDistribucionRachaMaximaNavegacion:
             "frecuencia-numeros", "frecuencia-superbalota", "frecuencia-observada-esperada",
             "atrasos-numeros", "distribucion-pares-impares", "distribucion-altos-bajos",
             "distribucion-pares-consecutivos", "distribucion-racha-maxima", "repeticiones-entre-sorteos",
-            "coocurrencia-pares", "coocurrencia-trios",
+            "coocurrencia-pares", "coocurrencia-trios", "distribucion-trios-consecutivos",
         ]
 
 
@@ -1608,13 +1609,13 @@ class TestDistribucionRepeticionesEntreSorteosNavegacion:
         for slug in ("baloto", "baloto-revancha"):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             ids = [m["id"] for m in nav["metricas_nav"]]
-            assert len(ids) == 11, slug
+            assert len(ids) == 12, slug
             assert "repeticiones-entre-sorteos" in ids
 
     def test_miloto_ocho_metricas_sigue_sin_superbalota(self):
         nav = construir_navegacion_estadisticas("miloto", "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
         ids = [m["id"] for m in nav["metricas_nav"]]
-        assert len(ids) == 10
+        assert len(ids) == 11
         assert "frecuencia-superbalota" not in ids
         assert "repeticiones-entre-sorteos" in ids
 
@@ -1783,13 +1784,13 @@ class TestCoocurrenciaParesNavegacion:
         for slug in ("baloto", "baloto-revancha"):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             ids = [m["id"] for m in nav["metricas_nav"]]
-            assert len(ids) == 11, slug
+            assert len(ids) == 12, slug
             assert "coocurrencia-pares" in ids
 
     def test_miloto_nueve_metricas_sigue_sin_superbalota(self):
         nav = construir_navegacion_estadisticas("miloto", "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
         ids = [m["id"] for m in nav["metricas_nav"]]
-        assert len(ids) == 10
+        assert len(ids) == 11
         assert "frecuencia-superbalota" not in ids
         assert "coocurrencia-pares" in ids
 
@@ -2031,13 +2032,13 @@ class TestCoocurrenciaTriosNavegacion:
         for slug in ("baloto", "baloto-revancha"):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             ids = [m["id"] for m in nav["metricas_nav"]]
-            assert len(ids) == 11, slug
+            assert len(ids) == 12, slug
             assert "coocurrencia-trios" in ids
 
     def test_miloto_diez_metricas_sigue_sin_superbalota(self):
         nav = construir_navegacion_estadisticas("miloto", "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
         ids = [m["id"] for m in nav["metricas_nav"]]
-        assert len(ids) == 10
+        assert len(ids) == 11
         assert "frecuencia-superbalota" not in ids
         assert "coocurrencia-trios" in ids
 
@@ -2190,9 +2191,182 @@ class TestCoocurrenciaTriosTemplate:
         contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
         assert "no hay" in contenido.lower() or "sin tríos observados" in contenido.lower()
 
-    def test_texto_indica_mas_resultados_cuando_hay_varias_paginas(self):
+class TestDistribucionTriosConsecutivosViewModel:
+    def test_orden_ascendente_0123_incluso_con_llegada_desordenada(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_a_vm
+
+        filas = [
+            {"valor": "3", "apariciones": 0, "total_sorteos": 10, "frecuencia_relativa": 0.0},
+            {"valor": "1", "apariciones": 3, "total_sorteos": 10, "frecuencia_relativa": 0.3},
+            {"valor": "2", "apariciones": 1, "total_sorteos": 10, "frecuencia_relativa": 0.1},
+            {"valor": "0", "apariciones": 6, "total_sorteos": 10, "frecuencia_relativa": 0.6},
+        ]
+        vm = distribucion_trios_consecutivos_a_vm(_estadistica_calculada_fake(filas), 1, 43, 5, _JUEGO_BALOTO)
+        orden = [f["cantidad_trios_consecutivos"] for f in vm["filas"]]
+        assert orden == [0, 1, 2, 3]
+
+    def test_cuatro_categorias_ninguna_oculta(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_a_vm
+
+        filas = [
+            {"valor": "0", "apariciones": 10, "total_sorteos": 10, "frecuencia_relativa": 1.0},
+            {"valor": "1", "apariciones": 0, "total_sorteos": 10, "frecuencia_relativa": 0.0},
+            {"valor": "2", "apariciones": 0, "total_sorteos": 10, "frecuencia_relativa": 0.0},
+            {"valor": "3", "apariciones": 0, "total_sorteos": 10, "frecuencia_relativa": 0.0},
+        ]
+        vm = distribucion_trios_consecutivos_a_vm(_estadistica_calculada_fake(filas), 1, 43, 5, _JUEGO_BALOTO)
+        assert len(vm["filas"]) == 4
+        assert vm["filas"][1]["apariciones"] == 0
+
+    def test_valores_y_frecuencias_preservados(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_a_vm
+
+        filas = [{"valor": "0", "apariciones": 6, "total_sorteos": 10, "frecuencia_relativa": 0.6}]
+        vm = distribucion_trios_consecutivos_a_vm(_estadistica_calculada_fake(filas), 1, 43, 5, _JUEGO_BALOTO)
+        assert vm["filas"][0]["apariciones"] == 6
+        assert vm["filas"][0]["total_sorteos"] == 10
+        assert vm["filas"][0]["frecuencia_relativa"] == 0.6
+
+    def test_corte_preservado(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_a_vm
+
+        vm = distribucion_trios_consecutivos_a_vm(_estadistica_calculada_fake([], juego_id=None), 1, 43, 5, _JUEGO_BALOTO)
+        assert vm["hasta_numero_sorteo"] is None
+
+    def test_historico_vacio(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_a_vm
+
+        filas = [{"valor": str(i), "apariciones": 0, "total_sorteos": 0, "frecuencia_relativa": 0.0} for i in range(4)]
+        vm = distribucion_trios_consecutivos_a_vm(_estadistica_calculada_fake(filas), 1, 43, 5, _JUEGO_BALOTO)
+        assert vm["total_sorteos"] == 0
+        assert len(vm["filas"]) == 4
+
+    def test_navegacion_y_nombre_juego(self):
+        from app.api.web.view_models import distribucion_trios_consecutivos_a_vm
+
+        vm = distribucion_trios_consecutivos_a_vm(_estadistica_calculada_fake([]), 1, 43, 5, _JUEGO_MILOTO)
+        assert vm["juego_codigo"] == "MILOTO"
+        assert vm["juego_nombre"] == "MiLoto"
+
+    def test_sin_calculos_estadisticos_nuevos(self):
+        import inspect
+        from app.api.web import view_models
+        codigo_fuente = inspect.getsource(view_models.distribucion_trios_consecutivos_a_vm)
+        assert "chart_labels" not in codigo_fuente
+        assert "composicion_mas_frecuente" not in codigo_fuente
+        assert "lift" not in codigo_fuente
+
+
+class TestDistribucionTriosConsecutivosNavegacion:
+    def test_decimosegunda_metrica_presente_en_baloto_y_revancha(self):
+        for slug in ("baloto", "baloto-revancha"):
+            nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
+            ids = [m["id"] for m in nav["metricas_nav"]]
+            assert len(ids) == 12, slug
+            assert "distribucion-trios-consecutivos" in ids
+
+    def test_miloto_once_metricas_sigue_sin_superbalota(self):
+        nav = construir_navegacion_estadisticas("miloto", "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
+        ids = [m["id"] for m in nav["metricas_nav"]]
+        assert len(ids) == 11
+        assert "frecuencia-superbalota" not in ids
+        assert "distribucion-trios-consecutivos" in ids
+
+    def test_conservacion_del_corte_dentro_del_juego(self):
+        nav = construir_navegacion_estadisticas(
+            "baloto", "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {}, hasta_numero_sorteo=2694,
+        )
+        entrada = next(m for m in nav["metricas_nav"] if m["id"] == "distribucion-trios-consecutivos")
+        assert entrada["url"] == "/estadisticas/baloto/distribucion-trios-consecutivos?hasta_numero_sorteo=2694"
+
+    def test_entrada_presente_exactamente_una_vez_por_juego(self):
+        for slug in ("baloto", "baloto-revancha", "miloto"):
+            nav = construir_navegacion_estadisticas(slug, "distribucion-trios-consecutivos", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
+            ids = [m["id"] for m in nav["metricas_nav"]]
+            assert ids.count("distribucion-trios-consecutivos") == 1
+
+    def test_ninguna_pestana_nueva_de_colorloto(self):
+        contenido = Path("app/templates/estadisticas/partials/navegacion_colorloto.html").read_text(encoding="utf-8")
+        assert contenido.count('<li class="nav-item">') == 31
+
+
+class TestDistribucionTriosConsecutivosRouter:
+    def test_ruta_existe_parametrizada(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' in codigo_fuente
+
+    def test_las_once_rutas_anteriores_siguen_presentes(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        for ruta in (
+            "frecuencia-numeros", "frecuencia-superbalota", "frecuencia-observada-esperada",
+            "atrasos-numeros", "distribucion-pares-impares", "distribucion-altos-bajos",
+            "distribucion-pares-consecutivos", "distribucion-racha-maxima", "repeticiones-entre-sorteos",
+            "coocurrencia-pares", "coocurrencia-trios",
+        ):
+            assert f'@router.get("/estadisticas/{{juego_slug}}/{ruta}")' in codigo_fuente
+
+    def test_colorloto_no_pertenece_al_slug_a_codigo(self):
+        assert resolver_codigo("colorloto") is None
+
+    def test_identidad_construida_con_los_tres_parametros_reales(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('tipo_estadistica="distribucion_trios_consecutivos"')
+        fin = codigo_fuente.index(")", indice)
+        bloque = codigo_fuente[indice:fin]
+        assert '"rango_min": rango_min, "rango_max": rango_max, "cantidad_numeros": cantidad_numeros' in bloque
+        assert "politica_universo_colores" not in bloque
+        assert "pagina" not in bloque
+
+    def test_motor_protegido_no_modificado_en_esta_receta(self):
+        import inspect
+        from app.application.use_cases import calcular_y_persistir_estadistica as mod
+        codigo_fuente = inspect.getsource(mod._calcular_distribucion_trios_consecutivos)
+        assert "calcular_distribucion_trios_consecutivos(historico, rango_min, rango_max, cantidad_numeros)" in codigo_fuente
+
+
+class TestDistribucionTriosConsecutivosTemplate:
+    _TEMPLATE = "app/templates/estadisticas/distribucion_trios_consecutivos.html"
+
+    def test_sin_canvas(self):
         contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
-        assert "total_paginas > 1" in contenido
+        assert "<canvas" not in contenido
+
+    def test_sin_javascript_nuevo(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "<script" not in contenido
+
+    def test_titulo_correcto(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "tríos consecutivos" in contenido.lower()
+
+    def test_encabezados_de_columnas_presentes(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "Apariciones" in contenido
+        assert "Total de sorteos" in contenido
+        assert "Frecuencia relativa" in contenido
+
+    def test_partial_de_corte_incluido_exactamente_una_vez(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert contenido.count('include "estadisticas/partials/control_corte_temporal.html"') == 1
+
+    def test_sin_frases_prohibidas_ni_predictivas(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8").lower()
+        for prohibida in ["mayoría", "minoría", "significativ", "anómal", "predice", "mejora", "ventaja", "en su mayoría nunca se ha observado"]:
+            assert prohibida not in contenido, prohibida
+
+    def test_sin_cdn_y_sin_safe(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "cdnjs.cloudflare.com" not in contenido
+        assert "|safe" not in contenido
+
+    def test_sin_paginacion(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8").lower()
+        assert "pagina_actual" not in contenido
+        assert "total_paginas" not in contenido
+
+    def test_mensaje_historico_vacio_presente(self):
+        contenido = Path(self._TEMPLATE).read_text(encoding="utf-8")
+        assert "no hay" in contenido.lower()
 
 
 # =====================================================================
@@ -2248,7 +2422,7 @@ class TestColorLotoAislamientoDeSlugs:
 
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         rutas_en_orden = re.findall(r'@router\.get\("([^"]+)"\)', codigo_fuente)
-        assert len(rutas_en_orden) == 42
+        assert len(rutas_en_orden) == 43
 
         def compilar_como_starlette(path):
             patron = re.sub(r"\{(\w+)\}", r"(?P<\1>[^/]+)", path)
@@ -2295,7 +2469,7 @@ class TestColorLotoAislamientoDeSlugs:
         # juegos numericos (confirmado en las auditorias de AE-13 y
         # AE-14).
         for slug in ("baloto", "baloto-revancha", "miloto"):
-            for sufijo in ("frecuencia-numeros", "atrasos-numeros", "repeticiones-entre-sorteos", "distribucion-pares-impares", "distribucion-altos-bajos", "distribucion-pares-consecutivos", "distribucion-racha-maxima", "coocurrencia-pares", "coocurrencia-trios"):
+            for sufijo in ("frecuencia-numeros", "atrasos-numeros", "repeticiones-entre-sorteos", "distribucion-pares-impares", "distribucion-altos-bajos", "distribucion-pares-consecutivos", "distribucion-racha-maxima", "coocurrencia-pares", "coocurrencia-trios", "distribucion-trios-consecutivos"):
                 patron, grupos = primera_ruta_que_matchea(f"/estadisticas/{slug}/{sufijo}")
                 assert patron == f"/estadisticas/{{juego_slug}}/{sufijo}"
                 assert grupos == {"juego_slug": slug}
@@ -2307,7 +2481,7 @@ class TestColorLotoAislamientoDeSlugs:
         # mal dirigido) -confirmado con simulacion exacta en la
         # auditoria previa, reconfirmado aqui para las tres.
         for slug in ("baloto", "baloto-revancha"):
-            for sufijo_sin_colision in ("maximo-repeticion-color", "distribucion-trios-consecutivos", "coocurrencia-pares-colores"):
+            for sufijo_sin_colision in ("maximo-repeticion-color", "coocurrencia-pares-colores"):
                 patron_col, grupos_col = primera_ruta_que_matchea(f"/estadisticas/{slug}/{sufijo_sin_colision}")
                 assert patron_col is None
                 assert grupos_col is None
@@ -2327,6 +2501,15 @@ class TestColorLotoAislamientoDeSlugs:
             patron_ct, grupos_ct = primera_ruta_que_matchea(f"/estadisticas/{slug}/coocurrencia-trios")
             assert patron_ct == "/estadisticas/{juego_slug}/coocurrencia-trios"
             assert grupos_ct == {"juego_slug": slug}
+
+        # Etapa AE-34: distribucion-trios-consecutivos SALE del grupo
+        # sin colision -ahora tiene equivalente generico real para
+        # los 3 juegos numericos, confirmado arriba en el bloque
+        # anterior.
+        for slug in ("baloto", "baloto-revancha", "miloto"):
+            patron_dtc, grupos_dtc = primera_ruta_que_matchea(f"/estadisticas/{slug}/distribucion-trios-consecutivos")
+            assert patron_dtc == "/estadisticas/{juego_slug}/distribucion-trios-consecutivos"
+            assert grupos_dtc == {"juego_slug": slug}
 
     def test_cuerpo_real_del_handler_atrasos_colorloto_produce_contenido_propio(self):
         """Complementa la simulación de enrutamiento: confirma por AST
@@ -2441,21 +2624,23 @@ class TestColorLotoAislamientoDeSlugs:
         assert indice_racha_maxima_colorloto < indice_racha_maxima_generica
 
     def test_ruta_trios_consecutivos_colorloto_sin_colision_generica(self):
-        """A DIFERENCIA de AE-1/AE-4/AE-7/AE-8/AE-9/AE-11/AE-12,
-        `distribucion-trios-consecutivos` (Etapa AE-13) NO colisiona
-        con ninguna ruta genérica -confirmado por la auditoría de
-        AE-13 (simulación con el motor real de
-        `starlette.routing.Route`) que
-        `/estadisticas/{juego_slug}/distribucion-trios-consecutivos`
-        no existe entre las rutas registradas, ni siquiera para el
-        motor numérico equivalente (`calcular_distribucion_trios_consecutivos`,
-        nunca conectado a `_CATALOGO`). Mismo caso que
-        `maximo-repeticion-color` (Etapa AE-10) -la ruta se registra
-        igualmente en el bloque literal de ColorLoto por prudencia y
-        consistencia, no por necesidad de evitar una colisión real."""
+        """Historia real: hasta AE-33, `distribucion-trios-consecutivos`
+        (Etapa AE-13) NO tenía equivalente genérico -mismo caso que
+        `maximo-repeticion-color` (Etapa AE-10) en ese momento. Etapa
+        AE-34 conectó ese equivalente genérico exacto para
+        Baloto/Revancha/MiLoto -AHORA SÍ existe esa ruta, con un motor
+        real distinto (`calcular_distribucion_trios_consecutivos`) que
+        nunca fue el motor de AE-13
+        (`calcular_distribucion_trios_consecutivos_colorloto`). Ambas
+        rutas coexisten SIN colisionar: "colorloto" nunca pertenece a
+        `SLUG_A_CODIGO` (conjunto cerrado), así que
+        `/estadisticas/colorloto/distribucion-trios-consecutivos` solo
+        puede coincidir con la ruta LITERAL de ColorLoto, nunca con el
+        patrón genérico `{juego_slug}`."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert '@router.get("/estadisticas/colorloto/distribucion-trios-consecutivos")' in codigo_fuente
-        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' not in codigo_fuente
+        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' in codigo_fuente
+        assert resolver_codigo("colorloto") is None
 
     def test_ruta_coocurrencia_pares_colorloto_sin_colision_generica(self):
         """Historia real: hasta AE-31, `coocurrencia-pares` (Etapa
@@ -2502,10 +2687,10 @@ class TestColorLotoAislamientoDeSlugs:
         intentar leer has_superballot de ColorLotoGame."""
         assert resolver_codigo("colorloto") is None
 
-    def test_veintiuna_rutas_totales_once_genericas_mas_once_colorloto(self):
+    def test_veintidos_rutas_totales_doce_genericas_mas_once_colorloto(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 42
-        assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 11
+        assert codigo_fuente.count("@router.get(") == 43
+        assert codigo_fuente.count('@router.get("/estadisticas/{juego_slug}/') == 12
 
     def test_veinte_query_totales(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
@@ -2662,8 +2847,8 @@ class TestColorLotoDescubribilidadYNavegacionExistenteIntacta:
         contenido = Path("app/templates/base.html").read_text(encoding="utf-8")
         assert "/estadisticas/baloto/frecuencia-numeros" in contenido
 
-    def test_navegacion_numerica_11_11_10_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -2833,8 +3018,8 @@ class TestColorLotoNavegacionDosMetricas:
         assert '"pagina_colorloto_activa": "frecuencia-numeros"' in codigo_fuente
         assert '"pagina_colorloto_activa": "frecuencia-colores"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -3034,8 +3219,8 @@ class TestColorLotoNavegacionTresMetricas:
         assert '"pagina_colorloto_activa": "frecuencia-colores"' in codigo_fuente
         assert '"pagina_colorloto_activa": "frecuencia-pares-numero-color"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -3223,8 +3408,8 @@ class TestColorLotoNavegacionCuatroMetricas:
         assert '"pagina_colorloto_activa": "frecuencia-pares-numero-color"' in codigo_fuente
         assert '"pagina_colorloto_activa": "atrasos-numeros"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -3439,8 +3624,8 @@ class TestColorLotoNavegacionCincoMetricas:
         assert '"pagina_colorloto_activa": "atrasos-numeros"' in codigo_fuente
         assert '"pagina_colorloto_activa": "atrasos-colores"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -3675,8 +3860,8 @@ class TestColorLotoNavegacionSeisMetricas:
         assert '"pagina_colorloto_activa": "atrasos-colores"' in codigo_fuente
         assert '"pagina_colorloto_activa": "atrasos-pares-numero-color"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -3887,8 +4072,8 @@ class TestColorLotoNavegacionSietePestanas:
         assert '"pagina_colorloto_activa": "atrasos-pares-numero-color"' in codigo_fuente
         assert '"pagina_colorloto_activa": "repeticiones-entre-sorteos"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -4082,8 +4267,8 @@ class TestColorLotoNavegacionOchoPestanas:
         assert '"pagina_colorloto_activa": "repeticiones-entre-sorteos"' in codigo_fuente
         assert '"pagina_colorloto_activa": "distribucion-pares-impares"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -4314,8 +4499,8 @@ class TestColorLotoNavegacionNuevePestanas:
         assert '"pagina_colorloto_activa": "distribucion-pares-impares"' in codigo_fuente
         assert '"pagina_colorloto_activa": "distribucion-altos-bajos"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -4827,14 +5012,23 @@ class TestColorLotoDistribucionTriosConsecutivosRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert '@router.get("/estadisticas/colorloto/distribucion-trios-consecutivos")' in codigo_fuente
 
-    def test_sin_ruta_generica_equivalente(self):
-        """A DIFERENCIA de AE-11/AE-12, esta métrica NO colisiona con
-        ninguna ruta genérica -confirmado por la auditoría de AE-13
-        que `/estadisticas/{juego_slug}/distribucion-trios-consecutivos`
-        no existe entre las rutas registradas, mismo caso que
-        `maximo-repeticion-color` (Etapa AE-10)."""
+    def test_ruta_generica_equivalente_ahora_existe_sin_colisionar(self):
+        """Historia real: hasta AE-33, `distribucion-trios-consecutivos`
+        (Etapa AE-13) NO tenía equivalente genérico -mismo caso que
+        `maximo-repeticion-color` (Etapa AE-10) en ese momento. Etapa
+        AE-34 conectó ese equivalente genérico exacto para
+        Baloto/Revancha/MiLoto -AHORA SÍ existe esa ruta, con un motor
+        real distinto (`calcular_distribucion_trios_consecutivos`,
+        sobre `ResultadoNumerico`) que nunca fue el motor de AE-13
+        (`calcular_distribucion_trios_consecutivos_colorloto`). Ambas
+        rutas coexisten SIN colisionar: "colorloto" nunca pertenece a
+        `SLUG_A_CODIGO` (conjunto cerrado), así que
+        `/estadisticas/colorloto/distribucion-trios-consecutivos` solo
+        puede coincidir con la ruta LITERAL de ColorLoto, nunca con el
+        patrón genérico `{juego_slug}`."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' not in codigo_fuente
+        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' in codigo_fuente
+        assert resolver_codigo("colorloto") is None
 
     def test_no_conectada_a_juegos_numericos(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
@@ -4858,21 +5052,22 @@ class TestColorLotoDistribucionTriosConsecutivosRuta:
         assert "rango_max" not in bloque
         assert "POLITICA_UNIVERSO_COLORES_ACTUAL" not in bloque
 
-    def test_baloto_revancha_miloto_sin_handler_para_este_sufijo(self):
-        """Confirma que Baloto, `baloto-revancha` y MiLoto NO tienen
+    def test_baloto_revancha_miloto_ahora_tienen_handler_generico_para_este_sufijo(self):
+        """Historia real: hasta AE-33, Baloto/Revancha/MiLoto NO tenían
         ningún handler para este sufijo -a diferencia de AE-11/AE-12,
-        donde sí existe una ruta genérica preexistente que debe
-        conservarse, aquí simplemente no hay ninguna ruta genérica
-        que pudiera colisionar ni conservarse: la única línea de
-        decorador `@router.get` con este sufijo es la literal de
-        ColorLoto, nunca una genérica `{juego_slug}`."""
+        donde ya existía una ruta genérica preexistente. Etapa AE-34
+        conectó el equivalente genérico exacto -ahora existen
+        EXACTAMENTE DOS líneas de decorador `@router.get` con este
+        sufijo: la literal de ColorLoto (AE-13, sin cambios) y la
+        genérica nueva `{juego_slug}` (AE-34)."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         lineas_decorador_con_sufijo = [
             linea for linea in codigo_fuente.splitlines()
             if linea.strip().startswith("@router.get(") and "distribucion-trios-consecutivos" in linea
         ]
-        assert len(lineas_decorador_con_sufijo) == 1
-        assert "{juego_slug}" not in lineas_decorador_con_sufijo[0]
+        assert len(lineas_decorador_con_sufijo) == 2
+        assert any("{juego_slug}" in linea for linea in lineas_decorador_con_sufijo)
+        assert any("colorloto" in linea for linea in lineas_decorador_con_sufijo)
 
     def test_ruta_literal_registrada_una_sola_vez(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
@@ -5066,8 +5261,8 @@ class TestColorLotoNavegacionCatorcePestanas:
         assert '"pagina_colorloto_activa": "distribucion-trios-consecutivos"' in codigo_fuente
         assert '"pagina_colorloto_activa": "coocurrencia-pares"' in codigo_fuente
 
-    def test_navegacion_numerica_11_11_10_sigue_intacta(self):
-        for slug, esperado in (("baloto", 11), ("baloto-revancha", 11), ("miloto", 10)):
+    def test_navegacion_numerica_12_12_11_sigue_intacta(self):
+        for slug, esperado in (("baloto", 12), ("baloto-revancha", 12), ("miloto", 11)):
             nav = construir_navegacion_estadisticas(slug, "frecuencia-numeros", CAPACIDAD_SUPERBALOTA_POR_SLUG, {})
             assert len(nav["metricas_nav"]) == esperado, slug
 
@@ -5129,9 +5324,9 @@ class TestColorLotoCoocurrenciaParesRuta:
         for sufijo in sufijos_con_colision:
             assert f'@router.get("/estadisticas/{{juego_slug}}/{sufijo}")' in codigo_fuente
 
-    def test_grupo_sin_colision_pasa_a_veintidos_coocurrencia_trios_sale_del_grupo(self):
+    def test_grupo_sin_colision_pasa_a_veintiuno_distribucion_trios_consecutivos_sale_del_grupo(self):
         """maximo-repeticion-color (AE-10), distribucion-pares-consecutivos
-        NO -ese sí colisiona-, distribucion-trios-consecutivos (AE-13),
+        NO -ese sí colisiona-,
         coocurrencia-pares-colores (AE-16), coocurrencia-trios-colores
         (AE-17), intervalos-historicos-colores (AE-18),
         distribucion-sumas (AE-19), intervalos-historicos-numeros
@@ -5149,21 +5344,24 @@ class TestColorLotoCoocurrenciaParesRuta:
         AE-31 este grupo incluía también coocurrencia-pares (AE-14) y
         coocurrencia-trios (AE-15), llevando el grupo a veinticuatro;
         Etapa AE-32 conectó el equivalente genérico exacto de
-        coocurrencia-pares (grupo a veintitrés) y Etapa AE-33 conectó
-        el equivalente genérico exacto de coocurrencia-trios para
-        Baloto/Revancha/MiLoto, así que coocurrencia-trios TAMBIÉN
-        SALE de este grupo (mismo caso real ya establecido por
-        distribucion-pares-consecutivos y coocurrencia-pares) y el
-        grupo sin colisión queda en veintidós -nunca veinticuatro ni
-        veintitrés."""
+        coocurrencia-pares (grupo a veintitrés), Etapa AE-33 conectó
+        el equivalente genérico exacto de coocurrencia-trios (grupo a
+        veintidós), y Etapa AE-34 conectó el equivalente genérico
+        exacto de distribucion-trios-consecutivos (AE-13) para
+        Baloto/Revancha/MiLoto, así que distribucion-trios-consecutivos
+        TAMBIÉN SALE de este grupo (mismo caso real ya establecido por
+        distribucion-pares-consecutivos, coocurrencia-pares y
+        coocurrencia-trios) y el grupo sin colisión queda en
+        veintiuno -nunca veintidós, veintitrés ni veinticuatro."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        sufijos_sin_colision_colorloto = ("frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-colores", "atrasos-pares-numero-color", "maximo-repeticion-color", "distribucion-trios-consecutivos", "coocurrencia-pares-colores", "coocurrencia-trios-colores", "intervalos-historicos-colores", "distribucion-sumas", "intervalos-historicos-numeros", "intervalos-historicos-pares-numero-color", "frecuencia-colores-por-anio", "frecuencia-colores-por-mes", "frecuencia-colores-por-dia-semana", "frecuencia-pares-numero-color-por-anio", "frecuencia-pares-numero-color-por-mes", "frecuencia-pares-numero-color-por-dia-semana", "distribucion-conteo-color", "comparacion-frecuencia-numeros-por-ventana", "comparacion-frecuencia-colores-por-ventana", "comparacion-frecuencia-pares-numero-color-por-ventana")
-        assert len(sufijos_sin_colision_colorloto) == 22
+        sufijos_sin_colision_colorloto = ("frecuencia-colores", "frecuencia-pares-numero-color", "atrasos-colores", "atrasos-pares-numero-color", "maximo-repeticion-color", "coocurrencia-pares-colores", "coocurrencia-trios-colores", "intervalos-historicos-colores", "distribucion-sumas", "intervalos-historicos-numeros", "intervalos-historicos-pares-numero-color", "frecuencia-colores-por-anio", "frecuencia-colores-por-mes", "frecuencia-colores-por-dia-semana", "frecuencia-pares-numero-color-por-anio", "frecuencia-pares-numero-color-por-mes", "frecuencia-pares-numero-color-por-dia-semana", "distribucion-conteo-color", "comparacion-frecuencia-numeros-por-ventana", "comparacion-frecuencia-colores-por-ventana", "comparacion-frecuencia-pares-numero-color-por-ventana")
+        assert len(sufijos_sin_colision_colorloto) == 21
         for sufijo in sufijos_sin_colision_colorloto:
             assert f'@router.get("/estadisticas/colorloto/{sufijo}")' in codigo_fuente
             assert f'@router.get("/estadisticas/{{juego_slug}}/{sufijo}")' not in codigo_fuente
         assert '@router.get("/estadisticas/{juego_slug}/coocurrencia-pares")' in codigo_fuente
         assert '@router.get("/estadisticas/{juego_slug}/coocurrencia-trios")' in codigo_fuente
+        assert '@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")' in codigo_fuente
 
 
 class TestColorLotoCoocurrenciaTriosRuta:
@@ -5528,11 +5726,11 @@ class TestColorLotoCoocurrenciaParesTemplate:
         ]
         assert len(templates_con_canvas) == 36
 
-    def test_cuarentaydos_templates_estadisticos_treintayseis_canvas(self):
+    def test_cuarentaytres_templates_estadisticos_treintayseis_canvas(self):
         directorio = Path("app/templates/estadisticas")
         todos = list(directorio.glob("*.html"))
         con_canvas = [f for f in todos if 'height="180"' in f.read_text(encoding="utf-8")]
-        assert len(todos) == 42
+        assert len(todos) == 43
         assert len(con_canvas) == 36
 
     def test_treintaysiete_etiquetas_canvas_totales_ae31_aporta_dos(self):
@@ -8855,9 +9053,9 @@ class TestColorLotoDistribucionConteoColorRuta:
         assert '@router.get("/estadisticas/miloto/distribucion-conteo-color")' not in codigo_fuente
         assert '@router.get("/estadisticas/colorloto/distribucion-conteo-color/extra")' not in codigo_fuente
 
-    def test_las_cuarentaydos_rutas_reales_permanecen_intactas(self):
+    def test_las_cuarentaytres_rutas_reales_permanecen_intactas(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 42
+        assert codigo_fuente.count("@router.get(") == 43
 
 
 class TestColorLotoDistribucionConteoColorVM:
@@ -9154,7 +9352,7 @@ class TestColorLotoDistribucionConteoColorCorteVacioRegresion:
         assert "hasta_numero_sorteo: _CorteOpcional = None" in bloque
         assert "hasta_numero_sorteo: int | None = Query(default=None, ge=1)" not in bloque
 
-    def test_las_cuarentaydos_rutas_reales_comparten_el_mismo_tipo_normalizado(self):
+    def test_las_cuarentaytres_rutas_reales_comparten_el_mismo_tipo_normalizado(self):
         """Corrección de mantenimiento previa a AE-29: el tipo antes
         exclusivo de AE-28 (`_CorteDesdeFormularioCombinado`) se
         generalizó y renombró a `_CorteOpcional`, compartido ahora por
@@ -9163,7 +9361,7 @@ class TestColorLotoDistribucionConteoColorCorteVacioRegresion:
         nativas `Query(default=None, ge=1)` restantes."""
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count("hasta_numero_sorteo: int | None = Query(default=None, ge=1)") == 0
-        assert codigo_fuente.count("hasta_numero_sorteo: _CorteOpcional = None") == 42
+        assert codigo_fuente.count("hasta_numero_sorteo: _CorteOpcional = None") == 43
         assert "_CorteDesdeFormularioCombinado" not in codigo_fuente
 
     def test_before_validator_aplicado_solo_sobre_la_rama_int(self):
@@ -9285,7 +9483,7 @@ class TestMantenimientoCorteVacioGlobalPreviaAE29:
     el campo vacío dispara exactamente el mismo defecto en cualquier
     página. No implementa AE-29 ni ninguna comparación por ventana."""
 
-    def test_estructural_las_41_rutas_reales_usan_el_tipo_compartido(self):
+    def test_estructural_las_43_rutas_reales_usan_el_tipo_compartido(self):
         """Prueba estructural real sobre el AST completo -no dos
         rutas representativas: enumera CADA handler decorado con
         `@router.get` que declara un parámetro `hasta_numero_sorteo`
@@ -9304,7 +9502,7 @@ class TestMantenimientoCorteVacioGlobalPreviaAE29:
                     if arg.arg == "hasta_numero_sorteo":
                         handlers_con_corte.append((nodo.name, ast.unparse(anotacion) if anotacion else None))
 
-        assert len(handlers_con_corte) == 42
+        assert len(handlers_con_corte) == 43
         for nombre, anotacion in handlers_con_corte:
             assert anotacion == "_CorteOpcional", f"{nombre} usa {anotacion!r}, no _CorteOpcional"
 
@@ -9516,9 +9714,9 @@ class TestColorLotoComparacionFrecuenciaNumerosPorVentanaRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana")') == 1
 
-    def test_las_cuarentaydos_rutas_permanecen_intactas(self):
+    def test_las_cuarentaytres_rutas_permanecen_intactas(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 42
+        assert codigo_fuente.count("@router.get(") == 43
 
 
 class TestColorLotoComparacionFrecuenciaNumerosPorVentanaVM:
@@ -9932,9 +10130,9 @@ class TestColorLotoComparacionFrecuenciaColoresPorVentanaRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/comparacion-frecuencia-colores-por-ventana")') == 1
 
-    def test_las_cuarentaydos_rutas_reales_permanecen_intactas(self):
+    def test_las_cuarentaytres_rutas_reales_permanecen_intactas(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 42
+        assert codigo_fuente.count("@router.get(") == 43
 
 
 class TestColorLotoComparacionFrecuenciaColoresPorVentanaVM:
@@ -10258,9 +10456,9 @@ class TestColorLotoComparacionFrecuenciaParesNumeroColorPorVentanaRuta:
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
         assert codigo_fuente.count('@router.get("/estadisticas/colorloto/comparacion-frecuencia-pares-numero-color-por-ventana")') == 1
 
-    def test_las_cuarentaydos_rutas_reales_permanecen_intactas(self):
+    def test_las_cuarentaytres_rutas_reales_permanecen_intactas(self):
         codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
-        assert codigo_fuente.count("@router.get(") == 42
+        assert codigo_fuente.count("@router.get(") == 43
 
 
 class TestColorLotoComparacionFrecuenciaParesNumeroColorPorVentanaVM:

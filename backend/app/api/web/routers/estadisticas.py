@@ -75,6 +75,7 @@ from app.api.web.view_models import (
     construir_navegacion_estadisticas,
     distribucion_altos_bajos_a_vm,
     distribucion_pares_consecutivos_a_vm,
+    distribucion_trios_consecutivos_a_vm,
     distribucion_pares_impares_a_vm,
     distribucion_racha_maxima_a_vm,
     distribucion_repeticiones_entre_sorteos_a_vm,
@@ -3250,6 +3251,75 @@ def distribucion_pares_consecutivos(
 
     return templates.TemplateResponse(
         request=request, name="estadisticas/distribucion_pares_consecutivos.html",
+        context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
+    )
+
+
+@router.get("/estadisticas/{juego_slug}/distribucion-trios-consecutivos")
+def distribucion_trios_consecutivos(
+    juego_slug: str,
+    request: Request,
+    hasta_numero_sorteo: _CorteOpcional = None,
+    db: Session = Depends(get_db),
+    juego_repository: JuegoRepository = Depends(get_juego_repository),
+    game_factory: GameFactory = Depends(get_game_factory),
+    calcular_estadistica: CalcularYPersistirEstadistica = Depends(get_calcular_y_persistir_estadistica),
+):
+    """Etapa AE-34 (PROVISIONAL): decimosegunda visualizacion
+    generica -distribucion de trios consecutivos, sobre numeros
+    principales de los 3 juegos soportados (sin superbalota, sin
+    ColorLoto). Mismo patron defensivo exacto que
+    distribucion_pares_consecutivos (Etapa AA). ColorLoto ya conecta
+    el equivalente exacto de este mismo motor desde AE-13
+    (calcular_distribucion_trios_consecutivos_colorloto) -su ruta
+    literal preexistente permanece intacta y responde 200 real,
+    nunca a traves de esta receta generica: "colorloto" nunca
+    pertenece a SLUG_A_CODIGO.
+
+    Solo 4 categorias reales (0..max(0, cantidad_numeros-2), K=5 para
+    los tres juegos soportados) -tabla completa pura, sin canvas, sin
+    paginacion, sin filtros ni limite de filas: decision de producto
+    explicita de esta etapa, no una omision -una tabla de 4 filas no
+    justifica ninguna de esas complejidades."""
+    _resolver_codigo(juego_slug)
+    db_conectada = _verificar_conexion(db)
+
+    navegacion = construir_navegacion_estadisticas(
+        juego_slug, "distribucion-trios-consecutivos", CAPACIDAD_SUPERBALOTA_POR_SLUG,
+        _nombres_reales(juego_repository, db_conectada), hasta_numero_sorteo=hasta_numero_sorteo,
+    )
+    juego_nombre_actual = next(j["nombre"] for j in navegacion["juegos_nav"] if j["activo"])
+    contexto_base = {
+        "request": request, "active_page": "estadisticas",
+        "estado_db": "Conectado a PostgreSQL" if db_conectada else "Sin conexión a BD",
+        "db_conectada": db_conectada,
+        "hasta_numero_sorteo": hasta_numero_sorteo,
+        "juego_nombre_actual": juego_nombre_actual,
+        **navegacion,
+    }
+
+    if not db_conectada:
+        return templates.TemplateResponse(
+            request=request, name="estadisticas/distribucion_trios_consecutivos.html",
+            context={**contexto_base, "estadistica": None},
+        )
+
+    juego, juego_dominio = _resolver_juego(juego_slug, juego_repository, game_factory)
+    rango_min, rango_max = juego_dominio.number_range
+    cantidad_numeros = juego_dominio.numbers_to_pick
+
+    resultado = calcular_estadistica.ejecutar(
+        juego_id=juego.id,
+        tipo_estadistica="distribucion_trios_consecutivos",
+        hasta_numero_sorteo=hasta_numero_sorteo,
+        parametros_metrica={"rango_min": rango_min, "rango_max": rango_max, "cantidad_numeros": cantidad_numeros},
+    )
+
+    vm = distribucion_trios_consecutivos_a_vm(resultado, rango_min, rango_max, cantidad_numeros, juego)
+    tiene_sorteos = vm["total_sorteos"] > 0
+
+    return templates.TemplateResponse(
+        request=request, name="estadisticas/distribucion_trios_consecutivos.html",
         context={**contexto_base, "estadistica": vm, "tiene_sorteos": tiene_sorteos},
     )
 

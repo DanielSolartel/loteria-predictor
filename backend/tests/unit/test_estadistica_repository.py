@@ -1185,6 +1185,121 @@ class TestUpsertConCoocurrenciaTriosEtapaAE33:
         assert entrada.tipo_estadistica == identificador
 
 
+class TestUpsertConDistribucionTriosConsecutivosEtapaAE34:
+    """Etapa AE-34 (PROVISIONAL): mismo patron exacto ya usado por
+    distribucion_pares_consecutivos (Etapa AA) -identidad de tres
+    claves identica a coocurrencia_pares (AE-32) y coocurrencia_trios
+    (AE-33), resultado FrecuenciaObservada (mismo tipo que
+    distribucion_altos_bajos/frecuencia_superbalota), serializador
+    generico reutilizado sin cambios."""
+
+    _PARAMS_BALOTO = {"rango_min": 1, "rango_max": 43, "cantidad_numeros": 5}
+    _PARAMS_MILOTO = {"rango_min": 1, "rango_max": 39, "cantidad_numeros": 5}
+
+    def test_registro_exacto_de_la_receta(self):
+        codigo_fuente = Path("app/api/web/routers/estadisticas.py").read_text(encoding="utf-8")
+        indice = codigo_fuente.index('tipo_estadistica="distribucion_trios_consecutivos"')
+        fin = codigo_fuente.index(")", indice)
+        bloque = codigo_fuente[indice:fin]
+        assert '"rango_min": rango_min, "rango_max": rango_max, "cantidad_numeros": cantidad_numeros' in bloque
+
+    def test_identidad_por_juego(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_a, juego_b = uuid4(), uuid4()
+        repo.guardar(_entrada(juego_a, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "juego_a"}))
+        repo.guardar(_entrada(juego_b, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "juego_b"}))
+        a = repo.buscar_vigente(juego_a, "distribucion_trios_consecutivos", None, self._PARAMS_BALOTO)
+        b = repo.buscar_vigente(juego_b, "distribucion_trios_consecutivos", None, self._PARAMS_BALOTO)
+        assert a.resultado == {"v": "juego_a"}
+        assert b.resultado == {"v": "juego_b"}
+
+    def test_baloto_y_miloto_no_colisionan(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_baloto, juego_miloto = uuid4(), uuid4()
+        repo.guardar(_entrada(juego_baloto, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "baloto"}))
+        repo.guardar(_entrada(juego_miloto, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_MILOTO, resultado={"v": "miloto"}))
+        r_baloto = repo.buscar_vigente(juego_baloto, "distribucion_trios_consecutivos", None, self._PARAMS_BALOTO)
+        r_miloto = repo.buscar_vigente(juego_miloto, "distribucion_trios_consecutivos", None, self._PARAMS_MILOTO)
+        assert r_baloto.resultado == {"v": "baloto"}
+        assert r_miloto.resultado == {"v": "miloto"}
+        assert r_baloto.parametros_hash != r_miloto.parametros_hash
+
+    def test_no_colisiona_con_coocurrencia_pares_ni_coocurrencia_trios(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_pares", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "pares"}))
+        repo.guardar(_entrada(juego_id, tipo="coocurrencia_trios", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "trios"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "consecutivos"}))
+        pares = repo.buscar_vigente(juego_id, "coocurrencia_pares", None, self._PARAMS_BALOTO)
+        trios = repo.buscar_vigente(juego_id, "coocurrencia_trios", None, self._PARAMS_BALOTO)
+        consecutivos = repo.buscar_vigente(juego_id, "distribucion_trios_consecutivos", None, self._PARAMS_BALOTO)
+        assert pares.resultado == {"v": "pares"}
+        assert trios.resultado == {"v": "trios"}
+        assert consecutivos.resultado == {"v": "consecutivos"}
+
+    def test_recalcular_invalidado_no_duplica_upsert(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "vieja"}))
+        repo.invalidar_por_juego(juego_id, desde_numero_sorteo=1)
+        segunda = repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "nueva"}))
+        assert segunda.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "distribucion_trios_consecutivos")
+        assert total == 1
+
+    def test_historico_completo_y_corte_son_identidades_distintas(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "completo"}))
+        repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=2694, parametros=self._PARAMS_BALOTO, resultado={"v": "con_corte"}))
+        completo = repo.buscar_vigente(juego_id, "distribucion_trios_consecutivos", None, self._PARAMS_BALOTO)
+        con_corte = repo.buscar_vigente(juego_id, "distribucion_trios_consecutivos", 2694, self._PARAMS_BALOTO)
+        assert completo.resultado == {"v": "completo"}
+        assert con_corte.resultado == {"v": "con_corte"}
+
+    def test_mismo_hash_para_identidades_equivalentes(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "x"}))
+        parametros_desordenados = {"cantidad_numeros": 5, "rango_max": 43, "rango_min": 1}
+        assert primera.parametros == parametros_desordenados
+
+    def test_cache_hit_no_crea_nueva_fila(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        primera = repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "primera"}))
+        recuperada = repo.buscar_vigente(juego_id, "distribucion_trios_consecutivos", None, self._PARAMS_BALOTO)
+        assert recuperada.id == primera.id
+        total = sum(1 for f in repo._filas if f.juego_id == juego_id and f.tipo_estadistica == "distribucion_trios_consecutivos")
+        assert total == 1
+
+    def test_round_trip_estructura_frecuencia_observada(self):
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        resultado = {"filas": [
+            {"valor": "0", "apariciones": 6, "total_sorteos": 10, "frecuencia_relativa": 0.6},
+            {"valor": "1", "apariciones": 3, "total_sorteos": 10, "frecuencia_relativa": 0.3},
+            {"valor": "2", "apariciones": 1, "total_sorteos": 10, "frecuencia_relativa": 0.1},
+            {"valor": "3", "apariciones": 0, "total_sorteos": 10, "frecuencia_relativa": 0.0},
+        ]}
+        repo.guardar(_entrada(juego_id, tipo="distribucion_trios_consecutivos", hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado=resultado))
+        recuperada = repo.buscar_vigente(juego_id, "distribucion_trios_consecutivos", None, self._PARAMS_BALOTO)
+        assert recuperada.resultado == resultado
+        assert len(recuperada.resultado["filas"]) == 4
+        suma_apariciones = sum(f["apariciones"] for f in recuperada.resultado["filas"])
+        suma_frecuencias = sum(f["frecuencia_relativa"] for f in recuperada.resultado["filas"])
+        assert suma_apariciones == 10
+        assert abs(suma_frecuencias - 1.0) < 1e-9
+
+    def test_identificador_compatible_con_string_100(self):
+        identificador = "distribucion_trios_consecutivos"
+        assert len(identificador) == 31
+        repo = _EstadisticaRepositoryEnMemoria()
+        juego_id = uuid4()
+        entrada = repo.guardar(_entrada(juego_id, tipo=identificador, hasta_numero_sorteo=None, parametros=self._PARAMS_BALOTO, resultado={"v": "ok"}))
+        assert entrada.tipo_estadistica == identificador
+
+
 class TestUpsertConDistribucionParesConsecutivosEtapaAA:
     """Mismo patrón exacto ya usado para distribucion_altos_bajos en
     Etapa Z -parámetros completos, coherentes con la receta real de
