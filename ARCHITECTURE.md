@@ -337,6 +337,33 @@ El rango histórico y la cobertura son propiedades del estado actual de los dato
 
 ---
 
+## Machine Learning -núcleo puro (`application/ml/`, Etapa AE-36, validada)
+
+**Primera implementación real de Machine Learning del proyecto**, exclusivamente para Baloto y Baloto Revancha (conjunto cerrado `JUEGOS_AUTORIZADOS_AE36`, GO CONDICIONAL de AE-35) -MiLoto y ColorLoto se rechazan explícitamente antes de tocar cualquier repositorio.
+
+```mermaid
+flowchart TD
+    A["historico_util: valida y ordena, rechaza inconsistencias"] --> B["dataset: construye filas (sorteo_objetivo, candidato) anti-fuga"]
+    B --> C["particion: walk-forward expansivo, test final 20%"]
+    C --> D["modelo: Regresion Logistica + CalibratedClassifierCV con PredefinedSplit"]
+    C --> E["baselines: uniforme, frecuencia acumulada, ventana, sorteo anterior"]
+    D --> F["metricas: Log Loss, Brier, Precision@5, Recall@5"]
+    E --> F
+    F --> G["evaluacion: ReporteEvaluacionJuego en memoria, nunca persistido"]
+```
+
+**Modulos puros** (`tipos.py`, `historico_util.py`, `features.py`, `dataset.py`, `particion.py`, `metricas.py`, `baselines.py`, `evaluacion.py`): cero importaciones de SQLAlchemy, FastAPI o Jinja2 -mismo criterio ya establecido por `application/estadisticas/motor/`. `modelo.py` es el UNICO archivo del paquete que importa scikit-learn, aislado del resto -si scikit-learn cambiara o se reemplazara, ningun otro modulo de `ml/` necesitaria cambios.
+
+**Disciplina anti-fuga**: cada `FilaCandidato` valida en su propio `__post_init__` que `calculado_hasta_sorteo < sorteo_objetivo` -una fuga se detecta al CONSTRUIR el dato, no solo en una prueba externa. `dataset.py` es el unico modulo que decide que sorteo es "objetivo"; `features.py` nunca ve el sorteo objetivo, solo el prefijo de historico que `dataset.py` le entrega. Demostrado con pruebas adversariales reales (ver `tests/unit/ml/test_dataset.py::TestAntiFugaTemporal`): alterar el futuro no cambia el pasado calculado; alterar el propio objetivo solo cambia su etiqueta, nunca sus features.
+
+**Calibracion cronologica**: `modelo.py` divide el conjunto de entrenamiento en un bloque base y un bloque de calibracion (por sorteo completo, el de calibracion siempre posterior) y pasa un `PredefinedSplit` explicito a `CalibratedClassifierCV` -nunca la validacion cruzada aleatoria por defecto.
+
+**Union con infraestructura**: `EvaluarBaselineMLProbabilidadNumeros` (`application/use_cases/`) depende de `ResultadosHistoricosRepository`, `JuegoRepository` y `GameFactory` ya existentes -nunca de `EstadisticaRepository` (reservado al motor estadistico descriptivo, nunca reutilizado para experimentos ML). El reporte devuelto (`ReporteEvaluacionJuego`) existe unicamente en memoria durante la ejecucion; AE-36 no persiste nada en `modelos`, `metricas_modelo` ni `predicciones` -esas tablas, existentes desde la migracion `0001`, permanecen exactamente iguales.
+
+**Validación real del usuario, ejecutada en Windows/Python 3.14.6/PostgreSQL real**: pipeline entrenado y evaluado sobre los 625 sorteos reales de Baloto y los 625 de Baloto Revancha (siempre por separado), dentro de transacciones de PostgreSQL de solo lectura -caché y tablas de ML confirmadas sin cambios antes/después. Resultado real: el baseline uniforme fue mejor que el modelo en Log Loss y Brier Score para ambos juegos -sin evidencia de mejora conjunta fuera de muestra. El test final real (`2591..2705`) queda consumido por esta evaluación y no debe reutilizarse como holdout intacto en etapas futuras. Alcance real de la implementación: 9 módulos funcionales en `application/ml/` (10 archivos contando `__init__.py`) más 1 caso de uso -10 archivos Python en total.
+
+---
+
 ## Motor estadístico y caché persistido
 
 **Motor puro (`application/estadisticas/motor/`):** un conjunto de módulos que calculan sobre `ResultadoNumerico` (DTO neutral: números, fecha, superbalota) sin importar nada de `infrastructure/` ni de `api/` — no conocen PostgreSQL, HTTP, ni de qué juego provienen los datos, solo reciben una secuencia de resultados y un rango. Esto los hace agnósticos por juego: el mismo código calcula frecuencias para MiLoto (1-39) o para Baloto/Revancha (1-43) sin ninguna rama condicional por juego. El motor incluye módulos para varios tipos de análisis (frecuencia, atrasos, distribuciones, coocurrencia, patrones temporales, entre otros); **solo un subconjunto de ellos está conectado al orquestador y expuesto en la web actualmente** (ver siguiente sección) — el resto existe como código de motor pero no forma parte de ninguna visualización todavía.
