@@ -138,3 +138,147 @@ def predecir_probabilidades(modelo: ModeloEntrenado, filas: Sequence[FilaCandida
     clases = list(modelo.pipeline_calibrado.classes_)
     indice_clase_1 = clases.index(1)
     return [float(fila[indice_clase_1]) for fila in proba]
+
+
+# =====================================================================
+# Etapa AE-37, validada -version generalizada y parametrizable de
+# las funciones anteriores, para soportar ablacion de features
+# (conjuntos `completo`/`frecuencias`) y busqueda de `C` sobre
+# validacion interna. Las funciones de AE-36 anteriores en este
+# archivo permanecen sin cambios y siguen siendo las que usa el caso
+# de uso original de AE-36.
+# =====================================================================
+
+NOMBRES_FEATURES_FRECUENCIAS: tuple[str, ...] = (
+    "frecuencia_acumulada",
+    "frecuencia_ventana_10",
+    "frecuencia_ventana_20",
+    "frecuencia_ventana_50",
+    "numero_candidato",
+)
+"""Conjunto `frecuencias` de AE-37: excluye unicamente las dos
+features de recencia (`sorteos_desde_ultima_aparicion`,
+`aparecio_en_sorteo_anterior`) del conjunto `completo` de AE-36 -
+mismas cuatro frecuencias mas la identidad del candidato."""
+
+
+def _filas_a_matriz_generalizada(filas: Sequence[FilaCandidato], incluir_recencia: bool) -> list[list[float]]:
+    """Igual que `_filas_a_matriz`, pero omite las dos columnas de
+    recencia cuando `incluir_recencia` es `False` -nunca cambia el
+    orden relativo de las columnas que si se incluyen."""
+    if incluir_recencia:
+        return _filas_a_matriz(filas)
+    return [[f.frecuencia_acumulada, f.frecuencia_ventana_10, f.frecuencia_ventana_20,
+              f.frecuencia_ventana_50, float(f.numero_candidato)] for f in filas]
+
+
+def construir_pipeline_generalizado(semilla: int, C: float, incluir_recencia: bool) -> Pipeline:
+    """Igual que `construir_pipeline`, pero con `C` parametrizado y
+    con el indice de la columna one-hot de `numero_candidato`
+    ajustado segun `incluir_recencia` -indice 6 en el conjunto
+    `completo` (7 columnas), indice 4 en el conjunto `frecuencias` (5
+    columnas, ver `NOMBRES_FEATURES_FRECUENCIAS`)."""
+    indice_candidato = 6 if incluir_recencia else 4
+    columnas = ColumnTransformer(
+        transformers=[("numero_candidato_onehot", OneHotEncoder(handle_unknown="ignore"), [indice_candidato])],
+        remainder="passthrough",
+    )
+    return Pipeline([
+        ("columnas", columnas),
+        ("clf", LogisticRegression(solver="lbfgs", max_iter=2000, random_state=semilla, C=C)),
+    ])
+
+
+def entrenar_modelo_generalizado(
+    filas_ajuste: Sequence[FilaCandidato], semilla: int, C: float, incluir_recencia: bool,
+) -> Pipeline:
+    """Ajusta un pipeline NO calibrado directamente sobre
+    `filas_ajuste` -usado por la seleccion interna de AE-37, donde
+    cada candidato se entrena una vez por iteracion sobre el ajuste
+    interno y se compara en la validacion interna sin calibrar
+    todavia; la calibracion solo se aplica a la configuracion ya
+    seleccionada, sobre el entrenamiento externo completo (ver
+    `entrenar_modelo_calibrado_generalizado`)."""
+    X = _filas_a_matriz_generalizada(filas_ajuste, incluir_recencia)
+    y = _etiquetas(filas_ajuste)
+    pipeline = construir_pipeline_generalizado(semilla, C, incluir_recencia)
+    pipeline.fit(X, y)
+    return pipeline
+
+
+def predecir_probabilidades_pipeline(
+    pipeline: Pipeline, filas: Sequence[FilaCandidato], incluir_recencia: bool,
+) -> list[float]:
+    X = _filas_a_matriz_generalizada(filas, incluir_recencia)
+    proba = pipeline.predict_proba(X)
+    clases = list(pipeline.classes_)
+    indice_clase_1 = clases.index(1)
+    return [float(fila[indice_clase_1]) for fila in proba]
+
+
+def entrenar_modelo_calibrado_generalizado(
+    filas_entrenamiento_completo: Sequence[FilaCandidato], semilla: int, C: float, incluir_recencia: bool,
+    proporcion_calibracion: float = 0.2,
+) -> ModeloEntrenado:
+    """Igual disciplina exacta que `entrenar_modelo_calibrado` de
+    AE-36 (bloque base/calibracion por sorteo completo,
+    `PredefinedSplit` explicito, nunca CV aleatoria), pero con `C` e
+    `incluir_recencia` parametrizados -usado para reentrenar la
+    configuracion ya seleccionada sobre todo el entrenamiento externo
+    de un bloque, antes de evaluarla una unica vez en el bloque
+    externo."""
+    sorteos_ordenados = sorted({f.sorteo_objetivo for f in filas_entrenamiento_completo})
+    if len(sorteos_ordenados) < 2:
+        raise ValueError("Se necesitan al menos 2 sorteos distintos para separar base y calibracion")
+
+    indice_corte = max(1, round(len(sorteos_ordenados) * (1 - proporcion_calibracion)))
+    indice_corte = min(indice_corte, len(sorteos_ordenados) - 1)
+    sorteos_base = set(sorteos_ordenados[:indice_corte])
+    frontera_base_calibracion = sorteos_ordenados[indice_corte - 1]
+
+    filas_ordenadas = sorted(filas_entrenamiento_completo, key=lambda f: (f.sorteo_objetivo, f.numero_candidato))
+    test_fold = [-1 if f.sorteo_objetivo in sorteos_base else 0 for f in filas_ordenadas]
+    if 0 not in test_fold:
+        raise ValueError("El bloque de calibracion quedo vacio -ajusta proporcion_calibracion o el histórico")
+
+    X = _filas_a_matriz_generalizada(filas_ordenadas, incluir_recencia)
+    y = _etiquetas(filas_ordenadas)
+
+    division = PredefinedSplit(test_fold)
+    base_pipeline = construir_pipeline_generalizado(semilla, C, incluir_recencia)
+    hiperparametros = {"solver": "lbfgs", "max_iter": 2000, "C": C, "penalty": "l2 (por defecto)", "incluir_recencia": incluir_recencia}
+
+    calibrado = CalibratedClassifierCV(base_pipeline, method="sigmoid", cv=division)
+    calibrado.fit(X, y)
+
+    return ModeloEntrenado(
+        pipeline_calibrado=calibrado,
+        semilla=semilla,
+        hiperparametros=hiperparametros,
+        frontera_base_calibracion=frontera_base_calibracion,
+    )
+
+
+def predecir_probabilidades_generalizado(
+    modelo: ModeloEntrenado, filas: Sequence[FilaCandidato], incluir_recencia: bool,
+) -> list[float]:
+    X = _filas_a_matriz_generalizada(filas, incluir_recencia)
+    proba = modelo.pipeline_calibrado.predict_proba(X)
+    clases = list(modelo.pipeline_calibrado.classes_)
+    indice_clase_1 = clases.index(1)
+    return [float(fila[indice_clase_1]) for fila in proba]
+
+
+import sklearn as _sklearn_modulo
+
+VERSION_SKLEARN: str = _sklearn_modulo.__version__
+"""Version real de scikit-learn instalada -expuesta aqui para que
+ningun otro modulo de `application/ml` ni ningun caso de uso necesite
+importar `sklearn` directamente solo para leer la version; `modelo.py`
+sigue siendo el unico archivo del paquete con una dependencia real de
+scikit-learn. Correccion arquitectonica de mantenimiento heredada de
+AE-36 (Etapa AE-37): `evaluacion.py` importaba `sklearn` directamente
+solo para esto mismo -contradiciendo la propia documentacion de
+AE-36 ("modelo.py es el UNICO archivo del paquete que importa
+scikit-learn")- y ahora importa `VERSION_SKLEARN` desde aqui en su
+lugar, sin cambiar el valor devuelto ni el comportamiento de AE-36."""

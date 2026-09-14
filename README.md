@@ -859,6 +859,37 @@ Con esta evidencia real completa del usuario -entorno, pytest, PostgreSQL, HTTP,
 
 Con esta evidencia real completa del usuario -entorno, PostgreSQL, dataset, métricas completas, rendimiento y reproducibilidad-, **AE-36 queda validada como primer baseline de Machine Learning: metodología, reproducibilidad y ausencia de fuga temporal confirmadas; ausencia de señal predictiva fuera de muestra también confirmada, y conservada como resultado científico válido.** AE-35 y checkpoints anteriores permanecen validados e intactos. MiLoto continúa en NO-GO temporal. ColorLoto continúa pospuesto. AE-37 no fue implementada -y no podrá reutilizar el test `2591..2705` de esta etapa como holdout intacto.
 
+**Checkpoint validado (Etapa AE-37, evaluación temporal anidada y ablación controlada del baseline de AE-36):** motivada directamente por el resultado negativo de AE-36 -el baseline uniforme superó al modelo logístico calibrado en Log Loss y Brier Score para ambos juegos-, AE-37 exploró honestamente si, bajo regularización controlada y ablación de features, existía alguna señal exploratoria consistente. **La validación confirma la corrección metodológica, el aislamiento temporal, la evaluación anidada y la reproducibilidad del pipeline -vuelve a obtener un resultado científico negativo, y eso es exactamente lo que queda validado, no una mejora predictiva.**
+
+**Entorno real del usuario, validado en Windows -evidencia atribuida al usuario, no ejecutada por Claude:** Python `3.14.6`, pytest `9.1.1`, httpx `0.28.1`, scikit-learn `1.9.1`, NumPy `2.5.3`, SciPy `1.18.1`. PostgreSQL real, contenedor `loteria-predictor-fase2-final-postgres-1`, puerto `5432`, revisión Alembic `0006`, rama `feature/ae37-evaluacion-temporal-anidada-robustez-ml`.
+
+**Contrato temporal real confirmado, ejecutado dos veces por juego**: la consulta al repositorio recibió exclusivamente `hasta_numero_sorteo=2590`; máximo sorteo devuelto `2590`; `510` sorteos recibidos (`2081`-`2590`); `460` elegibles; `19780` filas del dataset; `18` bloques externos; `360` sorteos externos evaluados; `15480` filas externas; primer sorteo externo `2231`, último `2590`. El intervalo consumido por AE-36 (`2591..2705`) **no fue cargado, consultado ni reutilizado**. El próximo holdout genuino permanece definido desde `2706`, intacto hasta acumular al menos **100 sorteos nuevos** por juego -no se consumió en esta etapa.
+
+**Aislamiento real de scikit-learn, validado con AST**: `modelo.py` es el único archivo de `application/ml/` que importa scikit-learn (`ast.Import`/`ast.ImportFrom`, nunca coincidencia de texto); `evaluacion.py` ya no importa `sklearn` y obtiene `VERSION_SKLEARN` desde `modelo.py`, con el mismo valor de versión que antes. Las 80 pruebas originales de AE-36 permanecen pasando sin ninguna modificación.
+
+**Resultados reales agregados -negativos para ambos juegos, conservados sin reinterpretación**:
+
+| Juego | Log Loss modelo | Log Loss uniforme | Brier modelo | Brier uniforme | Bloques ganados (ambas métricas) | Bloques perdidos |
+|---|---:|---:|---:|---:|---:|---:|
+| BALOTO | 0.35960515 | 0.35944515 | 0.10279144 | 0.10275825 | 6 | 12 |
+| BALOTO_REVANCHA | 0.35968580 | 0.35944515 | 0.10280523 | 0.10275825 | 9 | 9 |
+
+**El modelo fue ligeramente peor que el uniforme en las dos métricas principales agregadas para ambos juegos.** Baloto ganó solo 6 de 18 bloques -sin evidencia de mejora robusta. Baloto Revancha dividió 9/9 en bloques ganados/perdidos, pero **el agregado permanece ligeramente por debajo del uniforme en ambas métricas** -la división 9/9 no se convierte en una afirmación positiva.
+
+**Frecuencia de selección real**: Baloto -`completo_C_0_1`: 6 bloques, `frecuencias_C_0_1`: 12 bloques, los otros cuatro candidatos: 0. Baloto Revancha -`completo_C_0_1`: 5, `completo_C_1`: 1, `completo_C_10`: 1, `frecuencias_C_0_1`: 9, `frecuencias_C_1`: 1, `frecuencias_C_10`: 1.
+
+**Reproducibilidad real confirmada**: cada juego ejecutado dos veces con semilla `42` -selecciones idénticas, métricas idénticas, fronteras temporales idénticas, reportes idénticos, en ambos juegos.
+
+**Tiempo y memoria reales** (medidos dentro de cada proceso Python real mediante una corrección de interoperabilidad Win32 de 64 bits): Baloto -primera ejecución `9.797 s`, segunda `8.570 s`, pico Working Set `183.23 MB`, memoria privada `182.15 MB`. Baloto Revancha -primera `10.418 s`, segunda `9.721 s`, pico Working Set `182.68 MB`, memoria privada `178.89 MB`. La memoria privada es la del proceso completo, no un consumo adicional exclusivo del modelo.
+
+**PostgreSQL real, sin persistencia ni efectos colaterales**: ambos juegos ejecutados dentro de transacciones `transaction_read_only=on`; revisión Alembic `0006`; caché `209 → 209`; `modelos` `0 → 0`; `metricas_modelo` `0 → 0`; `predicciones` `0 → 0`; PostgreSQL modificado `False`; Uvicorn iniciado `False`.
+
+**Cinco incidentes reales, exclusivamente en comandos auxiliares de validación, ninguno un defecto de AE-37**: (1) el primer parche provisional de AE-37 incumplía el aislamiento declarado porque `evaluacion.py` todavía importaba `sklearn` -invalidado antes de la validación real, corregido centralizando la versión en `modelo.py`; (2) una colección vacía de `Get-StatusLines` se convirtió en `$null` bajo `Set-StrictMode`, provocando un error al consultar `.Count`; (3) la salida vacía de `git diff --cached --name-only` se convirtió en `$null`, provocando un error al ejecutar `.Trim()`; (4) el conteo físico inicial incluyó 43 archivos locales ignorados por Git (`.pytest_cache`, evidencia HTML histórica de sincronizaciones), produciendo un total superior a 290 -el conteo correcto se rehízo con archivos visibles para Git; (5) el medidor Win32 inicial no declaró `GetCurrentProcess.restype`, produciendo `WinError 6` -corregidos los tipos de interoperabilidad de 64 bits antes de ejecutar los modelos. Ninguno modificó el código fuente, alteró PostgreSQL o cambió las métricas; las ejecuciones fallidas terminaron antes del experimento o hicieron rollback; los entornos y diagnósticos temporales fueron eliminados al finalizar correctamente.
+
+**Cierre exclusivamente de estado**: se actualizaron marcadores `PROVISIONAL` → `validada` en comentarios/docstrings de 4 archivos Python (`modelo.py`, `tipos.py`, `evaluacion_anidada.py`, el caso de uso) -AST ejecutable idéntico confirmado, ignorando únicamente comentarios y docstrings- además de esta documentación. Los tres archivos de prueba nuevos y las 80 pruebas originales de AE-36 permanecen byte a byte idénticos. `evaluacion.py` no fue tocado durante este cierre -su corrección funcional ya pertenece al parche provisional corregido. Suite completa reconfirmada: `3588 passed`.
+
+Con esta evidencia real completa del usuario -entorno, PostgreSQL, contrato temporal, métricas agregadas completas por bloque, frecuencia de selección, reproducibilidad, rendimiento-, **AE-37 queda validada como protocolo de evaluación temporal anidada y ablación controlada: metodología, aislamiento temporal y reproducibilidad confirmados -nunca capacidad predictiva.** No se observó evidencia de mejora agregada frente al baseline uniforme para ningún juego. No se generaron ni persistieron predicciones, modelos o métricas. AE-36 y checkpoints anteriores permanecen validados e intactos -incluido su resultado científico negativo, que esta etapa no reinterpreta. MiLoto continúa en NO-GO temporal, ColorLoto continúa pospuesto. El próximo holdout genuino (`2706` en adelante) permanece intacto. AE-38 no fue implementada.
+
 ---
 
 
