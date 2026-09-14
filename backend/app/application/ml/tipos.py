@@ -133,3 +133,147 @@ class ReporteEvaluacionJuego:
     metricas_modelo: MetricasEvaluacion | None = None
     baselines: tuple[ResultadoBaseline, ...] = field(default_factory=tuple)
     resumen: str = ""
+
+
+# =====================================================================
+# Etapa AE-37, validada -evaluacion temporal anidada y ablacion
+# controlada. Tipos anadidos de forma compatible: ningun tipo de
+# AE-36 anterior en este archivo fue modificado.
+# =====================================================================
+
+
+@dataclass(frozen=True)
+class ConfiguracionCandidata:
+    """Una de las seis configuraciones logisticas preregistradas de
+    AE-37 -nunca se agregan ni retiran candidatos despues de observar
+    resultados. `incluye_recencia` distingue el conjunto `completo`
+    (7 features) del conjunto `frecuencias` (5 features, sin
+    `sorteos_desde_ultima_aparicion` ni `aparecio_en_sorteo_anterior`)."""
+    identificador: str
+    conjunto_features: str  # "completo" o "frecuencias"
+    incluye_recencia: bool
+    C: float
+
+    def __post_init__(self) -> None:
+        if self.conjunto_features not in ("completo", "frecuencias"):
+            raise ValueError(f"conjunto_features debe ser 'completo' o 'frecuencias', recibido {self.conjunto_features!r}")
+        if self.C <= 0:
+            raise ValueError(f"C debe ser positivo, recibido {self.C}")
+
+
+@dataclass(frozen=True)
+class FronteraBloqueInterno:
+    """Fronteras cronologicas, en numeros de sorteo reales, de una
+    iteracion de seleccion interna dentro de un bloque externo:
+    ajuste interno (donde se entrena cada candidato) y validacion
+    interna (donde se comparan, siempre posterior al ajuste)."""
+    ajuste_interno_inicio: int
+    ajuste_interno_fin: int
+    validacion_interna_inicio: int
+    validacion_interna_fin: int
+
+
+@dataclass(frozen=True)
+class FronteraBloqueExterno:
+    """Fronteras cronologicas, en numeros de sorteo reales, de un
+    bloque externo completo: todo el entrenamiento externo expansivo
+    previo, y el propio bloque externo de evaluacion final -nunca
+    tocado hasta el paso 9 del protocolo."""
+    entrenamiento_externo_inicio: int
+    entrenamiento_externo_fin: int
+    bloque_externo_inicio: int
+    bloque_externo_fin: int
+
+
+@dataclass(frozen=True)
+class ResultadoInternoCandidato:
+    """Metricas de UN candidato sobre la validacion interna de UNA
+    iteracion -nunca sobre el bloque externo."""
+    configuracion: ConfiguracionCandidata
+    metricas: MetricasEvaluacion
+
+
+@dataclass(frozen=True)
+class ConfiguracionSeleccionada:
+    """Resultado de la seleccion determinista: la configuracion
+    ganadora de un bloque externo, junto con el criterio de
+    desempate que se aplico -para que el reporte sea auditable sin
+    volver a ejecutar la seleccion."""
+    configuracion: ConfiguracionCandidata
+    resultados_internos: tuple[ResultadoInternoCandidato, ...]
+    criterio_desempate: str  # "log_loss" | "brier_score" | "identificador_ascendente"
+
+
+@dataclass(frozen=True)
+class ResultadoExternoModelo:
+    """Metricas de la configuracion seleccionada sobre el bloque
+    externo -evaluado una unica vez, nunca reutilizado para volver a
+    seleccionar."""
+    configuracion: ConfiguracionCandidata
+    metricas: MetricasEvaluacion
+
+
+@dataclass(frozen=True)
+class DiferenciaFrenteAUniforme:
+    """Comparacion del modelo seleccionado contra el baseline
+    uniforme en UN bloque externo."""
+    diferencia_log_loss: float  # uniforme - modelo; positivo = el modelo mejoro
+    diferencia_brier_score: float
+    resultado: str  # "gano" | "empato" | "perdio"
+
+
+@dataclass(frozen=True)
+class ResultadoBloqueExterno:
+    """Resultado completo, auditable, de UN bloque externo: sus
+    fronteras, la seleccion interna que lo produjo, el resultado del
+    modelo seleccionado y de los cuatro baselines sobre el bloque
+    externo, y la comparacion frente al uniforme."""
+    frontera_externa: FronteraBloqueExterno
+    frontera_interna: FronteraBloqueInterno
+    seleccion: ConfiguracionSeleccionada
+    resultado_modelo: ResultadoExternoModelo
+    baselines_externos: tuple[ResultadoBaseline, ...]
+    diferencia_vs_uniforme: DiferenciaFrenteAUniforme
+
+
+@dataclass(frozen=True)
+class CorteDesarrollo:
+    """Registro explicito del corte de desarrollo de AE-37 -nunca
+    una constante general del motor, especifica de esta etapa y
+    estos datos."""
+    hasta_numero_sorteo: int
+    sorteos_originales_recibidos: int
+    primer_sorteo: int | None
+    ultimo_sorteo: int | None
+
+
+@dataclass(frozen=True)
+class PoliticaProximoHoldout:
+    """Metadato de la politica del proximo holdout genuinamente
+    futuro -nunca inspecciona ni carga las etiquetas futuras, solo
+    documenta la politica preregistrada."""
+    holdout_consumido_inicio: int
+    holdout_consumido_fin: int
+    holdout_consumido_confirmado_no_utilizado: bool
+    proximo_holdout_inicio: int
+    minimo_sorteos_nuevos_requeridos: int
+
+
+@dataclass(frozen=True)
+class ReporteRobustezJuego:
+    """Reporte completo en memoria de un experimento AE-37 para un
+    juego -nunca se persiste, igual que `ReporteEvaluacionJuego` de
+    AE-36. No contiene ningun objeto de scikit-learn."""
+    codigo_juego: str
+    corte_desarrollo: CorteDesarrollo
+    total_sorteos_elegibles: int
+    total_filas: int
+    rango_min: int
+    rango_max: int
+    cantidad_numeros: int
+    candidatos_preregistrados: tuple[ConfiguracionCandidata, ...]
+    bloques_externos: tuple[ResultadoBloqueExterno, ...]
+    politica_proximo_holdout: PoliticaProximoHoldout
+    semilla: int = 0
+    version_sklearn: str = ""
+    resumen: str = ""

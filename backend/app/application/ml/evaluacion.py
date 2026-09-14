@@ -3,17 +3,28 @@ Orquestacion pura de un experimento completo -Etapa AE-36,
 validada. Unico punto de `application/ml` que ensambla dataset,
 particion, baselines y modelo en un `ReporteEvaluacionJuego`. Sigue
 sin importar SQLAlchemy/FastAPI/Jinja2 -recibe el historico ya
-obtenido por el llamador (el caso de uso, en `use_cases/`)."""
-from __future__ import annotations
+obtenido por el llamador (el caso de uso, en `use_cases/`).
 
-import sklearn
+Correccion arquitectonica de mantenimiento (Etapa AE-37): este
+archivo importaba `sklearn` directamente solo para leer
+`sklearn.__version__`, contradiciendo la propia documentacion de
+AE-36 ("`modelo.py` es el UNICO archivo del paquete que importa
+scikit-learn"). Ahora importa `VERSION_SKLEARN` desde `modelo.py` en
+su lugar -mismo valor devuelto, mismo comportamiento, ningun cambio
+funcional de AE-36."""
+from __future__ import annotations
 
 from app.application.estadisticas.tipos import ResultadoNumerico
 from app.application.ml.baselines import evaluar_todos_los_baselines
 from app.application.ml.dataset import construir_dataset_binario
 from app.application.ml.historico_util import validar_y_ordenar_historico
 from app.application.ml.metricas import evaluar
-from app.application.ml.modelo import NOMBRES_FEATURES, entrenar_modelo_calibrado, predecir_probabilidades
+from app.application.ml.modelo import (
+    NOMBRES_FEATURES,
+    VERSION_SKLEARN,
+    entrenar_modelo_calibrado,
+    predecir_probabilidades,
+)
 from app.application.ml.particion import construir_particion_walk_forward
 from app.application.ml.tipos import ReporteEvaluacionJuego
 
@@ -70,7 +81,7 @@ def evaluar_juego(
         limites=particion.limites,
         features_utilizadas=NOMBRES_FEATURES,
         hiperparametros=modelo.hiperparametros,
-        version_sklearn=sklearn.__version__,
+        version_sklearn=VERSION_SKLEARN,
         semilla=semilla,
         metricas_modelo=metricas_modelo,
         baselines=baselines,
