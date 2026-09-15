@@ -282,3 +282,111 @@ solo para esto mismo -contradiciendo la propia documentacion de
 AE-36 ("modelo.py es el UNICO archivo del paquete que importa
 scikit-learn")- y ahora importa `VERSION_SKLEARN` desde aqui en su
 lugar, sin cambiar el valor devuelto ni el comportamiento de AE-36."""
+
+
+# =====================================================================
+# Etapa AE-38, validada -comparacion exploratoria prerregistrada
+# entre Regresion Logistica y Random Forest, bajo el mismo protocolo
+# de evaluacion temporal anidada que AE-37. Funciones agnosticas de
+# familia: reciben un identificador de familia y un diccionario de
+# hiperparametros, nunca hardcodean el tipo de modelo. Las funciones
+# de AE-36/AE-37 anteriores en este archivo permanecen sin cambios.
+# =====================================================================
+
+from sklearn.ensemble import RandomForestClassifier
+
+FAMILIA_LOGISTICA = "logistica"
+FAMILIA_RANDOM_FOREST = "random_forest"
+FAMILIAS_VALIDAS = (FAMILIA_LOGISTICA, FAMILIA_RANDOM_FOREST)
+
+
+def _construir_estimador_base(familia: str, hiperparametros: dict, semilla: int):
+    """Construye el estimador base (sin calibrar, sin columnas) para
+    la familia indicada -unico lugar de todo `application/ml` donde
+    se elige entre `LogisticRegression` y `RandomForestClassifier`.
+    Rechaza explicitamente cualquier familia desconocida, nunca cae
+    en un valor por defecto silencioso."""
+    if familia == FAMILIA_LOGISTICA:
+        return LogisticRegression(
+            solver="lbfgs", max_iter=2000, random_state=semilla, C=hiperparametros["C"],
+        )
+    if familia == FAMILIA_RANDOM_FOREST:
+        return RandomForestClassifier(
+            n_estimators=hiperparametros["n_estimators"],
+            max_depth=hiperparametros["max_depth"],
+            random_state=semilla,
+            n_jobs=1,
+        )
+    raise ValueError(f"Familia desconocida: {familia!r} -se esperaba una de {FAMILIAS_VALIDAS}")
+
+
+def construir_pipeline_familia(familia: str, hiperparametros: dict, semilla: int, incluir_recencia: bool) -> Pipeline:
+    """Igual disciplina de columnas que `construir_pipeline_generalizado`
+    -identidad one-hot del candidato en el indice correcto segun
+    `incluir_recencia`, el resto de columnas sin transformar- pero con
+    el estimador base elegido por familia, nunca hardcodeado."""
+    indice_candidato = 6 if incluir_recencia else 4
+    columnas = ColumnTransformer(
+        transformers=[("numero_candidato_onehot", OneHotEncoder(handle_unknown="ignore"), [indice_candidato])],
+        remainder="passthrough",
+    )
+    estimador = _construir_estimador_base(familia, hiperparametros, semilla)
+    return Pipeline([("columnas", columnas), ("clf", estimador)])
+
+
+def entrenar_modelo_familia(
+    filas_ajuste: Sequence[FilaCandidato], familia: str, hiperparametros: dict, semilla: int, incluir_recencia: bool,
+) -> Pipeline:
+    """Ajusta un pipeline NO calibrado directamente sobre
+    `filas_ajuste` -usado por la seleccion interna de AE-38, misma
+    disciplina exacta que `entrenar_modelo_generalizado` de AE-37,
+    generalizada por familia."""
+    X = _filas_a_matriz_generalizada(filas_ajuste, incluir_recencia)
+    y = _etiquetas(filas_ajuste)
+    pipeline = construir_pipeline_familia(familia, hiperparametros, semilla, incluir_recencia)
+    pipeline.fit(X, y)
+    return pipeline
+
+
+def entrenar_modelo_calibrado_familia(
+    filas_entrenamiento_completo: Sequence[FilaCandidato], familia: str, hiperparametros: dict, semilla: int,
+    incluir_recencia: bool, proporcion_calibracion: float = 0.2,
+) -> ModeloEntrenado:
+    """Misma disciplina exacta de calibracion cronologica que
+    `entrenar_modelo_calibrado_generalizado` de AE-37 (bloque
+    base/calibracion por sorteo completo, `PredefinedSplit` explicito,
+    nunca CV aleatoria) -generalizada por familia, para que la
+    comparacion entre Regresion Logistica y Random Forest sea
+    metodologicamente equivalente."""
+    sorteos_ordenados = sorted({f.sorteo_objetivo for f in filas_entrenamiento_completo})
+    if len(sorteos_ordenados) < 2:
+        raise ValueError("Se necesitan al menos 2 sorteos distintos para separar base y calibracion")
+
+    indice_corte = max(1, round(len(sorteos_ordenados) * (1 - proporcion_calibracion)))
+    indice_corte = min(indice_corte, len(sorteos_ordenados) - 1)
+    sorteos_base = set(sorteos_ordenados[:indice_corte])
+    frontera_base_calibracion = sorteos_ordenados[indice_corte - 1]
+
+    filas_ordenadas = sorted(filas_entrenamiento_completo, key=lambda f: (f.sorteo_objetivo, f.numero_candidato))
+    test_fold = [-1 if f.sorteo_objetivo in sorteos_base else 0 for f in filas_ordenadas]
+    if 0 not in test_fold:
+        raise ValueError("El bloque de calibracion quedo vacio -ajusta proporcion_calibracion o el histórico")
+
+    X = _filas_a_matriz_generalizada(filas_ordenadas, incluir_recencia)
+    y = _etiquetas(filas_ordenadas)
+
+    division = PredefinedSplit(test_fold)
+    base_pipeline = construir_pipeline_familia(familia, hiperparametros, semilla, incluir_recencia)
+    hiperparametros_registrados = dict(hiperparametros)
+    hiperparametros_registrados["familia"] = familia
+    hiperparametros_registrados["incluir_recencia"] = incluir_recencia
+
+    calibrado = CalibratedClassifierCV(base_pipeline, method="sigmoid", cv=division)
+    calibrado.fit(X, y)
+
+    return ModeloEntrenado(
+        pipeline_calibrado=calibrado,
+        semilla=semilla,
+        hiperparametros=hiperparametros_registrados,
+        frontera_base_calibracion=frontera_base_calibracion,
+    )

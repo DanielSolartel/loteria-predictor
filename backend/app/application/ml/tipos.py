@@ -277,3 +277,95 @@ class ReporteRobustezJuego:
     semilla: int = 0
     version_sklearn: str = ""
     resumen: str = ""
+
+
+# =====================================================================
+# Etapa AE-38, validada -comparacion exploratoria prerregistrada
+# entre Regresion Logistica y Random Forest. Tipos anadidos de forma
+# compatible: ningun tipo de AE-36/AE-37 anterior en este archivo fue
+# modificado.
+# =====================================================================
+
+
+@dataclass(frozen=True)
+class ConfiguracionCandidataAE38:
+    """Un candidato preregistrado de AE-38 -logistico o Random
+    Forest, nunca mas de seis por familia. `hiperparametros` es un
+    diccionario cerrado y explicito, nunca un valor magico -para
+    Regresion Logistica contiene `C`; para Random Forest,
+    `n_estimators` y `max_depth`."""
+    identificador: str
+    familia: str  # "logistica" | "random_forest"
+    conjunto_features: str  # "completo" o "frecuencias"
+    incluye_recencia: bool
+    hiperparametros: dict
+
+    def __post_init__(self) -> None:
+        if self.familia not in ("logistica", "random_forest"):
+            raise ValueError(f"familia debe ser 'logistica' o 'random_forest', recibido {self.familia!r}")
+        if self.conjunto_features not in ("completo", "frecuencias"):
+            raise ValueError(f"conjunto_features debe ser 'completo' o 'frecuencias', recibido {self.conjunto_features!r}")
+
+
+@dataclass(frozen=True)
+class ResultadoInternoCandidatoAE38:
+    """Metricas de UN candidato (de cualquier familia) sobre la
+    validacion interna de UNA iteracion -nunca sobre el bloque
+    externo."""
+    configuracion: ConfiguracionCandidataAE38
+    metricas: MetricasEvaluacion
+
+
+@dataclass(frozen=True)
+class ConfiguracionSeleccionadaAE38:
+    """Resultado de la seleccion determinista entre TODOS los
+    candidatos preregistrados de ambas familias -log loss interno,
+    luego brier interno, luego identificador ascendente."""
+    configuracion: ConfiguracionCandidataAE38
+    resultados_internos: tuple[ResultadoInternoCandidatoAE38, ...]
+    criterio_desempate: str
+
+
+@dataclass(frozen=True)
+class ResultadoExternoModeloAE38:
+    """Metricas de la configuracion seleccionada (de cualquier
+    familia) sobre el bloque externo -evaluado una unica vez."""
+    configuracion: ConfiguracionCandidataAE38
+    metricas: MetricasEvaluacion
+
+
+@dataclass(frozen=True)
+class ResultadoBloqueExternoAE38:
+    """Resultado completo, auditable, de UN bloque externo de
+    AE-38: sus fronteras (mismos tipos exactos de AE-37,
+    `FronteraBloqueExterno`/`FronteraBloqueInterno`, reutilizados sin
+    cambios), la seleccion interna entre ambas familias, el resultado
+    del candidato seleccionado, los cuatro baselines, y la
+    comparacion frente al uniforme."""
+    frontera_externa: FronteraBloqueExterno
+    frontera_interna: FronteraBloqueInterno
+    seleccion: ConfiguracionSeleccionadaAE38
+    resultado_modelo: ResultadoExternoModeloAE38
+    baselines_externos: tuple[ResultadoBaseline, ...]
+    diferencia_vs_uniforme: DiferenciaFrenteAUniforme
+
+
+@dataclass(frozen=True)
+class ReporteComparacionFamiliasJuego:
+    """Reporte completo en memoria de un experimento AE-38 para un
+    juego -nunca se persiste. No contiene ningun objeto de
+    scikit-learn."""
+    codigo_juego: str
+    corte_desarrollo: CorteDesarrollo
+    total_sorteos_elegibles: int
+    total_filas: int
+    rango_min: int
+    rango_max: int
+    cantidad_numeros: int
+    candidatos_logisticos: tuple[ConfiguracionCandidataAE38, ...]
+    candidatos_random_forest: tuple[ConfiguracionCandidataAE38, ...]
+    bloques_externos: tuple[ResultadoBloqueExternoAE38, ...]
+    politica_proximo_holdout: PoliticaProximoHoldout
+    semilla: int = 0
+    version_sklearn: str = ""
+    resumen: str = ""

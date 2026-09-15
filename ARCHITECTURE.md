@@ -392,6 +392,32 @@ flowchart TD
 
 ---
 
+## Comparación exploratoria de familias -Etapa AE-38, validada
+
+**Motivada por el resultado negativo de AE-37**: comprueba si Random Forest aporta alguna señal exploratoria adicional frente a la Regresión Logística y al uniforme, reutilizando exclusivamente los mismos datos de desarrollo (`2081..2590`) ya permitidos. Extiende `application/ml/` de forma exclusivamente aditiva -confirmado con una comparación directa de bytes que el contenido original de `tipos.py`/`modelo.py` es un prefijo exacto; `evaluacion_anidada.py` y el caso de uso original de AE-37 **nunca fueron modificados**, confirmado con una prueba dedicada que los ejecuta sin cambios.
+
+```mermaid
+flowchart TD
+    A["construir_bloques_externos (reutilizada de AE-37, sin cambios)"] --> B["Por bloque: 12 candidatos (6 logisticos + 6 Random Forest)"]
+    B --> C["Cada uno entrenado solo con ajuste interno, comparado en validacion interna"]
+    C --> D["Seleccion determinista: LogLoss -> Brier -> id ascendente, entre AMBAS familias"]
+    D --> E["Ganador (cualquier familia) reentrenado calibrado sobre entrenamiento externo"]
+    E --> F["Evaluado UNA VEZ en el bloque externo vs 4 baselines"]
+    F --> G["ReporteComparacionFamiliasJuego en memoria, nunca persistido"]
+```
+
+**Generalización por familia, nunca hardcodeo de modelo**: `modelo.py` gana `_construir_estimador_base(familia, hiperparametros, semilla)` -unico punto de todo `application/ml` donde se elige entre `LogisticRegression` y `RandomForestClassifier`, rechazando explícitamente cualquier familia desconocida. `construir_pipeline_familia`, `entrenar_modelo_familia` y `entrenar_modelo_calibrado_familia` generalizan el patrón exacto de AE-37 (mismo `CalibratedClassifierCV`+`PredefinedSplit` explícito) por familia, para que la comparación sea metodológicamente equivalente entre ambas.
+
+**Doce candidatos preregistrados** (`comparacion_familias.py`): los seis logísticos exactos de AE-37, más `CANDIDATOS_RANDOM_FOREST_AE38` -exactamente seis, cuadrícula pequeña y finita fijada antes de cualquier experimento (profundidad `{5, 10, None}` × ensamble `{100, 200, 300}`, replicada en ambos conjuntos de features), `random_state=42` y `n_jobs=1` siempre. `evaluar_bloques_externos_ae38` reutiliza directamente `construir_bloques_externos` de `evaluacion_anidada.py` -nunca la duplica- generalizando únicamente la selección interna para comparar los doce candidatos de dos familias.
+
+**Confirmado con AST, no solo documentado**: `modelo.py` sigue siendo el único archivo de `application/ml/` que importa scikit-learn -verificado con la misma disciplina de prueba estructural de AE-37, extendida a `comparacion_familias.py`.
+
+**Limitación de escala real, medida directamente, no estimada**: una ejecución completa de los 18 bloques externos a escala real (510 sorteos) con doce candidatos por bloque -incluidos seis de Random Forest de hasta 300 árboles, sobre entrenamiento expansivo- excede el tiempo disponible por llamada en el sandbox. Medición real: los primeros 12 bloques (hasta 300 sorteos de entrenamiento) requirieron `223.7 s` acumulados solo en la selección interna, con coste creciente por bloque. Por esta razón, el experimento sintético completo (con reproducibilidad e invariancia post-corte) se ejecutó a una escala reducida real de 190 sorteos/2 bloques -mismos doce candidatos, protocolo sin simplificar-, mientras que la estructura de los 18 bloques a escala real (`460` elegibles, límites `2231`-`2590`) se confirmó por separado y de forma barata, reutilizando `construir_bloques_externos` -función pura, sin entrenar ningún modelo.
+
+**Validación real completa del usuario, ejecutada en Windows/Python 3.14.6/PostgreSQL real -evidencia atribuida al usuario, nunca ejecutada por Claude**: comparación completa entre ambas familias a escala real de 18 bloques sobre los 510 sorteos reales de cada juego bajo el corte `2590` (`460` elegibles, `19780` filas, contiguos y sin solapamiento desde `2231` hasta `2590`), dentro de transacciones de PostgreSQL de solo lectura -caché y tablas de ML confirmadas sin cambios antes/después. **Reproducibilidad confirmada por hash exacto de reporte** en dos ejecuciones por juego -BALOTO `9ebdaa50f580f5e52d85d04a98162425372c51c57069e6d22b21a0ea4f23d08f`, BALOTO_REVANCHA `38d48657b1078d7970bd7d51972c669f2e34db8b81a366ae4eb55c4099bcca4f`. **El protocolo validado produjo ausencia de señal agregada para ambos juegos**: BALOTO obtuvo Log Loss `0.359581731744` frente al uniforme `0.359445147513` (2/18 bloques ganados, 15 perdidos, 1 mixto); BALOTO_REVANCHA `0.360092882013` frente a `0.359445147513` (5/18, 12/18, 1 mixto) -pese a que Random Forest fue la familia seleccionada con más frecuencia (15/18 y 14/18 respectivamente), nunca interpretado como evidencia de capacidad predictiva. Baloto y Baloto Revancha se mantuvieron completamente separados en todo momento. Tiempo y memoria reales, medición válida del árbol completo de procesos Python -corrige una medición inicial inválida de ~4.51 MB que solo observaba el proceso lanzador, expresamente descartada-: BALOTO `557.9587288999464 s` de tiempo Python, pico de Working Set del árbol `373.15234375 MB`; BALOTO_REVANCHA `568.4538222999545 s`, pico `374.2890625 MB`. El intervalo `2591..2705` (test final de AE-36) no fue cargado, consultado ni reutilizado; el próximo holdout genuino permanece intacto desde `2706`.
+
+---
+
 ## Motor estadístico y caché persistido
 
 **Motor puro (`application/estadisticas/motor/`):** un conjunto de módulos que calculan sobre `ResultadoNumerico` (DTO neutral: números, fecha, superbalota) sin importar nada de `infrastructure/` ni de `api/` — no conocen PostgreSQL, HTTP, ni de qué juego provienen los datos, solo reciben una secuencia de resultados y un rango. Esto los hace agnósticos por juego: el mismo código calcula frecuencias para MiLoto (1-39) o para Baloto/Revancha (1-43) sin ninguna rama condicional por juego. El motor incluye módulos para varios tipos de análisis (frecuencia, atrasos, distribuciones, coocurrencia, patrones temporales, entre otros); **solo un subconjunto de ellos está conectado al orquestador y expuesto en la web actualmente** (ver siguiente sección) — el resto existe como código de motor pero no forma parte de ninguna visualización todavía.
