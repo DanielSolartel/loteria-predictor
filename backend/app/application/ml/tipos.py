@@ -369,3 +369,129 @@ class ReporteComparacionFamiliasJuego:
     semilla: int = 0
     version_sklearn: str = ""
     resumen: str = ""
+
+
+# =====================================================================
+# Etapa AE-39, validada -cuantificacion de incertidumbre y regla
+# de parada cientifica. Tipos anadidos de forma compatible: ningun
+# tipo de AE-36/AE-37/AE-38 anterior en este archivo fue modificado.
+# =====================================================================
+
+from enum import Enum
+
+
+class DecisionContinuidadML(Enum):
+    """Conjunto CERRADO de decisiones posibles sobre si continuar
+    expandiendo familias de modelos -Etapa AE-39. Nunca un string de
+    decision libre, y nunca incluye un estado positivo ambiguo como
+    'aprobado', 'predictivo' o 'listo_para_produccion': la unica
+    decision positiva posible es exploratoria, nunca confirmatoria."""
+
+    EVIDENCIA_EXPLORATORIA_DE_MEJORA = "evidencia_exploratoria_de_mejora"
+    NO_GO_SIN_EVIDENCIA_SUFICIENTE = "no_go_sin_evidencia_suficiente"
+
+
+@dataclass(frozen=True)
+class IntervaloBootstrap:
+    """Intervalo de confianza no parametrico por bootstrap de
+    bloques completos -nunca de filas candidato-sorteo. Limite
+    inferior y superior, ambos deben ser finitos; `nivel_confianza`
+    debe estar en `(0,1)`; `replicas` debe ser positivo."""
+    limite_inferior: float
+    limite_superior: float
+    nivel_confianza: float
+    replicas: int
+    semilla: int
+
+    def __post_init__(self) -> None:
+        for nombre, valor in (("limite_inferior", self.limite_inferior), ("limite_superior", self.limite_superior)):
+            if valor != valor or valor in (float("inf"), float("-inf")):
+                raise ValueError(f"{nombre} no es finito: {valor}")
+        if not (0.0 < self.nivel_confianza < 1.0):
+            raise ValueError(f"nivel_confianza debe estar en (0,1), recibido {self.nivel_confianza}")
+        if self.replicas <= 0:
+            raise ValueError(f"replicas debe ser positivo, recibido {self.replicas}")
+        if self.limite_inferior > self.limite_superior:
+            raise ValueError(
+                f"limite_inferior ({self.limite_inferior}) no puede ser mayor que "
+                f"limite_superior ({self.limite_superior})"
+            )
+
+
+@dataclass(frozen=True)
+class ResumenDiferenciasBloques:
+    """Analisis descriptivo secundario de las diferencias por bloque
+    (orientacion `uniforme - modelo`, positivo = mejora del modelo)
+    para UNA metrica -nunca reemplaza al bootstrap ni a la regla de
+    decision, solo la complementa. `valor_p_signos` proviene de una
+    prueba de signos exacta bilateral, excluyendo unicamente los
+    empates exactos."""
+    bloques_con_mejora: int
+    bloques_con_empeoramiento: int
+    bloques_empatados: int
+    proporcion_con_mejora: float
+    mediana: float
+    minimo: float
+    maximo: float
+    desviacion_estandar: float
+    valor_p_signos: float
+
+    def __post_init__(self) -> None:
+        for nombre, valor in (
+            ("mediana", self.mediana), ("minimo", self.minimo), ("maximo", self.maximo),
+            ("desviacion_estandar", self.desviacion_estandar), ("valor_p_signos", self.valor_p_signos),
+        ):
+            if valor != valor or valor in (float("inf"), float("-inf")):
+                raise ValueError(f"{nombre} no es finito: {valor}")
+        if not (0.0 <= self.proporcion_con_mejora <= 1.0):
+            raise ValueError(f"proporcion_con_mejora fuera de [0,1]: {self.proporcion_con_mejora}")
+        if not (0.0 <= self.valor_p_signos <= 1.0):
+            raise ValueError(f"valor_p_signos fuera de [0,1]: {self.valor_p_signos}")
+
+
+@dataclass(frozen=True)
+class ResultadoIncertidumbreMetrica:
+    """Resultado completo de incertidumbre para UNA metrica
+    principal (Log Loss o Brier Score): estimador puntual agregado
+    (promedio ponderado por `total_filas` de cada bloque), intervalo
+    bootstrap, y resumen descriptivo por bloques."""
+    nombre_metrica: str
+    diferencia_puntual_agregada: float
+    intervalo_bootstrap: IntervaloBootstrap
+    resumen_bloques: ResumenDiferenciasBloques
+
+    def __post_init__(self) -> None:
+        if self.diferencia_puntual_agregada != self.diferencia_puntual_agregada or self.diferencia_puntual_agregada in (float("inf"), float("-inf")):
+            raise ValueError(f"diferencia_puntual_agregada no es finita: {self.diferencia_puntual_agregada}")
+
+
+@dataclass(frozen=True)
+class PoliticaReaperturaML:
+    """Politica de reapertura del desarrollo predictivo -Etapa
+    AE-39, representada como tipo cerrado en vez de strings
+    dispersos. Una decision NO-GO nunca demuestra imposibilidad
+    matematica de predecir; solo que no existe evidencia suficiente
+    en el protocolo evaluado."""
+    proximo_holdout_inicio: int
+    minimo_sorteos_nuevos_requeridos: int
+    requiere_hipotesis_nueva_prerregistrada: bool = True
+
+
+@dataclass(frozen=True)
+class ReporteIncertidumbreJuego:
+    """Reporte completo en memoria de AE-39 para un juego -nunca se
+    persiste. Puramente derivado de un `ReporteComparacionFamiliasJuego`
+    ya construido (de AE-38); nunca reentrena Regresion Logistica ni
+    Random Forest, nunca invoca el caso de uso costoso de AE-38."""
+    codigo_juego: str
+    total_bloques: int
+    resultado_log_loss: ResultadoIncertidumbreMetrica
+    resultado_brier_score: ResultadoIncertidumbreMetrica
+    precision_en_5_modelo_agregada: float
+    recall_en_5_modelo_agregada: float
+    precision_en_5_uniforme_agregada: float
+    recall_en_5_uniforme_agregada: float
+    decision: DecisionContinuidadML
+    politica_reapertura: PoliticaReaperturaML
+    semilla: int
+    resumen: str = ""
