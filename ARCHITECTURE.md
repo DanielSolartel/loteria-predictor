@@ -418,7 +418,37 @@ flowchart TD
 
 ---
 
-## Motor estadístico y caché persistido
+## Cuantificación de incertidumbre y regla de parada -Etapa AE-39, validada
+
+**Motivada por tres resultados negativos consecutivos (AE-36, AE-37, AE-38)**: en vez de probar una familia adicional de modelos -lo que constituiría *model chasing*- AE-39 cuantifica la incertidumbre de las diferencias externas ya obtenidas por AE-38 y formaliza una regla de parada de desarrollo reproducible. No entrena ningún modelo nuevo.
+
+```mermaid
+flowchart TD
+    A["ReporteComparacionFamiliasJuego de AE-38 (ya construido)"] --> B["Validar: bloques ordenados, sin solapar, uniforme presente, diferencias consistentes"]
+    B --> C["Por metrica principal: bootstrap de BLOQUES completos (nunca filas)"]
+    C --> D["Estimador puntual + IC 95% percentil + resumen descriptivo + prueba de signos"]
+    D --> E["Regla prerregistrada: 6 condiciones simultaneas -> EVIDENCIA_EXPLORATORIA_DE_MEJORA o NO_GO"]
+    E --> F["ReporteIncertidumbreJuego en memoria, nunca persistido"]
+```
+
+**Unidad de remuestreo -la decision arquitectonica central de esta etapa**: el bootstrap remuestrea con reemplazo los **18 bloques externos completos** de AE-38, nunca las 15480 filas candidato-sorteo -esas filas no son observaciones independientes entre si dentro de un mismo bloque. Cada replica calcula el promedio ponderado por `total_filas` de los bloques efectivamente seleccionados en esa replica -el codigo nunca asume silenciosamente que todos los bloques tienen igual tamano.
+
+**Orientacion matematica reutilizada, nunca redefinida**: `incertidumbre.py` reutiliza directamente `DiferenciaFrenteAUniforme` (`uniforme - modelo`, positivo = mejora) ya calculada por AE-37/AE-38 en cada bloque -nunca recalcula las metricas desde cero, solo agrega y cuantifica la incertidumbre de las diferencias ya existentes.
+
+**Bootstrap e inferencia con la biblioteca estandar unicamente** (`math`, `random`): `_bootstrap_diferencia_agregada` usa una instancia local de `random.Random` -nunca el modulo global `random`, nunca paralelismo-, con semilla `42` y `10000` replicas por defecto. `_percentil` reimplementa interpolacion lineal (mismo metodo que `numpy.percentile` con `interpolation='linear'`), documentado y probado con ejemplos manuales. `_prueba_signos_exacta` usa la distribucion binomial EXACTA via `math.comb` -nunca una aproximacion normal, apropiado con solo 18 bloques- y excluye unicamente los empates exactos.
+
+**Regla de decision prerregistrada, representada como `DecisionContinuidadML` (Enum cerrado)**: `EVIDENCIA_EXPLORATORIA_DE_MEJORA` unicamente si las seis condiciones se cumplen simultaneamente (diferencia puntual positiva y limite inferior del IC 95% estrictamente mayor que cero, en Log Loss Y en Brier Score, mas ausencia de degradacion material en Precision@5/Recall@5, con una tolerancia explicita de `0.02` documentada en `TOLERANCIA_DEGRADACION_SECUNDARIA`); en cualquier otro caso, `NO_GO_SIN_EVIDENCIA_SUFICIENTE`. Nunca existe un estado positivo ambiguo como "aprobado" o "listo para produccion". Cada juego se decide de forma completamente independiente.
+
+**Validaciones explicitas, nunca `assert`**: `ReporteIncertidumbreInvalidoError` cubre bloques ausentes/insuficientes/duplicados/desordenados/solapados, metricas o diferencias no finitas, tamanos no positivos, diferencia almacenada inconsistente con las metricas (tolerancia `1e-9`), ausencia o duplicidad del baseline uniforme, juego no autorizado, y parametros de bootstrap invalidos.
+
+**Politica de reapertura, tipo cerrado**: `PoliticaReaperturaML` fija `proximo_holdout_inicio=2706` y `minimo_sorteos_nuevos_requeridos=100` -una decision NO-GO nunca demuestra imposibilidad matematica de predecir, solo ausencia de evidencia suficiente en el protocolo evaluado.
+
+**Union con AE-38, nunca reentrenamiento**: `evaluar_incertidumbre_y_regla_parada` recibe un `ReporteComparacionFamiliasJuego` ya construido -nunca invoca `CompararFamiliasMLProbabilidadNumeros` (el caso de uso costoso de AE-38), nunca consulta repositorios, nunca lee archivos. **Confirmado con AST, no solo documentado**: `modelo.py` sigue siendo el unico archivo de `application/ml/` que importa scikit-learn; `incertidumbre.py` no importa SQLAlchemy, FastAPI ni Jinja2.
+
+**Resultados reales, aplicados mediante script externo al proyecto sobre el JSON completo de AE-38 -nunca leido desde codigo de produccion**: BALOTO -Log Loss `-0.000136584231` IC95%`[-0.000217,-0.000051]`, Brier `-0.000026473413` IC95%`[-0.000044,-0.000008]`; BALOTO_REVANCHA -Log Loss `-0.000647734500` IC95%`[-0.001108,-0.000231]`, Brier `-0.000137653795` IC95%`[-0.000237,-0.000050]`. Ambos estimadores puntuales negativos en ambas metricas para ambos juegos -decision `NO_GO_SIN_EVIDENCIA_SUFICIENTE` en los dos, coincidente exactamente con la regla prerregistrada disenada antes de observar estos numeros. Reproducibilidad confirmada aplicando el analisis a las dos ejecuciones reales e identicas de AE-38 (mismo hash de reporte cada una).
+
+**Validacion real completa del usuario, ejecutada en Windows/Python 3.14.6 -evidencia atribuida al usuario, nunca ejecutada por Claude**: suite completa `3681 passed`, `0` omitidas, `pip check` limpio, aislamiento de scikit-learn reconfirmado mediante AST. AE-39 no consulto PostgreSQL ni reentreno ningun modelo -analizo exclusivamente el JSON ya validado de AE-38. Cinco incidentes reales, exclusivamente en comandos auxiliares de PowerShell (fragmentacion de bloques `elseif`/`try`/`finally`, una expresion invalida al consultar una rama local, manejo de comillas en `python -c`, y un primer intento del auditor sin `PYTHONPATH` corregido con `PYTHONPATH=backend`) -ninguno cambio codigo, metricas, Git, PostgreSQL ni resultados cientificos.
+
 
 **Motor puro (`application/estadisticas/motor/`):** un conjunto de módulos que calculan sobre `ResultadoNumerico` (DTO neutral: números, fecha, superbalota) sin importar nada de `infrastructure/` ni de `api/` — no conocen PostgreSQL, HTTP, ni de qué juego provienen los datos, solo reciben una secuencia de resultados y un rango. Esto los hace agnósticos por juego: el mismo código calcula frecuencias para MiLoto (1-39) o para Baloto/Revancha (1-43) sin ninguna rama condicional por juego. El motor incluye módulos para varios tipos de análisis (frecuencia, atrasos, distribuciones, coocurrencia, patrones temporales, entre otros); **solo un subconjunto de ellos está conectado al orquestador y expuesto en la web actualmente** (ver siguiente sección) — el resto existe como código de motor pero no forma parte de ninguna visualización todavía.
 
