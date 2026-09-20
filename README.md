@@ -944,6 +944,29 @@ Con esta evidencia real completa del usuario -entorno, PostgreSQL, contrato temp
 
 Con esta evidencia real completa del usuario -entorno, reproducibilidad exacta del bootstrap, intervalos y valores p completos, hashes de los reportes de AE-38 analizados-, **AE-39 queda validada como cuantificación de incertidumbre y regla de parada científica: metodología y reproducibilidad confirmadas -nunca capacidad predictiva.** El intervalo `2591..2705` no fue reutilizado; el próximo holdout genuino permanece intacto desde `2706`. AE-38 y checkpoints anteriores permanecen validados e intactos -ningún resultado negativo previo fue reescrito ni suavizado. MiLoto continúa en NO-GO temporal, ColorLoto continúa pospuesto. AE-40 no fue implementada.
 
+**Checkpoint validado (Etapa AE-40, gate operativo de elegibilidad para la reapertura del holdout de Machine Learning):** tras el NO-GO de AE-39 en ambos juegos, AE-40 implementa exclusivamente un gate determinista que responde una única pregunta: ¿existen al menos 100 sorteos nuevos, completos en numeración y separados por juego, desde el sorteo `2706`, para permitir que una etapa **futura** prerregistre un protocolo antes de observar sus resultados? **La validación confirma el funcionamiento metodológico y operativo del gate -el resultado del gate en sí es negativo: no existen todavía sorteos cargados desde `2706` en la instantánea real evaluada.**
+
+**Entorno real del usuario, validado en Windows -evidencia atribuida al usuario, no ejecutada por Claude:** Python `3.14.6`, PostgreSQL real reutilizado (sin contenedor nuevo), revisión Alembic `0006`, `transaction_read_only=on`. Pruebas reales: `63 passed` (AE-40), `47 passed` (AE-39), suite completa `3744 passed`; reconciliación AST `3681 + 63 = 3744`; `pip check` limpio.
+
+**Consulta real confirmada, verificada directamente contra la sentencia SQL compilada de producción**: exactamente dos consultas agregadas totales -una por juego, cada caso de uso con dos consultas en total (resolución del juego más la consulta agregada). Confirmado sobre el SQL real: `select count(sorteos.numero_sorteo)... count(distinct(sorteos.numero_sorteo))... min(sorteos.numero_sorteo)... max(sorteos.numero_sorteo)... from sorteos where sorteos.juego_id = ... and sorteos.numero_sorteo >= 2706` -solo agregados, filtro exacto por `juego_id`, filtro `numero_sorteo >= 2706`, sin `JOIN`, sin ninguna columna de números ganadores, superbalota, colores, fechas como señal, features ni targets.
+
+**Resultado real, negativo para ambos juegos -recalculado de forma independiente ejecutando la función real de producción con los datos exactos reportados, y coincidente exactamente**:
+
+| Juego | Estado | Total sorteos nuevos | Mínimo | Máximo | Consultas agregadas | Tiempo |
+|---|---|---:|---|---|---:|---:|
+| BALOTO | `no_elegible_datos_insuficientes` | `0` | `null` | `null` | `1` | `0.0402 s` |
+| BALOTO_REVANCHA | `no_elegible_datos_insuficientes` | `0` | `null` | `null` | `1` | `0.0039 s` |
+
+**No existen sorteos cargados desde `2706` en la instantánea real evaluada -no se alcanzó el mínimo de 100 sorteos, no existe todavía una secuencia `2706..2805`.** `numeracion_contigua=true` con cero registros significa exclusivamente que no se detectó ninguna contradicción de continuidad en un conjunto vacío -**nunca** que exista una secuencia real de sorteos. Working Set pico total: `78.49 MB` -medición real del proceso completo, nunca evidencia de Claude.
+
+**PostgreSQL real, sin cambios**: caché `estadisticas` `209 → 209`; `modelos`/`metricas_modelo`/`predicciones` `0 → 0 → 0 → 0`, idénticos antes y después. No se persistieron modelos, métricas ni predicciones. No se generaron predicciones. No se observaron resultados ganadores. **El holdout no fue consumido.**
+
+**Cierre exclusivamente de estado**: se actualizaron marcadores `PROVISIONAL` → `validada` en comentarios/docstrings de los 5 archivos Python de AE-40 (`reapertura.py`, `disponibilidad_holdout_repository.py`, `disponibilidad_holdout_repository_sqlalchemy.py`, el caso de uso, `tipos.py`) -AST ejecutable idéntico confirmado, ignorando únicamente docstrings; el contenido añadido a `tipos.py` en el cierre permanece puramente LF, igual que en el parche provisional corregido. Las 63 pruebas de AE-40 y todas las pruebas anteriores permanecen byte a byte idénticas. Los once archivos protegidos de AE-36/37/38/39 permanecen byte a byte idénticos. **Confirmado con AST, no solo documentado**: `modelo.py` sigue siendo el único archivo de `application/ml/` que importa scikit-learn.
+
+**No se habilita todavía un nuevo prerregistro**: `ELEGIBLE_PARA_PRERREGISTRO` nunca significa GO, evidencia predictiva, autorización para entrenar, para mirar resultados, para consumir el holdout, ni para desplegar -y en esta instantánea real, ni siquiera se alcanzó ese estado. El desarrollo predictivo **no se reabre**.
+
+Con esta evidencia real completa del usuario -entorno, SQL de producción verificado, resultado negativo honesto, PostgreSQL sin cambios-, **AE-40 queda validada como gate operativo de elegibilidad: metodología y funcionamiento confirmados -el resultado del gate en esta instantánea es `NO_ELEGIBLE_DATOS_INSUFICIENTES` para ambos juegos.** AE-39 y checkpoints anteriores permanecen validados e intactos. El histórico `2081..2590` continúa congelado; el intervalo `2591..2705` no fue reutilizado; el holdout desde `2706` no fue consumido. MiLoto continúa en NO-GO temporal, ColorLoto continúa pospuesto. AE-41 no fue implementada.
+
 ---
 
 
