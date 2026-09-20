@@ -495,3 +495,68 @@ class ReporteIncertidumbreJuego:
     politica_reapertura: PoliticaReaperturaML
     semilla: int
     resumen: str = ""
+
+
+# =====================================================================
+# Etapa AE-40, validada -gate operativo de elegibilidad para la
+# reapertura del holdout de Machine Learning. Tipos anadidos de
+# forma compatible: ningun tipo de AE-36/AE-37/AE-38/AE-39 anterior
+# en este archivo fue modificado.
+# =====================================================================
+
+class EstadoElegibilidadReaperturaML(Enum):
+    """Conjunto CERRADO de estados posibles del gate de AE-40. Nunca
+    un string de estado libre. `ELEGIBLE_PARA_PRERREGISTRO` nunca
+    significa GO, evidencia predictiva, autorizacion para entrenar,
+    autorizacion para mirar resultados, ni autorizacion para
+    desplegar -unicamente que existen suficientes sorteos nuevos
+    para que una etapa futura pueda prerregistrar un protocolo antes
+    de observar sus resultados."""
+
+    NO_ELEGIBLE_DATOS_INSUFICIENTES = "no_elegible_datos_insuficientes"
+    ELEGIBLE_PARA_PRERREGISTRO = "elegible_para_prerregistro"
+
+
+@dataclass(frozen=True)
+class ResumenDisponibilidadHoldout:
+    """Resumen minimo de disponibilidad del holdout -exclusivamente
+    metadatos (conteos y numeros de sorteo), nunca numeros ganadores,
+    superbalota, fecha como senal, colores, features ni targets.
+    Producido por `DisponibilidadHoldoutRepository` y consumido por
+    la funcion pura de AE-40; `numero_sorteo_minimo`/`maximo` son
+    `None` unicamente cuando `total_registros == 0`."""
+    juego_codigo: str
+    desde_numero_sorteo: int
+    total_registros: int
+    total_numeros_distintos: int
+    numero_sorteo_minimo: int | None
+    numero_sorteo_maximo: int | None
+
+
+@dataclass(frozen=True)
+class ReporteElegibilidadReaperturaML:
+    """Reporte completo, inmutable y serializable del gate de AE-40
+    para un juego -nunca se persiste, nunca contiene resultados
+    observados. Los tres campos booleanos finales son invariantes
+    fijas de esta etapa (`False` siempre): AE-40 nunca observa
+    resultados, nunca entrena modelos, y nunca consume el holdout."""
+    juego_codigo: str
+    estado: EstadoElegibilidadReaperturaML
+    proximo_holdout_inicio: int
+    minimo_sorteos_nuevos_requeridos: int
+    total_sorteos_nuevos: int
+    numero_sorteo_minimo: int | None
+    numero_sorteo_maximo: int | None
+    numero_sorteo_objetivo_minimo: int
+    numeracion_contigua: bool
+    resultados_observados: bool = False
+    modelos_entrenados: bool = False
+    holdout_consumido: bool = False
+
+    def __post_init__(self) -> None:
+        if self.resultados_observados is not False:
+            raise ValueError("resultados_observados debe ser siempre False en AE-40 -invariante fija")
+        if self.modelos_entrenados is not False:
+            raise ValueError("modelos_entrenados debe ser siempre False en AE-40 -invariante fija")
+        if self.holdout_consumido is not False:
+            raise ValueError("holdout_consumido debe ser siempre False en AE-40 -invariante fija")

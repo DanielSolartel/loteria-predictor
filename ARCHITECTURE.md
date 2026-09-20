@@ -449,6 +449,32 @@ flowchart TD
 
 **Validacion real completa del usuario, ejecutada en Windows/Python 3.14.6 -evidencia atribuida al usuario, nunca ejecutada por Claude**: suite completa `3681 passed`, `0` omitidas, `pip check` limpio, aislamiento de scikit-learn reconfirmado mediante AST. AE-39 no consulto PostgreSQL ni reentreno ningun modelo -analizo exclusivamente el JSON ya validado de AE-38. Cinco incidentes reales, exclusivamente en comandos auxiliares de PowerShell (fragmentacion de bloques `elseif`/`try`/`finally`, una expresion invalida al consultar una rama local, manejo de comillas en `python -c`, y un primer intento del auditor sin `PYTHONPATH` corregido con `PYTHONPATH=backend`) -ninguno cambio codigo, metricas, Git, PostgreSQL ni resultados cientificos.
 
+---
+
+## Gate operativo de elegibilidad para la reapertura -Etapa AE-40, validada
+
+**Tras el NO-GO de AE-39 en ambos juegos**: AE-40 no reabre el desarrollo predictivo ni prueba ninguna familia de modelos. Implementa exclusivamente un gate determinista que responde una unica pregunta operativa -nunca cientifica: ¿existen al menos 100 sorteos nuevos, completos en numeracion y separados por juego, desde el sorteo `2706`? **La validacion confirma el funcionamiento metodologico y operativo del gate -el resultado del gate en si es negativo en la instantanea real evaluada.**
+
+```mermaid
+flowchart TD
+    A["EvaluarElegibilidadReaperturaML.ejecutar(codigo_juego)"] --> B["Rechaza MiLoto/ColorLoto antes de tocar repositorios"]
+    B --> C["DisponibilidadHoldoutRepository: SOLO metadatos agregados"]
+    C --> D["Verifica resumen.juego_codigo == codigo_juego"]
+    D --> E["reapertura.py: validar coherencia interna + aplicar umbral 100"]
+    E --> F["ReporteElegibilidadReaperturaML -nunca GO, nunca entrenamiento"]
+```
+
+**Validacion real completa del usuario, ejecutada en Windows/Python 3.14.6/PostgreSQL real -evidencia atribuida al usuario, nunca ejecutada por Claude**: PostgreSQL real reutilizado (sin contenedor nuevo), revision Alembic `0006`, `transaction_read_only=on`. Confirmado directamente sobre la sentencia SQL compilada de produccion real: exactamente dos consultas agregadas totales (una por juego, cada caso de uso con dos consultas -resolucion del juego mas la consulta agregada), proyectando unicamente `COUNT`, `COUNT DISTINCT`, `MIN` y `MAX` sobre `numero_sorteo`, filtro exacto por `juego_id`, filtro `numero_sorteo >= 2706`, sin `JOIN`, sin ninguna columna de numeros ganadores, superbalota, colores, fechas como senal, features ni targets.
+
+**Resultado real, negativo para ambos juegos -recalculado de forma independiente ejecutando la funcion real de produccion con los datos exactos reportados, coincidente exactamente**: BALOTO y BALOTO_REVANCHA obtuvieron `no_elegible_datos_insuficientes`, `0` sorteos nuevos, minimo y maximo `null`. **No existen sorteos cargados desde `2706` en la instantanea real evaluada** -no se alcanzo el minimo de 100, no existe todavia una secuencia `2706..2805`. `numeracion_contigua=true` con cero registros significa exclusivamente que no se detecto ninguna contradiccion de continuidad en un conjunto vacio -nunca que exista una secuencia real de sorteos.
+
+**PostgreSQL real, sin cambios**: cache `estadisticas` `209 -> 209`; `modelos`/`metricas_modelo`/`predicciones` `0 -> 0` en los tres. No se persistieron modelos, metricas ni predicciones. No se generaron predicciones. No se observaron resultados ganadores. El holdout no fue consumido.
+
+**Cierre exclusivamente de estado**: marcadores `PROVISIONAL` -> `validada` en comentarios/docstrings de los 5 archivos Python de AE-40 -AST ejecutable identico confirmado, ignorando unicamente docstrings; el contenido de cierre anadido a `tipos.py` permanece puramente LF, igual que en el parche provisional corregido, preservando intacto el prefijo CRLF original de AE-36/37/38/39. Las 63 pruebas de AE-40 y todas las pruebas anteriores permanecen byte a byte identicas. Los once archivos protegidos de AE-36/37/38/39 permanecen byte a byte identicos. **Confirmado con AST, no solo documentado**: `modelo.py` sigue siendo el unico archivo de `application/ml/` que importa scikit-learn.
+
+**No se habilita todavia un nuevo prerregistro**: `ELEGIBLE_PARA_PRERREGISTRO` nunca significo GO, evidencia predictiva, autorizacion para entrenar, para mirar resultados, para consumir el holdout, ni para desplegar -y en esta instantanea real, ni siquiera se alcanzo ese estado. El desarrollo predictivo no se reabre.
+
+**Limitaciones reales**: esta validacion cubre exclusivamente una instantanea puntual del holdout -cero sorteos nuevos disponibles al momento de la ejecucion real. Una ejecucion futura, cuando existan sorteos reales desde `2706`, podria producir un resultado distinto; eso no reabre automaticamente el desarrollo predictivo ni autoriza observar los resultados del holdout sin un prerregistro explicito previo, tal como esta documentado desde AE-39.
 
 **Motor puro (`application/estadisticas/motor/`):** un conjunto de módulos que calculan sobre `ResultadoNumerico` (DTO neutral: números, fecha, superbalota) sin importar nada de `infrastructure/` ni de `api/` — no conocen PostgreSQL, HTTP, ni de qué juego provienen los datos, solo reciben una secuencia de resultados y un rango. Esto los hace agnósticos por juego: el mismo código calcula frecuencias para MiLoto (1-39) o para Baloto/Revancha (1-43) sin ninguna rama condicional por juego. El motor incluye módulos para varios tipos de análisis (frecuencia, atrasos, distribuciones, coocurrencia, patrones temporales, entre otros); **solo un subconjunto de ellos está conectado al orquestador y expuesto en la web actualmente** (ver siguiente sección) — el resto existe como código de motor pero no forma parte de ninguna visualización todavía.
 
