@@ -560,3 +560,68 @@ class ReporteElegibilidadReaperturaML:
             raise ValueError("modelos_entrenados debe ser siempre False en AE-40 -invariante fija")
         if self.holdout_consumido is not False:
             raise ValueError("holdout_consumido debe ser siempre False en AE-40 -invariante fija")
+
+
+# =====================================================================
+# Etapa AE-41, validada -bloqueo operativo centralizado del
+# desarrollo predictivo. Tipos anadidos de forma compatible: ningun
+# tipo de AE-36/AE-37/AE-38/AE-39/AE-40 anterior en este archivo fue
+# modificado.
+# =====================================================================
+
+class EstadoAutorizacionOperativaML(Enum):
+    """Conjunto CERRADO de estados posibles de la politica de
+    autorizacion operativa de AE-41. Nunca un string de estado
+    libre. `AUTORIZADO_PARA_PRERREGISTRO` nunca significa
+    autorizacion para entrenar, para observar resultados, para
+    predecir ni para desplegar -unicamente que una etapa futura,
+    independiente, podria iniciar un prerregistro tras validacion
+    humana expresa."""
+
+    BLOQUEADO_DATOS_INSUFICIENTES = "bloqueado_datos_insuficientes"
+    BLOQUEADO_NUMERACION_INVALIDA = "bloqueado_numeracion_invalida"
+    AUTORIZADO_PARA_PRERREGISTRO = "autorizado_para_prerregistro"
+
+
+@dataclass(frozen=True)
+class ReporteAutorizacionOperativaML:
+    """Reporte completo, inmutable y serializable de la politica de
+    bloqueo operativo de AE-41 para un juego -nunca se persiste,
+    nunca contiene resultados observados. Los cuatro campos
+    booleanos finales son invariantes fijas de esta etapa (`False`
+    siempre): AE-41 nunca observa resultados, nunca construye
+    datasets ni entrena modelos, nunca genera predicciones, y nunca
+    consume el holdout. `reporte_elegibilidad` es `None`
+    UNICAMENTE cuando `estado == BLOQUEADO_NUMERACION_INVALIDA`
+    -en ese caso el gate de AE-40 no llego a producir un reporte
+    normal, porque detecto una inconsistencia estructural."""
+    juego_codigo: str
+    estado: EstadoAutorizacionOperativaML
+    motivo: str
+    reporte_elegibilidad: ReporteElegibilidadReaperturaML | None
+    resultados_observados: bool = False
+    modelos_entrenados: bool = False
+    predicciones_generadas: bool = False
+    holdout_consumido: bool = False
+
+    def __post_init__(self) -> None:
+        if self.resultados_observados is not False:
+            raise ValueError("resultados_observados debe ser siempre False en AE-41 -invariante fija")
+        if self.modelos_entrenados is not False:
+            raise ValueError("modelos_entrenados debe ser siempre False en AE-41 -invariante fija")
+        if self.predicciones_generadas is not False:
+            raise ValueError("predicciones_generadas debe ser siempre False en AE-41 -invariante fija")
+        if self.holdout_consumido is not False:
+            raise ValueError("holdout_consumido debe ser siempre False en AE-41 -invariante fija")
+        if self.estado == EstadoAutorizacionOperativaML.BLOQUEADO_NUMERACION_INVALIDA:
+            if self.reporte_elegibilidad is not None:
+                raise ValueError(
+                    "reporte_elegibilidad debe ser None cuando estado es BLOQUEADO_NUMERACION_INVALIDA "
+                    "-el gate de AE-40 no llego a producir un reporte normal"
+                )
+        else:
+            if self.reporte_elegibilidad is None:
+                raise ValueError(
+                    f"reporte_elegibilidad no puede ser None cuando estado es {self.estado} "
+                    "-el gate de AE-40 si produjo un reporte normal"
+                )
