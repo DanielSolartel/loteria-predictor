@@ -1,5 +1,5 @@
 """Tests del corte congelado de `EvaluarBaselineMLProbabilidadNumeros`
--mantenimiento posterior a AE-42, PROVISIONAL.
+-mantenimiento posterior a AE-42, validado.
 
 El caso de uso de AE-36 consultaba el historico completo sin
 `hasta_numero_sorteo`: con sorteos cargados desde `2706`, una nueva
