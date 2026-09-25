@@ -9,7 +9,7 @@ y Baloto Revancha estan autorizados (Etapa AE-35, GO CONDICIONAL);
 MiLoto (NO-GO temporal, 70 sorteos) y ColorLoto (pospuesto) se
 rechazan explicitamente, nunca en silencio.
 
-Mantenimiento posterior a AE-42, PROVISIONAL -corte congelado: la
+Mantenimiento posterior a AE-42, validado -corte congelado: la
 consulta original no pasaba `hasta_numero_sorteo`, de modo que con
 sorteos cargados desde `2706` una nueva ejecucion desplazaba el test
 final (`2591..2705` -> `2597..2713` con `2081..2713`) y evaluaba

@@ -1,5 +1,5 @@
 """Prueba estructural (AST) de los cortes temporales de los casos de
-uso de ML existentes -mantenimiento posterior a AE-42, PROVISIONAL.
+uso de ML existentes -mantenimiento posterior a AE-42, validado.
 
 Limitada DELIBERADAMENTE a los tres casos de uso que entrenan con
 historico real (AE-36, AE-37, AE-38): fija el corte congelado de
