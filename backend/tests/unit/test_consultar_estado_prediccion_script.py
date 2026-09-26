@@ -1,20 +1,38 @@
-"""AE-45, validada: consulta manual y de solo lectura del bloqueo de AE-44."""
+"""AE-45, validada; ampliada en AE-47, validada: consulta manual y de
+solo lectura del bloqueo de AE-44 con el diagnostico de AE-46 (esquema
+JSON 1.1). Todo es sintetico: fakes de conexion, sesion, resolvedor,
+diagnosticador y repositorios de metadatos -nunca PostgreSQL."""
 from __future__ import annotations
 
 import ast
+import dataclasses
 import json
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
-from app.application.ml.tipos import EstadoPrediccionML, ReportePrediccionJuego
+from app.application.ml.autorizacion_operativa import evaluar_autorizacion_operativa_desde_elegibilidad
+from app.application.ml.diagnostico_bloqueo import diagnosticar_bloqueo
+from app.application.ml.reapertura import evaluar_elegibilidad_reapertura_ml
+from app.application.ml.tipos import (
+    DecisionContinuidadML,
+    EstadoPrediccionML,
+    ReportePrediccionJuego,
+    ResumenDisponibilidadHoldout,
+)
+from app.application.use_cases.evaluar_autorizacion_operativa_ml import EvaluarAutorizacionOperativaML
+from app.application.use_cases.evaluar_elegibilidad_reapertura_ml import EvaluarElegibilidadReaperturaML
+from app.domain.entities.juego import Juego
 from scripts import consultar_estado_prediccion as cli
 from scripts.auditoria_operativa_bloqueo import FalloAuditoriaOperativaError
+from tests.unit.fakes import FakeJuegoRepository
 
 
 DATOS = EstadoPrediccionML.BLOQUEADO_DATOS_INSUFICIENTES
 NO_GO = EstadoPrediccionML.BLOQUEADO_NO_GO_CIENTIFICO
 SIN_EVALUACION = EstadoPrediccionML.BLOQUEADO_SIN_EVALUACION_HOLDOUT
+CAMPOS_PREDICTIVOS = {"combinaciones", "probabilidades", "nivel_confianza", "numeros_fuertes", "numeros_debiles"}
 
 
 def _reporte(codigo: str) -> ReportePrediccionJuego:
@@ -25,6 +43,18 @@ def _reporte(codigo: str) -> ReportePrediccionJuego:
         explicacion="Bloqueado por datos, NO-GO y ausencia de evaluacion prospectiva.",
         disclaimer="Analisis estadistico, no garantia.",
     )
+
+
+def _autorizacion_sintetica(codigo: str, total: int = 8):
+    resumen = ResumenDisponibilidadHoldout(
+        juego_codigo=codigo, desde_numero_sorteo=2706, total_registros=total, total_numeros_distintos=total,
+        numero_sorteo_minimo=2706 if total else None, numero_sorteo_maximo=2705 + total if total else None,
+    )
+    return evaluar_autorizacion_operativa_desde_elegibilidad(evaluar_elegibilidad_reapertura_ml(resumen))
+
+
+def _diagnostico(codigo: str):
+    return diagnosticar_bloqueo(_autorizacion_sintetica(codigo), DecisionContinuidadML.NO_GO_SIN_EVIDENCIA_SUFICIENTE)
 
 
 class _Resolver:
@@ -40,13 +70,32 @@ class _Resolver:
         return _reporte(self.cambiar_juego or codigo)
 
 
+class _Diagnosticador:
+    def __init__(self, fallar_en: str | None = None, transformar=None):
+        self.llamadas: list[str] = []
+        self.fallar_en = fallar_en
+        self.transformar = transformar
+
+    def ejecutar(self, codigo: str):
+        self.llamadas.append(codigo)
+        if codigo == self.fallar_en:
+            raise RuntimeError("fallo sintetico de AE-46")
+        diagnostico = _diagnostico(codigo)
+        return self.transformar(diagnostico) if self.transformar else diagnostico
+
+
+# ---------------------------------------------------------------------------
+# Esquema 1.1 y ausencia de salidas predictivas
+# ---------------------------------------------------------------------------
+
 def test_json_estable_para_dos_juegos_sin_campos_predictivos():
-    resolver = _Resolver()
-    reporte = cli.construir_reporte(resolver, "0006")
+    resolver, diagnosticador = _Resolver(), _Diagnosticador()
+    reporte = cli.construir_reporte(resolver, diagnosticador, "0006")
 
     assert resolver.llamadas == ["BALOTO", "BALOTO_REVANCHA"]
-    assert reporte == cli.construir_reporte(_Resolver(), "0006")
-    assert reporte["esquema"] == "1.0"
+    assert diagnosticador.llamadas == ["BALOTO", "BALOTO_REVANCHA"]
+    assert reporte == cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+    assert reporte["esquema"] == "1.1" == cli.ESQUEMA_JSON
     assert reporte["alembic_revision"] == "0006"
     assert [r["codigo"] for r in reporte["juegos"]] == resolver.llamadas
     for juego in reporte["juegos"]:
@@ -54,21 +103,64 @@ def test_json_estable_para_dos_juegos_sin_campos_predictivos():
         assert juego["motivos"] == [DATOS.value, NO_GO.value, SIN_EVALUACION.value]
         assert juego["disclaimer"]
         assert "explicacion" in juego
-        assert not ({"combinaciones", "probabilidades", "nivel_confianza", "numeros_fuertes"} & juego.keys())
+        assert not (CAMPOS_PREDICTIVOS & juego.keys())
     assert json.loads(json.dumps(reporte)) == reporte
 
+
+def test_esquema_1_1_incluye_progreso_y_condiciones_pendientes():
+    reporte = cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+    for juego in reporte["juegos"]:
+        assert set(juego) == {
+            "codigo", "estado", "motivos", "explicacion", "disclaimer",
+            "progreso", "condiciones_pendientes", "desbloqueable",
+        }
+        assert juego["progreso"] == {
+            "evaluable": True, "desde_numero_sorteo": 2706, "total_sorteos_nuevos": 8,
+            "minimo_requerido": 100, "faltantes": 92, "numero_sorteo_objetivo_minimo": 2805,
+        }
+        assert juego["condiciones_pendientes"] == [
+            "minimo_sorteos_nuevos", "evidencia_cientifica_ae39",
+            "protocolo_prospectivo_prerregistrado", "evaluacion_prospectiva_positiva",
+        ]
+        assert juego["desbloqueable"] is False
+
+
+def test_json_serializado_no_contiene_ninguna_clave_predictiva_anidada():
+    reporte = cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+
+    def claves(objeto):
+        if isinstance(objeto, dict):
+            for clave, valor in objeto.items():
+                yield clave
+                yield from claves(valor)
+        elif isinstance(objeto, list):
+            for valor in objeto:
+                yield from claves(valor)
+
+    assert not (CAMPOS_PREDICTIVOS & set(claves(reporte)))
+
+
+# ---------------------------------------------------------------------------
+# Errores sin reporte parcial y coherencia entre diagnostico y reporte
+# ---------------------------------------------------------------------------
 
 def test_segundo_juego_falla_y_no_devuelve_reporte_parcial():
     resolver = _Resolver(fallar_en="BALOTO_REVANCHA")
     with pytest.raises(cli.FalloConsultaEstadoError, match="BALOTO_REVANCHA") as exc:
-        cli.construir_reporte(resolver, "0006")
+        cli.construir_reporte(resolver, _Diagnosticador(), "0006")
     assert exc.value.codigo_salida == cli.EXIT_FALLO_EVALUANDO_JUEGO
     assert resolver.llamadas == ["BALOTO", "BALOTO_REVANCHA"]
 
 
+def test_fallo_del_diagnostico_en_el_segundo_juego_no_devuelve_reporte_parcial():
+    with pytest.raises(cli.FalloConsultaEstadoError, match="BALOTO_REVANCHA") as exc:
+        cli.construir_reporte(_Resolver(), _Diagnosticador(fallar_en="BALOTO_REVANCHA"), "0006")
+    assert exc.value.codigo_salida == cli.EXIT_FALLO_EVALUANDO_JUEGO
+
+
 def test_reporte_de_otro_juego_se_rechaza():
     with pytest.raises(cli.FalloConsultaEstadoError, match="BALOTO_REVANCHA") as exc:
-        cli.construir_reporte(_Resolver(cambiar_juego="BALOTO_REVANCHA"), "0006")
+        cli.construir_reporte(_Resolver(cambiar_juego="BALOTO_REVANCHA"), _Diagnosticador(), "0006")
     assert exc.value.codigo_salida == cli.EXIT_REPORTE_INCONSISTENTE
 
 
@@ -78,9 +170,100 @@ def test_no_se_acepta_un_reporte_que_no_sea_del_tipo_bloqueado():
             return {"juego_codigo": codigo, "estado": "habilitado"}
 
     with pytest.raises(cli.FalloConsultaEstadoError) as exc:
-        cli.construir_reporte(_ResolverDefectuoso(), "0006")
+        cli.construir_reporte(_ResolverDefectuoso(), _Diagnosticador(), "0006")
     assert exc.value.codigo_salida == cli.EXIT_REPORTE_INCONSISTENTE
 
+
+@pytest.mark.parametrize("transformar, descripcion", [
+    (lambda d: {"juego_codigo": d.juego_codigo}, "tipo"),
+    (lambda d: _diagnostico("BALOTO_REVANCHA") if d.juego_codigo == "BALOTO" else d, "juego"),
+    (lambda d: dataclasses.replace(
+        diagnosticar_bloqueo(_autorizacion_sintetica(d.juego_codigo, total=100),
+                             DecisionContinuidadML.NO_GO_SIN_EVIDENCIA_SUFICIENTE)), "estado"),
+    (lambda d: diagnosticar_bloqueo(_autorizacion_sintetica(d.juego_codigo),
+                                    DecisionContinuidadML.EVIDENCIA_EXPLORATORIA_DE_MEJORA), "motivos"),
+])
+def test_diagnostico_incoherente_con_el_reporte_se_rechaza_sin_json(transformar, descripcion):
+    with pytest.raises(cli.FalloConsultaEstadoError) as exc:
+        cli.construir_reporte(_Resolver(), _Diagnosticador(transformar=transformar), "0006")
+    assert exc.value.codigo_salida == cli.EXIT_REPORTE_INCONSISTENTE, descripcion
+
+
+# ---------------------------------------------------------------------------
+# Una sola consulta agregada de AE-41 por juego, compartida
+# ---------------------------------------------------------------------------
+
+def _juego(codigo: str) -> Juego:
+    return Juego(
+        id=uuid4(), codigo=codigo, nombre=codigo.title(), rango_min=1, rango_max=43, cantidad_numeros=5,
+        tiene_superbalota=True, superbalota_min=1, superbalota_max=16, tiene_color=False,
+        permite_repeticion=False, activo=True,
+    )
+
+
+class _DisponibilidadQueCuenta:
+    """Metadatos sinteticos (8 sorteos 2706..2713); cuenta las consultas
+    agregadas por juego."""
+
+    def __init__(self):
+        self.consultas: dict[str, int] = {}
+
+    def obtener_resumen_disponibilidad(self, juego_id, codigo_juego, desde_numero_sorteo):
+        self.consultas[codigo_juego] = self.consultas.get(codigo_juego, 0) + 1
+        return ResumenDisponibilidadHoldout(
+            juego_codigo=codigo_juego, desde_numero_sorteo=desde_numero_sorteo,
+            total_registros=8, total_numeros_distintos=8, numero_sorteo_minimo=2706, numero_sorteo_maximo=2713,
+        )
+
+
+def _autorizacion_real(disponibilidad) -> EvaluarAutorizacionOperativaML:
+    juegos = FakeJuegoRepository(juegos=[_juego("BALOTO"), _juego("BALOTO_REVANCHA")])
+    return EvaluarAutorizacionOperativaML(EvaluarElegibilidadReaperturaML(juegos, disponibilidad))
+
+
+def test_una_sola_consulta_agregada_por_juego_con_los_casos_de_uso_reales():
+    disponibilidad = _DisponibilidadQueCuenta()
+    resolver, diagnosticador = cli._crear_consultas_desde(_autorizacion_real(disponibilidad))
+    reporte = cli.construir_reporte(resolver, diagnosticador, "0006")
+
+    assert disponibilidad.consultas == {"BALOTO": 1, "BALOTO_REVANCHA": 1}
+    for juego in reporte["juegos"]:
+        assert juego["estado"] == DATOS.value
+        assert juego["progreso"]["faltantes"] == 92
+        assert juego["desbloqueable"] is False
+
+
+def test_el_adaptador_comparte_el_mismo_reporte_de_ae41():
+    disponibilidad = _DisponibilidadQueCuenta()
+    adaptador = cli._AutorizacionUnaVezPorJuego(_autorizacion_real(disponibilidad))
+    primero = adaptador.ejecutar("BALOTO")
+    assert adaptador.ejecutar("BALOTO") is primero
+    adaptador.ejecutar("BALOTO_REVANCHA")
+    assert disponibilidad.consultas == {"BALOTO": 1, "BALOTO_REVANCHA": 1}
+
+
+def test_el_adaptador_no_guarda_fallos():
+    class _AutorizacionQueFallaUnaVez:
+        def __init__(self):
+            self.llamadas = 0
+
+        def ejecutar(self, codigo):
+            self.llamadas += 1
+            if self.llamadas == 1:
+                raise RuntimeError("fallo sintetico")
+            return _autorizacion_sintetica(codigo)
+
+    interna = _AutorizacionQueFallaUnaVez()
+    adaptador = cli._AutorizacionUnaVezPorJuego(interna)
+    with pytest.raises(RuntimeError):
+        adaptador.ejecutar("BALOTO")
+    assert adaptador.ejecutar("BALOTO").juego_codigo == "BALOTO"
+    assert interna.llamadas == 2
+
+
+# ---------------------------------------------------------------------------
+# main(): solo lectura, revision Alembic, ROLLBACK y codigos de salida
+# ---------------------------------------------------------------------------
 
 class _ConexionFake:
     def __init__(self):
@@ -103,7 +286,7 @@ class _SesionFake:
         self.cerrada = True
 
 
-def _preparar_main(monkeypatch, resolver):
+def _preparar_main(monkeypatch, resolver, diagnosticador=None):
     conexion = _ConexionFake()
     sesiones = []
     orden = []
@@ -122,16 +305,16 @@ def _preparar_main(monkeypatch, resolver):
         orden.append("revision")
         return "0006"
 
-    def crear_resolver(sesion):
+    def crear_consultas(sesion):
         assert orden == ["solo_lectura", "revision"]
-        orden.append("resolver")
-        return resolver
+        orden.append("consultas")
+        return resolver, diagnosticador or _Diagnosticador()
 
     monkeypatch.setattr(cli, "_abrir_conexion", lambda: conexion)
     monkeypatch.setattr(cli, "Session", crear_sesion)
     monkeypatch.setattr(cli, "verificar_transaccion_solo_lectura", verificar_lectura)
     monkeypatch.setattr(cli, "verificar_revision_alembic", verificar_revision)
-    monkeypatch.setattr(cli, "_crear_resolver", crear_resolver)
+    monkeypatch.setattr(cli, "_crear_consultas", crear_consultas)
     return conexion, sesiones, orden
 
 
@@ -141,8 +324,9 @@ def test_main_verifica_solo_lectura_antes_de_evaluar_y_revierte(monkeypatch, cap
 
     assert cli.main() == cli.EXIT_OK
     salida = json.loads(capsys.readouterr().out)
+    assert salida["esquema"] == "1.1"
     assert [j["codigo"] for j in salida["juegos"]] == resolver.llamadas
-    assert orden == ["solo_lectura", "revision", "resolver"]
+    assert orden == ["solo_lectura", "revision", "consultas"]
     assert conexion.sentencias == ["BEGIN TRANSACTION READ ONLY", "ROLLBACK"]
     assert conexion.cerrada and sesiones[0].cerrada
 
@@ -154,6 +338,18 @@ def test_main_fallo_segundo_juego_no_emite_json_y_revierte(monkeypatch, capsys):
     salida = capsys.readouterr()
     assert salida.out == ""
     assert "BALOTO_REVANCHA" in salida.err
+    assert conexion.sentencias == ["BEGIN TRANSACTION READ ONLY", "ROLLBACK"]
+    assert conexion.cerrada and sesiones[0].cerrada
+
+
+def test_main_diagnostico_incoherente_no_emite_json_y_revierte(monkeypatch, capsys):
+    incoherente = _Diagnosticador(transformar=lambda d: diagnosticar_bloqueo(
+        _autorizacion_sintetica(d.juego_codigo, total=100), DecisionContinuidadML.NO_GO_SIN_EVIDENCIA_SUFICIENTE))
+    conexion, sesiones, _ = _preparar_main(monkeypatch, _Resolver(), incoherente)
+
+    assert cli.main() == cli.EXIT_REPORTE_INCONSISTENTE
+    salida = capsys.readouterr()
+    assert salida.out == ""
     assert conexion.sentencias == ["BEGIN TRANSACTION READ ONLY", "ROLLBACK"]
     assert conexion.cerrada and sesiones[0].cerrada
 
@@ -198,17 +394,40 @@ def test_fallo_de_conexion_sale_con_codigo_2_sin_reporte(monkeypatch, capsys):
     assert salida.out == "" and "sin PostgreSQL" in salida.err
 
 
+def test_codigos_de_salida_sin_cambios():
+    assert (cli.EXIT_OK, cli.EXIT_FALLO_INESPERADO, cli.EXIT_FALLO_CONEXION, cli.EXIT_REVISION_ALEMBIC_INESPERADA,
+            cli.EXIT_TRANSACCION_NO_SOLO_LECTURA, cli.EXIT_REPORTE_INCONSISTENTE,
+            cli.EXIT_FALLO_EVALUANDO_JUEGO) == (0, 1, 2, 3, 4, 5, 6)
+
+
+# ---------------------------------------------------------------------------
+# Estructura: sin modulos predictivos, sin resultados, sin exposicion web
+# ---------------------------------------------------------------------------
+
+def _importados() -> set[str]:
+    arbol = ast.parse(Path(cli.__file__).read_text(encoding="utf-8"))
+    return {nodo.module for nodo in ast.walk(arbol) if isinstance(nodo, ast.ImportFrom)}
+
+
 def test_script_no_importa_resultados_ni_modulos_predictivos():
-    ruta = Path(cli.__file__)
-    arbol = ast.parse(ruta.read_text(encoding="utf-8"))
-    importados = {
-        nodo.module for nodo in ast.walk(arbol)
-        if isinstance(nodo, ast.ImportFrom)
-    }
+    importados = _importados()
     assert "app.application.use_cases.resolver_estado_prediccion" in importados
+    assert "app.application.use_cases.diagnosticar_estado_prediccion" in importados
     prohibidos = {
         "app.application.ml.inferencia", "app.application.ml.modelo",
         "app.application.ml.dataset", "app.application.ml.prediccion_bloqueada",
+        "app.application.ml.features",
     }
     assert not (prohibidos & importados)
     assert not any(nombre and "resultados_historicos" in nombre for nombre in importados)
+
+
+def test_ninguna_ruta_web_plantilla_ni_main_expone_la_consulta():
+    raiz = Path(cli.__file__).resolve().parents[1]
+    rutas = [*(raiz / "app" / "api").rglob("*.py"), raiz / "app" / "main.py"]
+    for ruta in rutas:
+        contenido = ruta.read_text(encoding="utf-8")
+        assert "consultar_estado_prediccion" not in contenido, ruta
+        assert "diagnosticar_estado_prediccion" not in contenido, ruta
+    for plantilla in (raiz / "app" / "templates").rglob("*.html"):
+        assert "consultar_estado_prediccion" not in plantilla.read_text(encoding="utf-8"), plantilla

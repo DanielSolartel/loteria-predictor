@@ -189,7 +189,10 @@ class TestEstructura:
     def test_ningun_router_plantilla_script_ni_main_lo_expone(self):
         rutas = [*(RAIZ_BACKEND / "app" / "api").rglob("*.py"), *(RAIZ_BACKEND / "scripts").rglob("*.py"),
                  RAIZ_BACKEND / "app" / "main.py"]
+        unico_script_autorizado = RAIZ_BACKEND / "scripts" / "consultar_estado_prediccion.py"
         for ruta in rutas:
+            if ruta == unico_script_autorizado:
+                continue  # AE-47: consulta manual de solo lectura, sin router ni tarea automatica.
             contenido = ruta.read_text(encoding="utf-8")
             assert "diagnosticar_estado_prediccion" not in contenido, ruta
             assert "diagnostico_bloqueo" not in contenido, ruta
