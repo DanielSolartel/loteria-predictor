@@ -625,3 +625,125 @@ class ReporteAutorizacionOperativaML:
                     f"reporte_elegibilidad no puede ser None cuando estado es {self.estado} "
                     "-el gate de AE-40 si produjo un reporte normal"
                 )
+
+
+# =====================================================================
+# Etapa AE-43, validada -nucleo puro de inferencia bloqueada. Tipos
+# anadidos de forma compatible: ningun tipo de AE-36..AE-42 anterior
+# en este archivo fue modificado. Sin ciclo de importacion:
+# `ventanas_temporales` solo depende de la biblioteca estandar.
+# =====================================================================
+
+from app.application.ml.ventanas_temporales import MAXIMO_OBJETIVO_INFERENCIA_AE43
+
+
+@dataclass(frozen=True)
+class FilaCandidatoInferencia:
+    """Una fila de inferencia (sorteo_objetivo, numero_candidato) SIN
+    etiqueta: mismos campos y tipos que `FilaCandidato` salvo
+    `etiqueta`, y ningun campo derivado del resultado del objetivo.
+    En AE-43 el objetivo nunca sale de DESARROLLO (`<= 2590`)."""
+    codigo_juego: str
+    sorteo_objetivo: int
+    calculado_hasta_sorteo: int
+    numero_candidato: int
+    frecuencia_acumulada: float
+    frecuencia_ventana_10: float
+    frecuencia_ventana_20: float
+    frecuencia_ventana_50: float
+    sorteos_desde_ultima_aparicion: int | None  # None = nunca observado hasta este punto
+    aparecio_en_sorteo_anterior: int  # 0 o 1
+
+    def __post_init__(self) -> None:
+        if self.sorteo_objetivo != self.calculado_hasta_sorteo + 1:
+            raise ValueError(
+                f"sorteo_objetivo ({self.sorteo_objetivo}) debe ser calculado_hasta_sorteo + 1 "
+                f"({self.calculado_hasta_sorteo + 1})"
+            )
+        if self.sorteo_objetivo > MAXIMO_OBJETIVO_INFERENCIA_AE43:
+            raise ValueError(
+                f"sorteo_objetivo ({self.sorteo_objetivo}) fuera de DESARROLLO -AE-43 solo admite "
+                f"objetivos <= {MAXIMO_OBJETIVO_INFERENCIA_AE43}"
+            )
+        if self.aparecio_en_sorteo_anterior not in (0, 1):
+            raise ValueError(f"aparecio_en_sorteo_anterior debe ser 0 o 1, recibido {self.aparecio_en_sorteo_anterior}")
+
+
+@dataclass(frozen=True)
+class FilasInferenciaJuego:
+    """Todas las filas de inferencia de UN juego para UN sorteo
+    objetivo: exactamente un candidato por numero del rango, en orden
+    ascendente. Nunca se persiste ni contiene resultados."""
+    codigo_juego: str
+    rango_min: int
+    rango_max: int
+    cantidad_numeros: int
+    sorteo_objetivo: int
+    calculado_hasta_sorteo: int
+    total_sorteos_historico: int
+    filas: tuple[FilaCandidatoInferencia, ...]
+
+    def __post_init__(self) -> None:
+        candidatos = [f.numero_candidato for f in self.filas]
+        if candidatos != list(range(self.rango_min, self.rango_max + 1)):
+            raise ValueError("filas debe contener exactamente un candidato por numero del rango, en orden ascendente")
+        for f in self.filas:
+            if (f.codigo_juego, f.sorteo_objetivo, f.calculado_hasta_sorteo) != (
+                self.codigo_juego, self.sorteo_objetivo, self.calculado_hasta_sorteo,
+            ):
+                raise ValueError("todas las filas deben compartir juego, sorteo objetivo y corte")
+
+
+class EstadoPrediccionML(Enum):
+    """Conjunto CERRADO de estados del resolvedor de AE-43. Todos son
+    de bloqueo: no existe ningun estado habilitado. Anadir uno exigira
+    una etapa futura con evidencia prospectiva real. El orden de
+    declaracion es la prioridad (el primero prevalece)."""
+
+    BLOQUEADO_NUMERACION_INVALIDA = "bloqueado_numeracion_invalida"
+    BLOQUEADO_DATOS_INSUFICIENTES = "bloqueado_datos_insuficientes"
+    BLOQUEADO_NO_GO_CIENTIFICO = "bloqueado_no_go_cientifico"
+    BLOQUEADO_SIN_EVALUACION_HOLDOUT = "bloqueado_sin_evaluacion_holdout"
+
+
+@dataclass(frozen=True)
+class ReportePrediccionJuego:
+    """Reporte del resolvedor de AE-43 para un juego. Sus campos
+    reflejan la tabla `predicciones`, pero en AE-43 las salidas
+    predictivas son SIEMPRE vacias: el invariante se verifica aqui,
+    no solo en el resolvedor. `estado` es el motivo de mayor
+    prioridad; `motivos` los lista todos, en orden de prioridad, para
+    que ningun bloqueo quede oculto tras otro."""
+    juego_codigo: str
+    estado: EstadoPrediccionML
+    motivos: tuple[EstadoPrediccionML, ...]
+    explicacion: str
+    disclaimer: str
+    combinaciones: tuple = ()
+    numeros_fuertes: tuple = ()
+    numeros_debiles: tuple = ()
+    probabilidades: tuple = ()
+    nivel_confianza: float | None = None
+    resultados_observados: bool = False
+    modelos_entrenados: bool = False
+    predicciones_generadas: bool = False
+    holdout_consumido: bool = False
+
+    def __post_init__(self) -> None:
+        for nombre in ("combinaciones", "numeros_fuertes", "numeros_debiles", "probabilidades"):
+            if len(getattr(self, nombre)) != 0:
+                raise ValueError(f"{nombre} debe estar vacio en AE-43 -ningun estado habilita predicciones")
+        if self.nivel_confianza is not None:
+            raise ValueError("nivel_confianza debe ser None en AE-43")
+        for nombre in ("resultados_observados", "modelos_entrenados", "predicciones_generadas", "holdout_consumido"):
+            if getattr(self, nombre) is not False:
+                raise ValueError(f"{nombre} debe ser siempre False en AE-43 -invariante fija")
+        if not self.disclaimer.strip():
+            raise ValueError("disclaimer es obligatorio")
+        if not self.motivos:
+            raise ValueError("motivos no puede estar vacio")
+        orden = list(EstadoPrediccionML)
+        if list(self.motivos) != sorted(set(self.motivos), key=orden.index):
+            raise ValueError("motivos debe estar en orden de prioridad y sin duplicados")
+        if self.estado is not self.motivos[0]:
+            raise ValueError("estado debe ser el motivo de mayor prioridad")
