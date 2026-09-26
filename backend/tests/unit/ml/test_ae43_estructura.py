@@ -62,6 +62,15 @@ def test_importar_tipos_en_proceso_limpio_no_provoca_ciclos():
         assert resultado.returncode == 0, resultado.stderr
 
 
+EXCEPCIONES_AUTORIZADAS = {
+    # Etapa AE-44: unica excepcion acotada -el caso de uso bloqueado
+    # delega en `resolver_prediccion`; nunca importa `inferencia` ni
+    # `ventanas_temporales`.
+    RAIZ_BACKEND / "app" / "application" / "use_cases" / "resolver_estado_prediccion.py":
+        {"app.application.ml.prediccion_bloqueada"},
+}
+
+
 def test_nada_fuera_de_ml_conecta_los_modulos_nuevos():
     directorios = [RAIZ_BACKEND / "app", RAIZ_BACKEND / "scripts"]
     nombres = {f"app.application.ml.{m}" for m in MODULOS_NUEVOS}
@@ -69,8 +78,9 @@ def test_nada_fuera_de_ml_conecta_los_modulos_nuevos():
         for ruta in directorio.rglob("*.py"):
             if ruta.parent == DIRECTORIO_ML:
                 continue
+            permitidos = EXCEPCIONES_AUTORIZADAS.get(ruta, set())
             for importado in _importaciones(ruta):
-                assert importado not in nombres, f"{ruta} importa {importado}"
+                assert importado not in nombres - permitidos, f"{ruta} importa {importado}"
 
 
 def test_solo_modelo_py_importa_sklearn_en_application_ml():
