@@ -191,10 +191,13 @@ class TestEstructura:
             assert importado.split(".")[0] not in self.PROHIBIDOS, importado
             assert importado not in self.MODULOS_PROHIBIDOS, importado
 
-    def test_ningun_router_plantilla_ni_script_lo_expone(self):
+    def test_solo_script_manual_ae45_lo_consulta_sin_exponerlo_en_web(self):
         rutas = [*(RAIZ_BACKEND / "app" / "api").rglob("*.py"), *(RAIZ_BACKEND / "scripts").rglob("*.py"),
                  RAIZ_BACKEND / "app" / "main.py"]
+        unico_script_autorizado = RAIZ_BACKEND / "scripts" / "consultar_estado_prediccion.py"
         for ruta in rutas:
+            if ruta == unico_script_autorizado:
+                continue  # AE-45: consulta manual, sin router ni tarea automatica.
             assert "resolver_estado_prediccion" not in ruta.read_text(encoding="utf-8"), ruta
         for plantilla in (RAIZ_BACKEND / "app" / "templates").rglob("*.html"):
             assert "resolver_estado_prediccion" not in plantilla.read_text(encoding="utf-8"), plantilla
