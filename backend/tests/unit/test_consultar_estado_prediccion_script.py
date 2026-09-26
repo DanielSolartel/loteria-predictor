@@ -431,3 +431,271 @@ def test_ninguna_ruta_web_plantilla_ni_main_expone_la_consulta():
         assert "diagnosticar_estado_prediccion" not in contenido, ruta
     for plantilla in (raiz / "app" / "templates").rglob("*.html"):
         assert "consultar_estado_prediccion" not in plantilla.read_text(encoding="utf-8"), plantilla
+
+
+# ===========================================================================
+# AE-48, validada: --salida (evidencia con huella SHA-256) y --comparar
+# (esquema 1.2 descriptivo). Pruebas anadidas; las anteriores no cambian.
+# ===========================================================================
+
+import hashlib  # noqa: E402
+import os  # noqa: E402
+import re  # noqa: E402
+import subprocess  # noqa: E402
+import sys  # noqa: E402
+
+RAIZ_BACKEND = Path(cli.__file__).resolve().parents[1]
+PATRON_HUELLA = re.compile(r"^SHA-256 ([0-9a-f]{64})  (.+)  \((\d+) bytes\)$")
+
+
+def _anterior_valido(tmp_path) -> Path:
+    """Archivo 1.1 real generado por el propio script con fakes sinteticos."""
+    ruta = tmp_path / "evidencia-anterior.json"
+    reporte = cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+    ruta.write_bytes(cli.serializar_reporte(reporte))
+    return ruta
+
+
+def _huella_y_mtime(ruta: Path):
+    return hashlib.sha256(ruta.read_bytes()).hexdigest(), os.stat(ruta).st_mtime_ns
+
+
+def _conexion_prohibida(monkeypatch):
+    def fallar():
+        raise AssertionError("no deberia abrirse la conexion")
+
+    monkeypatch.setattr(cli, "_abrir_conexion", fallar)
+
+
+def test_ae48_sin_flags_salida_identica_a_ae47(monkeypatch, capsys):
+    _preparar_main(monkeypatch, _Resolver())
+    assert cli.main([]) == cli.EXIT_OK
+    salida = capsys.readouterr()
+    reporte = cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+    assert salida.out == json.dumps(reporte, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    assert json.loads(salida.out)["esquema"] == "1.1"
+    assert "comparacion" not in json.loads(salida.out)
+    assert salida.err == ""
+
+
+_PROGRAMA_SUBPROCESO = r'''
+import sys
+from scripts import consultar_estado_prediccion as cli
+from tests.unit import test_consultar_estado_prediccion_script as t
+
+conexion = t._ConexionFake()
+cli._abrir_conexion = lambda: conexion
+cli.Session = t._SesionFake
+cli.verificar_transaccion_solo_lectura = lambda sesion: None
+cli.verificar_revision_alembic = lambda sesion: "0006"
+cli._crear_consultas = lambda sesion: (t._Resolver(), t._Diagnosticador())
+codigo = cli.main(sys.argv[1:])
+assert conexion.sentencias == ["BEGIN TRANSACTION READ ONLY", "ROLLBACK"], conexion.sentencias
+sys.exit(codigo)
+'''
+
+
+def _ejecutar_proceso(*argumentos) -> subprocess.CompletedProcess:
+    entorno = {**os.environ, "PYTHONPATH": str(RAIZ_BACKEND)}
+    return subprocess.run(
+        [sys.executable, "-c", _PROGRAMA_SUBPROCESO, *argumentos],
+        cwd=RAIZ_BACKEND, env=entorno, capture_output=True, timeout=120,
+    )
+
+
+def test_ae48_salida_stdout_del_proceso_archivo_y_huella_coinciden(tmp_path):
+    destino = tmp_path / "evidencia.json"
+    proceso = _ejecutar_proceso("--salida", str(destino))
+
+    assert proceso.returncode == cli.EXIT_OK, proceso.stderr
+    guardado = destino.read_bytes()
+    assert proceso.stdout == guardado
+    assert b"\r" not in guardado
+    lineas_err = proceso.stderr.decode("utf-8").strip().splitlines()
+    assert len(lineas_err) == 1
+    coincidencia = PATRON_HUELLA.match(lineas_err[0])
+    assert coincidencia, lineas_err
+    assert coincidencia.group(1) == hashlib.sha256(guardado).hexdigest()
+    assert int(coincidencia.group(3)) == len(guardado)
+    reporte = json.loads(proceso.stdout.decode("utf-8"))
+    assert reporte["esquema"] == "1.1"
+    assert coincidencia.group(1).encode() not in proceso.stdout
+
+
+def test_ae48_salida_en_proceso_mismos_bytes(monkeypatch, capsysbinary, tmp_path):
+    _preparar_main(monkeypatch, _Resolver())
+    destino = tmp_path / "evidencia.json"
+    assert cli.main(["--salida", str(destino)]) == cli.EXIT_OK
+    capturado = capsysbinary.readouterr()
+    assert capturado.out == destino.read_bytes()
+    assert hashlib.sha256(destino.read_bytes()).hexdigest().encode() in capturado.err
+
+
+def test_ae48_comparar_produce_esquema_1_2_descriptivo(monkeypatch, capsys, tmp_path):
+    anterior = _anterior_valido(tmp_path)
+    antes = _huella_y_mtime(anterior)
+    _preparar_main(monkeypatch, _Resolver())
+
+    assert cli.main(["--comparar", str(anterior)]) == cli.EXIT_OK
+    reporte = json.loads(capsys.readouterr().out)
+    assert reporte["esquema"] == "1.2"
+    assert set(reporte) == {"esquema", "alembic_revision", "juegos", "comparacion"}
+    comparacion = reporte["comparacion"]
+    assert comparacion["esquema_anterior"] == "1.1"
+    assert comparacion["nota"] == cli.comparacion_estado_prediccion.NOTA_COMPARACION
+    assert [j["variacion_sorteos_nuevos"] for j in comparacion["juegos"]] == [0, 0]
+    assert all(j["desbloqueable"] is False for j in reporte["juegos"])
+    assert _huella_y_mtime(anterior) == antes
+
+
+def test_ae48_comparar_no_copia_la_comparacion_de_un_anterior_1_2(monkeypatch, capsys, tmp_path):
+    base = cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+    anterior_1_2 = cli.anadir_comparacion(base, base)
+    anterior_1_2["comparacion"]["nota"] = cli.comparacion_estado_prediccion.NOTA_COMPARACION
+    ruta = tmp_path / "anterior-1-2.json"
+    ruta.write_bytes(cli.serializar_reporte(anterior_1_2))
+    _preparar_main(monkeypatch, _Resolver())
+
+    assert cli.main(["--comparar", str(ruta)]) == cli.EXIT_OK
+    reporte = json.loads(capsys.readouterr().out)
+    assert reporte["comparacion"]["esquema_anterior"] == "1.2"
+    assert "comparacion" not in json.dumps(reporte["comparacion"])
+
+
+@pytest.mark.parametrize("contenido", [
+    b"{no es json",
+    b'{"esquema": "1.1", "alembic_revision": "0006", "juegos": []}',
+    b'{"esquema": "9.9"}',
+])
+def test_ae48_anterior_invalido_codigo_7_sin_abrir_conexion(monkeypatch, capsys, tmp_path, contenido):
+    ruta = tmp_path / "anterior.json"
+    ruta.write_bytes(contenido)
+    _conexion_prohibida(monkeypatch)
+    assert cli.main(["--comparar", str(ruta)]) == cli.EXIT_ARCHIVO_ANTERIOR_INVALIDO == 7
+    salida = capsys.readouterr()
+    assert salida.out == "" and "anterior" in salida.err.lower()
+    assert ruta.read_bytes() == contenido
+
+
+def test_ae48_anterior_con_desbloqueable_true_se_rechaza(monkeypatch, tmp_path):
+    reporte = cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+    reporte["juegos"][0]["desbloqueable"] = True
+    ruta = tmp_path / "anterior.json"
+    ruta.write_bytes(cli.serializar_reporte(reporte))
+    _conexion_prohibida(monkeypatch)
+    assert cli.main(["--comparar", str(ruta)]) == cli.EXIT_ARCHIVO_ANTERIOR_INVALIDO
+
+
+def _casos_misma_ruta(tmp_path, anterior: Path):
+    casos = {
+        "literal": str(anterior),
+        "relativa_y_absoluta": os.path.relpath(anterior),
+        "con_punto_punto": os.path.join(str(tmp_path), "x", "..", anterior.name),
+    }
+    enlace_simbolico = tmp_path / "enlace-simbolico.json"
+    try:
+        os.symlink(anterior, enlace_simbolico)
+        casos["enlace_simbolico"] = str(enlace_simbolico)
+    except (OSError, NotImplementedError):
+        pass
+    enlace_duro = tmp_path / "enlace-duro.json"
+    try:
+        os.link(anterior, enlace_duro)
+        casos["enlace_duro"] = str(enlace_duro)
+    except (OSError, NotImplementedError):
+        pass
+    return casos
+
+
+def test_ae48_salida_igual_a_comparar_codigo_9_sin_modificar_el_anterior(monkeypatch, capsys, tmp_path):
+    anterior = _anterior_valido(tmp_path)
+    casos = _casos_misma_ruta(tmp_path, anterior)
+    assert {"literal", "relativa_y_absoluta", "con_punto_punto"} <= set(casos)
+    _conexion_prohibida(monkeypatch)
+    for nombre, salida in casos.items():
+        antes = _huella_y_mtime(anterior)
+        assert cli.main(["--comparar", str(anterior), "--salida", salida]) == cli.EXIT_RUTA_SALIDA_NO_PERMITIDA == 9, nombre
+        capturado = capsys.readouterr()
+        assert capturado.out == "", nombre
+        assert _huella_y_mtime(anterior) == antes, nombre
+
+
+def test_ae48_salida_existente_o_directorio_inexistente_codigo_9(monkeypatch, capsys, tmp_path):
+    existente = tmp_path / "ya-existe.json"
+    existente.write_bytes(b"evidencia previa")
+    _conexion_prohibida(monkeypatch)
+    assert cli.main(["--salida", str(existente)]) == cli.EXIT_RUTA_SALIDA_NO_PERMITIDA
+    assert existente.read_bytes() == b"evidencia previa"
+    assert cli.main(["--salida", str(tmp_path / "no-existe" / "x.json")]) == cli.EXIT_RUTA_SALIDA_NO_PERMITIDA
+    assert capsys.readouterr().out == ""
+
+
+def test_ae48_destino_que_aparece_antes_de_publicar_codigo_8(monkeypatch, capsys, tmp_path):
+    destino = tmp_path / "evidencia.json"
+    _preparar_main(monkeypatch, _Resolver())
+    modulo = cli.comparacion_estado_prediccion
+    publicar_real = modulo._publicar_exclusivo
+
+    def intruso_y_publicar(temporal, ruta_destino):
+        Path(ruta_destino).write_bytes(b"escrito por otro proceso")
+        publicar_real(temporal, ruta_destino)
+
+    monkeypatch.setattr(modulo, "_publicar_exclusivo", intruso_y_publicar)
+    assert cli.main(["--salida", str(destino)]) == cli.EXIT_FALLO_ESCRITURA_SALIDA == 8
+    salida = capsys.readouterr()
+    assert salida.out == ""
+    assert destino.read_bytes() == b"escrito por otro proceso"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["evidencia.json"]
+
+
+def test_ae48_rollback_y_orden_se_conservan_con_flags(monkeypatch, capsys, tmp_path):
+    anterior = _anterior_valido(tmp_path)
+    conexion, sesiones, orden = _preparar_main(monkeypatch, _Resolver())
+    assert cli.main(["--comparar", str(anterior), "--salida", str(tmp_path / "nueva.json")]) == cli.EXIT_OK
+    assert orden == ["solo_lectura", "revision", "consultas"]
+    assert conexion.sentencias == ["BEGIN TRANSACTION READ ONLY", "ROLLBACK"]
+    assert conexion.cerrada and sesiones[0].cerrada
+    capsys.readouterr()
+
+
+def test_ae48_codigos_nuevos_y_anteriores():
+    assert (cli.EXIT_ARCHIVO_ANTERIOR_INVALIDO, cli.EXIT_FALLO_ESCRITURA_SALIDA,
+            cli.EXIT_RUTA_SALIDA_NO_PERMITIDA) == (7, 8, 9)
+    assert cli.EXIT_REPORTE_INCONSISTENTE == 5 and cli.EXIT_FALLO_EVALUANDO_JUEGO == 6
+
+
+def test_ae48_anterior_1_2_con_misma_revision_incoherente_codigo_7(monkeypatch, capsys, tmp_path):
+    base = cli.construir_reporte(_Resolver(), _Diagnosticador(), "0006")
+    anterior_1_2 = cli.anadir_comparacion(base, base)
+    assert anterior_1_2["comparacion"]["misma_revision_alembic"] is True
+    anterior_1_2["comparacion"]["revision_alembic_anterior"] = "0005"
+    ruta = tmp_path / "anterior-1-2.json"
+    ruta.write_bytes(cli.serializar_reporte(anterior_1_2))
+    _conexion_prohibida(monkeypatch)
+
+    assert cli.main(["--comparar", str(ruta)]) == cli.EXIT_ARCHIVO_ANTERIOR_INVALIDO == 7
+    salida = capsys.readouterr()
+    assert salida.out == "" and "misma_revision_alembic" in salida.err
+
+
+def test_ae48_fallo_al_releer_tras_publicar_codigo_8_sin_json_ni_traceback(monkeypatch, capsys, tmp_path):
+    destino = tmp_path / "evidencia.json"
+    _preparar_main(monkeypatch, _Resolver())
+    modulo = cli.comparacion_estado_prediccion
+    publicar_real = modulo._publicar_exclusivo
+
+    def open_que_falla(*args, **kwargs):
+        raise OSError(5, "fallo sintetico de relectura")
+
+    def publicar_y_romper_la_relectura(temporal, ruta_destino):
+        publicar_real(temporal, ruta_destino)
+        monkeypatch.setattr(modulo, "open", open_que_falla, raising=False)
+
+    monkeypatch.setattr(modulo, "_publicar_exclusivo", publicar_y_romper_la_relectura)
+    assert cli.main(["--salida", str(destino)]) == cli.EXIT_FALLO_ESCRITURA_SALIDA == 8
+    salida = capsys.readouterr()
+    assert salida.out == ""
+    assert "Traceback" not in salida.err and "releer" in salida.err
+    assert "SHA-256" not in salida.err
+    assert destino.exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["evidencia.json"]

@@ -11,6 +11,13 @@ solamente si ambos juegos se evaluaron, sus reportes son coherentes y
 el diagnostico coincide en estado y motivos con el reporte. Un bloqueo
 valido termina con codigo 0.
 
+AE-48, validada: dos flags opcionales, validados antes de abrir la
+conexion. `--salida RUTA` guarda los bytes exactos del JSON (publicacion
+exclusiva, nunca sobrescribe), los mismos bytes van a stdout y la huella
+SHA-256 se informa solo en stderr. `--comparar RUTA` valida un reporte
+anterior 1.1/1.2 y anade una comparacion descriptiva (esquema 1.2). Sin
+flags, la salida es identica a la de AE-47.
+
 Ejecutar desde backend: python -m scripts.consultar_estado_prediccion
 """
 from __future__ import annotations
@@ -22,7 +29,11 @@ import sys
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.application.ml.diagnostico_bloqueo import DiagnosticoBloqueoJuego
+from app.application.ml.diagnostico_bloqueo import (
+    CONDICIONES_SIN_MECANISMO_AE46,
+    CondicionDesbloqueoML,
+    DiagnosticoBloqueoJuego,
+)
 from app.application.ml.reapertura import JUEGOS_AUTORIZADOS_AE40
 from app.application.ml.tipos import EstadoPrediccionML, ReporteAutorizacionOperativaML, ReportePrediccionJuego
 from app.application.use_cases.diagnosticar_estado_prediccion import DiagnosticarEstadoPrediccion
@@ -33,6 +44,14 @@ from app.infrastructure.repositories.disponibilidad_holdout_repository_sqlalchem
     DisponibilidadHoldoutRepositorySQLAlchemy,
 )
 from app.infrastructure.repositories.juego_repository_sqlalchemy import JuegoRepositorySQLAlchemy
+from scripts import comparacion_estado_prediccion
+from scripts.comparacion_estado_prediccion import (
+    CatalogoEstados,
+    EscrituraEvidenciaError,
+    ReporteAnteriorInvalidoError,
+    RutaSalidaNoPermitidaError,
+    serializar_reporte,
+)
 from scripts.auditoria_operativa_bloqueo import (
     FalloAuditoriaOperativaError,
     verificar_revision_alembic,
@@ -46,6 +65,9 @@ EXIT_REVISION_ALEMBIC_INESPERADA = 3
 EXIT_TRANSACCION_NO_SOLO_LECTURA = 4
 EXIT_REPORTE_INCONSISTENTE = 5
 EXIT_FALLO_EVALUANDO_JUEGO = 6
+EXIT_ARCHIVO_ANTERIOR_INVALIDO = 7
+EXIT_FALLO_ESCRITURA_SALIDA = 8
+EXIT_RUTA_SALIDA_NO_PERMITIDA = 9
 ESTADOS_BLOQUEADOS_AE45 = frozenset({
     EstadoPrediccionML.BLOQUEADO_NUMERACION_INVALIDA,
     EstadoPrediccionML.BLOQUEADO_DATOS_INSUFICIENTES,
@@ -195,9 +217,46 @@ def _crear_consultas(session: Session) -> tuple[ResolverEstadoPrediccion, Diagno
     return _crear_consultas_desde(EvaluarAutorizacionOperativaML(elegibilidad))
 
 
+def _catalogo_estados() -> CatalogoEstados:
+    """Catalogo para validar reportes anteriores, construido desde los
+    enums reales de AE-43/AE-46 -nunca una copia manual."""
+    return CatalogoEstados(
+        estados=tuple(estado.value for estado in EstadoPrediccionML),
+        condiciones=tuple(condicion.value for condicion in CondicionDesbloqueoML),
+        condiciones_sin_mecanismo=frozenset(c.value for c in CONDICIONES_SIN_MECANISMO_AE46),
+        condicion_numeracion=CondicionDesbloqueoML.NUMERACION_HOLDOUT_VALIDA.value,
+        condicion_minimo=CondicionDesbloqueoML.MINIMO_SORTEOS_NUEVOS.value,
+        condicion_evidencia=CondicionDesbloqueoML.EVIDENCIA_CIENTIFICA_AE39.value,
+        estado_no_go=EstadoPrediccionML.BLOQUEADO_NO_GO_CIENTIFICO.value,
+    )
+
+
+def anadir_comparacion(reporte_actual: dict, anterior: dict) -> dict:
+    """AE-48: esquema 1.2 = reporte 1.1 actual + comparacion descriptiva
+    recalculada. Nunca copia la `comparacion` de un anterior 1.2."""
+    comparacion = comparacion_estado_prediccion.comparar_reportes(anterior, reporte_actual, _catalogo_estados())
+    return {**reporte_actual, "esquema": "1.2", "comparacion": comparacion}
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Consulta manual de bloqueo AE-45 (solo lectura)")
-    parser.parse_args([] if argv is None else argv)
+    parser = argparse.ArgumentParser(description="Consulta manual de bloqueo AE-45/47/48 (solo lectura)")
+    parser.add_argument("--salida", help="Guarda los bytes exactos del JSON; nunca sobrescribe (AE-48)")
+    parser.add_argument("--comparar", help="Reporte anterior 1.1/1.2 para una comparacion descriptiva (AE-48)")
+    argumentos = parser.parse_args([] if argv is None else argv)
+
+    anterior = None
+    try:
+        if argumentos.salida is not None:
+            comparacion_estado_prediccion.validar_ruta_salida(argumentos.salida, argumentos.comparar)
+        if argumentos.comparar is not None:
+            anterior = comparacion_estado_prediccion.leer_reporte_anterior(argumentos.comparar, _catalogo_estados())
+    except RutaSalidaNoPermitidaError as error:
+        print(f"ERROR [codigo {EXIT_RUTA_SALIDA_NO_PERMITIDA}]: {error}", file=sys.stderr)
+        return EXIT_RUTA_SALIDA_NO_PERMITIDA
+    except ReporteAnteriorInvalidoError as error:
+        print(f"ERROR [codigo {EXIT_ARCHIVO_ANTERIOR_INVALIDO}]: archivo anterior invalido: {error}", file=sys.stderr)
+        return EXIT_ARCHIVO_ANTERIOR_INVALIDO
+
     try:
         conexion = _abrir_conexion()
     except Exception as error:
@@ -227,7 +286,28 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         conexion.close()
 
-    print(json.dumps(reporte, indent=2, sort_keys=True, ensure_ascii=False))
+    if anterior is not None:
+        reporte = anadir_comparacion(reporte, anterior)
+        try:
+            comparacion_estado_prediccion.validar_reporte_estado(reporte, _catalogo_estados())
+        except ReporteAnteriorInvalidoError as error:
+            print(f"ERROR [codigo {EXIT_REPORTE_INCONSISTENTE}]: reporte 1.2 incoherente: {error}", file=sys.stderr)
+            return EXIT_REPORTE_INCONSISTENTE
+
+    if argumentos.salida is None:
+        print(json.dumps(reporte, indent=2, sort_keys=True, ensure_ascii=False))
+        return EXIT_OK
+
+    contenido = serializar_reporte(reporte)
+    try:
+        huella = comparacion_estado_prediccion.escribir_evidencia_atomica(contenido, argumentos.salida)
+    except EscrituraEvidenciaError as error:
+        print(f"ERROR [codigo {EXIT_FALLO_ESCRITURA_SALIDA}]: {error}", file=sys.stderr)
+        return EXIT_FALLO_ESCRITURA_SALIDA
+    sys.stdout.flush()
+    sys.stdout.buffer.write(contenido)
+    sys.stdout.buffer.flush()
+    print(f"SHA-256 {huella}  {argumentos.salida}  ({len(contenido)} bytes)", file=sys.stderr)
     return EXIT_OK
 
 
