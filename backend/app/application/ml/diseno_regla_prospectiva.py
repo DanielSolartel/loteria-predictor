@@ -24,6 +24,15 @@ validez inferencial. Las variantes M1-M4 de AE-54 solo pueden anotarse
 como referencia; nunca deciden. No cierra `regla_estadistica_de_decision`
 ni ningun pendiente de AE-52 y no modifica el NO-GO de AE-39 ni los
 bloqueos de AE-41/AE-46.
+
+AE-57 (auditoria, validada) corrige defectos verificables sin cambiar
+el catalogo ni su huella: el tipo de `supuestos_declarados` y de
+`metodo.parametros` se comprueba aunque falte la familia; sin pregunta
+valida, cada nivel presente se comprueba contra el rango de su campo; el
+EMD de AE-55 exige unidad `sigma`; y un entero con mas de
+`DIGITOS_MAXIMOS_ENTERO_CANDIDATA` (640) digitos decimales queda fuera del
+limite para calcular la huella, cualquiera que sea la configuracion de
+CPython. `coincide_con_propuesta_ae53` es una coincidencia parcial.
 """
 from __future__ import annotations
 
@@ -181,13 +190,21 @@ def huella_diseno(catalogo=None) -> str:
 
 PROFUNDIDAD_MAXIMA_CANDIDATA = 32
 """Anidamiento maximo de la candidata (la raiz es 0); mas profundo se rechaza."""
-_ENTERO_NO_SERIALIZABLE = 10 ** 4300
-"""Desde 4300 digitos decimales un entero no se serializa (limite por defecto de CPython)."""
+DIGITOS_MAXIMOS_ENTERO_CANDIDATA = 640
+"""Limite de AE-57: un entero con hasta 640 digitos decimales admite huella.
+
+Es un limite conservador y estable del contrato, no una imposibilidad de
+serializar: 640 es el menor limite no nulo que CPython permite configurar
+para convertir enteros a texto (`sys.int_info.str_digits_check_threshold`),
+asi que un entero admitido se serializa con cualquier configuracion valida
+y el resultado no depende de ella."""
+_COTA_ENTERO_CANDIDATA = 10 ** DIGITOS_MAXIMOS_ENTERO_CANDIDATA
 
 
-def _canonica(valor, ruta: str, no_finitos: list, profundidad: int = 0):
-    """Copia canonica. Registra en `no_finitos` las rutas cuyo valor no
-    puede serializarse (NaN, infinito o entero de 4300+ digitos)."""
+def _canonica(valor, ruta: str, sin_huella: list, profundidad: int = 0):
+    """Copia canonica. Registra en `sin_huella` las rutas cuyo valor impide
+    calcular la huella: NaN, infinito o un entero con mas de
+    `DIGITOS_MAXIMOS_ENTERO_CANDIDATA` digitos decimales."""
     if profundidad > PROFUNDIDAD_MAXIMA_CANDIDATA:
         raise DisenoReglaInvalidoError(f"{ruta}: anidamiento mayor que {PROFUNDIDAD_MAXIMA_CANDIDATA}")
     if isinstance(valor, Mapping):
@@ -195,19 +212,20 @@ def _canonica(valor, ruta: str, no_finitos: list, profundidad: int = 0):
         for clave, contenido in valor.items():
             if not isinstance(clave, str):
                 raise DisenoReglaInvalidoError(f"{ruta or 'candidata'}: clave no textual {clave!r}")
-            salida[clave] = _canonica(contenido, f"{ruta}.{clave}" if ruta else clave, no_finitos, profundidad + 1)
+            salida[clave] = _canonica(contenido, f"{ruta}.{clave}" if ruta else clave, sin_huella, profundidad + 1)
         return salida
     if isinstance(valor, (list, tuple)):
-        return [_canonica(v, f"{ruta}[{i}]", no_finitos, profundidad + 1) for i, v in enumerate(valor)]
+        return [_canonica(v, f"{ruta}[{i}]", sin_huella, profundidad + 1) for i, v in enumerate(valor)]
     if valor is None or isinstance(valor, (str, bool)):
         return valor
     if isinstance(valor, int):
-        if abs(valor) >= _ENTERO_NO_SERIALIZABLE:
-            no_finitos.append((ruta, "entero no serializable (4300 o mas digitos)"))
+        if abs(valor) >= _COTA_ENTERO_CANDIDATA:
+            sin_huella.append((ruta, f"entero con mas de {DIGITOS_MAXIMOS_ENTERO_CANDIDATA} digitos decimales: "
+                                     "fuera del limite de AE-57 para calcular la huella"))
         return valor
     if isinstance(valor, float):
         if not math.isfinite(valor):
-            no_finitos.append((ruta, "valor no finito"))
+            sin_huella.append((ruta, "valor no finito"))
         return valor
     raise DisenoReglaInvalidoError(f"{ruta}: tipo no canonico {type(valor).__name__}")
 
@@ -218,6 +236,15 @@ def _canonica(valor, ruta: str, no_finitos: list, profundidad: int = 0):
 
 @dataclass(frozen=True)
 class InformeDiseno:
+    """Informe inmutable de `validar_especificacion_diseno`.
+
+    `coincide_con_propuesta_ae53` indica una coincidencia parcial con la
+    propuesta de horizonte de AE-53: solo en la cantidad de objetivos (100)
+    y en el numero de analisis (1). La candidata no puede declarar desde que
+    objetivo empieza la ventana (`desde`) ni cuando se analiza, asi que el
+    informe no certifica la propuesta completa ni la aprueba. El nombre del
+    campo se conserva por compatibilidad (limite residual, AE-57)."""
+
     estado: str
     violaciones: tuple[str, ...]
     sin_decidir: tuple[str, ...]
@@ -316,10 +343,12 @@ def _reglas_pregunta_y_nivel(r: _Revision) -> str | None:
         elif not _es_real(nivel) or not 0.0 < nivel < maximo:
             r.mal(f"R2 {propio}: debe ser un real finito en (0, {maximo})")
     elif pregunta is None:
-        for campo in ("nivel_unilateral", "nivel_contraste"):
+        # AE-57: sin pregunta valida, cada nivel presente se comprueba contra
+        # el rango de su propio campo.
+        for campo, maximo in (("nivel_unilateral", 0.5), ("nivel_contraste", 1.0)):
             valor = r.c.get(campo)
-            if valor is not None and not _es_real(valor):
-                r.mal(f"R2 {campo}: debe ser un real finito")
+            if valor is not None and (not _es_real(valor) or not 0.0 < valor < maximo):
+                r.mal(f"R2 {campo}: debe ser un real finito en (0, {maximo})")
     return pregunta
 
 
@@ -327,8 +356,7 @@ def _reglas_metodo(r: _Revision, pregunta: str | None) -> str | None:
     metodo = r.objeto("metodo", frozenset({"familia", "parametros", "referencia_banco_ae54"}))
     if metodo is None:
         r.falta("metodo.familia")
-        if r.c.get("supuestos_declarados") is None:
-            r.falta("supuestos_declarados")
+        _regla_supuestos(r, None)
         return None
     referencia = metodo.get("referencia_banco_ae54")
     if referencia is not None and not _en(referencia, _REFERENCIAS_AE54):
@@ -341,8 +369,19 @@ def _reglas_metodo(r: _Revision, pregunta: str | None) -> str | None:
         r.mal("R3 metodo.familia: P1 solo admite familias de media")
     if familia is not None and pregunta == "P2" and familia != "contraste_condicional":
         r.mal("R3 metodo.familia: P2 solo admite contraste_condicional")
+    parametros = metodo.get("parametros")
     if familia is not None:
-        _regla_parametros(r, familia, metodo.get("parametros"))
+        _regla_parametros(r, familia, parametros)
+    elif parametros is not None and not isinstance(parametros, dict):
+        # AE-57: sin familia valida no se juzgan los valores, pero un
+        # `parametros` presente que no es un objeto es contradictorio.
+        r.mal("R4 metodo.parametros: debe ser un objeto")
+    _regla_supuestos(r, familia)
+    return familia
+
+
+def _regla_supuestos(r: _Revision, familia: str | None) -> None:
+    """R5. AE-57: el tipo se comprueba tambien cuando falta `metodo`."""
     supuestos = r.c.get("supuestos_declarados")
     if supuestos is None:
         r.falta("supuestos_declarados")
@@ -352,7 +391,6 @@ def _reglas_metodo(r: _Revision, pregunta: str | None) -> str | None:
         faltan = sorted(set(SUPUESTOS_POR_FAMILIA[familia]) - set(supuestos))
         if faltan:
             r.mal(f"R5 supuestos_declarados: faltan supuestos exigidos por {familia}: {faltan}")
-    return familia
 
 
 def _regla_parametros(r: _Revision, familia: str, parametros) -> None:
@@ -450,6 +488,8 @@ def _regla_ventana(r: _Revision) -> None:
         validos = False
     if not validos:
         return
+    # Coincidencia parcial (AE-57): solo objetivos y numero de analisis; no se
+    # puede comprobar `desde` ni el momento del analisis de la propuesta.
     if objetivos == _VENTANA_AE53 and analisis == 1:
         r.coincide.append("ventana")
     else:
@@ -482,6 +522,9 @@ def _regla_efecto(r: _Revision, pregunta: str | None, familia: str | None) -> No
     if not _es_texto(calculado_con):
         r.mal("R10 efecto_minimo.calculado_con: debe ser un texto no vacio")
     elif calculado_con == "emd_ae55":
+        if unidad is not None and unidad != "sigma":
+            # AE-57: el EMD de AE-55 se expresa en unidades de sigma, nunca del problema.
+            r.mal("R10 efecto_minimo: el EMD de AE-55 se expresa en unidades de sigma")
         if pregunta == "P2":
             r.mal("R10 efecto_minimo: el EMD unilateral de AE-55 no aplica a P2")
         if familia is not None and familia not in _FAMILIAS_MEDIA:
@@ -506,10 +549,10 @@ def validar_especificacion_diseno(candidata) -> InformeDiseno:
     autorizacion ni validez inferencial."""
     if not isinstance(candidata, Mapping):
         raise DisenoReglaInvalidoError("La candidata debe ser un objeto (Mapping)")
-    no_finitos: list[tuple[str, str]] = []
-    canonica = _canonica(candidata, "", no_finitos)
+    sin_huella: list[tuple[str, str]] = []
+    canonica = _canonica(candidata, "", sin_huella)
     r = _Revision(canonica)
-    for ruta, motivo in no_finitos:
+    for ruta, motivo in sin_huella:
         r.mal(f"{ruta}: {motivo}")
     desconocidas = sorted(set(canonica) - _CLAVES)
     if desconocidas:
@@ -527,7 +570,7 @@ def validar_especificacion_diseno(candidata) -> InformeDiseno:
         estado = "incompleta"
     else:
         estado = "coherente_no_aprobada"
-    huella = None if no_finitos else hashlib.sha256(_json(canonica)).hexdigest()
+    huella = None if sin_huella else hashlib.sha256(_json(canonica)).hexdigest()
     return InformeDiseno(
         estado=estado, violaciones=tuple(r.violaciones), sin_decidir=tuple(dict.fromkeys(r.sin_decidir)),
         decisiones_adicionales_requeridas=tuple(r.adicionales), coincide_con_propuesta_ae53=tuple(r.coincide),
