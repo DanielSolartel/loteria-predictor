@@ -478,7 +478,8 @@ def _regla_ventana(r: _Revision) -> None:
         r.falta("ventana.objetivos")
         validos = False
     elif not _es_entero(objetivos) or objetivos < _MINIMO_AE52:
-        r.mal(f"R9 ventana.objetivos: entero >= {_MINIMO_AE52} (minimo de AE-52; sin reduccion retroactiva)")
+        r.mal(f"R9 ventana.objetivos: entero >= {_MINIMO_AE52} (condicion necesaria, no suficiente, del minimo de "
+              f"AE-52 de {_MINIMO_AE52} resueltos; sin reduccion retroactiva)")
         validos = False
     if analisis is None:
         r.falta("ventana.analisis")
