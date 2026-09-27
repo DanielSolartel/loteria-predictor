@@ -1484,6 +1484,156 @@ Con esta evidencia, **AE-55 queda validada como calculadora analítica de factib
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-54 sin cambios.
 
+## Contrato de coherencia del diseño de la regla prospectiva -Etapa AE-56, validada
+
+**Etapa AE-56 -contrato de coherencia del diseño de una regla prospectiva, validada:** es un contrato preparatorio, **sin inferencia**, en `app/application/ml/diseno_regla_prospectiva.py`. Tiene dos piezas:
+- un catálogo de las dimensiones de diseño de la futura regla;
+- un validador que comprueba **solo la consistencia de los campos que declara** una especificación candidata.
+
+AE-56 no elige ni aprueba ninguna pregunta, método, parámetro, nivel, horizonte ni mecanismo. No verifica supuestos, procedencia, sellado, token, manifiesto, hora oficial, custodia, anterioridad, autorización ni validez inferencial. No cierra `regla_estadistica_de_decision` ni ninguno de los siete pendientes de AE-52, y no modifica el NO-GO de AE-39 ni los bloqueos de AE-41 y AE-46.
+
+**Por qué es preparatorio.** Con lo disponible no es defendible implementar una prueba ni fijar la regla:
+- los supuestos de dependencia de `d_t` no son verificables antes de tener datos;
+- no existe contrato de inferencia prospectiva;
+- la cadena de procedencia está incompleta, porque no hay manifiesto ni sello externo;
+- α, el efecto mínimo y la multiplicidad son decisiones humanas.
+
+El manifiesto de procedencia queda como candidato para una etapa posterior. Un contraste formal queda descartado por ahora.
+
+**Catálogo `DIMENSIONES_AE56`.** Es profundamente inmutable: `Dimension` es una `dataclass(frozen=True)` que solo contiene textos y tuplas ordenadas.
+
+Cada dimensión puede pertenecer a **varias** categorías:
+- `justificable_antes_de_datos`;
+- `pendiente_bloqueado`;
+- `requiere_decision_humana_o_mecanismo_externo`;
+- `supuesto_no_verificable`.
+
+Además, cada dimensión lleva:
+- su base: `lit:<referencia>` para la literatura verificada en AE-55, o `inferencia_propia`;
+- sus fuentes: los pendientes de AE-52 y AE-53 y las decisiones de AE-55. Todos los pendientes de AE-52 y AE-53 quedan cubiertos;
+- sus dependencias, sin ciclos.
+
+Las dimensiones son: pregunta, dirección y nivel, familia de método, parámetros, supuestos, métricas principales, secundaria, multiplicidad entre juegos, horizonte, omisiones, efecto mínimo y potencia, sellado, hora oficial, modelo congelado y autorización.
+
+`huella_diseno()` es el SHA-256 de la serialización canónica del catálogo. Identifica el catálogo, pero no prueba cuándo se fijó.
+
+**Especificación candidata y reglas.** Cada regla comprueba solo la forma y la consistencia de lo declarado.
+- **R1, pregunta:** `P1`, `P2` o `P3`. P3 es incoherente con el registro de AE-52, porque trata del mecanismo de sorteo y no evalúa estrategias.
+- **R2, nivel y dirección según la pregunta:**
+  - P1: `nivel_unilateral` en (0, 0,5) y `direccion = "mejora"`;
+  - P2: `nivel_contraste` en (0, 1) y `direccion = "no_direccional"`;
+  - usar el campo de nivel de la otra pregunta es incoherente.
+- **R3, familia de método:** se declara una familia descriptiva, no una variante del banco:
+  - `remuestreo_iid_media`;
+  - `remuestreo_bloques_media`;
+  - `t_media_sin_autocorrelacion`;
+  - `t_media_varianza_hac`;
+  - `contraste_condicional`.
+
+  P1 solo admite familias de media, y P2 solo `contraste_condicional`. Esta compatibilidad se deriva de las hipótesis de Diebold–Mariano y Giacomini–White **[lit]**. Las variantes M1–M4 de AE-54 son exploratorias y **no** forman un catálogo de métodos autorizados: el campo `referencia_banco_ae54` solo las anota y nunca decide.
+- **R4, parámetros:** se valida solo su presencia, tipo y rango, **nunca su adecuación**:
+  - remuestreo: `replicas` es un entero ≥ 1 y `semilla` un entero;
+  - bloques: además, `variante` es un texto y `longitud_bloque` un entero ≥ 1;
+  - HAC: `kernel` es un texto y `ancho_banda` un entero ≥ 0;
+  - contraste condicional: `funcion_prueba` es una lista no vacía de nombres de instrumentos distintos. No es un entero, y su pertinencia no se juzga.
+- **R5, supuestos:** `supuestos_declarados` debe incluir los que exige la familia según AE-55. Declararlos **no los verifica**.
+- **R6, métricas principales:** exactamente LL y Brier en conjunción, como fija AE-52. Es un contraste de intersección-unión **[lit: Berger]**.
+- **R7, secundaria:** una sola condición `precision_en_5`, porque P@5 = R@5 en cada sorteo, con un papel declarado.
+- **R8, multiplicidad:** si se declara una afirmación conjunta entre juegos, hace falta `holm` o `bonferroni` **[lit: Holm]**.
+- **R9, horizonte.** Distingue tres casos:
+  - **mínimo de AE-52:** al menos 100 objetivos, sin reducción retroactiva;
+  - **propuesta exacta de AE-53:** 100 objetivos con un solo análisis. Se informa en `coincide_con_propuesta_ae53`, sin aprobarla;
+  - **cualquier otra ventana:** se informa como alternativa sin aprobar. Con **más de un análisis** exige además una decisión sobre análisis repetidos y control del error (`analisis_repetidos_y_control_de_error`), y mientras no se tome el diseño queda incompleto. Nunca se trata con el nivel de un único análisis.
+- **R10, efecto mínimo y potencia:**
+  - el efecto es > 0, con unidad `sigma` o `unidad_de_metrica`;
+  - `calculado_con = "emd_ae55"` solo es coherente con P1 y una familia de media, y exige `nivel < potencia_objetivo < 1`, que es el **dominio de esa función de AE-55**, no una regla universal. Con P2 es incoherente;
+  - `potencia_objetivo`, si se declara, está en (0, 1).
+- **R11 y R12, sellado y hora oficial:** son textos declarados. Un commit firmado como único mecanismo es incoherente. No existe ninguna lista de mecanismos aprobados, y **nada de esto verifica** el sello, el token, el manifiesto, la hora oficial, la custodia ni la anterioridad.
+
+**Semántica de estados** (`validar_especificacion_diseno` devuelve un `InformeDiseno` inmutable):
+- **`incompleta`:** falta un campo requerido, vale `None` o queda una decisión adicional requerida. Por ejemplo, que falte `longitud_bloque`, `supuestos_declarados`, la fuente de hora, `efecto_minimo.unidad` o la `correccion` de una afirmación conjunta.
+- **`incoherente`:** un campo **presente** tiene tipo, valor o combinación contradictorios. Incluye un `bool` donde se espera un número, `NaN` o infinito, una unidad o corrección no admitidas, y una lista de supuestos que omite uno exigido. Tiene prioridad sobre `incompleta`.
+- **`coherente_no_aprobada`:** los campos declarados son consistentes entre sí, **y nada más**.
+
+El informe incluye las violaciones, las decisiones sin tomar, las decisiones adicionales, la coincidencia con la propuesta de AE-53, las alternativas sin aprobar y la lista fija de lo que no verifica. También incluye `bloqueos_de_la_base_documentada`: el NO-GO de AE-39, AE-41 y AE-46 según la base documentada, sin consultar sus módulos, y los siete pendientes de AE-52 tal cual.
+
+**Canonicidad de la candidata:**
+- Solo se admiten objetos con claves textuales, listas, textos, enteros, reales, booleanos y `None`. Un `set`, bytes, otros objetos o claves no textuales se rechazan con `DisenoReglaInvalidoError`.
+- La huella de la candidata es el SHA-256 de su JSON canónico y no depende del orden de las claves.
+- Con valores no serializables, el informe es `incoherente` y `huella = None`: no se serializa ese valor ni se inventa una huella. Son no serializables `NaN`, los infinitos y los enteros de 4300 dígitos decimales o más, que es el límite por defecto de CPython.
+- Un entero es siempre finito. No se pasa por `math.isfinite`, que desborda con enteros enormes: `10**400` es un real válido y se compara exactamente con los rangos.
+- Un valor **presente con tipo inválido** da siempre `incoherente` y nunca lanza `TypeError` ni `OverflowError`. Es el caso de una lista, un objeto o un número donde se espera un texto de un conjunto cerrado, o de elementos no textuales en las métricas. Las pertenencias a conjuntos cerrados solo se evalúan sobre textos, y las métricas solo se ordenan si todas son textos.
+- Un anidamiento mayor que `PROFUNDIDAD_MAXIMA_CANDIDATA = 32` (la raíz es 0) se rechaza con `DisenoReglaInvalidoError`, en lugar de agotar la recursión.
+
+**Límites**:
+- La coherencia no es aprobación ni verificación de supuestos, procedencia, autorización o validez inferencial.
+- El validador no juzga si una familia o sus parámetros son apropiados para el proceso real.
+- Las frecuencias sintéticas de AE-54 y la factibilidad de AE-55 no intervienen en ninguna regla.
+- La huella no es un sello temporal.
+
+**Archivos**: son nuevos `app/application/ml/diseno_regla_prospectiva.py`, puro (solo biblioteca estándar y lectura de las constantes de AE-52 y AE-53), y `tests/unit/ml/test_diseno_regla_prospectiva.py`. No cambia ningún archivo de AE-39 a AE-55, y no hay CLI, rutas ni scripts.
+
+**Pruebas** (`125` nuevas, sintéticas y deterministas): verifican la consistencia de los campos, no la validez estadística.
+- **Catálogo:**
+  - categorías ordenadas y múltiples;
+  - inmutabilidad profunda;
+  - dependencias sin ciclos;
+  - cobertura de los pendientes de AE-52 y AE-53;
+  - huella estable y sensible a cambios.
+- **Canonicidad:**
+  - rechazo de tipos no canónicos;
+  - `bool` en campos numéricos tratado como incoherente; al ser serializable, el informe conserva su huella;
+  - `NaN`, infinito y enteros de 4300 dígitos o más tratados como incoherentes, con `huella = None`;
+  - regresiones v2: los cinco casos de la auditoría de v1, enteros enormes finitos, enteros no serializables y anidamiento excesivo;
+  - barrido que sustituye cada campo de cuatro candidatas completas, y cada campo raíz, por 17 valores canónicos de tipo inesperado, sin excepción.
+- **Ausencia frente a contradicción:** cada caso de ausencia da `incompleta`; cada contradicción da `incoherente`, con prioridad cuando conviven.
+- **Reglas:** un caso incoherente por regla, de R1 a R12.
+- **Distinciones:**
+  - propuesta de AE-53 frente a alternativa sin aprobar, y dos análisis como decisión adicional;
+  - la referencia a AE-54 no decide;
+  - el EMD solo con P1 y familias de media;
+  - el sellado declarado sigue sin verificarse.
+- **Invariantes:**
+  - estados cerrados, sin estado aprobado;
+  - informe inmutable;
+  - AE-52 y AE-53 intactos tras validar.
+- **Estructura:** módulo aislado, sin exposición web ni en scripts.
+
+**Historia de la corrección (v1 → v2).** El operador auditó el parche v1 (`ae56-diseno-regla-prospectiva.patch`, 81 154 bytes, SHA-256 `9a84b19aa3081d75b2eaa52f5937fca85ed92ec033755055180112300afa482c`) antes de aplicarlo en Windows. Reprodujo cinco excepciones con entradas canónicas:
+- `TypeError` al ordenar métricas principales con un elemento no textual;
+- `TypeError` por un valor no hashable en `referencia_banco_ae54`;
+- lo mismo en `multiplicidad.correccion`;
+- lo mismo en `efecto_minimo.unidad`;
+- `OverflowError` de `math.isfinite` con `nivel_unilateral = 10**400`.
+
+Al revisar las operaciones similares aparecieron dos fallos más de la misma clase: un entero de 4300 o más dígitos producía `ValueError` al calcular la huella, y un anidamiento profundo producía `RecursionError`. Las regresiones se escribieron antes de corregir. Sobre el código v1 dieron `17 failed, 108 passed` (código de pytest `1`). v2 no cambia el alcance estadístico, las reglas R1–R12, los estados ni los bloqueos.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales):
+- **v1:** antes de crear el módulo, las pruebas nuevas fallaron al recolectarse (código de pytest `2`).
+- **v2, sobre el código final:** `125 passed` (código `0`). Además, un barrido aleatorio ad hoc, que no forma parte de la suite, con unas 37 000 candidatas mutadas no produjo ninguna excepción.
+- **Focalizadas:** `569 passed` (código `0`): nuevas, registro de AE-52 y su CLI, especificación de AE-53, `tests/unit/simulaciones` (AE-49, AE-54 y AE-55), CLI de AE-54, métricas, baselines, incertidumbre, estructura de AE-43 y diagnóstico. Suite completa en una única corrida: `4689 + 125 = 4814 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic. `pip check` y `git diff --check`: código `0`.
+
+**Validación real del operador en Windows/Python `3.14.6` y pytest `9.1.1` -evidencia atribuida al usuario, no ejecutada por Claude**: rama `feature/ae56-diseno-regla-prospectiva`, con HEAD base `ec3b5d69ecc089f7bdf94dc7e65327b74824ed09`.
+- **Parche aplicado:** el parche completo v2 `ae56-diseno-regla-prospectiva-v2.patch`, con SHA-256 verificado `bc9b4b78a9df780b31052eeaf86c11f4f9cfe24de6cb713d45fd7529e1a0b7c9`.
+- **Comprobaciones:** `git apply --check`, la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos.
+- **Archivos:** exactamente cinco (el módulo y la prueba nuevos, README, ROADMAP y ARCHITECTURE).
+- **Pruebas nuevas:** `125 passed` en `0,88 s`.
+- **Focalizadas:** `569 passed` en `20,91 s`.
+- **`pip check`:** sin problemas.
+
+**En Windows no se ejecutó la suite completa.** La cifra `4814 passed, 0 skipped` sobre v2 corresponde únicamente al sandbox Linux de Claude (Python `3.11.15`).
+
+**Límites de esta validación**: «validada» se refiere únicamente al **contrato preparatorio**, al **validador de coherencia** y a sus pruebas: el catálogo `DIMENSIONES_AE56`, las reglas R1–R12, la semántica de estados, la canonicidad y la huella. No aprueba ninguna pregunta, familia de método, parámetro, nivel, horizonte, efecto mínimo, mecanismo de sellado ni fuente de hora. Tampoco aprueba ninguna regla prospectiva, inferencia ni autorización. `coherente_no_aprobada` sigue significando solo consistencia de los campos declarados, y no se cierra `regla_estadistica_de_decision`.
+
+Siguen igual:
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar;
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46.
+
+Con esta evidencia, **AE-56 queda validada como contrato preparatorio de coherencia del diseño**; la coherencia no equivale a aprobación ni a autorización operativa.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-55 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas
