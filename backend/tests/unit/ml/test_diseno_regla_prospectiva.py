@@ -502,15 +502,17 @@ def test_barrido_de_campos_raiz_no_lanza(clave):
 
 
 @pytest.mark.parametrize("ruta", [("pregunta",), ("metodo", "parametros", "semilla"), ("efecto_minimo", "valor")])
-def test_entero_no_serializable_es_incoherente_sin_huella(ruta):
-    """Un entero con 4300 o mas digitos decimales no se serializa: como un
-    no finito, da incoherente y huella None, sin ValueError."""
-    for valor in (10 ** 4300, -(10 ** 4300), 10 ** 5000):
+def test_entero_fuera_del_limite_es_incoherente_sin_huella(ruta):
+    """Limite de AE-57: un entero con mas de 640 digitos decimales queda
+    fuera del limite para calcular la huella; como un no finito, da
+    incoherente y huella None, sin ValueError y sea cual sea la
+    configuracion de CPython."""
+    for valor in (10 ** 640, -(10 ** 640), 10 ** 4299, 10 ** 5000):
         informe = _validar(_sustituir(_BLOQUES, ruta, valor))
         assert informe.estado == "incoherente", valor
         assert informe.huella is None
-        assert any("no serializable" in v for v in informe.violaciones)
-    limite = 10 ** 4300 - 1
+        assert any("mas de 640 digitos" in v for v in informe.violaciones)
+    limite = 10 ** 640 - 1
     assert _validar(_sustituir(_BLOQUES, ("metodo", "parametros", "semilla"), limite)).huella is not None
 
 
