@@ -1952,6 +1952,176 @@ Con esta evidencia, **AE-59 queda validada como auditoría de la semántica de o
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-58 sin cambios.
 
+## Expediente preparatorio de inferencia prospectiva -Etapa AE-60, validada
+
+**Etapa AE-60 -expediente preparatorio de inferencia prospectiva, validada:** determina si los contratos de AE-52 a AE-59 permiten formular una regla inferencial candidata para comparar prospectivamente una estrategia con la referencia uniforme.
+
+**Conclusión:** **no hay fundamento suficiente para escoger** una regla. AE-60 es preparatoria. Añade el expediente puro `app/application/ml/propuesta_inferencia_prospectiva.py`, **sin valores de decisión y sin elección**, con:
+- las preguntas y las familias de métodos, con su garantía;
+- los escenarios de un estudio sintético **posterior**;
+- las decisiones requeridas y los criterios para detenerse sin elección.
+
+El estudio, la elección humana y cualquier implementación de la regla son etapas separadas. El estado es fijo, `expediente_sin_eleccion`, y `AUTORIZA_EVALUACION = False`.
+
+**Inventario:**
+- **Fijado por AE-52:**
+  - mínimo de 100 resultados **resueltos** por juego;
+  - LL y Brier principales; P@5 y R@5 secundarias;
+  - orientación «uniforme − estrategia»;
+  - juegos por separado;
+  - consecutivos sin sustitución;
+  - ningún agregado antes del mínimo;
+  - una entrada que termina en `o−1`;
+  - los siete pendientes.
+- **Propuesto por AE-53, sin aprobar:** horizonte de 100 objetivos con análisis único y tratamiento de omisiones.
+- **Exploratorio o analítico:** el banco AE-54 y la factibilidad AE-55, sin valor de decisión.
+- **Coherencia:** el catálogo y el validador de AE-56/57.
+- **Semántica descriptiva:** omisiones de AE-58/59.
+
+**Hallazgo de contrato:** en P@5, que es una ganancia, `d = uniforme − estrategia > 0` favorece a la uniforme, así que la mejora es `d < 0`. En LL y Brier la mejora es `d > 0`. `ORIENTACION_MEJORA_POR_METRICA` lo declara y una prueba lo comprueba con `metricas_por_sorteo`.
+
+**Preguntas.** Con `g_t = E[d_t | F_{t−1}]` y `Δ_n = (1/n)Σ g_t`:
+- **P1a:** `μ_W ≤ 0` frente a `> 0`, para las familias de media.
+- **P1b-único:** nula terminal `Δ_100 ≤ 0`, que admite prefijos positivos.
+- **P1b-supervisión:** nula `Δ_t ≤ 0` para todo `t ∈ T`, con `T` contenido en la ventana de 100 objetivos. Es una nula **sobre `T`** y no restringe los prefijos fuera de `T`.
+  - `Δ_t` se definió sobre esa ventana: tiempos `t > 100` exigen una extensión del horizonte decidida por el operador.
+  - Hay conflicto con AE-52 si algún tiempo tiene menos de 100 resueltos, así que con las reglas vigentes solo cabe `T = {100}`, que coincide con la nula terminal.
+- **P2:** `E[d_t | F_{t−1}] = 0`. No es direccional: con sorteos uniformes y una estrategia no uniforme, un rechazo no indica mejora.
+- **P3:** el mecanismo de sorteo, que no se responde con el registro.
+
+Hechos relacionados (inferencia propia):
+- `ε_t = d_t − g_t` es una diferencia de martingala por construcción. La anterioridad es lo que hace de `g_t` una ventaja **predictiva**.
+- `E[Δ_100] = μ_W` solo vale con la ventana fijada antes de los datos y sus 100 objetivos resueltos. Con omisiones, sustitución, selección o parada dependiente de los datos queda **pendiente**.
+
+**Familias.** Cada una declara garantía, exigencia sobre la media, valor p, parámetros a fijar (solo nombres) y evidencia que falta.
+- **Catálogo de AE-56:**
+  - M1, M2, M3a y M3b responden a P1a y exigen una media común (estacionariedad, independencia o ausencia de autocorrelación según el caso) **[lit]**;
+  - GW responde a P2 **[lit]**.
+- **Fuera del catálogo de AE-56**, incorporarlas sería una decisión humana:
+  - **`cota_martingala_tiempo_fijo`:** P1b-único mediante la desigualdad de Azuma. Admite `g_t` variables y da un valor p válido **solo** en `n = 100`.
+  - **`secuencia_confianza_uniforme_martingala`:** tiene cobertura uniforme en el tiempo y admite medias condicionales variables en promedio **[lit: Howard et al.; Choe–Ramdas]**.
+    - Responde a P1b-supervisión **invirtiendo la secuencia simultánea**: se rechaza si `inf C_t > 0` para algún `t ∈ T`. Como `P(∃t: Δ_t ∉ C_t) ≤ α`, bajo la nula sobre `T` el rechazo exige que algún `Δ_t` quede fuera de `C_t`. El valor p es el menor α con ese rechazo, si la familia es monótona en α.
+    - Responde a P1b-único **solo** invirtiendo `C_100`.
+    - Las fórmulas con e-procesos, `min(1, 1/sup_T E_t)` y `min(1, 1/E_100)`, quedan **pendientes de demostración** bajo la nula sobre `T` y bajo la terminal. Un e-proceso construido desde el inicio puede exigir restricciones en prefijos fuera de `T`, así que no se atribuye a Ville una garantía no demostrada para esas nulas.
+  - **`secuencia_confianza_apuesta_media_comun`:** exige una media condicional común **[lit: Waudby-Smith–Ramdas]**, así que **no es aplicable** a P1b con `g_t` variable.
+
+La validez de un método secuencial **no** cambia el mínimo ni la prohibición de agregados de AE-52.
+
+**Conjunción y juegos.**
+- **LL y Brier por juego:** intersección-unión **[lit: Berger]**, con `p_juego = max(p_LL, p_Brier)` y `E_juego = min(E_LL, E_Brier)`.
+- **«Ambos juegos»:** otra intersección-unión.
+- **«Al menos uno»:** Holm **[lit]**.
+- **Informes solo por juego:** no controlan el error familiar.
+- **Secundaria:** fuera de la conjunción, con mejora negativa.
+
+**Estudio sintético posterior (solo especificado).** Hay siete escenarios (A0–A4, L-unif y L-sint), con el estado de la nula **por pregunta** y su realizabilidad con sorteos uniformes.
+- El error tipo I solo se calcula donde la nula de esa pregunta es verdadera (`escenarios_nulos`). Por ejemplo, A1 es nulo para P1b-único y, para la supervisión, depende de `T` (`segun_T`): con `T = {100}` es nulo, y con tiempos intermedios de prefijo positivo es alternativa. L-unif y A2 son nulos de P1 y alternativas de P2.
+- Con sorteos uniformes, la frontera no degenerada de P1 no es realizable.
+- **Salidas sin fijar α:** distribuciones completas de valores p, trayectorias de e-procesos con el proceso, `T` y la regla declarados, y la cobertura uniforme.
+- El operador fija los efectos, `T`, las cotas y los criterios **antes** de ejecutarlo; si no, no se ejecuta.
+
+**Decisiones requeridas:**
+- **humanas:** pregunta, α, efecto mínimo, forma de la afirmación entre juegos, corrección, potencia, momento y tiempos del análisis, omisiones, familias externas, secundaria y criterios del estudio;
+- **inferenciales:** memoria y estacionariedad de `g_t`, potencia, condiciones exactas, validez de `1/E_100` y reentrenamiento **[lit: West]**;
+- **externas:** sellado, autorización de AE-41, estrategia, tramo y contrato de inferencia.
+
+`DECISIONES_INFERENCIALES_ABIERTAS` (α, bloque, ancho de banda, efecto, potencia, corrección, tiempos y cota) tiene todos los valores en `None` y el estado en `sin_decidir`.
+
+**Criterios de detención sin elección:** (a) faltan decisiones; (b) ningún par (pregunta, familia) cumple los criterios en todos sus escenarios nulos; (c) solo lo cumple una familia externa no incorporada; (d) supervisión con tiempos anteriores a 100 resueltos; (e) no hay sellado.
+
+**Literatura verificada** (título, revista, volumen, páginas y DOI en índices o en las páginas de las editoriales):
+- Diebold–Mariano (1995), doi:10.1080/07350015.1995.10524599;
+- Diebold (2015), doi:10.1080/07350015.2014.983236;
+- Harvey–Leybourne–Newbold (1997), doi:10.1016/S0169-2070(96)00719-4;
+- Giacomini–White (2006), doi:10.1111/j.1468-0262.2006.00718.x;
+- West (1996), jstor 2171956;
+- Newey–West (1987), jstor 1913610;
+- Kiefer–Vogelsang (2005), doi:10.1017/S0266466605050565;
+- Künsch (1989), doi:10.1214/aos/1176347265;
+- Politis–Romano (1994), doi:10.1080/01621459.1994.10476870;
+- Gneiting–Raftery (2007), doi:10.1198/016214506000001437;
+- Berger (1982), doi:10.2307/1267823;
+- Holm (1979), jstor 4615733;
+- Azuma (1967), doi:10.2748/tmj/1178243286;
+- Howard–Ramdas–McAuliffe–Sekhon (2021), doi:10.1214/20-AOS1991;
+- Choe–Ramdas (2024), doi:10.1287/opre.2021.0792;
+- Waudby-Smith–Ramdas (2024), doi:10.1093/jrsssb/qkad009;
+- Ramdas–Grünwald–Vovk–Shafer (2023), doi:10.1214/23-STS894;
+- Lan–DeMets (1983), doi:10.1093/biomet/70.3.659;
+- RFC 3161.
+
+arXiv y varias editoriales estaban bloqueadas en el sandbox. Las condiciones exactas de Howard et al., Choe–Ramdas y Waudby-Smith–Ramdas deben verificarse en el texto completo antes de cualquier uso.
+
+**Lo que las fuentes no resuelven:**
+- la memoria real de `g_t`;
+- la potencia con 100 sorteos;
+- α, el efecto y la multiplicidad;
+- el conflicto entre la supervisión y AE-52;
+- la anterioridad sin sellado;
+- la ventana afectada por omisiones.
+
+**Archivos:** son nuevos `app/application/ml/propuesta_inferencia_prospectiva.py` (puro: solo lee las constantes de AE-52, AE-53 y AE-56) y `tests/unit/ml/test_propuesta_inferencia_prospectiva.py`. No cambia ningún archivo de AE-39 a AE-59, ni el catálogo de AE-56.
+
+**Pruebas** (`58` nuevas, sintéticas):
+- **Base:** estado fijo y verificación, con divergencias forzadas de AE-52, AE-53 y AE-56, incluidos el contenido de los pendientes, las propuestas y sus estados, los pendientes de AE-53 y constantes que no son diccionarios.
+- **Regresiones v2:** supervisión limitada a la ventana; inversión de la secuencia simultánea; ninguna familia declara válida una fórmula con `1/E`; A1 y L-sint `segun_T`; y la verificación ampliada.
+- **Preguntas:** P1b-único frente a supervisión, direcciones y P3.
+- **Familias:** coherencia con `SUPUESTOS_POR_FAMILIA`; externas marcadas; apuesta no aplicable; Azuma solo en tiempo fijo; secuencia de confianza solo por inversión en P1b-único, con `1/E_100` pendiente; valores p de e-procesos con el proceso, el tiempo, la regla y la nula.
+- **Escenarios:** estados por pregunta, nulas de P2, realizabilidad y `escenarios_nulos`.
+- **Orientación y conjunción:** orientación comprobada con `metricas_por_sorteo`; formas de conjunción.
+- **Decisiones:** abiertas sin valor, parámetros solo como nombres, sin campos de valor elegido, decisiones por clase y criterios de detención.
+- **Vocabulario cerrado:** sin aprobación, GO, cumplimiento ni desbloqueo.
+- **Referencias:** con identificador verificable.
+- **Invariantes:** inmutabilidad, constantes de AE-52/53/56 y `huella_diseno()` intactas, y aislamiento.
+
+**Historia de la corrección (v1 → v2).** El operador auditó el parche v1 (`ae60-propuesta-inferencia-prospectiva.patch`, 69 645 bytes, SHA-256 `d24c60fccd011ae56f7fbd69bc486c9f383f54054b38bfda39fcdca821273674`) y encontró dos inconsistencias:
+- **Supervisión y Ville.** v1 declaraba la nula de P1b-supervisión solo sobre `T` y afirmaba que `min(1, 1/sup_T E_t)` era válido por Ville bajo ella. Un e-proceso construido desde el inicio puede exigir restricciones en prefijos fuera de `T`, y con `T = {100}` reaparece la nula terminal, bajo la cual el propio expediente dejaba `1/E_100` pendiente.
+  - v2 contrasta la supervisión **invirtiendo la secuencia simultánea**, limita `T` a la ventana de 100 objetivos y deja **pendientes** todas las fórmulas con `1/E`.
+  - A1 y L-sint pasan a `segun_T`, y `escenarios_nulos("P1b_supervision")` solo incluye los escenarios nulos para cualquier `T`.
+- **Promesa de `verificar_expediente()`.** Prometía detectar «cualquier divergencia», pero de AE-52 solo comprobaba el número de pendientes, el mínimo y la orientación, y de AE-53 solo el estado global. Además, una constante que dejara de ser diccionario provocaba `AttributeError`.
+  - v2 comprueba los siete pendientes exactos, las tres propuestas de AE-53 con su valor y estado, los seis pendientes de AE-53 sin valor, los tipos de las constantes y el catálogo de AE-56.
+  - Su docstring acota la promesa a esos invariantes.
+
+Las regresiones se escribieron antes de corregir. Sobre el código v1 dieron `16 failed, 42 passed` (código de pytest `1`). Cambió una aserción de v1 que era incorrecta por diseño: A1 ya no es siempre una alternativa de la supervisión.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales):
+- **v1:** antes de crear el módulo, las pruebas nuevas fallaron al recolectarse (código de pytest `2`).
+- **v2, sobre el código final:** `58 passed` (código `0`).
+- **Focalizadas:** `798 passed` (código `0`): las de AE-59 más las `58` nuevas.
+- **Suite completa en una única corrida:** `4985 + 58 = 5043 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- `pip check` y `git diff --check`: código `0`.
+
+**Validación real del operador en Windows/Python `3.14.6` -evidencia atribuida al usuario, no ejecutada por Claude**: en `C:\GitHub\loteria-predictor-update`, rama `feature/ae60-propuesta-inferencia-prospectiva`, con HEAD base `a08c6342a83cf0e71b2e562702d5dcb1a65e2775` y árbol limpio antes de aplicar.
+- **Parche aplicado:** el parche completo v2 `ae60-propuesta-inferencia-prospectiva-v2.patch`, con SHA-256 verificado `f486949fc0ddda1b6ff68e93d5dfd03a41e330e741cb30ec39a84a565348d451`.
+- **Comprobaciones:** `git apply --check`, `git apply`, `git apply --reverse --check` y `git diff --check` fueron correctos.
+- **Archivos:** exactamente cinco (ARCHITECTURE.md, README.md, ROADMAP.md, el módulo y la prueba nuevos).
+- **Pruebas nuevas:** `58 passed` en `0,45 s`, código `0`.
+- **Focalizadas:** `798 passed` en `23,43 s`, código `0`.
+- **`pip check`:** `No broken requirements found.`, código `0`.
+
+**En Windows no se ejecutó la suite completa.** La cifra `5043 passed, 0 skipped` corresponde únicamente al sandbox Linux de Claude (Python `3.11.15`).
+
+**Límites de esta validación**: «validada» cubre solo el **expediente preparatorio** y sus pruebas. **No** elige pregunta, método ni familia, ni α, efecto, potencia, corrección de multiplicidad, tiempos de supervisión ni tratamiento de omisiones.
+- Las fórmulas con `1/E` (`1/sup_T E_t` y `1/E_100`) siguen **pendientes de demostración**.
+- La familia de secuencias de confianza queda descrita solo mediante **inversión**: de la secuencia simultánea para la supervisión y de `C_100` para la nula terminal.
+- No cierra `regla_estadistica_de_decision` y no autoriza ninguna evaluación.
+
+Siguen igual:
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar;
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46.
+
+Con esta evidencia, **AE-60 queda validada como expediente preparatorio de inferencia prospectiva**; no equivale a elegir una regla ni a autorizar ninguna evaluación.
+
+**Límites:**
+- AE-60 no elige pregunta, familia ni valor alguno, y no cierra `regla_estadistica_de_decision` ni ningún pendiente de AE-52.
+- No aprueba la especificación de AE-53.
+- No modifica el catálogo de AE-56.
+- No verifica la anterioridad.
+- No autoriza ninguna evaluación.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-59 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas
