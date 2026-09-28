@@ -82,13 +82,27 @@ def verificar_base_ae52_ae53() -> None:
     propuestas de AE-53 de las que depende AE-58 existen, tienen el valor
     esperado y que las propuestas siguen sin aprobar. Cualquier
     divergencia (clave ausente, valor o estado distinto) lanza
-    `BaseDivergenteError`; nunca se filtra en silencio."""
+    `BaseDivergenteError`; nunca se filtra en silencio.
+
+    AE-59 anade: ambas constantes deben ser dict; la especificacion debe
+    seguir en `candidata_no_aprobada`; cada propuesta usada tiene
+    exactamente las claves `estado` y `valor_propuesto`; y la copia
+    `fijado_por_ae52` de AE-53 debe ser estrictamente igual a
+    `REGLAS_EVALUACION_AE52`."""
+    if not isinstance(REGLAS_EVALUACION_AE52, dict):
+        raise BaseDivergenteError("REGLAS_EVALUACION_AE52 no es un objeto")
+    if not isinstance(ESPECIFICACION_CANDIDATA_AE53, dict):
+        raise BaseDivergenteError("ESPECIFICACION_CANDIDATA_AE53 no es un objeto")
     faltan = sorted(k for k in _VALORES_FIJADOS_AE52 if k not in REGLAS_EVALUACION_AE52)
     if faltan:
         raise BaseDivergenteError(f"Faltan reglas fijadas por AE-52: {faltan}")
     distintas = sorted(k for k, v in _VALORES_FIJADOS_AE52.items() if not _igual_estricto(REGLAS_EVALUACION_AE52[k], v))
     if distintas:
         raise BaseDivergenteError(f"Reglas de AE-52 con un valor distinto del esperado: {distintas}")
+    if ESPECIFICACION_CANDIDATA_AE53.get("estado") != "candidata_no_aprobada":
+        raise BaseDivergenteError("La especificacion de AE-53 ya no esta en estado candidata_no_aprobada")
+    if not _igual_estricto(ESPECIFICACION_CANDIDATA_AE53.get("fijado_por_ae52"), REGLAS_EVALUACION_AE52):
+        raise BaseDivergenteError("La copia fijado_por_ae52 de AE-53 difiere de REGLAS_EVALUACION_AE52")
     propuestas = ESPECIFICACION_CANDIDATA_AE53.get("propuestas")
     if not isinstance(propuestas, dict):
         raise BaseDivergenteError("La especificacion de AE-53 no tiene propuestas")
@@ -97,7 +111,9 @@ def verificar_base_ae52_ae53() -> None:
         raise BaseDivergenteError(f"Faltan propuestas de AE-53: {faltan}")
     for clave, valor in _PROPUESTAS_ESPERADAS_AE53.items():
         propuesta = propuestas[clave]
-        if not isinstance(propuesta, dict) or propuesta.get("estado") != "propuesta_no_aprobada":
+        if not isinstance(propuesta, dict) or set(propuesta) != {"estado", "valor_propuesto"}:
+            raise BaseDivergenteError(f"La propuesta {clave} de AE-53 no tiene exactamente estado y valor_propuesto")
+        if propuesta.get("estado") != "propuesta_no_aprobada":
             raise BaseDivergenteError(f"La propuesta {clave} de AE-53 ya no esta en estado propuesta_no_aprobada")
         if not _igual_estricto(propuesta.get("valor_propuesto"), valor):
             raise BaseDivergenteError(f"La propuesta {clave} de AE-53 tiene un valor distinto del esperado")
@@ -162,9 +178,28 @@ def _estado_recuento(recuento: int, puede_crecer: bool) -> str:
     return "puede_alcanzar_100" if puede_crecer else "no_puede_alcanzar_100"
 
 
-def _consecuencias(ventana: set[int], resueltos: tuple[int, ...], hay_omision: bool) -> tuple:
+def _ventana_ampliada(corte: int, ultimo: int, predicciones: set[int]) -> tuple[int, ...]:
+    """Primeros 100 sorteos posteriores al corte que NO son omisiones
+    (AE-59): los ocurridos con prediccion y, despues, los futuros. Los
+    resultados pendientes y los futuros ocupan su lugar; solo una omision
+    (sorteo ocurrido sin prediccion) cede su lugar al siguiente.
+
+    Trabajo acotado por la cantidad de predicciones y los 100 lugares:
+    nunca recorre el intervalo `corte..ultimo`, que puede ser muy grande.
+    Como las predicciones ocurridas son `<= ultimo` y los futuros
+    `> ultimo`, el orden coincide con el recorrido sorteo a sorteo."""
+    ocurridas = sorted(o for o in predicciones if corte < o <= ultimo)[:_MINIMO_AE52]
+    inicio = max(corte + 1, ultimo + 1)
+    return tuple(ocurridas) + tuple(range(inicio, inicio + _MINIMO_AE52 - len(ocurridas)))
+
+
+def _consecuencias(ventana: set[int], ampliada: tuple[int, ...], resueltos: tuple[int, ...],
+                   hay_omision: bool) -> tuple:
     en_ventana = tuple(o for o in resueltos if o in ventana)
-    ampliado = resueltos[:_MINIMO_AE52]
+    # AE-59: ampliar y reemplazar cuentan los resueltos de la ventana ampliada
+    # solo por omisiones; un resultado pendiente no se salta.
+    en_ampliada = set(ampliada)
+    ampliado = tuple(o for o in resueltos if o in en_ampliada)
     relaciones = {
         "no_evaluable": "sin_conflicto_conocido",
         "ventana_fija_sin_ampliar": "incompatible_con_minimo" if hay_omision else "sin_conflicto_conocido",
@@ -230,7 +265,8 @@ def analizar_omisiones(*, corte: int, ultimo_sorteo_ocurrido: int, objetivos_con
         faltantes_como_en_resumen_ae52=max(0, _MINIMO_AE52 - len(resueltos)),
         secuencia_ae53=secuencia,
         estado_segun_propuesta_ae53=secuencia.estado,
-        consecuencias=_consecuencias(ventana, resueltos, bool(omisiones)),
+        consecuencias=_consecuencias(ventana, _ventana_ampliada(corte, ultimo_sorteo_ocurrido, set(prediccion)),
+                                     resueltos, bool(omisiones)),
         fijado_por_ae52=_FIJADO_POR_AE52,
         propuesto_por_ae53=_PROPUESTO_POR_AE53,
         sin_decidir=_SIN_DECIDIR,
