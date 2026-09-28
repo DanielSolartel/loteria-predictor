@@ -90,10 +90,24 @@ SENTIDO_DE_LA_GARANTIA_P1B = MappingProxyType({
                 "estructura predictible de la familia; no es garantia condicional dado el evento nulo",
     "clasica": "solo para la clase de leyes en que la nula vale casi seguro",
 })
-"""AE-61: Delta_100 y Delta_t dependen de la trayectoria. Con incrementos
-acotados (|eps_t| <= c fijada a priori) y p_t fijada antes de cada sorteo,
-Azuma y la inversion dan la cota conjunta; la lectura clasica solo vale
-para la clase de leyes en que la nula se cumple casi seguro."""
+"""AE-61, precisado en AE-62: Delta_100 y Delta_t dependen de la
+trayectoria. Azuma (derivacion propia) da la cota conjunta con incrementos
+acotados (|eps_t| <= c fijada a priori) y p_t fijada antes de cada sorteo;
+la inversion de la secuencia de confianza la da solo bajo
+PREMISA_DE_LA_INVERSION. La lectura clasica solo vale para la clase de
+leyes en que la nula se cumple casi seguro."""
+
+PREMISA_DE_LA_INVERSION = (
+    "cobertura simultanea P(para todo t >= 1: Delta_t en C_t) >= 1 - nivel: la dan los teoremas 1 y 2 de "
+    "arXiv:2110.00115v6 bajo sus condiciones (diferenciales condicionalmente subgaussianos, o acotados con "
+    "secuencia auxiliar predecible, respecto de su filtracion G), segun la revision de un auditor externo del "
+    "proyecto; falta demostrar que las metricas, cotas, filtracion, predicciones y omisiones de este repositorio "
+    "satisfacen esas condiciones")
+"""AE-62, validada como registro preparatorio (aplicar los teoremas a este
+repositorio sigue pendiente): premisa de la que depende la inversion de la
+secuencia de confianza (supervision y C_100). El enunciado del teorema
+esta atribuido a la revision externa de esa version; su aplicacion a este
+repositorio no esta demostrada."""
 
 CONDICION_IGUALDAD_ESPERANZA = MappingProxyType({
     "vale_si": "ventana_fija_antes_de_los_datos_y_sus_100_objetivos_resueltos",
@@ -163,12 +177,13 @@ FAMILIAS_INFERENCIALES = (
     Familia("secuencia_confianza_uniforme_martingala", True, ("P1b_unico", "P1b_supervision"),
             "uniforme_en_el_tiempo", "condicional_variable_admitida",
             ("puntuaciones_acotadas", "p_t_fijada_antes_del_sorteo"),
-            "supervision: inversion de la secuencia simultanea, se rechaza si inf C_t > 0 para algun t de T; como "
-            "P(existe t con Delta_t fuera de C_t) <= nivel, bajo la nula sobre T el rechazo exige que algun Delta_t "
-            "quede fuera de C_t; p = menor nivel con inf C_t > 0 para algun t de T si la familia es monotona en el "
-            "nivel; unico: inversion del intervalo C_100, p = menor nivel con inf C_100 > 0 si la familia esta anidada "
-            "en el nivel (condicion suficiente para esta formula); ambas con garantia conjunta en el sentido de "
-            "SENTIDO_DE_LA_GARANTIA_P1B; las formulas con "
+            "supervision: inversion de la secuencia simultanea, se rechaza si inf C_t > 0 para algun t de T; si se "
+            "cumplen las condiciones de un teorema de cobertura simultanea (PREMISA_DE_LA_INVERSION), "
+            "P(existe t con Delta_t fuera de C_t) <= nivel y, bajo la nula sobre T, el rechazo exige que algun "
+            "Delta_t quede fuera de C_t; p = menor nivel con inf C_t > 0 para algun t de T si la familia es monotona "
+            "en el nivel; unico: inversion del intervalo C_100, p = menor nivel con inf C_100 > 0 si la familia esta "
+            "anidada en el nivel (condicion suficiente para esta formula); ambas con garantia conjunta en el sentido "
+            "de SENTIDO_DE_LA_GARANTIA_P1B solo bajo PREMISA_DE_LA_INVERSION; las formulas con "
             "1/sup E_t sobre T y con 1/E_100 (proceso E_t, tiempos, regla de supervision y nula declarados) quedan "
             "pendientes de demostracion bajo la nula sobre T y la terminal, "
             "porque un proceso construido desde el inicio puede exigir restricciones en prefijos fuera de T",
@@ -180,7 +195,10 @@ FAMILIAS_INFERENCIALES = (
             "inversion_secuencia_simultanea", "pendiente_de_demostracion"),
     Familia("secuencia_confianza_apuesta_media_comun", True, (), "uniforme_en_el_tiempo", "condicional_comun",
             ("media_condicional_comun", "puntuaciones_acotadas"),
-            "igual que la anterior, solo bajo su supuesto de media condicional comun; no aplicable con g_t variable",
+            "igual que la anterior, solo bajo su supuesto de media condicional comun; esta familia concreta (modelo "
+            "basico con E[X_t | F_(t-1)] = mu constante, seccion 2 y proposicion 2 de arXiv:2010.09686v7 segun la "
+            "revision de un auditor externo) no es aplicable con g_t variable; no se afirma que toda apuesta exija "
+            "media comun",
             ("variante", "cota"), ("extension verificada a medias condicionales variables",), False, "no_aplica",
             "no_aplica", ("waudby_smith_ramdas_2024",)),
 )
@@ -285,11 +303,12 @@ DECISIONES_REQUERIDAS = (
         "pregunta", "alfa", "efecto_minimo", "forma_de_la_afirmacion_entre_juegos", "correccion_multiplicidad",
         "potencia_objetivo", "momento_y_tiempos_de_analisis", "tratamiento_de_omisiones",
         "incorporacion_de_familias_externas", "papel_y_direccion_de_la_secundaria", "criterios_del_estudio",
-        "multiplicidad_entre_preguntas_o_familias")),
+        "multiplicidad_entre_preguntas_o_familias", "lectura_primaria_pendiente_de_fuentes_secuenciales")),
     *(Decision(d, "inferencial") for d in (
         "memoria_y_estacionariedad_de_g_t", "potencia_de_familias_de_martingala",
         "condiciones_exactas_de_las_secuencias_de_confianza", "validez_de_1_sobre_e_contra_la_nula_terminal",
-        "reentrenamiento_e_incertidumbre_de_estimacion")),
+        "reentrenamiento_e_incertidumbre_de_estimacion", "validez_de_1_sobre_sup_e_contra_la_nula_sobre_T",
+        "aplicacion_de_condiciones_de_cobertura_al_repositorio")),
     *(Decision(d, "externa") for d in (
         "mecanismo_de_sellado_temporal_externo", "autorizacion_ae41_para_prerregistro",
         "aprobacion_de_la_estrategia_a_congelar", "tramo_de_entrenamiento", "contrato_de_inferencia_prospectiva")),
@@ -329,6 +348,110 @@ REFERENCIAS = MappingProxyType({
     "lan_demets_1983": "Lan y DeMets (1983), Biometrika 70(3):659-663, doi:10.1093/biomet/70.3.659",
     "rfc_3161": "Adams, Cain, Pinkas y Zuccherato (2001), RFC 3161, IETF",
 })
+
+
+# ---------------------------------------------------------------------------
+# Verificacion de fuentes secuenciales (AE-62, validada como registro preparatorio)
+# ---------------------------------------------------------------------------
+
+ESTADOS_VERIFICACION_FUENTE = ("enunciado_comprobado_en_preprint_identificado",
+                               "aplicacion_al_repositorio_sin_verificar", "texto_no_examinado")
+CAMPOS_VERIFICACION_TEOREMA = ("fuente_y_version", "teorema_o_seccion", "estimando", "nula_y_cuantificacion_temporal",
+                               "filtracion", "acotacion", "predictibilidad", "medias_condicionales", "garantia",
+                               "trasladable_al_contrato")
+
+_COMPROBADO, _SIN_VERIFICAR, _NO_EXAMINADO = ESTADOS_VERIFICACION_FUENTE
+
+
+def _ficha(version, identificacion, revision, publicada, **campos):
+    no_examinado = (_NO_EXAMINADO, "no examinado")
+    return MappingProxyType({
+        "version": version, "identificacion_de_version": identificacion, "revision": revision,
+        "acceso_desde_sandbox_claude": "inaccesible", "referencia_publicada": publicada,
+        "campos": MappingProxyType({c: campos.get(c, no_examinado) for c in CAMPOS_VERIFICACION_TEOREMA}),
+    })
+
+
+VERIFICACION_FUENTES_SECUENCIALES = MappingProxyType({
+    "choe_ramdas_arxiv_2110_00115v6": _ficha(
+        "arXiv:2110.00115v6", "revision_del_preprint_por_auditor_externo", "auditor_externo_del_proyecto",
+        "choe_ramdas_2024",
+        fuente_y_version=(_COMPROBADO, "Choe y Ramdas, Comparing Sequential Forecasters, arXiv:2110.00115v6"),
+        teorema_o_seccion=(_COMPROBADO, "seccion 4.2; teorema 1 (p. 13 del PDF); teorema 2 (p. 14 del PDF); seccion "
+                                        "4.4; teorema 3; el teorema 2 se identifica como extension del teorema 4 de "
+                                        "Howard et al."),
+        estimando=(_COMPROBADO, "Delta_t: media condicional variable de los diferenciales de puntuacion"),
+        nula_y_cuantificacion_temporal=(_COMPROBADO, "H0w: Delta_t <= 0 para todo t >= 1 (seccion 4.4, teorema 3)"),
+        filtracion=(_COMPROBADO, "distingue la filtracion observable F de la filtracion G, que incluye la informacion "
+                                 "previa al resultado (seccion 4.2)"),
+        acotacion=(_COMPROBADO, "teorema 1: diferenciales condicionalmente subgaussianos; teorema 2: diferenciales "
+                                "acotados; la puntuacion logaritmica sin truncar es no acotada y truncarla altera su "
+                                "propiedad de puntuacion estrictamente propia"),
+        predictibilidad=(_COMPROBADO, "teorema 2: secuencia auxiliar predecible"),
+        medias_condicionales=(_COMPROBADO, "admite media condicional variable"),
+        garantia=(_COMPROBADO, "P(para todo t >= 1: Delta_t en C_t) >= 1 - alfa bajo las condiciones del teorema 1 o "
+                               "del teorema 2; teorema 3: e-proceso para H0w bajo las condiciones del teorema 2"),
+        trasladable_al_contrato=(_SIN_VERIFICAR, "falta demostrar que las metricas, cotas, filtracion, anterioridad "
+                                                 "de p_t y omisiones del repositorio cumplen esas condiciones; el Log "
+                                                 "Loss del repositorio recorta probabilidades con EPSILON_CLIP y su "
+                                                 "relacion con el truncamiento de la fuente, su cota y su propiedad "
+                                                 "de ser propia estan por comprobar; H0w no es la nula terminal ni la "
+                                                 "nula sobre T"),
+    ),
+    "howard_et_al_arxiv_1810_08240v9": _ficha(
+        "arXiv:1810.08240v9", "ficha_arxiv_consultada_por_auditor_externo",
+        "auditor_externo_sin_revision_especifica_del_teorema", "howard_et_al_2021",
+        fuente_y_version=(_COMPROBADO, "Howard, Ramdas, McAuliffe y Sekhon, Time-uniform, nonparametric, "
+                                       "nonasymptotic confidence sequences, arXiv:1810.08240v9"),
+        teorema_o_seccion=(_NO_EXAMINADO, "teorema 4; Choe y Ramdas v6 identifica su teorema 2 como extension de "
+                                          "este teorema; contenido no examinado"),
+    ),
+    "waudby_smith_ramdas_arxiv_2010_09686v7": _ficha(
+        "arXiv:2010.09686v7", "ficha_arxiv_consultada_por_auditor_externo", "auditor_externo_del_proyecto",
+        "waudby_smith_ramdas_2024",
+        fuente_y_version=(_COMPROBADO, "Waudby-Smith y Ramdas, Estimating means of bounded random variables by "
+                                       "betting, arXiv:2010.09686v7"),
+        teorema_o_seccion=(_COMPROBADO, "seccion 2 (modelo basico); proposicion 2; modelo de muestreo sin reemplazo"),
+        medias_condicionales=(_COMPROBADO, "modelo basico: E[X_t | F_(t-1)] = mu constante, condicion explicita en la "
+                                           "proposicion 2; el modelo sin reemplazo tiene media condicional variable "
+                                           "determinada por su diseno"),
+        trasladable_al_contrato=(_SIN_VERIFICAR, "la exclusion se limita a la familia concreta de AE-60 (modelo basico "
+                                                 "de media constante); no se afirma que toda apuesta exija media "
+                                                 "comun; no se ha examinado si el modelo sin reemplazo u otras "
+                                                 "variantes son aplicables"),
+    ),
+    "ramdas_et_al_arxiv_2210_01948v2": _ficha(
+        "arXiv:2210.01948v2", "ficha_arxiv_consultada_por_auditor_externo", "sin_revision_de_contenido",
+        "ramdas_et_al_2023",
+        fuente_y_version=(_COMPROBADO, "Ramdas, Grunwald, Vovk y Shafer, arXiv:2210.01948v2"),
+    ),
+})
+"""AE-62, validada como registro preparatorio; aplicar los teoremas a este
+repositorio sigue pendiente. Registro por fuente, version y campo. El estado
+`enunciado_comprobado_en_preprint_identificado` se atribuye a la revision
+de un auditor externo del proyecto sobre la version indicada, no a
+Claude, cuyo sandbox no accede a esos PDF. Conocer la version no demuestra
+condiciones. Ningun campo `trasladable_al_contrato` esta comprobado. Las
+versiones publicadas (REFERENCIAS) no tienen revision de contenido."""
+
+MATERIAL_NO_PRIMARIO_CONSULTADO = MappingProxyType({
+    "choe_ramdas_arxiv_2110_00115v6": (
+        ("readme_de_autores", "github.com/yjchoe/ComparingForecasters@52748c86e0429a9612dc79892c3be6156a524132"),
+        ("codigo_de_autores", "comparecast/confseq.py y comparecast/eprocess.py "
+                              "@52748c86e0429a9612dc79892c3be6156a524132"),
+        ("tercero_no_usado", "paquete seqcomp, ajeno a los autores"),
+    ),
+    "howard_et_al_arxiv_1810_08240v9": (
+        ("readme_de_autores", "github.com/gostevehoward/confseq@5ffe733ca2447a2e28c2c91f3b00086173f2ab2c"),
+    ),
+    "waudby_smith_ramdas_arxiv_2010_09686v7": (
+        ("readme_de_autores",
+         "github.com/WannabeSmith/betting-paper-simulations@cb05eef4d49336f114cff15f39bcaca74996843f"),
+    ),
+    "ramdas_et_al_arxiv_2210_01948v2": (),
+})
+"""Material consultado directamente por Claude: no es texto de los
+articulos y no completa ningun campo del registro."""
 
 
 # ---------------------------------------------------------------------------
