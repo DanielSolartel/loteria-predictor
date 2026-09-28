@@ -85,6 +85,16 @@ PREGUNTAS_INFERENCIALES = (
              "no_aplica", "no se responde con el registro de estrategias", False, False),
 )
 
+SENTIDO_DE_LA_GARANTIA_P1B = MappingProxyType({
+    "conjunta": "P(rechazo y evento nulo) <= nivel en cualquier ley, dadas las cotas de incrementos y la "
+                "estructura predictible de la familia; no es garantia condicional dado el evento nulo",
+    "clasica": "solo para la clase de leyes en que la nula vale casi seguro",
+})
+"""AE-61: Delta_100 y Delta_t dependen de la trayectoria. Con incrementos
+acotados (|eps_t| <= c fijada a priori) y p_t fijada antes de cada sorteo,
+Azuma y la inversion dan la cota conjunta; la lectura clasica solo vale
+para la clase de leyes en que la nula se cumple casi seguro."""
+
 CONDICION_IGUALDAD_ESPERANZA = MappingProxyType({
     "vale_si": "ventana_fija_antes_de_los_datos_y_sus_100_objetivos_resueltos",
     "con_omisiones_sustitucion_seleccion_o_parada_dependiente_de_datos": "pendiente",
@@ -146,7 +156,8 @@ FAMILIAS_INFERENCIALES = (
     Familia("cota_martingala_tiempo_fijo", True, ("P1b_unico",), "no_asintotica_tiempo_fijo",
             "condicional_variable_admitida", ("puntuaciones_acotadas", "p_t_fijada_antes_del_sorteo"),
             "con S = suma sobre W de d_t: p = exp(-S^2 / (2 * 100 * c^2)) si S > 0 y p = 1 si no; solo en n = 100, "
-            "no valido si se mira antes",
+            "no valido si se mira antes; garantia conjunta en el sentido de SENTIDO_DE_LA_GARANTIA_P1B, que "
+            "presupone |eps_t| <= c y p_t fijada antes del sorteo",
             ("cota",), ("potencia con la cota real de Log Loss recortado", "anterioridad de p_t"), True,
             "valor_p_azuma_tiempo_fijo", "no_aplica", ("azuma_1967",)),
     Familia("secuencia_confianza_uniforme_martingala", True, ("P1b_unico", "P1b_supervision"),
@@ -155,7 +166,9 @@ FAMILIAS_INFERENCIALES = (
             "supervision: inversion de la secuencia simultanea, se rechaza si inf C_t > 0 para algun t de T; como "
             "P(existe t con Delta_t fuera de C_t) <= nivel, bajo la nula sobre T el rechazo exige que algun Delta_t "
             "quede fuera de C_t; p = menor nivel con inf C_t > 0 para algun t de T si la familia es monotona en el "
-            "nivel; unico: inversion del intervalo C_100, p = menor nivel con inf C_100 > 0; las formulas con "
+            "nivel; unico: inversion del intervalo C_100, p = menor nivel con inf C_100 > 0 si la familia esta anidada "
+            "en el nivel (condicion suficiente para esta formula); ambas con garantia conjunta en el sentido de "
+            "SENTIDO_DE_LA_GARANTIA_P1B; las formulas con "
             "1/sup E_t sobre T y con 1/E_100 (proceso E_t, tiempos, regla de supervision y nula declarados) quedan "
             "pendientes de demostracion bajo la nula sobre T y la terminal, "
             "porque un proceso construido desde el inicio puede exigir restricciones en prefijos fuera de T",
@@ -197,7 +210,7 @@ ESCENARIOS_ESTUDIO = (
                "nula_frontera", "nula_frontera", "nula_frontera", "nula", "solo_degenerado"),
     _escenario("A1", "g_t determinista y persistente con suma cero en W y prefijos positivos", "abstracto",
                "nula_frontera", "nula_frontera", "segun_T", "alternativa", "no"),
-    _escenario("A2", "g_t <= 0 persistente", "abstracto",
+    _escenario("A2", "g_t <= 0 en toda t de W, con g_t < 0 en alguna t", "abstracto",
                "nula_interior", "nula_interior", "nula_interior", "alternativa", "si"),
     _escenario("A3", "g_t = delta > 0 con delta dado por el operador", "abstracto",
                "alternativa", "alternativa", "alternativa", "alternativa", "no"),
@@ -205,7 +218,9 @@ ESCENARIOS_ESTUDIO = (
                "nula_frontera", "nula_frontera", "nula_frontera", "nula", "no"),
     _escenario("L_unif", "sorteos uniformes sinteticos con estrategia no uniforme", "metricas_por_sorteo_sorteos_uniformes",
                "nula_interior", "nula_interior", "nula_interior", "alternativa", "si"),
-    _escenario("L_sint", "mecanismo sintetico no uniforme con marginales conocidas y suma de g_t cero en W",
+    _escenario("L_sint", "mecanismo sintetico no uniforme: p_t y q_t fijadas de antemano, elegidas para que la "
+               "suma exacta cero de g_t en W se cumpla, con g_t calculada con las marginales (condicion suficiente "
+               "para la frontera; no se afirma que sea necesaria)",
                "metricas_por_sorteo_mecanismo_sintetico_no_uniforme",
                "nula_frontera", "nula_frontera", "segun_T", "alternativa", "no"),
 )
@@ -238,6 +253,7 @@ positivo; en la ganancia P@5 es negativo."""
 CONJUNCION = MappingProxyType({
     "por_juego_valor_p": "maximo_de_p_log_loss_y_p_brier",
     "por_juego_e": "minimo_de_e_log_loss_y_e_brier",
+    "por_juego_e_estado": "condicionado_a_e_valores_validos_por_metrica_hoy_pendientes",
     "entre_juegos_ambos": "interseccion_union_maximo_de_p_juego",
     "entre_juegos_al_menos_uno": "holm_sobre_p_juego",
     "solo_informes_por_juego": "sin_control_del_error_familiar",
@@ -268,7 +284,8 @@ DECISIONES_REQUERIDAS = (
     *(Decision(d, "humana") for d in (
         "pregunta", "alfa", "efecto_minimo", "forma_de_la_afirmacion_entre_juegos", "correccion_multiplicidad",
         "potencia_objetivo", "momento_y_tiempos_de_analisis", "tratamiento_de_omisiones",
-        "incorporacion_de_familias_externas", "papel_y_direccion_de_la_secundaria", "criterios_del_estudio")),
+        "incorporacion_de_familias_externas", "papel_y_direccion_de_la_secundaria", "criterios_del_estudio",
+        "multiplicidad_entre_preguntas_o_familias")),
     *(Decision(d, "inferencial") for d in (
         "memoria_y_estacionariedad_de_g_t", "potencia_de_familias_de_martingala",
         "condiciones_exactas_de_las_secuencias_de_confianza", "validez_de_1_sobre_e_contra_la_nula_terminal",

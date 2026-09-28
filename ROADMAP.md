@@ -1131,7 +1131,7 @@ Hechos relacionados (inferencia propia):
   - GW responde a P2 **[lit]**.
 - **Fuera del catálogo de AE-56**, incorporarlas sería una decisión humana:
   - **`cota_martingala_tiempo_fijo`:** P1b-único mediante la desigualdad de Azuma. Admite `g_t` variables y da un valor p válido **solo** en `n = 100`.
-  - **`secuencia_confianza_uniforme_martingala`:** tiene cobertura uniforme en el tiempo y admite medias condicionales variables en promedio **[lit: Howard et al.; Choe–Ramdas]**.
+  - **`secuencia_confianza_uniforme_martingala`:** tiene cobertura uniforme en el tiempo y admite medias condicionales variables en promedio (precisión de AE-61: descripción general apoyada por el README de los autores de Choe–Ramdas; condiciones de los teoremas, pendientes de lectura primaria; Howard et al., sin verificación primaria).
     - Responde a P1b-supervisión **invirtiendo la secuencia simultánea**: se rechaza si `inf C_t > 0` para algún `t ∈ T`. Como `P(∃t: Δ_t ∉ C_t) ≤ α`, bajo la nula sobre `T` el rechazo exige que algún `Δ_t` quede fuera de `C_t`. El valor p es el menor α con ese rechazo, si la familia es monótona en α.
     - Responde a P1b-único **solo** invirtiendo `C_100`.
     - Las fórmulas con e-procesos, `min(1, 1/sup_T E_t)` y `min(1, 1/E_100)`, quedan **pendientes de demostración** bajo la nula sobre `T` y bajo la terminal. Un e-proceso construido desde el inicio puede exigir restricciones en prefijos fuera de `T`, así que no se atribuye a Ville una garantía no demostrada para esas nulas.
@@ -1140,7 +1140,7 @@ Hechos relacionados (inferencia propia):
 La validez de un método secuencial **no** cambia el mínimo ni la prohibición de agregados de AE-52.
 
 **Conjunción y juegos.**
-- **LL y Brier por juego:** intersección-unión **[lit: Berger]**, con `p_juego = max(p_LL, p_Brier)` y `E_juego = min(E_LL, E_Brier)`.
+- **LL y Brier por juego:** intersección-unión **[lit: Berger]**, con `p_juego = max(p_LL, p_Brier)` y `E_juego = min(E_LL, E_Brier)`. Precisión de AE-61: `E_juego` está condicionado a e-valores válidos por métrica, que hoy están pendientes.
 - **«Ambos juegos»:** otra intersección-unión.
 - **«Al menos uno»:** Holm **[lit]**.
 - **Informes solo por juego:** no controlan el error familiar.
@@ -1253,6 +1253,108 @@ Con esta evidencia, **AE-60 queda validada como expediente preparatorio de infer
 - No autoriza ninguna evaluación.
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-59 sin cambios.
+
+**Etapa AE-61 -auditoría del expediente de inferencia prospectiva (AE-60), validada:** audita `app/application/ml/propuesta_inferencia_prospectiva.py`, sus pruebas y la sección de AE-60. Contrasta sus garantías con las fuentes y separa tres clases de hallazgos:
+- **errores demostrados** (E1–E3);
+- **afirmaciones que requieren hipótesis o precisión adicionales** (H1–H4);
+- **decisiones del operador** (D1–D2).
+
+**No** convierte ninguna garantía pendiente en válida: todos los usos de `1/E` siguen como `pendiente_de_demostracion`. Tampoco elige pregunta, familia, α, potencia, efecto, horizonte, tratamiento de omisiones ni regla.
+
+**Fuentes: qué se verificó y qué no.** En el sandbox están bloqueados arXiv, Project Euclid, OUP, INFORMS y los sitios de los autores.
+- **(a) Material de los autores de Choe–Ramdas:**
+  - el resumen de arXiv 2110.00115 no fue accesible; solo hubo fragmentos de índices de búsqueda;
+  - el README de los autores (github.com/yjchoe/ComparingForecasters), leído directamente, dice que las secuencias de confianza estiman «the average score difference between forecasters A and B (which may vary over time)» y que los e-procesos contrastan «forecaster A scores no better than forecaster B *on average*»;
+  - el README no enuncia supuestos de acotación ni números de teoremas. Apoya la descripción general, pero **no verifica** las condiciones de los teoremas.
+- **(b) Paquete de terceros `seqcomp`:** es ajeno a los autores; no es una fuente de las condiciones de los teoremas.
+- **(c) Howard et al. (2021):** solo hay un fragmento de un trabajo que los cita. **No verificado.**
+- **(d) Waudby-Smith y Ramdas (2024):** solo hay un fragmento de una contribución a su discusión. **No verificado.**
+
+**Errores demostrados, ya corregidos:**
+- **E1.** La fórmula de inversión de P1b-único (`p` = menor nivel con `inf C_100 > 0`) se daba sin la hipótesis que la justifica.
+  - El anidamiento de las secuencias en el nivel es una **condición suficiente** para esa fórmula; no se afirma que sea necesaria para cualquier valor p.
+  - Se añade al `valor_p`.
+- **E2.** A2 se describía como «`g_t ≤ 0` persistente», lo que admite `g_t ≡ 0`, y en ese caso la nula de P2 sería verdadera. Ahora dice «`g_t ≤ 0` en toda `t` de `W`, con `g_t < 0` en alguna».
+- **E3.** `E_juego = min(E_LL, E_Brier)` se presentaba sin condición, aunque ninguna familia del expediente ofrece hoy e-valores válidos: P1a y P2 no los usan y los de P1b están pendientes. Se añade `CONJUNCION["por_juego_e_estado"] = "condicionado_a_e_valores_validos_por_metrica_hoy_pendientes"`.
+
+**Precisiones:**
+- **H1. Garantía conjunta frente a garantía clásica.** Nueva constante `SENTIDO_DE_LA_GARANTIA_P1B`.
+  - `Δ_100` y `Δ_t` dependen de la trayectoria.
+  - Con las cotas de incrementos (`|ε_t| ≤ c`) y la estructura predictible (`p_t` fijada antes del sorteo) que la familia ya exige, Azuma y la inversión dan `P(rechazo ∩ evento nulo) ≤ nivel` en cualquier ley. Esa cota conjunta **no** es, por sí sola, una garantía condicional dado el evento nulo.
+  - La lectura clásica solo vale para la clase de leyes en que la nula se cumple casi seguro.
+  - Los `valor_p` de Azuma y de inversión remiten a esta constante.
+- **H2. Construcción de L-sint.** Se define con una construcción explícita: `p_t` y `q_t` fijadas de antemano y elegidas para que la suma de `g_t` en `W` sea exactamente cero. Es una **condición suficiente** para la frontera; no se afirma que sea necesaria.
+- **H3. Etiqueta [lit] de las secuencias de confianza.** Se sustituye en la sección de AE-60 por una atribución precisa: descripción general apoyada por el README de los autores de Choe–Ramdas, condiciones de los teoremas pendientes de lectura primaria, y Howard et al. sin verificación primaria.
+- **H4. Nula de los e-procesos.** El README de los autores no precisa si «no better on average» se exige en todo tiempo, lo que sería una nula más fuerte que la nula sobre `T` y que la terminal. Queda como candidata **pendiente de lectura primaria**, sin cambiar ningún uso de `1/E`.
+
+**Decisiones:**
+- **D1.** Se añade la decisión humana `multiplicidad_entre_preguntas_o_familias`, sin valor.
+- **D2.** La lectura primaria de Choe–Ramdas, Howard et al. y Waudby-Smith–Ramdas sigue pendiente, fuera del sandbox. Hasta entonces, sus condiciones no se usan como garantías.
+
+**Revisado sin hallazgos:**
+- las nulas de P1a, P1b-único, P1b-supervisión y P2;
+- la inversión simultánea para la supervisión;
+- los usos de `1/E`, todos pendientes;
+- `escenarios_nulos`;
+- la orientación por métrica;
+- la multiplicidad entre métricas y entre juegos;
+- `verificar_expediente`.
+
+**Archivos:**
+- **`propuesta_inferencia_prospectiva.py`:** E1, E2, E3, H1, H2 y D1, sin cambiar vocabularios, estados de nula, estados de `1/E`, familias, preguntas ni garantías.
+- **`tests/unit/ml/test_auditoria_inferencia_prospectiva.py`:** nuevo.
+- **`tests/unit/ml/test_propuesta_inferencia_prospectiva.py`:** solo la aserción del diccionario exacto de `CONJUNCION`, por E3.
+- **README, ROADMAP y ARCHITECTURE:** esta sección y dos precisiones en la de AE-60 (E3 y H3).
+
+No cambian AE-52 a AE-59 ni el catálogo de AE-56.
+
+**Pruebas** (`11` nuevas, sintéticas):
+- **Regresiones:** E1, E2, E3, H1, H2 y D1.
+- **Invariantes:**
+  - estados de los siete escenarios y garantías y modos de las ocho familias, idénticos a la base;
+  - decisiones sin valor, estado fijo y `AUTORIZA_EVALUACION=False`;
+  - textos nuevos sin aprobación ni autorización;
+  - verificación de la base, constantes de AE-52/53 y `huella_diseno()` intactas.
+
+Las regresiones se escribieron antes de corregir. Sobre la base `6ac3fdd` dieron `7 failed, 4 passed` (código de pytest `1`). La única aserción de AE-60 que cambia es el diccionario exacto de `CONJUNCION`, por E3.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales):
+- **Sobre el código final:** `11 passed` (código `0`), y `69 passed` junto con las `58` de AE-60.
+- **Focalizadas:** `809 passed` (código `0`): las de AE-60 más las `11` nuevas.
+- **Suite completa en una única corrida:** `5043 + 11 = 5054 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- `pip check` y `git diff --check`: código `0`.
+
+**Validación real del operador en Windows/Python `3.14.6` y pytest `9.1.1` -evidencia atribuida al usuario, no ejecutada por Claude**: rama `feature/ae61-auditoria-inferencia-prospectiva`, sobre la base `6ac3fddb0b4901b872657b570a6b7d8bc4532598`.
+- **Parche aplicado:** el parche completo `ae61-auditoria-inferencia-prospectiva.patch`, con SHA-256 verificado `8afdf712c3ea631fd23402e9b65d74539ade3f1e14b03ff572975b282275d3cd`.
+- **Comprobaciones:** `git apply --check`, la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos.
+- **Archivos:** exactamente los seis esperados (ARCHITECTURE.md, README.md, ROADMAP.md, el módulo, la prueba nueva y la prueba de AE-60).
+- **Pruebas de AE-61 y AE-60:** `69 passed` en `0,25 s`, código `0`.
+- **Focalizadas:** `809 passed` en `17,01 s`, código `0`.
+- **`pip check`:** `No broken requirements found.`, código `0`.
+
+**En Windows no se ejecutó la suite completa.** La cifra `5054 passed, 0 skipped` corresponde únicamente al sandbox Linux de Claude (Python `3.11.15`).
+
+**Límites de esta validación**: «validada» cubre solo **esta auditoría**, sus correcciones y precisiones (E1–E3, H1–H3, D1) y sus pruebas. Siguen **pendientes**:
+- la lectura primaria de los teoremas de Choe–Ramdas, Howard et al. y Waudby-Smith–Ramdas;
+- H4, la cuantificación temporal de la nula de los e-procesos;
+- D2, la decisión del operador sobre esa lectura primaria;
+- todos los usos de `1/E`, que siguen `pendiente_de_demostracion`.
+
+La validación **no** aprueba pregunta, familia, α, potencia, efecto, horizonte, tratamiento de omisiones ni regla, y no autoriza ninguna evaluación operativa. El expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar;
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46.
+
+Con esta evidencia, **AE-61 queda validada como auditoría del expediente de inferencia prospectiva**; no equivale a elegir una regla ni a autorizar ninguna evaluación.
+
+**Límites:**
+- AE-61 no elige ninguna regla ni valor.
+- No verifica los teoremas no leídos.
+- No autoriza ninguna evaluación.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-60 sin cambios.
 
 ---
 

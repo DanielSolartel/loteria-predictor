@@ -238,6 +238,7 @@ def test_conjuncion_y_formas_entre_juegos():
     assert pi.CONJUNCION == {
         "por_juego_valor_p": "maximo_de_p_log_loss_y_p_brier",
         "por_juego_e": "minimo_de_e_log_loss_y_e_brier",
+        "por_juego_e_estado": "condicionado_a_e_valores_validos_por_metrica_hoy_pendientes",
         "entre_juegos_ambos": "interseccion_union_maximo_de_p_juego",
         "entre_juegos_al_menos_uno": "holm_sobre_p_juego",
         "solo_informes_por_juego": "sin_control_del_error_familiar",
