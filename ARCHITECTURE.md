@@ -3775,6 +3775,185 @@ Con esta evidencia, **AE-71 queda validada como análisis preparatorio de altern
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-70 sin cambios.
 
+## Prototipo optativo de vínculo entre la declaración R0 y el protocolo de AE-52 -Etapa AE-72, validada
+
+**Etapa AE-72 -prototipo optativo de vínculo entre la declaración R0 y el protocolo de AE-52, validada:** es el primer recorrido **de extremo a extremo**, con las API reales de AE-52, entre los once elementos de una declaración R0 sintética (AE-69) y un protocolo y una predicción sintéticos. Está en el módulo puro `app/application/ml/prototipo_vinculo_declaracion_r0.py`.
+
+Usa una topología **`candidata`** de activación **optativa**. **No** es una elección:
+- `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` (AE-70) siguen en `None`;
+- D1–D9 (AE-71) siguen `sin_decidir`;
+- AE-52 y AE-63 a AE-71 no cambian.
+
+**Arquitectura:**
+1. **Declaración versionada `declaracion-r0-sintetica/1`.** Es un envoltorio estricto `{"esquema", "elementos"}`: se rechazan claves de más, otro esquema, bytes no canónicos y elementos no admitidos. Se serializa con el JSON canónico de AE-52 (`serializar_entrada`, `leer_entrada`, `hash_entrada`). Cada elemento recibe un estado (`ESTADOS_DE_ELEMENTO`):
+   - `sin_fijar_explicito`;
+   - `ausente`;
+   - `declarado_sintetico`;
+   - `declarado_con_marcador_textual`: la detección de marcadores es heurística; se **informa**, no se rechaza ni se trata como valor sustantivo, porque rechazarlos es D9;
+   - `formato_invalido`.
+
+   El resumen nunca dice «fijado»: como mucho, `estructuralmente_completa_sin_autenticar`.
+2. **Regla candidata `ae72-vinculo-r0-en-parametros/1`.**
+   - **Topología:** la de AE-70 `directo_en_campo_existente_no_previsto`.
+   - **Ubicación del vínculo:** la clave reservada `estrategia.parametros.vinculo_r0_candidato` guarda `{regla, esquema_declaracion, hash_declaracion}`, así que la regla viaja dentro de los bytes del protocolo.
+   - **Activación:** solo `construir_protocolo_candidato` la añade, y siempre con `sintetico=True`.
+   - **Por qué esta topología** (`COMPARACION_DE_TOPOLOGIAS`): es la única de las cuatro que funciona de extremo a extremo sin modificar AE-52.
+     - El nuevo esquema exigiría cambiar la comprobación del protocolo.
+     - El vínculo inverso no designa la declaración.
+     - El manifiesto depende de S4 y D6.
+   - **Coste:** reinterpretar un campo de la estrategia (K4 de AE-70, B13), que figura entre los criterios de descarte.
+3. **Verificador `verificar_vinculo`.** Recibe los bytes del registro y los de la declaración, y opcionalmente la regla, un `protocolo_hash_esperado` y los `objetivos_esperados`. Devuelve un `InformeDeVinculo`.
+   - **Integridad de bytes**, en `estado_de_bytes`: `vinculo_de_bytes_verificado`, o el fallo exacto (`registro_invalido`, `protocolo_hash_no_coincide`, `protocolo_sin_vinculo_candidato`, `vinculo_mal_formado`, `regla_distinta`, `declaracion_ausente`, `declaracion_invalida`, `hash_de_declaracion_no_coincide`, `prediccion_omitida`).
+   - **Los otros cuatro planos** (`PLANOS_DEL_INFORME`) quedan siempre sin acreditar:
+     - `autenticacion_de_r0`, `recepcion_antes_del_plazo` y `completitud_y_unicidad_del_canal` = `sin_evidencia`;
+     - `aptitud_inferencial` = `no_autorizada`, mientras `AUTORIZA_EVALUACION = False`.
+   - **`falta`** enumera lo que sigue faltando: esos planos, las decisiones D1–D9, la autorización, los pendientes, los marcadores y las predicciones omitidas.
+
+**Uso** (solo con datos sintéticos):
+
+```python
+from app.application.ml import prototipo_vinculo_declaracion_r0 as pv
+from app.application.ml import registro_prospectivo as rp
+from tests.unit.simulaciones import sinteticos
+
+declaracion = pv.construir_declaracion(elementos)          # once elementos de AE-69
+protocolo = pv.construir_protocolo_candidato(declaracion, protocolo_id="sintetico", estrategia=estrategia,
+                                             cortes={"BALOTO": 2713})
+entradas = [rp.serializar_entrada(protocolo)]
+prediccion = rp.nueva_prediccion(rp.validar_registro(entradas), "BALOTO", 2714,
+                                 sinteticos.historico(2081, 2713), [0.1] * 43)
+entradas.append(rp.serializar_entrada(prediccion))
+informe = pv.verificar_vinculo(entradas, pv.bytes_de_declaracion(declaracion),
+                               objetivos_esperados=[("BALOTO", 2714)])
+# o bien: pv.demostrar_recorrido_sintetico(sinteticos.historico(2081, 2713))
+```
+
+**Compatibilidad** (`COMPATIBILIDAD`):
+- `construir_protocolo`, `validar_registro` y los registros existentes no cambian. Una prueba comprueba que `construir_protocolo` no añade claves a `parametros`.
+- Un registro sin la clave reservada se informa como `protocolo_sin_vinculo_candidato` y sigue siendo un registro normal de AE-52.
+- El módulo no asigna atributos de otros módulos, lo que se comprueba por AST.
+
+**Completar un pendiente** (`CONSECUENCIA_DE_COMPLETAR_UN_PENDIENTE`, caso reproducible en las pruebas): cambia el hash de la declaración y el del protocolo. AE-52 rechaza un segundo protocolo en el mismo registro, así que hace falta **otro registro**. Las predicciones previas siguen vinculadas solo a la declaración anterior.
+
+**Decisiones todavía requeridas** (`DECISIONES_REQUERIDAS`): D1–D9, todas `sin_decidir`. Cada una anota el supuesto provisional del prototipo:
+- la topología candidata;
+- el pendiente explícito de AE-69;
+- la clave reservada;
+- la regla definida en el módulo;
+- los pendientes admitidos;
+- los marcadores informados.
+
+**Criterios para promover la candidata** (`CRITERIOS_PARA_PROMOVER`):
+- decisión de D1 y decisiones compatibles de D2, D3, D4 y D7;
+- aceptación de la clave en `parametros` o migración a un campo propio sin romper registros;
+- evidencia externa para H-a a H-d de AE-71;
+- que las pruebas positivas y los contraejemplos se mantengan.
+
+**Criterios para descartarla** (`CRITERIOS_PARA_DESCARTAR`):
+- rechazo a reinterpretar `parametros`;
+- un D1 distinto (esquema nuevo o manifiesto);
+- conflicto de la clave con parámetros reales;
+- cualquier vínculo aceptado con una declaración distinta de la designada.
+
+**Archivos** (exactamente cinco):
+- nuevo `app/application/ml/prototipo_vinculo_declaracion_r0.py`;
+- nuevo `tests/unit/ml/test_prototipo_vinculo_declaracion_r0.py`;
+- esta sección, y referencias breves en README y ROADMAP.
+
+**Pruebas** (`34` sintéticas en tres grupos; el módulo nuevo se importa dentro de cada prueba de G1):
+- **G1 (`25` casos en 18 funciones), dependen del módulo nuevo:**
+  - declaración estricta y canónica, con estados por elemento y resúmenes;
+  - regla candidata, comparación de topologías y protocolo optativo sin efecto predeterminado;
+  - recorrido completo con dos predicciones;
+  - contraejemplos:
+    - declaración ausente, inválida o alterada;
+    - regla equivocada o vínculo mal formado;
+    - `protocolo_hash` incorrecto, esperado o dentro de una predicción;
+    - cambio de declaración tras el registro;
+    - predicción omitida;
+    - completar un pendiente exige otro protocolo y otro registro;
+  - planos separados y nunca acreditados;
+  - marcadores y pendientes en el informe;
+  - demostración reproducible;
+  - decisiones, criterios y compatibilidad;
+  - no modifica AE-52 ni módulos anteriores (AST);
+  - vocabulario.
+- **G2 (`2`), invariantes:**
+  - huellas de AE-52 y de AE-63 a AE-70 sin cambios;
+  - huella de AE-71 calculada en la base (`5f28e092…5c8de7`);
+  - estados, decisiones y bloqueos.
+- **G3 (`7`), premisas contra la API real:**
+  - `parametros` admite y conserva el objeto anidado;
+  - `hash_designado` de AE-70 sigue la ruta anidada;
+  - rechazo de un `protocolo_hash` alterado y de un segundo protocolo;
+  - estados de AE-69 y AE-71;
+  - `construir_protocolo` no añade claves;
+  - el borrador real no admite predicciones.
+
+**Pruebas primero, sobre la base `60cde6d`.** Antes de escribir el módulo se ejecutaron los tres grupos. El resultado fue `25 failed, 9 passed`, con código de pytest `1`:
+- **G1:** los `25` casos fallan por separado, **todos** con `ModuleNotFoundError: No module named 'app.application.ml.prototipo_vinculo_declaracion_r0'`.
+- **G2 (`2`) y G3 (`7`):** pasan, así que las premisas sobre AE-52, AE-69, AE-70 y AE-71 se sostienen.
+
+**Correcciones durante la implementación:**
+- La demostración recibe el histórico sintético como argumento, porque un módulo de la aplicación no debe importar ayudas de `tests/` y la regla de pureza excluye `datetime`. Por eso se ajustó una prueba antes de implementar.
+- Dos pruebas de G1 fallaron tras implementar:
+  - un texto del módulo decía «no esta autorizada», y se cambió el texto;
+  - la expresión que excluye términos de aprobación en los estados también capturaba `invalido`, y se corrigió el montaje de la prueba con `(?<!in)valid`.
+
+Con el archivo de pruebas final se repitió la comprobación sobre una copia limpia de la base sin el módulo. El resultado volvió a ser `25 failed` (todas `ModuleNotFoundError`) y `9 passed`, con código `1`. Las huellas de AE-52 y de AE-63 a AE-71 se calcularon en la base antes de implementar.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `34 passed` (código `0`).
+- **AE-60 a AE-72:** `332 passed` (código `0`).
+- **Focalizadas:** `1038 + 34 = 1072 passed` (código `0`).
+- **Suite completa:** `5283 + 34 = 5317 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- **`pip check` y `git diff --check`:** código `0`.
+
+**Qué funciona de extremo a extremo:**
+- construir la declaración, obtener sus bytes y su hash, construir el protocolo candidato, registrar predicciones sintéticas con las API reales y verificar el vínculo;
+- cada fallo comprobable se distingue en el informe.
+
+**Qué impide su uso operativo:**
+- D1–D9 sin decidir, incluida la aceptación de la clave en `parametros`;
+- R0 sin autenticar;
+- ningún sello, reloj ni canal que acredite la recepción antes del plazo (H-a a H-d);
+- sin completitud ni unicidad del canal;
+- declaración con valores sintéticos;
+- protocolos solo sintéticos, porque un protocolo real sigue siendo borrador y no admite predicciones;
+- `AUTORIZA_EVALUACION = False`.
+
+**Límites:**
+- R0, R9 y las ocho condiciones siguen `sin_fijar`, y las tres preguntas de AE-69 siguen abiertas.
+- F1, F2, O3, N2 y U1 siguen pendientes.
+- `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion`.
+- Un hash no es prueba temporal.
+- RFC 9162 conserva el alcance de certificados y precertificados.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** rama `feature/ae72-prototipo-vinculo-declaracion-r0`; base y HEAD `60cde6d866b9408197f435c317b77db14e6c586e`.
+- **Parche:** el completo `ae72-prototipo-vinculo-declaracion-r0.patch`, SHA-256 `97cd1200af9afdb080006f7623f3e1530706ef83e7e3b1bccfec20c173231ce9`, con el hash comprobado.
+- **Aplicación:** la aplicación y `git apply --reverse --check` fueron correctas y `git diff --check` salió limpio, con exactamente los cinco archivos previstos.
+- **Pruebas de AE-72:** `34 passed in 0.34s`.
+- **AE-60 a AE-72:** `332 passed in 0.97s`.
+- **`pip check`:** sin problemas.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `1072 passed` (focalizadas) y `5317 passed, 0 skipped`, con los cinco avisos conocidos de Alembic (suite completa), corresponden exclusivamente al sandbox Linux de Claude.
+
+**Límites de esta validación**: «validada» cubre solo **el prototipo sintético optativo y sus pruebas**.
+- La clave en `estrategia.parametros` es una **candidata optativa**, no una decisión adoptada. D1–D9 siguen `sin_decidir`, y `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` de AE-70 siguen en `None`.
+- El prototipo comprueba integridad de bytes. **No** acredita autenticación de R0, recepción anterior al plazo ni completitud o unicidad del canal, y la aptitud inferencial sigue `no_autorizada`.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- No se autoriza inferencia ni evaluación operativa. Todas las decisiones siguen sin valor, y el expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-72 queda validada solo como prototipo sintético optativo y sus pruebas**; no equivale a adoptar la topología candidata, a fijar o autenticar R0 ni a autorizar evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-71 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas

@@ -2885,6 +2885,23 @@ Con esta evidencia, **AE-71 queda validada como análisis preparatorio de altern
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-70 sin cambios.
 
+**Etapa AE-72 -prototipo optativo de vínculo entre la declaración R0 y el protocolo de AE-52, validada:** es el primer recorrido de extremo a extremo con las API reales de AE-52: declaración R0 sintética versionada (`declaracion-r0-sintetica/1`) → bytes y hash → protocolo sintético candidato → predicción sintética → verificación del vínculo. Está en el nuevo módulo puro `app/application/ml/prototipo_vinculo_declaracion_r0.py` y sus `34` pruebas.
+
+**Topología y verificador:**
+- La topología es la **candidata** `directo_en_campo_existente_no_previsto` de AE-70, con regla `ae72-vinculo-r0-en-parametros/1` y activación **optativa**.
+- No se elige nada: `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` siguen en `None`, D1–D9 `sin_decidir`, y AE-52 y AE-63 a AE-71 no cambian.
+- El verificador solo comprueba **integridad de bytes**. La autenticación de R0, la recepción antes del plazo y la completitud y unicidad del canal quedan `sin_evidencia`, y la aptitud inferencial `no_autorizada`.
+
+La arquitectura, el uso, la compatibilidad, las decisiones todavía requeridas, los criterios para promover o descartar la candidata y las mediciones están en la sección AE-72 de `ARCHITECTURE.md`.
+
+R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-72 queda **validada solo como prototipo sintético optativo y sus pruebas**. La clave en `estrategia.parametros` sigue siendo una candidata optativa, no una decisión adoptada, y D1–D9 siguen sin decidir.
+
+**Validación del operador en Windows** (atribuida al usuario): rama `feature/ae72-prototipo-vinculo-declaracion-r0`, base y HEAD `60cde6d`, SHA-256 del parche completo comprobado, cinco archivos. Con Python `3.14.6` y pytest `9.1.1`: `34 passed in 0.34s` (AE-72), `332 passed in 0.97s` (AE-60 a AE-72) y `pip check` sin problemas. Las focalizadas (`1072 passed`) y la suite completa (`5317 passed, 0 skipped`) solo se ejecutaron en Linux. El detalle y los límites están en la sección AE-72 de `ARCHITECTURE.md`.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-71 sin cambios.
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)
