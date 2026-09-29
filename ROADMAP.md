@@ -1975,6 +1975,170 @@ Con esta evidencia, **AE-65 queda validada como auditoría de obligaciones de ap
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-64 sin cambios.
 
+**Etapa AE-66 -propuesta revisable de evidencia temporal externa, validada:** AE-65 dejó F1, F2 y O3 pendientes. Sus contraejemplos mostraron tres cosas: la cadena no acredita la fecha; la huella de la entrada no acredita la dependencia funcional; y una cabeza sellada sin unicidad ni completitud no resuelve O3. AE-66 registra, en el nuevo módulo puro `app/application/ml/propuesta_evidencia_temporal_externa.py`, una propuesta **revisable** que compara alternativas para acreditar, antes del plazo oficial de cada sorteo:
+- **(a)** la salida y su vínculo con la entrada y el código declarados;
+- **(b)** un conjunto de predicciones único y completo;
+- **(c)** la ausencia de predicción cuando hay omisión;
+- **(d)** la procedencia del calendario y de la hora oficial.
+
+**No elige mecanismo**: `mecanismo_de_sellado_temporal_externo` sigue sin valor. Ningún resultado afirma una acreditación operativa. F1, F2, O3, N2 y U1 siguen **pendientes**. No se modifica ningún módulo existente ni el formato del registro de AE-52.
+
+**Fuentes primarias** (`FUENTES_PRIMARIAS`):
+- **RFC 3161 y RFC 9162:** inaccesibles desde el sandbox (rfc-editor.org, ietf.org y datatracker bloqueados). Sus propiedades atribuidas quedan **pendientes de verificación primaria** y no se usan como hechos:
+  - RFC 3161: instante y precisión del token, reloj de la autoridad, sellado de un hash sin examinar el contenido;
+  - RFC 9162: puntos de control, pruebas de inclusión y consistencia, retraso de incorporación, vistas divididas.
+- **OpenTimestamps**, en la documentación de sus autores en GitHub:
+  - verificado:
+    - la prueba queda pendiente al sellar;
+    - «It takes a few hours for the timestamp to get confirmed … we're not doing one transaction per timestamp»;
+    - una prueba completa indica que un bloque «attests existence as of» una fecha;
+    - los calendarios hacen agregación;
+  - pendiente: la precisión del tiempo de bloque.
+
+**Alternativas** (`ALTERNATIVAS`), cada una con instante, precisión, latencia, supuestos, pruebas verificables, fallos posibles y costo:
+- **A1. Sello de una autoridad de tiempo (RFC 3161).**
+  - Instante y precisión: los que declara la autoridad, pendientes de verificación primaria.
+  - Latencia: la de una solicitud, que debe completarse antes del plazo.
+  - Fallo principal: se pueden sellar muchas cabezas en privado.
+  - Costo: bajo.
+- **A2. Anclaje agregado en un libro público (tipo OpenTimestamps).**
+  - Instante: el del bloque, «a few hours» después del sellado; puede ser posterior al plazo.
+  - Los compromisos quedan ocultos, así que las bifurcaciones son invisibles.
+  - Costo: bajo, con latencia incierta.
+- **A3. Canal público con controles de modificación** (por ejemplo, una rama protegida).
+  - **No** es criptográficamente de solo anexado: el propietario puede cambiar los controles.
+  - La hora es la de la plataforma.
+  - Costo: medio.
+- **A4. Bitácora de transparencia** con puntos de control firmados y testigos independientes.
+  - **La consistencia de la bitácora es distinta de la unicidad y completitud de las predicciones.**
+  - Costo: medio-alto.
+- **A5. Custodio humano independiente.**
+  - Costo: alto.
+
+**Complementos** (`COMPLEMENTOS`):
+- **M. Manifiesto:** huellas de código, entorno, dependencias, entrada, estado auxiliar, semillas y salida.
+- **R. Recomputación conforme a los artefactos declarados.**
+  - Solo reproduce la salida si también están fijados el entorno, las dependencias, el estado auxiliar, la aleatoriedad y la ausencia de accesos externos no declarados.
+  - Demuestra **consistencia**, no anterioridad ni ausencia de fuga.
+- **C. Declaración de cierre por objetivo,** anterior al plazo.
+- **K. Calendario y hora oficiales,** con zona explícita (America/Bogota, UTC−5, sin horario de verano). La definición del plazo sigue pendiente.
+
+**Reglas pendientes del protocolo** (`CONDICIONES_PENDIENTES_DEL_PROTOCOLO`): identidad autorizada, canal canónico exclusivo, clave única por `(protocolo_hash, juego, objetivo)`, regla de duplicados, recepción antes del plazo (reloj y margen de incorporación) y revisión completa.
+
+**Dos conclusiones distintas sobre (c):**
+- **Vía 1, omisión declarada antes del plazo, sin conflicto de clave.** Es verificable solo bajo las reglas pendientes. `evaluar_omision_declarada` devuelve uno de estos resultados:
+  - `omision_declarada_sujeta_a_reglas_pendientes`;
+  - `conflicto_de_clave`;
+  - `declaracion_recibida_despues_del_plazo`;
+  - `sin_declaracion`.
+- **Vía 2, ausencia inferida de una vista sin entrada.** Permanece pendiente mientras no estén fijados y verificados el reloj de recepción, el margen de incorporación y la revisión completa. `evaluar_ausencia_inferida` devuelve uno de estos resultados:
+  - `entrada_recibida_antes_del_plazo`;
+  - `vista_no_concluyente_anterior_a_plazo_mas_margen`;
+  - `ausencia_inferida_pendiente_de_reloj_margen_y_revision`;
+  - `ausencia_inferida_pendiente_sin_margen`.
+- Los dos vocabularios son disjuntos, y **ningún resultado afirma acreditación ni ausencia.**
+
+**Matriz de lo que demostraría cada alternativa:**
+- **(a)** Todas son `parcial`: que el hash existía antes de un instante; no la dependencia funcional.
+- **(b)**
+  - A1 y A2: `no_demuestra`;
+  - A3: `parcial`;
+  - A4 y A5: `condicionado` a las reglas pendientes.
+- **(c), vía 1:**
+  - A1 y A2: `no_demuestra`;
+  - A3: `parcial`;
+  - A4 y A5: `condicionado`.
+- **(c), vía 2:** `pendiente` en todas.
+- **(d)** Todas son `parcial`: instante o constancia, no el calendario, que corresponde a K.
+
+**Lo que ninguna demuestra** (`NO_DEMUESTRA_NINGUNA`):
+- la fuga anticipada de `y_t`: los sellos acotan cuándo existía la salida, no qué información tenía;
+- la integridad del sorteo (la uniformidad condicional sigue siendo una hipótesis);
+- la corrección del código;
+- la validez inferencial.
+
+**Recomendación condicional para decisión del operador** (`RECOMENDACION_CONDICIONAL`, no registrada como elegida):
+- **Si** el operador acepta los supuestos de A4 y fija las reglas, el reloj de recepción, el margen de incorporación y la definición del plazo, A4 con C, M y K podría cubrir (b) bajo esos supuestos, y (c) **solo por la vía 1**. La vía 2 sigue pendiente.
+- Refuerzo opcional: A1 sobre los puntos de control.
+- Otras combinaciones podrían cubrirlos bajo supuestos distintos.
+- R solo con un contrato de inferencia y los artefactos plenamente fijados.
+
+**Preguntas abiertas** (`PREGUNTAS_ABIERTAS`, no registradas como decisiones del expediente): definición del plazo, reloj de recepción, margen de incorporación, procedimiento de revisión completa, canal, identidad, regla de duplicados, testigos, custodia y fuente del calendario.
+
+**Contraejemplos sintéticos.** Se construyen con HMAC de prueba, instantes con zona, bitácoras como listas y registros de protocolo cerrado `sintetico: true`. Para cada uno se indica qué afirmación refuta y qué supuestos usa:
+- **B1:** dos ramas selladas antes del plazo son ambas válidas. Refuta «un sello anterior al plazo acredita unicidad».
+- **B2a:** dos predicciones incompatibles para `(BALOTO, 2715)` en una sola bitácora; las vistas de los testigos son consistentes. Refuta «la consistencia acredita la unicidad».
+- **B2b:** `claves_duplicadas` detecta la clave repetida sin elegir la regla de aceptación.
+- **B2c:** una rama sellada fuera del canal no aparece en la bitácora. Refuta «cualquier sello anterior al plazo cuenta».
+- **B3:** dos vistas incompatibles de la bitácora, cada una sin duplicados; solo la comparación entre testigos lo detecta.
+- **B4a:** entrada recibida antes del plazo e incluida después; la vista del plazo es `vista_no_concluyente_anterior_a_plazo_mas_margen`. Refuta «un punto de control en el plazo prueba la ausencia».
+- **B4b:** tras el plazo más el margen, la vista da `entrada_recibida_antes_del_plazo`.
+- **B4c:** una vista posterior sin la clave da `ausencia_inferida_pendiente_de_reloj_margen_y_revision`.
+- **B4d:** sin margen o sin reloj, `ausencia_inferida_pendiente_sin_margen`.
+- **B4e:** declaración sin conflicto, en conflicto, tardía o inexistente; cada caso da el resultado de la vía 1 que le corresponde.
+- **B5:** oráculo con `y_t` filtrado, sellado y publicado a tiempo y sin duplicados, con `d_t^Brier > 0,09`. Refuta «la evidencia temporal excluye la fuga».
+- **B6a:** una recomputación conforme reproduce la salida; la del oráculo no coincide.
+- **B6b:** un estado auxiliar declarado que contiene `y_t` hace que la recomputación coincida con `d_t > 0,09`. Refuta «recomputación conforme ⇒ ausencia de fuga» y «sellar el código excluye la dependencia de `y_t`».
+- **B7:** un sello una hora posterior al sorteo parece anterior si se compara la hora local sin zona con UTC; las funciones rechazan instantes sin zona.
+
+**Archivos** (exactamente cinco):
+- nuevo `app/application/ml/propuesta_evidencia_temporal_externa.py`;
+- nuevo `tests/unit/ml/test_propuesta_evidencia_temporal_externa.py`;
+- README, ROADMAP y ARCHITECTURE: esta sección.
+
+**Pruebas** (`24` nuevas, sintéticas):
+- **Regresiones:**
+  - catálogo completo;
+  - matriz con las dos vías;
+  - fuentes y su verificación;
+  - lo que ninguna demuestra y las reglas pendientes;
+  - recomendación condicional limitada a la vía 1, con el mecanismo sin valor;
+  - vocabulario exacto de resultados, sin acreditación;
+  - B1 a B7;
+  - pureza del módulo, comprobada con AST: sin red, `time`, `subprocess` ni `now`;
+  - estados sin cambios;
+  - vocabulario sin aprobación ni autorización.
+- **Invariante:** expediente y bloqueos sin cambios; huellas SHA-256 de los registros de AE-63, AE-64 y AE-65 iguales a las de la base.
+
+**Regresiones primero.** Las 24 pruebas se escribieron antes del módulo. Sobre la base `576bf92` dieron `23 failed, 1 passed` (código de pytest `1`): las 23 regresiones fallan por separado con `ModuleNotFoundError` y el invariante pasa. Durante la implementación, la prueba de vocabulario detectó «autorizada» en un texto de `PREGUNTAS_ABIERTAS`; el texto pasó a «quien puede publicar y con que firma».
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `24 passed` (código `0`).
+- **AE-60 a AE-66:** `165 passed` (código `0`).
+- **Focalizadas:** `881 + 24 = 905 passed` (código `0`).
+- **Suite completa:** `5126 + 24 = 5150 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- `pip check` y `git diff --check`: código `0`.
+
+**Límites:**
+- AE-66 es una propuesta: no acredita la anterioridad, la unicidad, la ausencia ni la procedencia del calendario, y no contacta con ningún servicio de sellado.
+- Las garantías de RFC 3161 y RFC 9162 siguen pendientes de verificación primaria.
+- No se elige mecanismo, regla de duplicados, reloj, margen ni plazo, y no se autoriza ninguna inferencia ni evaluación. `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** ruta `C:\GitHub\loteria-predictor-update`, rama `feature/ae66-propuesta-evidencia-temporal-externa`, base `576bf9229467fe4035e00811c3038830a3b33dba`; árbol limpio antes de aplicar.
+- **Parche:** el completo `ae66-propuesta-evidencia-temporal-externa.patch`, con SHA-256 confirmado `06d18253910c876b97787794cfff4f488c706b53b059664909b5d9b739202217`.
+- **Aplicación:** `git apply --check`, la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los cinco archivos previstos.
+- **Pruebas de AE-66:** `24 passed` en `0,25 s`.
+- **AE-60 a AE-66:** `165 passed` en `0,71 s`.
+- **`pip check`:** sin problemas.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `905 passed` (focalizadas) y `5150 passed, 0 skipped` (suite completa) corresponden únicamente al sandbox Linux de Claude.
+
+**Límites de esta validación**: «validada» cubre solo **el expediente preparatorio de AE-66 y sus pruebas**. No aprueba ningún mecanismo y no acredita operativamente F1, F2 ni O3.
+- RFC 3161 y RFC 9162 siguen pendientes de verificación primaria en el expediente.
+- Siguen pendientes las reglas de identidad, canal, duplicados, reloj, margen y revisión completa.
+- La omisión declarada sigue sujeta a reglas pendientes, y una vista sin entrada no acredita la ausencia.
+- F1, F2, O3, N2 y U1 siguen **pendientes**. Todas las decisiones siguen sin decidir, incluido `mecanismo_de_sellado_temporal_externo`. El expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-66 queda validada como expediente preparatorio de evidencia temporal externa**; no equivale a elegir un mecanismo ni a acreditar la anterioridad, la unicidad, la ausencia o la procedencia del calendario.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-65 sin cambios.
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)
