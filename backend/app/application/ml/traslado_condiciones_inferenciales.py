@@ -275,8 +275,9 @@ CONDICIONES_DE_TRASLADO = (
               "para la nula sobre T: contraejemplo exacto de AE-62",
               "refutada", _CONTRAEJEMPLO, "nulas del expediente", _SIMB_NULAS),
     Condicion("N2_inversion_para_p1b", "nulas",
-              "la inversion de la secuencia de confianza para P1b vale solo bajo PREMISA_DE_LA_INVERSION, que "
-              "depende de C1, C3, F1 y F2", "pendiente", _FUENTE, "nulas del expediente", _SIMB_NULAS,
+              "la inversion de la secuencia de confianza para P1b vale solo bajo PREMISA_DE_LA_INVERSION; sus "
+              "dependencias, por via inferencial, metrica, interpretacion y requisitos operativos, estan desglosadas "
+              "en verificacion_primaria_choe_ramdas.DEPENDENCIAS_DE_N2 (AE-64)", "pendiente", _FUENTE, "nulas del expediente", _SIMB_NULAS,
               enunciado_de_fuente_necesario=f"{_V6}, teoremas 1 y 2: enunciados exactos de sus hipotesis",
               decision_del_operador="lectura_primaria_pendiente_de_fuentes_secuenciales"),
     Condicion("U1_usos_de_1_sobre_E", "nulas",
