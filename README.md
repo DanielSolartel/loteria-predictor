@@ -3667,6 +3667,154 @@ Con esta evidencia, **AE-68 queda validada como expediente preparatorio de espec
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-67 sin cambios.
 
+**Etapa AE-69 -inventario verificable del contenido de R0 frente al formato del protocolo de AE-52, validada:** AE-68 dejó R0 (`declaracion_previa_del_protocolo`) como única raíz de confianza. Dijo que R0 es el protocolo de AE-52 y que declara claves, canal, clave de unicidad, regla de duplicados, reloj, margen, revisión completa, política ante vistas divididas, calendario y plazo. AE-69 comprueba que **el formato vigente de AE-52 no admite ninguna de esas declaraciones**:
+- no como campo, porque el protocolo exige un conjunto exacto de claves;
+- no como pendiente, porque la lista solo admite los siete identificadores de AE-52.
+
+El nuevo módulo puro `app/application/ml/inventario_declaracion_previa_del_protocolo.py` inventaría los once elementos del contenido de R0 y ofrece un comprobador sintético de completitud. **No se decide nada:**
+- ni la ubicación ni el formato de la declaración;
+- ni mecanismo, esquema de firma, regla o valor.
+
+AE-52 y AE-63 a AE-68 no cambian.
+
+**R0, R9 y las ocho condiciones:**
+- **R0:** se separa su **contenido**, objeto de AE-69, de su **autenticación**. Los tres elementos de `AUTENTICACION_DE_R0` siguen pendientes, y un contenido completo no autentica R0.
+- **R9 `puente_entrada_canal`:** es un elemento declarado por R0 (`formato_de_entrada_y_recibo`), pero se verifica contra `canal_canonico`.
+- **Las ocho condiciones:** siguen `sin_fijar` y cada una recibe al menos un elemento.
+
+**Inventario** (`ELEMENTOS_DE_R0`, los once `pendiente`):
+
+| Elemento | Alimenta | Situación en AE-52 |
+|---|---|---|
+| `conjunto_de_claves_y_revocacion` | `identidad_autorizada` | sin campo |
+| `identidad_del_canal` | `canal_canonico` | sin campo |
+| `composicion_de_la_clave_de_unicidad` | `unicidad_por_objetivo` | componentes en la predicción, sin declaración de la clave |
+| `regla_de_duplicados` | `regla_de_duplicados` | sin campo |
+| `reloj_zona_resolucion_cota_y_trato_del_intervalo` | `reloj_de_recepcion` | sin campo |
+| `margen_delta_y_mmd` | `margen_de_incorporacion` | sin campo |
+| `procedimiento_de_revision_completa` | `revision_completa` | sin campo |
+| `politica_ante_vistas_divididas` | `revision_completa` | sin campo |
+| `fuente_del_calendario` | `calendario_oficial` | sin campo |
+| `definicion_del_plazo` | `calendario_oficial` | sin campo |
+| `formato_de_entrada_y_recibo` | R9 | sin campo |
+
+**Contenido de cada elemento:**
+- las referencias al estándar, solo de AE-67; lo que procede de RFC 9162 lleva `solo_certificados` porque ese RFC cubre certificados y precertificados, **no** nuestras entradas;
+- la evidencia que lo resolvería;
+- el criterio para mantenerlo pendiente.
+
+**Registros auxiliares:**
+- **`CORRESPONDENCIA_CON_PENDIENTES_AE52`**:
+  - `mecanismo_de_sellado_temporal_externo` toca a la autenticación de R0, no a su contenido;
+  - `corte_temporal_por_juego` está relacionado con `definicion_del_plazo`, sin identificarse con ella.
+- **`PREGUNTAS_ABIERTAS_AE69`**, todas sin respuesta:
+  - la ubicación de la declaración;
+  - el plazo frente al corte;
+  - cómo expresar un pendiente de R0 sin romper la regla de AE-52.
+
+**Comprobador sintético** (`comprobar_declaracion_sintetica`, `motivos_de_incompletitud`). Nunca lanza excepciones.
+- **Forma:** la declaración de prueba debe ser un `dict` con exactamente las once claves. Cada elemento es `{"estado": "pendiente"}` o `{"estado": "declarado_sintetico", "valor": …}`.
+- **Valores admitidos:** solo texto, enteros, booleanos, listas y objetos con claves de texto. Se rechazan `float`, tuplas, conjuntos, `bytes`, mapeos que no son `dict` y claves no textuales, porque el serializador de AE-52 confunde algunos de ellos: `{1: "x"}` y `{"1": "x"}` dan los mismos bytes, y una tupla da lo mismo que una lista.
+- **Valores vacíos o nulos** (`TRATAMIENTO_DE_VALORES_VACIOS`): `None`, un texto vacío o solo con espacios, una lista vacía o un objeto vacío, también anidados, **no** cuentan como declaración sustantiva. La declaración queda `incompleta` y no se hashea. Los enteros y booleanos, incluidos `0` y `false`, cuentan como valores.
+- **Resultados:** `incompleta`, `todos_pendientes`, `parcial` o `completa_sintetica_sin_autenticar`.
+- **Alcance** (`ALCANCE_DE_LA_COMPLETITUD`): **`completa_sintetica_sin_autenticar` solo indica completitud estructural de los once elementos. No acredita suficiencia de sus valores, autenticación, fijación de R0 ni cumplimiento de ninguna condición.**
+- **Estado actual:** `ESTADO_ACTUAL_DE_R0` tiene los once elementos `pendiente` y da `todos_pendientes`.
+
+**Hash** (`hash_de_declaracion_sintetica`):
+- Reutiliza `serializar_entrada` y `hash_entrada` de AE-52 y exige que `leer_entrada` reproduzca la declaración.
+- Una declaración incompleta lanza `DeclaracionSinteticaInvalidaError` y no se hashea.
+- La declaración **no** es una entrada de AE-52: no pasa por `validar_registro`, y no se atribuye a AE-52 ningún formato de declaración.
+- Las pruebas solo muestran que, **en los ejemplos probados**, cambiar un elemento cambia el hash. No se afirma ninguna propiedad universal contra colisiones.
+
+**Clasificación de afirmaciones** (`CLASIFICACION_DE_AFIRMACIONES`, A1–A11), con procedencia exacta:
+
+| Clase | Afirmaciones | Procedencia |
+|---|---|---|
+| Hechos observados en el código | A1, A2, A4, A10, A11 | archivo y símbolo `@9cd222c` más la prueba que lo observa |
+| Hechos citados de fuente | A8 | identificadores `AE-67:C1`…`C7`, cuyas páginas registra AE-67; sin cita nueva |
+| Derivaciones propias | A3, A6, A7 | premisas resolubles en los registros |
+| Hipótesis de aplicación | A5, A9 | quedan `pendiente` |
+
+**Contenido de las afirmaciones:**
+- **A1:** una clave adicional en un protocolo sintético se rechaza.
+- **A2:** un identificador de R0 en `pendientes` se rechaza.
+- **A4:** la predicción contiene `protocolo_hash`, `codigo_juego` y `sorteo_objetivo`.
+- **A5:** que esos campos sean la clave de unicidad es la propuesta de AE-66, no una declaración de R0.
+- **A9:** el plazo y el corte están relacionados, sin identificarse.
+- **A11:** comportamiento observado del serializador de AE-52.
+
+**Archivos** (exactamente cinco):
+- nuevo `app/application/ml/inventario_declaracion_previa_del_protocolo.py`;
+- nuevo `tests/unit/ml/test_inventario_declaracion_previa_del_protocolo.py`;
+- README, ROADMAP y ARCHITECTURE: esta sección.
+
+No se modifica ningún otro módulo.
+
+**Pruebas** (`42` casos sintéticos en tres grupos; el módulo nuevo se importa dentro de cada prueba de G1):
+- **G1 (`35` casos en 14 funciones), dependen del módulo nuevo:**
+  - inventario y cobertura;
+  - disjunción con los pendientes de AE-52;
+  - formas inválidas;
+  - valores vacíos o nulos, definidos y probados antes del resultado completo;
+  - resultados y su alcance;
+  - estado actual;
+  - hash en ejemplos concretos;
+  - el contenido completo no autentica R0;
+  - referencias a AE-67;
+  - clasificación con procedencia;
+  - vías de AE-68 que siguen `pendiente`;
+  - pureza por AST y vocabulario.
+- **G2 (`3`), invariantes sobre código existente:**
+  - huellas SHA-256 de AE-63 a AE-67 y de AE-68 (`03c83bb1…04b00d`);
+  - huella de AE-52 (`4f31cdeb…21c50b`);
+  - estados, decisiones y bloqueos sin cambios.
+- **G3 (`4`), integraciones contra la API pública real de AE-52:** A1, A2, A4 y A11.
+
+**Pruebas primero, sobre la base `9cd222c`.** Antes de escribir el módulo se ejecutaron los tres grupos. El resultado fue `35 failed, 7 passed`, con código de pytest `1`:
+- **G1:** los `35` casos fallan por separado, **todos** con `ModuleNotFoundError: No module named 'app.application.ml.inventario_declaracion_previa_del_protocolo'`.
+- **G2 (`3`) y G3 (`4`):** pasan, lo que confirma sobre el código existente las premisas A1, A2, A4 y A11 y los invariantes.
+
+Las huellas de AE-52 y de AE-63 a AE-68 se calcularon en la base antes de implementar y se fijaron como literales en G2.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `42 passed` (código `0`).
+- **AE-60 a AE-69:** `250 passed` (código `0`).
+- **Focalizadas:** `948 + 42 = 990 passed` (código `0`).
+- **Suite completa:** `5193 + 42 = 5235 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- **`pip check` y `git diff --check`:** código `0`.
+
+**Límites:**
+- AE-69 inventaría y comprueba estructura. **No** fija R0, R9 ni ninguna condición, **no** autentica R0 y **no** elige ubicación, formato, mecanismo, esquema de firma, regla ni valor.
+- Los valores de las declaraciones sintéticas son datos de prueba, no propuestas.
+- F1, F2, O3, N2 y U1 siguen pendientes. Todas las decisiones siguen sin valor. `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** rama `feature/ae69-inventario-declaracion-previa-del-protocolo`; base y HEAD antes de aplicar `9cd222c9b825c99cc2925b0c4c41bb867df113c1`.
+- **Parche:** el completo `ae69-inventario-declaracion-previa-del-protocolo.patch`, SHA-256 `3df6a8399421e9d04fe44838a17dd1c8c9d504c2e6f34c6b254862ea5f8d2822`, con el hash comprobado.
+- **Aplicación:** `git apply --check`, la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los cinco archivos previstos.
+- **Pruebas de AE-69:** `42 passed in 0.39s`.
+- **AE-60 a AE-69:** `250 passed in 1.13s`.
+- **`pip check`:** `No broken requirements found`.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `990 passed` (focalizadas) y `5235 passed, 0 skipped` (suite completa) corresponden únicamente al sandbox Linux de Claude.
+
+**Límites de esta validación**: «validada» cubre solo **el inventario preparatorio del contenido de R0 y sus pruebas**.
+- `completa_sintetica_sin_autenticar` solo acredita la presencia estructural de los once elementos: **no** valida la suficiencia de sus valores, **no** autentica ni fija R0 y **no** satisface ninguna condición del protocolo.
+- Los once elementos siguen `pendiente`, y R0, R9 y las ocho condiciones siguen `sin_fijar`; los tres elementos de autenticación de R0 siguen pendientes.
+- **No** se elige ubicación ni formato de la declaración, mecanismo, esquema de firma, regla ni valor, y AE-52 no cambia.
+- Lo que procede de RFC 9162 conserva el alcance de certificados y precertificados registrado en AE-67; no se atribuye al RFC ninguna garantía para nuestras entradas.
+- F1, F2, O3, N2 y U1 siguen **pendientes**.
+- Todas las decisiones siguen sin valor. El expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-69 queda validada como inventario preparatorio del contenido de R0 y sus pruebas**; no equivale a declarar, autenticar ni fijar R0, a fijar ninguna condición ni a elegir un mecanismo.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-68 sin cambios.
+
 ---
 
 
