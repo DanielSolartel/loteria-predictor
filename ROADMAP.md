@@ -2923,6 +2923,29 @@ AE-73 queda **validada solo como extensión optativa y sintética del esquema, s
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-72 sin cambios.
 
+**Etapa AE-74 -contrato de vinculación R0 elegido por el operador (versión 1.2 de AE-52), validada:** el operador aprobó tres decisiones:
+- **D1:** el campo explícito versionado es la única ruta del contrato, con el contrato `contrato-vinculo-r0/1` y la regla `ae74-vinculo-r0-contrato/1` escritos en los bytes mediante la versión `registro-prospectivo-ml/1.2`.
+- **D2:** estados por elemento y lista ordenada de pendientes comprobada contra la declaración.
+- **D7:** pendientes solo en borradores sintéticos.
+
+D9 queda en espera provisional y D8 sigue abierta.
+
+**Cómo responde el contrato:** el nuevo módulo `app/application/ml/contrato_vinculo_r0.py` evalúa cuatro puertas independientes, con motivos precisos: borrador sintético, vínculo íntegro, declaración estructuralmente completa y R0 final.
+- Un borrador con pendientes puede tener un vínculo íntegro sin ser completo.
+- La puerta R0 final no puede superarse con la evidencia existente.
+
+**Compatibilidad:** 1.0, AE-72 y 1.1 conservan bytes y comportamiento, pero el contrato no las admite. Hay `41` pruebas nuevas.
+
+El detalle, la demostración reproducible de los estados, la compatibilidad y los requisitos faltantes están en la sección AE-74 de `ARCHITECTURE.md`.
+
+R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-74 queda **validada solo como contrato versionado sintético, con sus puertas de admisión y sus pruebas**. La versión 1.2 solo admite protocolos sintéticos, D8 sigue abierta, D9 solo tiene la espera provisional y `r0_final` no puede superarse con la evidencia actual.
+
+**Validación del operador en Windows** (atribuida al usuario): rama `feature/ae74-contrato-vinculo-r0`, HEAD y base `9a6740e`, SHA-256 del parche completo comprobado, siete archivos. Con Python `3.14.6` y pytest `9.1.1`: `41 passed in 0.51s` (AE-74), `110 passed in 4.89s` (AE-52), `425 passed in 1.63s` (AE-60 a AE-74) y `pip check` sin problemas. Las focalizadas (`1165 passed`) y la suite completa (`5410 passed, 0 skipped`) solo se ejecutaron en Linux. El detalle y los límites están en la sección AE-74 de `ARCHITECTURE.md`.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos, firmas, relojes ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-73 sin cambios.
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)

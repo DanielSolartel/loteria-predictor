@@ -238,7 +238,7 @@ def test_g1a_tipos_invalidos_en_regla_y_hash(valor):
 def test_g1a_version_desconocida_y_entradas_posteriores_1_1():
     _rp("ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0")
     with pytest.raises(rp.EntradaRegistroInvalidaError, match="esquema desconocido") as info:
-        rp.validar_registro([rp.serializar_entrada(_protocolo_1_1(esquema="registro-prospectivo-ml/1.2"))])
+        rp.validar_registro([rp.serializar_entrada(_protocolo_1_1(esquema="registro-prospectivo-ml/1.9"))])
     assert type(info.value) is rp.EntradaRegistroInvalidaError
     entradas = _registro(_protocolo_1_1())
     prediccion = rp.leer_entrada(entradas[1])

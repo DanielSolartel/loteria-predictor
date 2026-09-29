@@ -34,6 +34,12 @@ admite en protocolos sinteticos y no autentica ni fecha la declaracion. Los
 protocolos 1.0, las predicciones y los resultados no cambian (siguen en
 1.0), y `construir_protocolo` sigue produciendo 1.0.
 
+Version de contrato de la entrada `protocolo` (AE-74): el esquema
+`registro-prospectivo-ml/1.2` fija en los bytes el contrato
+`contrato-vinculo-r0/1` y su regla, para que un contrato posterior no
+reinterprete protocolos anteriores. Tambien es solo sintetica y no
+autentica, fecha ni admite nada por si misma; 1.0 y 1.1 no cambian.
+
 Este modulo no genera predicciones, no entrena ni carga modelos, no
 evalua resultados y no modifica el NO-GO de AE-39 ni los bloqueos de
 AE-40 a AE-46. Es puro: sin reloj, sin azar, sin archivos ni base de
@@ -124,6 +130,19 @@ MOTIVOS_VINCULO_R0 = (
 _CLAVES_VINCULO_R0 = frozenset({"regla", "esquema_declaracion", "hash_declaracion", "pendientes"})
 _CLAVE_VINCULO_CANDIDATO_AE72 = "vinculo_r0_candidato"
 _ELEMENTO_R0 = re.compile(r"[a-z][a-z0-9_]*")
+
+# Contrato de vinculacion R0 (AE-74): version 1.2 solo para la entrada
+# protocolo. Fija en los bytes el contrato y su regla; no cambia 1.0 ni 1.1.
+ESQUEMA_ENTRADA_PROTOCOLO_CONTRATO_R0 = "registro-prospectivo-ml/1.2"
+CONTRATO_VINCULO_R0 = "contrato-vinculo-r0/1"
+REGLA_VINCULO_R0_CONTRATO = "ae74-vinculo-r0-contrato/1"
+MOTIVOS_VINCULO_R0_CONTRATO = (
+    "vinculo_ausente_en_esquema_1_2", "vinculo_no_es_objeto", "claves_del_vinculo_distintas", "contrato_desconocido",
+    "regla_desconocida", "esquema_de_declaracion_desconocido", "hash_mal_formado", "pendientes_mal_formados",
+    "vinculo_solo_sintetico", "doble_vinculo",
+)
+_CLAVES_VINCULO_R0_CONTRATO = _CLAVES_VINCULO_R0 | {"contrato"}
+_ESQUEMAS_CON_CAMPO_VINCULO = (*ESQUEMAS_PROTOCOLO, ESQUEMA_ENTRADA_PROTOCOLO_CONTRATO_R0)
 
 _JUEGOS_DOMINIO = {"BALOTO": BalotoGame, "BALOTO_REVANCHA": BalotoRevanchaGame}
 _HASH = re.compile(r"[0-9a-f]{64}")
@@ -270,11 +289,21 @@ def _validar_estrategia(estrategia) -> None:
 
 
 def _validar_protocolo(protocolo: dict) -> None:
-    """Valida un protocolo 1.0 exactamente como antes, o uno 1.1 con su
-    vinculo `declaracion_r0`. Un protocolo a medio migrar se rechaza."""
+    """Valida un protocolo 1.0 exactamente como antes, uno 1.1 con su
+    vinculo `declaracion_r0` o uno 1.2 con el vinculo del contrato. Un
+    protocolo a medio migrar se rechaza."""
     esquema = protocolo.get("esquema") if isinstance(protocolo, dict) else None
-    if isinstance(protocolo, dict) and CAMPO_VINCULO_R0 in protocolo and esquema not in ESQUEMAS_PROTOCOLO:
+    if isinstance(protocolo, dict) and CAMPO_VINCULO_R0 in protocolo and esquema not in _ESQUEMAS_CON_CAMPO_VINCULO:
         raise _invalida("protocolo: esquema desconocido")
+    if esquema == ESQUEMA_ENTRADA_PROTOCOLO_CONTRATO_R0:
+        if CAMPO_VINCULO_R0 not in protocolo:
+            raise VinculoR0InvalidoError("vinculo_ausente_en_esquema_1_2",
+                                         f"protocolo {esquema}: falta el campo {CAMPO_VINCULO_R0}")
+        base = {clave: valor for clave, valor in protocolo.items() if clave != CAMPO_VINCULO_R0}
+        _validar_protocolo_base({**base, "esquema": ESQUEMA_ENTRADA})
+        _validar_vinculo_r0(protocolo, claves=_CLAVES_VINCULO_R0_CONTRATO, regla=REGLA_VINCULO_R0_CONTRATO,
+                            contrato=CONTRATO_VINCULO_R0)
+        return
     if esquema == ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0:
         if CAMPO_VINCULO_R0 not in protocolo:
             raise VinculoR0InvalidoError("vinculo_ausente_en_esquema_1_1",
@@ -290,7 +319,10 @@ def _validar_protocolo(protocolo: dict) -> None:
     _validar_protocolo_base(protocolo)
 
 
-def _validar_vinculo_r0(protocolo: dict) -> None:
+def _validar_vinculo_r0(protocolo: dict, *, claves: frozenset = _CLAVES_VINCULO_R0,
+                        regla: str = REGLA_VINCULO_R0_CAMPO_EXPLICITO, contrato: str | None = None) -> None:
+    """Sin argumentos, las reglas de 1.1 sin cambios; con `contrato`, las
+    de 1.2, que ademas exigen el contrato fijado en los bytes."""
     vinculo = protocolo[CAMPO_VINCULO_R0]
 
     def rechazar(motivo: str, mensaje: str):
@@ -298,10 +330,12 @@ def _validar_vinculo_r0(protocolo: dict) -> None:
 
     if not isinstance(vinculo, dict):
         rechazar("vinculo_no_es_objeto", "debe ser un objeto")
-    if set(vinculo) != _CLAVES_VINCULO_R0:
-        rechazar("claves_del_vinculo_distintas", f"claves distintas de {sorted(_CLAVES_VINCULO_R0)}")
-    if vinculo["regla"] != REGLA_VINCULO_R0_CAMPO_EXPLICITO or not isinstance(vinculo["regla"], str):
-        rechazar("regla_desconocida", f"regla distinta de {REGLA_VINCULO_R0_CAMPO_EXPLICITO}")
+    if set(vinculo) != claves:
+        rechazar("claves_del_vinculo_distintas", f"claves distintas de {sorted(claves)}")
+    if contrato is not None and (not isinstance(vinculo["contrato"], str) or vinculo["contrato"] != contrato):
+        rechazar("contrato_desconocido", f"contrato distinto de {contrato}")
+    if vinculo["regla"] != regla or not isinstance(vinculo["regla"], str):
+        rechazar("regla_desconocida", f"regla distinta de {regla}")
     if vinculo["esquema_declaracion"] != ESQUEMA_DECLARACION_R0 or not isinstance(vinculo["esquema_declaracion"], str):
         rechazar("esquema_de_declaracion_desconocido", f"esquema de declaracion distinto de {ESQUEMA_DECLARACION_R0}")
     hash_declaracion = vinculo["hash_declaracion"]
@@ -386,6 +420,19 @@ def construir_protocolo_con_vinculo_r0(*, protocolo_id: str, estrategia: dict, c
     protocolo = _protocolo_sin_validar(protocolo_id=protocolo_id, estrategia=estrategia, cortes=cortes,
                                        pendientes=pendientes, sintetico=sintetico)
     protocolo["esquema"] = ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0
+    protocolo[CAMPO_VINCULO_R0] = copy.deepcopy(vinculo_r0)
+    _validar_protocolo(protocolo)
+    return protocolo
+
+
+def construir_protocolo_con_contrato_r0(*, protocolo_id: str, estrategia: dict, cortes: dict,
+                                        pendientes: Sequence[str], sintetico: bool, vinculo_r0: dict) -> dict:
+    """Protocolo de la version 1.2 del contrato de vinculacion R0: el de
+    `construir_protocolo` mas el campo `declaracion_r0` con contrato y regla
+    fijados. Solo sintetico; no autentica ni fecha la declaracion."""
+    protocolo = _protocolo_sin_validar(protocolo_id=protocolo_id, estrategia=estrategia, cortes=cortes,
+                                       pendientes=pendientes, sintetico=sintetico)
+    protocolo["esquema"] = ESQUEMA_ENTRADA_PROTOCOLO_CONTRATO_R0
     protocolo[CAMPO_VINCULO_R0] = copy.deepcopy(vinculo_r0)
     _validar_protocolo(protocolo)
     return protocolo
