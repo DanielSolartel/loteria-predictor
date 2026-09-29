@@ -3815,6 +3815,151 @@ Con esta evidencia, **AE-69 queda validada como inventario preparatorio del cont
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-68 sin cambios.
 
+**Etapa AE-70 -criterios verificables de vinculación entre el contenido de R0 y el protocolo de AE-52, validada:** AE-69 inventarió los once elementos del contenido de R0 y aportó el hash de una declaración sintética. Dejó sin respuesta dónde viviría esa declaración y cómo se expresarían sus pendientes. AE-70 **no responde esas preguntas**. En el nuevo módulo puro `app/application/ml/vinculo_declaracion_previa_con_protocolo.py` registra:
+- las topologías candidatas de vínculo;
+- los criterios K1–K7;
+- los supuestos S1–S4;
+- una matriz topología × criterio cuyas celdas exponen sus supuestos.
+
+Las tres preguntas de AE-69 siguen `sin_respuesta`, `TOPOLOGIA_ELEGIDA = None` y `REPRESENTACION_ELEGIDA = None`. AE-52 y AE-63 a AE-69 no cambian.
+
+**Hallazgos sobre AE-52**, observados en el código de `b278d88` y comprobados con su API pública:
+- Cada predicción exige un `protocolo_hash` igual al hash de los bytes canónicos del protocolo.
+- `estrategia.parametros` solo se comprueba como objeto, así que hoy admitiría una clave con un hash. Un valor distinto ahí se conserva en los bytes canónicos, cambia el hash del protocolo y llega al `protocolo_hash` de la predicción reconstruida. Esto está comprobado en ejemplos.
+- Un segundo protocolo en el mismo registro se rechaza.
+- El protocolo real es un borrador con los siete pendientes y no admite predicciones.
+
+**Supuestos** (`SUPUESTOS_DEL_MODELO`), visibles en cada conclusión que depende de ellos:
+- **S1:** SHA-256 se trata como resistente a colisiones. Se **supone**, no se verifica.
+- **S2:** el verificador dispone de los bytes canónicos del protocolo y comprueba su hash.
+- **S3:** la regla de vínculo está declarada. En AE-70 es un parámetro de prueba, no una decisión.
+- **S4:** existe un único manifiesto reconocido por protocolo. Es un requisito pendiente.
+
+**Topologías** (`TOPOLOGIAS_DE_VINCULO`, ninguna elegida):
+- `directo_en_nuevo_esquema`: un campo nuevo; exige cambiar el formato de AE-52.
+- `directo_en_campo_existente_no_previsto`: el hash en `estrategia.parametros`; el formato lo admite hoy, pero reinterpreta el campo.
+- `inverso_desde_la_declaracion`: la declaración lleva el `protocolo_hash`.
+- `manifiesto_externo`: un tercer documento enlaza ambos hashes.
+
+**Criterios** (`CRITERIOS_DE_VINCULO`):
+- **K1 `compromiso_transitivo_verificable`:** exige los **bytes canónicos del protocolo** y la **regla declarada**. **El `protocolo_hash` aislado no basta**: es un digest y no permite obtener nada. Ninguna función pública recibe solo el digest.
+- **K2 `designacion_unica_por_el_vinculo`:** el vínculo designa **como máximo un hash de declaración** bajo el modelo. **No afirma unicidad de las declaraciones existentes ni ausencia de colisiones**, que dependen de S1.
+- **K3** sin cambio de formato de AE-52.
+- **K4** sin reinterpretar campos.
+- **K5** pendientes explícitos.
+- **K6** no implica autenticación.
+- **K7** no aporta anterioridad.
+
+**Matriz** (`MATRIZ_DE_VINCULO`; cada celda tiene estado, supuestos, afirmaciones y alcance):
+
+| Topología | K1 | K2 | K3 | K4 |
+|---|---|---|---|---|
+| directo, nuevo esquema | cumple en el modelo bajo S1, S2, S3 | cumple en el modelo bajo S2, S3 (S1 para el contenido) | no cumple por definición | cumple por definición |
+| directo, campo no previsto | cumple en el modelo bajo S1, S2, S3; propagación observada con AE-52 real | cumple en el modelo bajo S2, S3 (S1 para el contenido) | cumple por definición | no cumple por definición |
+| inverso | no cumple (contraejemplo: los bytes no designan nada) | no cumple (contraejemplo: dos declaraciones distintas aceptadas) | cumple por definición | cumple por definición |
+| manifiesto externo | depende de S4 | depende de S4 (dos manifiestos designan dos hashes) | cumple por definición | cumple por definición |
+
+- **K5** es independiente de la topología y se evalúa sobre `REPRESENTACIONES_DE_PENDIENTES`.
+- **K6 y K7** se cumplen por definición: ninguna topología pretende autenticar ni fechar.
+- **Cumplir en el modelo no significa acreditación, suficiencia ni conformidad** (`ALCANCE_DEL_ANALISIS`).
+
+**Representación de pendientes** (`REPRESENTACIONES_DE_PENDIENTES`, ninguna elegida):
+- `estado_pendiente_por_elemento`: las formas de AE-69; se hashea.
+- `ampliar_pendientes_de_ae52`: exige cambiar el formato, porque hoy se rechaza.
+- `ausencia_implicita`: AE-69 la trata como `incompleta`.
+
+**Consecuencia** (`CONSECUENCIA_DE_COMPLETAR_DESPUES`): bajo vínculo directo, completar un pendiente después cambia el hash designado y el del protocolo. El resultado es otro protocolo, que no cabe en el mismo registro de AE-52; las predicciones previas siguen ligadas a la versión anterior.
+
+**Funciones puras** (el campo lo aporta quien llama; nada se fija):
+- `hash_designado(topologia, bytes_protocolo, protocolo_hash, regla)`;
+- `declaraciones_que_verifican(...)`;
+- `celda(topologia, criterio)`.
+
+**Afirmaciones** (`CLASIFICACION_DE_AFIRMACIONES`, B1–B15), con procedencia exacta:
+- **Hechos observados en el código** (`@b278d88` y la prueba que los observa): B1–B6.
+- **Derivaciones propias** (premisas resolubles, incluidos los supuestos): B7–B12 y B15.
+- **Hipótesis de aplicación** (pendiente): B13.
+- **Hecho citado de fuente:** B14, *AE-67 verificó RFC 9162 para registros de certificados y precertificados*, con `AE-67:C1`…`C7`.
+- **Derivación separada:** B15 se deriva de B14, **sin atribuirla al RFC**. Lo verificado **no aporta una garantía** aplicable a un manifiesto de predicciones ni a nuestras entradas, y no se afirma que ese uso sea imposible.
+
+No hay citas primarias nuevas.
+
+**Archivos** (exactamente cinco):
+- nuevo `app/application/ml/vinculo_declaracion_previa_con_protocolo.py`;
+- nuevo `tests/unit/ml/test_vinculo_declaracion_previa_con_protocolo.py`;
+- README, ROADMAP y ARCHITECTURE: esta sección.
+
+**Pruebas** (`21` sintéticas en tres grupos; el módulo nuevo se importa dentro de cada prueba de G1):
+- **G1 (`13`), dependen del módulo nuevo:**
+  - registros y matriz;
+  - celdas esperadas;
+  - K1 sin el digest aislado;
+  - K1 con AE-52 real en ejemplos;
+  - K2 con sus contraejemplos inverso y manifiesto;
+  - K6 y K7;
+  - completar después;
+  - representaciones;
+  - preguntas de AE-69 sin respuesta;
+  - B14 separado de B15;
+  - clasificación con procedencia;
+  - pureza por AST y vocabulario.
+- **G2 (`2`), invariantes:**
+  - huellas de AE-52 y de AE-63 a AE-68 sin cambios;
+  - huella de AE-69 calculada en la base (`b5637fe7…d83a24`);
+  - estados, decisiones y bloqueos.
+- **G3 (`6`), integraciones contra la API pública de AE-52 y AE-69:**
+  - B1–B6, incluida la propagación de `parametros` a los bytes, al hash y a la predicción reconstruida;
+  - el rechazo por `protocolo_hash` aislado, con la cadena correcta.
+
+**Pruebas primero, sobre la base `b278d88`.** Antes de escribir el módulo se ejecutaron los tres grupos. El resultado fue `13 failed, 8 passed`, con código de pytest `1`:
+- **G1:** las `13` fallan por separado, **todas** con `ModuleNotFoundError: No module named 'app.application.ml.vinculo_declaracion_previa_con_protocolo'`.
+- **G2 (`2`) y G3 (`6`):** pasan. En particular, G3 confirma sobre AE-52 real que el cambio en `estrategia.parametros` se conserva en los bytes canónicos, cambia el hash del protocolo y llega al `protocolo_hash` de la predicción reconstruida.
+
+Las huellas de AE-52 y de AE-63 a AE-69 se calcularon en la base antes de implementar y se fijaron como literales en G2.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `21 passed` (código `0`).
+- **AE-60 a AE-70:** `271 passed` (código `0`).
+- **Focalizadas:** `990 + 21 = 1011 passed` (código `0`).
+- **Suite completa:** `5235 + 21 = 5256 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- **`pip check` y `git diff --check`:** código `0`.
+
+**Límites:**
+- AE-70 especifica criterios y los prueba sobre modelos sintéticos. **No** elige topología, representación, campo ni mecanismo, **no** fija R0 y **no** aporta autenticación, anterioridad ni suficiencia.
+- `completa_sintetica_sin_autenticar` sigue indicando solo completitud estructural.
+- RFC 9162 conserva el alcance de certificados y precertificados.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes.
+- Todas las decisiones siguen sin valor. `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** rama `feature/ae70-vinculo-declaracion-previa-con-protocolo`; HEAD y base `b278d883752d1f1101544c093baec2044cda860d`.
+- **Parche:** el completo `ae70-vinculo-declaracion-previa-con-protocolo.patch`, SHA-256 `109a4f1b348a723e2951073b6a421993bb1f196252bdc392b04c57c4fbb0b549`, con el hash comprobado.
+- **Aplicación:** la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los cinco archivos previstos.
+- **Pruebas de AE-70:** `21 passed in 0.57s`.
+- **AE-60 a AE-70:** `271 passed in 3.12s`.
+- **`pip check`:** `No broken requirements found`.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `1011 passed` (focalizadas) y `5256 passed, 0 skipped`, con los cinco avisos conocidos de Alembic (suite completa), corresponden únicamente al sandbox Linux de Claude y no se repitieron para este cierre.
+
+**Límites de esta validación**: «validada» cubre solo **el modelo preparatorio de vinculación y sus pruebas**.
+- S1 sigue siendo una hipótesis: SHA-256 se trata como resistente a colisiones, sin verificarlo.
+- K1 requiere los bytes canónicos del protocolo y una regla declarada; el `protocolo_hash` aislado no basta.
+- K2 solo dice que el vínculo designa como máximo un hash de declaración bajo el modelo.
+- **No** se acredita unicidad de las declaraciones existentes, suficiencia, autenticación, anterioridad ni aplicación operativa.
+- `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` siguen en `None`, y las tres preguntas de AE-69 siguen abiertas.
+- RFC 9162 conserva el alcance de certificados y precertificados registrado en AE-67.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- No se elige ni autoriza inferencia o evaluación. Todas las decisiones siguen sin valor, y el expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-70 queda validada como modelo preparatorio de vinculación y sus pruebas**; no equivale a elegir topología, representación, campo ni mecanismo, ni a fijar o autenticar R0.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-69 sin cambios.
+
 ---
 
 
