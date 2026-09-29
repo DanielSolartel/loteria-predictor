@@ -2276,6 +2276,163 @@ Con esta evidencia, **AE-67 queda validada como expediente preparatorio de verif
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-66 sin cambios.
 
+**Etapa AE-68 -especificación verificable de las condiciones del protocolo, validada:** AE-66 y AE-67 dejaron sin fijar ocho condiciones del protocolo. AE-68 las especifica de forma verificable en el nuevo módulo puro `app/application/ml/especificacion_condiciones_del_protocolo.py` y separa tres planos:
+- **(E) Estándar:** solo afirmaciones de AE-67. Lo que procede de RFC 9162 lleva la marca `solo_certificados`, porque ese RFC describe registros de certificados y precertificados: sus SCT, su MMD y sus pruebas **no** se atribuyen a nuestras predicciones ni omisiones.
+- **(P) Protocolo hipotético:** lo que tendría que garantizar el protocolo de este repositorio.
+- **(O) Evidencia operativa:** lo que exigiría pruebas de la operación real.
+
+**Nada queda fijado:** las ocho condiciones, R0 y R9 siguen `sin_fijar`. No se elige mecanismo, esquema de firma ni regla, y ningún registro de AE-63 a AE-67 cambia.
+
+**Requisitos previos** (`REQUISITOS_PREVIOS`; no amplían la lista de ocho):
+- **R0 `declaracion_previa_del_protocolo`, única raíz de confianza.** Es el protocolo de AE-52, fijado antes del corte. Declara:
+  - claves, canal y clave de unicidad;
+  - regla de duplicados, y reloj con su cota de error;
+  - margen, revisión completa y política ante vistas divididas;
+  - fuente del calendario y definición del plazo.
+
+  Su autenticación (`AUTENTICACION_DE_R0`) exige tres elementos, todos pendientes: un sello externo anterior al corte, publicación fuera de banda con copias de terceros y reconocimiento explícito del operador. Sin este último, un sello o una publicación no excluyen protocolos alternativos (T6).
+- **R9 `puente_entrada_canal`:** cómo se codifican nuestras entradas en el canal que se designe y qué recibo firmado emite ese canal (hash canónico, `t_rec` y promesa de incorporación).
+
+**Grafos acíclicos:**
+- **Normativo:** R0 declara todas las condiciones y R9.
+- **De verificación:**
+  - identidad, canal y calendario ← R0;
+  - R9 ← canal;
+  - reloj ← canal, R9 y calendario;
+  - margen ← canal, R9 y reloj;
+  - revisión completa ← canal y margen;
+  - duplicados ← reloj y revisión completa;
+  - unicidad ← identidad, duplicados y revisión completa.
+
+**Correspondencia con AE-66** (`CORRESPONDENCIA_CON_AE66`, sin renombrar nada):
+- `recepcion_antes_del_plazo` se reparte entre `reloj_de_recepcion` y `margen_de_incorporacion`;
+- `calendario_oficial` procede del complemento K y de las preguntas abiertas;
+- la definición del plazo es una decisión dentro del calendario.
+
+**Condiciones** (`CONDICIONES_DEL_PROTOCOLO`, con los nombres de AE-67; todas `sin_fijar`):
+
+| Condición | Definición verificable (P) | Estándar (E) | Evidencia operativa (O) |
+|---|---|---|---|
+| `identidad_autorizada` | firma verificada con una clave declarada en R0 y vigente en `t_rec` | T4, T5; C7 (solo certificados) | custodia y revocaciones |
+| `canal_canonico` | solo cuentan las entradas del canal declarado en R0 | T6; C5 (solo certificados) | operación del canal |
+| `unicidad_por_objetivo` | tras la revisión completa, cada clave está vacía, contiene solo reintentos idénticos o tiene un conflicto registrado; la unicidad se comprueba como ausencia de conflictos, no se afirma | C3, C7 (solo certificados) | revisión completa |
+| `regla_de_duplicados` | detectar y registrar primero (reintento idéntico o contenidos incompatibles, por hash canónico); después, una regla declarada que solo usa hash, tipo, firmante y `t_rec`; el registro se conserva | C7 (solo certificados) | revisión completa |
+| `reloj_de_recepcion` | `t_rec` con zona, resolución y **cota declarada del error frente a UTC**; ordenar por `t_rec`, nunca por índice | T1, T2; C4 (solo certificados) | recibos y comprobación de la cota |
+| `margen_de_incorporacion` | umbrales condicionados a H1–H5 (ver abajo) | C1, C4 (solo certificados) | auditoría de recibos con pruebas de inclusión |
+| `revision_completa` | todas las entradas hasta un punto que cumple el margen, más consistencia y política ante vistas divididas | C2, C5, C6 (solo certificados) | copia completa y comparación entre partes |
+| `calendario_oficial` | plazo en UTC por `(juego, objetivo)` a partir de la fuente y la definición declaradas en R0 | ninguno | archivo por terceros |
+
+**Instantes** (`INSTANTES`):
+- `t_rec`: recepción por nuestro canal;
+- `t_sct`: aceptación que representa un SCT, solo en RFC 9162;
+- `t_sth`: marca del punto de control;
+- `t_consulta`: hora de consulta.
+
+**Hipótesis temporales** (`HIPOTESIS_TEMPORALES`): son requisitos de un **canal sintético**, no garantías de RFC 9162 para predicciones. Todas `sin_fijar`.
+- **H1:** recibo firmado que vincula el hash canónico con `t_rec` y promete la incorporación.
+- **H2:** compromiso verificable: todo punto de control con `t_sth ≥ t_rec + MMD` contiene la entrada con recibo; se audita con el recibo.
+- **H3:** coherencia de cada punto de control: contiene toda entrada incorporada en un instante `≤ t_sth` y ninguna posterior. No se puede fechar un punto reciente sobre una vista antigua incompleta.
+- **H4:** un punto servido tiene como máximo un MMD de antigüedad respecto de `t_consulta`.
+- **H5:** relojes con zona, resolución y una cota declarada y comprobable del error frente a UTC. **Una marca en formato UTC no prueba exactitud temporal.**
+
+**Efecto de la cota de reloj** (`RelojDeclarado`, `comparar_con_plazo`, `umbral_de_punto_de_control`). La incertidumbre `u` es la cota de error más la resolución.
+- **Frente al plazo:** `t_rec` queda `anterior_con_margen_de_reloj` solo si `t_rec + u < plazo`, y `posterior_con_margen_de_reloj` si `t_rec − u ≥ plazo`. En el resto de casos, incluido un intervalo que cruza el plazo, `no_concluyente_por_error_de_reloj`. Sin cota declarada, `cota_de_error_sin_declarar_pendiente`.
+- **Umbrales medidos:**
+  - bajo H1, H2, H3 y H5: `t_sth ≥ plazo + MMD + u`;
+  - con solo la hora de consulta y H4: `t_consulta ≥ plazo + 2·MMD + u`.
+- **Límite de completitud** (`LIMITE_DE_COMPLETITUD`): un punto de control reciente no acredita que el canal recibiera todas las entradas pertinentes. Solo cubre las que tienen recibo; un envío censurado sin recibo no aparece nunca.
+
+**Omisión declarada frente a ausencia inferida** (`REQUISITOS_DE_VIA`, `estado_hipotetico_de_via`):
+- **Vía 1, omisión declarada:** es una entrada positiva, pero excluir una predicción incompatible exige R0, R9, las ocho condiciones y una política ante vistas divididas.
+- **Vía 2, ausencia inferida:** exige además tratar los envíos sin recibo.
+- **La función solo evalúa escenarios hipotéticos de prueba** y nunca lee ni modifica los estados reales. Con todo supuesto fijado devuelve:
+  - vía 1: `hipotesis_completa_sin_evidencia_operativa_ni_resolucion_de_vistas_divididas`;
+  - vía 2: `hipotesis_completa_pendiente_de_envios_sin_recibo_y_vistas_divididas`.
+- Si falta cualquier requisito, `pendiente`. Ningún resultado afirma acreditación.
+
+**Modelos sintéticos**, que reutilizan AE-66 sin modificarlo:
+- `entradas_admisibles`: la verificación de firma se inyecta; el HMAC de las pruebas solo modela firmas (`MODELO_DE_FIRMA`).
+- `registrar_conflictos` y `aplicar_regla`: el registro se devuelve intacto.
+- `REGLAS_DE_DUPLICADOS_CANDIDATAS` (`primera_recibida`, `invalidar_objetivo`, `invalidar_protocolo`): ninguna elegida, `REGLA_DE_DUPLICADOS_ELEGIDA = None`.
+- `es_regla_admisible`: una regla solo puede recibir las entradas y el registro.
+- `ordenar_por_recepcion`.
+- Recibos y puntos de control sintéticos, con `punto_de_control_es_coherente` (H3) y `cumple_compromiso_de_incorporacion` (H2).
+
+**Archivos** (exactamente cinco):
+- nuevo `app/application/ml/especificacion_condiciones_del_protocolo.py`;
+- nuevo `tests/unit/ml/test_especificacion_condiciones_del_protocolo.py`;
+- README, ROADMAP y ARCHITECTURE: esta sección.
+
+No se modifica ningún otro módulo.
+
+**Pruebas** (`22` nuevas, sintéticas, por comportamiento observable):
+- **Registro, referencias y correspondencia:**
+  - ocho condiciones, R0 y R9 `sin_fijar`;
+  - referencias solo a AE-67, con RFC 9162 marcado `solo_certificados`;
+  - correspondencia con AE-66.
+- **Grafos:** aciclicidad y R0 como única raíz; autenticación de R0 pendiente; hipótesis como requisitos del canal sintético.
+- **Identidad:** verificador inyectado, con una clave desconocida, una revocada y una firma inválida.
+- **Conflictos y reglas:**
+  - reintento idéntico frente a contenidos incompatibles, incluidas una predicción y una omisión con la misma clave;
+  - el conflicto persiste tras invalidar el objetivo;
+  - la primera recibida se elige por `t_rec` y no por índice;
+  - las reglas candidatas no cambian con el resultado del sorteo;
+  - un contraejemplo que elige por puntuación queda excluido.
+- **Puntos de control:**
+  - un **punto de control fechado sobre una vista antigua incompleta** se detecta (H3 y H2);
+  - umbrales por marca y por consulta;
+  - un envío censurado sin recibo;
+  - una incorporación tardía que viola H2 solo se detecta con el recibo.
+- **Reloj:**
+  - **desfase cercano a la cota**: una marca un segundo antes del plazo, con el reloj adelantado 1,9 s dentro de una cota de 2 s, da `no_concluyente_por_error_de_reloj`;
+  - una marca en formato UTC sin cota queda pendiente.
+- **Vías:** evaluadas en escenarios hipotéticos, sin cambiar los estados reales.
+- **Estados, pureza y vocabulario:** estados y decisiones sin cambios; pureza comprobada con AST; vocabulario sin términos de aprobación ni autorización.
+- **Invariante:** huellas SHA-256 de los registros de AE-63 a AE-67 iguales a las de la base.
+
+**Regresiones primero.** Las 22 pruebas se escribieron antes del módulo. Sobre la base `828b887` dieron `21 failed, 1 passed` (código de pytest `1`): las 21 regresiones fallan por separado con `ModuleNotFoundError` y el invariante pasa. Durante la implementación, dos pruebas detectaron textos del módulo que no se ajustaban a lo especificado, y se corrigieron sin cambiar las pruebas:
+- la formulación de H3 («toda entrada incorporada en un instante `<=` t_sth y ninguna posterior»);
+- «canal elegido», que pasó a «canal que se designe».
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `22 passed` (código `0`).
+- **AE-60 a AE-68:** `208 passed` (código `0`).
+- **Focalizadas:** `926 + 22 = 948 passed` (código `0`).
+- **Suite completa:** `5171 + 22 = 5193 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- `pip check` y `git diff --check`: código `0`.
+
+**Límites:**
+- AE-68 especifica las condiciones y construye modelos sintéticos; **no** fija ninguna condición, R0 ni R9, y **no** acredita anterioridad, unicidad, ausencia, reloj ni calendario.
+- Los recibos, los puntos de control y el HMAC son analogías de prueba, no una implementación conforme a RFC 9162 ni un esquema real.
+- F1, F2, O3, N2 y U1 siguen pendientes. Todas las decisiones siguen sin valor. `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** repositorio `C:\GitHub\loteria-predictor-update`, rama `feature/ae68-especificacion-condiciones-del-protocolo`, base `828b887c6c36c99682532344fc9e68667e7e5177`; árbol limpio antes de aplicar.
+- **Parche:** el completo `ae68-especificacion-condiciones-del-protocolo.patch`, de `88 508` bytes y SHA-256 `0878d91817ca2e9a190762d9761720abde9beed435cad9b38d48e6b0f0dfd735`.
+- **Aplicación:** `git apply --check`, la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los cinco archivos previstos.
+- **Incidencia de validación, resuelta:** el entorno virtual anterior, guardado en una ruta temporal de AE-41, estaba incompleto y no podía ejecutar pytest. No es atribuible al parche. Se creó uno nuevo fuera del repositorio, en `%LOCALAPPDATA%\loteria-predictor-venvs\ae68`, instalando `backend\requirements.txt`.
+- **Pruebas de AE-68, en el entorno nuevo:** `22 passed in 0.40s`.
+- **AE-60 a AE-68:** `208 passed in 1.17s`.
+- **`pip check`:** `No broken requirements found`.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `948 passed` (focalizadas) y `5193 passed, 0 skipped` (suite completa) corresponden únicamente al sandbox Linux de Claude.
+
+**Límites de esta validación**: «validada» cubre solo **el expediente preparatorio de especificación de las condiciones del protocolo y sus pruebas**.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`.
+- Las funciones temporales modelan hipótesis de un canal sintético y **no** trasladan automáticamente las garantías de RFC 9162 a entradas de predicción.
+- **No** se elige mecanismo, esquema de firma ni regla.
+- F1, F2, O3, N2 y U1 siguen **pendientes**.
+- Todas las decisiones siguen sin valor. El expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-68 queda validada como expediente preparatorio de especificación de las condiciones del protocolo**; no equivale a fijar ninguna condición, elegir un mecanismo ni acreditar la aplicación operativa.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-67 sin cambios.
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)
