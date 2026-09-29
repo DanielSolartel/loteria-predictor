@@ -2726,6 +2726,165 @@ Con esta evidencia, **AE-70 queda validada como modelo preparatorio de vinculaci
 
 No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-69 sin cambios.
 
+**Etapa AE-71 -comparación verificable de las alternativas de declaración previa R0 y de la distinción «sin fijar / ausente / fijado», validada:** AE-69 dejó tres preguntas abiertas (ubicación de la declaración, representación de sus pendientes y regla de vínculo), y AE-70 registró cuatro topologías de vínculo. AE-71 **compara esas topologías sin elegir ninguna**, en el nuevo módulo puro `app/application/ml/analisis_alternativas_de_declaracion_previa.py`. También examina si la representación de AE-69 distingue de forma verificable «sin fijar», «ausente» y «fijado».
+
+**No se implementa** ninguna topología ni representación. **No se responden** las preguntas de AE-69. D1–D9 siguen `sin_decidir`, `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` siguen en `None`, y AE-52 y AE-63 a AE-70 no cambian.
+
+**Tres planos separados** (`SEPARACION_DE_PLANOS`):
+1. **Dependencia entre bytes:** un protocolo que contiene `H(D)` depende de los bytes de `D`, y lo comprueba un tercero que tenga ambos.
+2. **Evidencia temporal sobre esos bytes:** un sello o una recepción externa con reloj y margen. Está pendiente.
+3. **Fijación autenticada de R0:** pendiente.
+
+El primer plano no implica los otros dos:
+- **S5** (`SUPUESTOS_ADICIONALES_AE71`) es la resistencia a preimagen y a segunda preimagen de SHA-256, supuesta y no verificada. Solo sostiene que no es factible presentar después otra declaración distinta con el mismo hash designado. **No es prueba temporal.**
+- **Pasar a una cronología** exige H-a a H-d (`HIPOTESIS_PARA_CRONOLOGIA`), todas `pendiente`: sello o recepción externa previa al plazo, autenticación de la declaración, definición del plazo y del corte, y S5.
+
+**Fichas por topología** (`FICHAS_POR_TOPOLOGIA`). Para cada topología de AE-70 registran:
+- qué fijar antes del plazo;
+- qué bytes se verifican;
+- qué cambios de esquema y de pruebas exigiría;
+- qué comprueba un tercero y qué no queda demostrado;
+- la dependencia entre bytes;
+- cómo se identifica la regla;
+- la consecuencia de cambiar la declaración;
+- las decisiones pendientes.
+
+| | Nuevo esquema | `estrategia.parametros` | Inverso | Manifiesto (modelo sintético) |
+|---|---|---|---|---|
+| Dependencia entre bytes | el protocolo depende de la declaración, y la predicción del protocolo | igual | la declaración depende del protocolo; el protocolo **no** depende de la declaración | el manifiesto depende de ambos; el protocolo no depende de la declaración |
+| Identificación de la regla | la versión incluida en los bytes **puede** identificarla **si D4** fija la definición y su correspondencia; los bytes no contienen por sí solos toda la semántica | externa a los bytes (S3) | no aplica | dentro del manifiesto, sujeta a S4 |
+| Cambiar la declaración vinculada | otro protocolo, que AE-52 no admite en el mismo registro; hace falta otro registro | igual | el protocolo no cambia y las declaraciones coexisten | en el modelo sintético de AE-70, sin formato ni garantía operativa: otro manifiesto designa el hash nuevo según S4 |
+| Además no demuestra | — | ambigüedad de la regla | designación única; nada en los bytes impide construir la declaración después de las predicciones | lo mismo, trasladado al manifiesto |
+
+Todas las fichas dejan fuera de lo demostrado:
+- la **cronología**: cuándo existió, se publicó o se recibió la declaración;
+- la autenticación;
+- la unicidad del protocolo;
+- la suficiencia de los valores;
+- la completitud de las predicciones.
+
+`dependencia_de_bytes` siempre devuelve la marca `sin_cronologia_acreditada`.
+
+**Distinción de estados** (`DISTINCION_DE_ESTADOS`, `estado_verificable_de_elemento`):
+- **Sin fijar:** `{"estado": "pendiente"}`, explícito y hasheable.
+- **Ausente:** clave omitida; da `incompleta` y no se hashea.
+- **Declarado sintético:** `declarado_sintetico` con un valor sustantivo.
+- **Fijado:** **no es representable en los bytes sintéticos de AE-69**. Exige cuatro componentes (`COMPONENTES_DE_FIJADO`), todos `no_acreditado`:
+  - F-1, integridad y autenticación de la declaración;
+  - F-2, regla de vínculo;
+  - F-3, recepción previa al plazo con reloj, margen y canal;
+  - F-4, definición del corte y del plazo.
+
+La función nunca devuelve «fijado».
+
+**Lagunas observadas** (`LAGUNAS_DE_DISTINCION`; AE-71 no las corrige):
+- **L1:** un texto marcador dentro de `valor` («pendiente», «TBD») cuenta como declarado.
+- **L2:** AE-69 no tiene un estado para «fijado».
+- **L3:** AE-69 no comprueba la estructura interna de cada valor.
+
+**Decisiones del operador** (`DECISIONES_DEL_OPERADOR_AE71`, todas `sin_decidir`):
+- **D1:** topología.
+- **D2:** representación de pendientes.
+- **D3:** campo o ruta.
+- **D4:** definición del esquema o de la regla y su correspondencia con la versión.
+- **D5:** envoltorio para el vínculo inverso.
+- **D6:** manifiesto.
+- **D7:** pendientes al registrar.
+- **D8:** plazo frente a corte.
+- **D9:** rechazo de textos marcadores.
+
+`DEPENDENCIAS_QUE_IMPIDEN_IMPLEMENTAR`: toda topología requiere al menos D1, D2 y D7. Una etapa que implemente cualquiera de ellas requiere decisiones explícitas del operador.
+
+**Afirmaciones** (`CLASIFICACION_DE_AFIRMACIONES`, C1–C18), con procedencia exacta:
+- **Hechos observados en el código** (`@8137f93`, cada uno con su prueba G3): C1–C6.
+- **Hecho citado:** C7, AE-67 verificó RFC 9162 para certificados y precertificados.
+- **Derivaciones propias:** C8–C15. C14 se deriva de C7 **sin atribuirla al RFC**: no aporta una garantía aplicable a un manifiesto de predicciones, y no se afirma que ese uso sea imposible.
+- **Hipótesis de aplicación pendientes:** C16–C18.
+
+**Archivos** (exactamente cinco):
+- nuevo `app/application/ml/analisis_alternativas_de_declaracion_previa.py`;
+- nuevo `tests/unit/ml/test_analisis_alternativas_de_declaracion_previa.py`;
+- README, ROADMAP y ARCHITECTURE: esta sección.
+
+**Pruebas** (`27` sintéticas en tres grupos; el módulo nuevo se importa dentro de cada prueba de G1):
+- **G1 (`18`), dependen del módulo nuevo:**
+  - fichas y decisiones;
+  - límites de lo no demostrado;
+  - dependencia entre bytes sin cronología;
+  - S5 e hipótesis;
+  - componentes de «fijado»;
+  - estados verificables y el contraejemplo L1;
+  - regla externa;
+  - C15 por topología;
+  - C11;
+  - digest sin bytes coincidentes;
+  - vocabulario de resultados;
+  - C7 separado de C14;
+  - clasificación;
+  - pureza por AST y textos.
+- **G2 (`2`), invariantes:**
+  - huellas de AE-52 y de AE-63 a AE-69 sin cambios;
+  - huella de AE-70 calculada en la base (`23c62200…648350`);
+  - estados, decisiones y bloqueos.
+- **G3 (`7`), integraciones contra la API pública de AE-52, AE-69 y AE-70:** C1–C6 y la premisa de C15. Comprueban que AE-52 rechaza un segundo protocolo en el mismo registro y que un registro distinto admite el protocolo nuevo.
+
+**Pruebas primero, sobre la base `8137f93`.** Antes de escribir el módulo se ejecutaron los tres grupos. El resultado fue `18 failed, 9 passed`, con código de pytest `1`:
+- **G1:** las `18` fallan por separado, **todas** con `ModuleNotFoundError: No module named 'app.application.ml.analisis_alternativas_de_declaracion_previa'`.
+- **G2 (`2`) y G3 (`7`):** pasan. G3 confirma en AE-52 real la premisa de C15: un segundo protocolo en el mismo registro se rechaza y un registro distinto admite el protocolo nuevo.
+
+Durante la implementación, tres pruebas de G1 fallaron y se corrigieron:
+- **Texto del módulo:** S5 decía «No es prueba temporal» con mayúscula; se ajustó el texto del módulo, no la prueba.
+- **Montaje de dos pruebas:**
+  - la comprobación de resultados no excluía los marcadores negados (`sin_…`, `no_…`);
+  - la de vocabulario no quitaba los identificadores fijos `sin_cronologia_acreditada` y «fijacion autenticada», como AE-68 hacía con `identidad_autorizada`.
+
+Con el archivo de pruebas final se repitió la comprobación sobre una copia limpia de la base sin el módulo. El resultado volvió a ser `18 failed` (todas `ModuleNotFoundError`) y `9 passed`, con código `1`.
+
+Las huellas de AE-52 y de AE-63 a AE-70 se calcularon en la base antes de implementar y se fijaron como literales en G2.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `27 passed` (código `0`).
+- **AE-60 a AE-71:** `298 passed` (código `0`).
+- **Focalizadas:** `1011 + 27 = 1038 passed` (código `0`).
+- **Suite completa:** `5256 + 27 = 5283 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- **`pip check` y `git diff --check`:** código `0`.
+
+**Límites:**
+- AE-71 compara alternativas y modela. **No** elige topología, representación, campo ni mecanismo, y **no** implementa ninguna.
+- Una dependencia entre bytes, S5 o un hash **no** son prueba temporal, y **no** acreditan autenticación, suficiencia ni completitud.
+- «Fijado» exige F-1 a F-4, ninguno disponible.
+- RFC 9162 conserva el alcance de certificados y precertificados.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`; las tres preguntas de AE-69 siguen abiertas; F1, F2, O3, N2 y U1 siguen pendientes.
+- Todas las decisiones siguen sin valor. `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** rama `feature/ae71-analisis-alternativas-de-declaracion-previa`; base y HEAD `8137f937b4851b0c671756fce231fe13a3479450`.
+- **Parche:** el completo `ae71-analisis-alternativas-de-declaracion-previa.patch`, SHA-256 `5c44463a7511f246dad1831f5042763ea27bbcd26c384999cf17c8271d9af964`, con el hash comprobado.
+- **Aplicación:** la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los cinco archivos previstos.
+- **Pruebas de AE-71:** `27 passed in 0.30s`.
+- **AE-60 a AE-71:** `298 passed in 1.51s`.
+- **`pip check`:** `No broken requirements found`.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `1038 passed` (focalizadas) y `5283 passed, 0 skipped`, con los cinco avisos conocidos de Alembic (suite completa), corresponden únicamente al sandbox Linux de Claude y no se repitieron para este cierre.
+
+**Límites de esta validación**: «validada» cubre solo **el análisis preparatorio de alternativas y sus pruebas**.
+- La dependencia entre bytes y S5 **no** acreditan cronología. H-a a H-d siguen pendientes, y ninguno de los cuatro componentes F-1 a F-4 está acreditado.
+- «Fijado» **no** se obtiene de la declaración sintética de AE-69.
+- El segundo manifiesto es solo un contraejemplo del modelo sintético; no se ha adoptado formato ni garantía operativa.
+- D1–D9 siguen `sin_decidir`, y las tres preguntas de AE-69 siguen abiertas. `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` siguen en `None`.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- RFC 9162 conserva el alcance de certificados y precertificados registrado en AE-67.
+- No se elige ni autoriza inferencia o evaluación. Todas las decisiones siguen sin valor, y el expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-71 queda validada como análisis preparatorio de alternativas y sus pruebas**; no equivale a elegir topología, representación, campo ni mecanismo, ni a fijar, fechar o autenticar R0.
+
+No se usaron datos reales, PostgreSQL, entrenamiento ni predicciones reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-70 sin cambios.
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)
