@@ -4131,6 +4131,187 @@ Con esta evidencia, **AE-73 queda validada solo como extensión optativa y sint�
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-72 sin cambios.
 
+## Contrato de vinculación R0 elegido por el operador (versión 1.2 de AE-52) -Etapa AE-74, validada
+
+**Etapa AE-74 -contrato de vinculación R0 elegido por el operador (versión 1.2 de AE-52), validada:** AE-72 y AE-73 compararon dos rutas sintéticas candidatas. En AE-74 el operador eligió y aprobó un contrato versionado y verificable, con puertas de admisión claras. **No habilita inferencia ni evaluación.**
+
+**Decisiones del operador** (`DECISIONES_DEL_CONTRATO` en `app/application/ml/contrato_vinculo_r0.py`):
+- **D1, aprobada:** el campo explícito versionado es la **única ruta admitida por el contrato**. El contrato y su regla quedan en los bytes del protocolo con la versión `registro-prospectivo-ml/1.2`, para que un contrato posterior no reinterprete protocolos anteriores.
+  - 1.0, la ruta de AE-72 y 1.1 no cambian de bytes ni de comportamiento. Sus verificadores siguen disponibles, pero el contrato no las admite.
+  - D3 (campo `declaracion_r0`) y D4 (regla `ae74-vinculo-r0-contrato/1`) quedan decididas **solo para esta ruta**.
+  - D5 y D6 son inaplicables a esta ruta, sin declararlas resueltas en general.
+- **D2, aprobada:** estados explícitos por elemento en la declaración y lista ordenada y única de identificadores pendientes en el vínculo, comprobada contra la declaración.
+- **D7, aprobada:** pendientes solo en borradores sintéticos. Un registro con pendientes nunca alcanza R0 final; completarlos exige otro protocolo y otro registro.
+- **D9, espera provisional aprobada:** un texto marcador como «TBD» deja la completitud en `marcadores_textuales_sin_resolver`. No rechaza el borrador ni cuenta como valor suficiente, y la política definitiva de rechazo sigue sin decidir.
+- **Siguen sin decidir:** D8, y D1–D9 en el registro general de AE-71, que no cambia.
+
+**Versión 1.2 en AE-52** (`registro_prospectivo.py`):
+- `ESQUEMA_ENTRADA_PROTOCOLO_CONTRATO_R0`, `CONTRATO_VINCULO_R0`, `REGLA_VINCULO_R0_CONTRATO` y `construir_protocolo_con_contrato_r0`.
+- El campo `declaracion_r0` tiene exactamente `contrato`, `regla`, `esquema_declaracion`, `hash_declaracion` y `pendientes`.
+- **Solo sintética.** Las predicciones y los resultados siguen en 1.0.
+- **Rechazos:** usan `VinculoR0InvalidoError`, con motivos propios en `MOTIVOS_VINCULO_R0_CONTRATO`:
+  - `vinculo_ausente_en_esquema_1_2`, `contrato_desconocido`, `regla_desconocida`, `claves_del_vinculo_distintas`;
+  - `hash_mal_formado`, `pendientes_mal_formados`, `vinculo_solo_sintetico`, `doble_vinculo`, entre otros.
+- **Constantes sin cambios:** 1.0 y 1.1 conservan `ESQUEMAS_PROTOCOLO` y `MOTIVOS_VINCULO_R0`.
+
+**Puertas de admisión** (`evaluar_admision`). Son cuatro puertas **independientes**, no una escalera. Cada una devuelve estado (`superada`, `pendiente`, `rechazada` o `no_evaluable`) y motivos:
+1. **`borrador_sintetico`:** registro 1.2 que AE-52 admite. Se rechaza con un motivo preciso cuando la ruta no está admitida (`ruta_ae72_no_admitida`, `ruta_1_1_no_admitida`, `sin_vinculo_r0`) o el registro no es válido (motivo de AE-52 o `registro_invalido`).
+2. **`vinculo_integro`:** integridad de bytes entre el protocolo, la declaración y las predicciones. Se evalúa **aunque haya pendientes**. Motivos: `protocolo_hash_no_coincide`, `declaracion_ausente` (pendiente), `declaracion_invalida`, `hash_de_declaracion_no_coincide`, `pendientes_contradictorios` y `prediccion_omitida`.
+3. **`declaracion_estructuralmente_completa`:** sin pendientes ni marcadores (`elementos_pendientes`, `marcadores_textuales_sin_resolver`). Solo se evalúa sobre la declaración designada (`declaracion_no_designada`).
+4. **`r0_final`:** **no tiene entrada de evidencia y no puede superarse** con lo que existe. Siempre incluye `sin_evidencia_de_autenticacion_de_r0`, `sin_evidencia_de_recepcion_antes_del_plazo` y `sin_evidencia_de_completitud_y_unicidad_del_canal`, y además `protocolo_sintetico`, `registro_con_pendientes`, `vinculo_no_integro` o `declaracion_incompleta` según el caso.
+
+**Cinco planos separados** en cada informe:
+
+| Plano | Estado |
+|---|---|
+| integridad de bytes | estado de la puerta 2 |
+| autenticación de R0 | `sin_evidencia` |
+| recepción antes del plazo | `sin_evidencia` |
+| completitud y unicidad del canal | `sin_evidencia` |
+| aptitud inferencial | `no_autorizada` |
+
+Un hash coincidente, una lista vacía de pendientes o las pruebas sintéticas no elevan nada a autenticado, recibido antes del plazo, fijado ni apto para evaluación.
+
+**Transiciones** (`TRANSICIONES`):
+- de borrador con pendientes o con marcadores a declaración completa: **solo con otro protocolo y otro registro**;
+- de la ruta de AE-72 o de 1.1 al contrato 1.2: **solo con otro protocolo y otro registro**;
+- de cualquier estado a R0 final: **prohibida**, o **prohibida sin evidencia** desde una declaración completa.
+
+**Demostración reproducible** (`demostrar_estados(sinteticos.historico(2081, 2713))`, salida real):
+
+| escenario | ruta | borrador_sintetico | vinculo_integro | declaracion_estructuralmente_completa | r0_final |
+|---|---|---|---|---|---|
+| `declaracion_completa` | `contrato_1_2` | superada | superada | superada | rechazada (protocolo_sintetico + 3 sin_evidencia) |
+| `borrador_con_pendientes` | `contrato_1_2` | superada | superada | pendiente (elementos_pendientes) | rechazada (protocolo_sintetico, registro_con_pendientes, declaracion_incompleta + 3 sin_evidencia) |
+| `marcadores_textuales` | `contrato_1_2` | superada | superada | pendiente (marcadores_textuales_sin_resolver) | rechazada (protocolo_sintetico, declaracion_incompleta + 3 sin_evidencia) |
+| `declaracion_ausente` | `contrato_1_2` | superada | pendiente (declaracion_ausente) | no_evaluable (declaracion_ausente) | rechazada (protocolo_sintetico, vinculo_no_integro, declaracion_incompleta + 3 sin_evidencia) |
+| `declaracion_cambiada` | `contrato_1_2` | superada | rechazada (hash_de_declaracion_no_coincide) | no_evaluable (declaracion_no_designada) | rechazada (protocolo_sintetico, vinculo_no_integro, declaracion_incompleta + 3 sin_evidencia) |
+| `pendientes_contradictorios` | `contrato_1_2` | superada | rechazada (pendientes_contradictorios) | pendiente (elementos_pendientes) | rechazada (protocolo_sintetico, vinculo_no_integro, declaracion_incompleta + 3 sin_evidencia) |
+| `prediccion_omitida` | `contrato_1_2` | superada | rechazada (prediccion_omitida) | superada | rechazada (protocolo_sintetico, vinculo_no_integro + 3 sin_evidencia) |
+| `protocolo_hash_equivocado` | `contrato_1_2` | superada | rechazada (protocolo_hash_no_coincide) | superada | rechazada (protocolo_sintetico, vinculo_no_integro + 3 sin_evidencia) |
+| `prediccion_con_protocolo_equivocado` | `registro_invalido` | rechazada (registro_invalido) | no_evaluable (registro_no_admitido) | no_evaluable (registro_no_admitido) | rechazada (registro_no_admitido + 3 sin_evidencia) |
+| `ruta_ae72` | `ruta_ae72_no_admitida` | rechazada (ruta_ae72_no_admitida) | no_evaluable (ruta_no_admitida) | no_evaluable (ruta_no_admitida) | rechazada (ruta_no_admitida + 3 sin_evidencia) |
+| `ruta_1_1` | `ruta_1_1_no_admitida` | rechazada (ruta_1_1_no_admitida) | no_evaluable (ruta_no_admitida) | no_evaluable (ruta_no_admitida) | rechazada (ruta_no_admitida + 3 sin_evidencia) |
+| `sin_vinculo_1_0` | `sin_vinculo_r0` | rechazada (sin_vinculo_r0) | no_evaluable (ruta_no_admitida) | no_evaluable (ruta_no_admitida) | rechazada (ruta_no_admitida + 3 sin_evidencia) |
+| `vinculo_doble` | `registro_invalido` | rechazada (doble_vinculo) | no_evaluable (registro_no_admitido) | no_evaluable (registro_no_admitido) | rechazada (registro_no_admitido + 3 sin_evidencia) |
+| `migracion_parcial_1_1_con_contrato` | `registro_invalido` | rechazada (claves_del_vinculo_distintas) | no_evaluable (registro_no_admitido) | no_evaluable (registro_no_admitido) | rechazada (registro_no_admitido + 3 sin_evidencia) |
+| `migracion_parcial_1_2_sin_campo` | `registro_invalido` | rechazada (vinculo_ausente_en_esquema_1_2) | no_evaluable (registro_no_admitido) | no_evaluable (registro_no_admitido) | rechazada (registro_no_admitido + 3 sin_evidencia) |
+| `version_desconocida` | `registro_invalido` | rechazada (registro_invalido) | no_evaluable (registro_no_admitido) | no_evaluable (registro_no_admitido) | rechazada (registro_no_admitido + 3 sin_evidencia) |
+
+**Rutas compatibles** (`RUTAS_COMPATIBLES`):
+- 1.0, AE-72 y 1.1 conservan bytes, hashes, validación y verificadores. Las pruebas comprueban con valores literales de la base los hashes de un protocolo y una predicción 1.0, del borrador real y de un protocolo y una predicción 1.1.
+- Solo 1.2 es admitida por el contrato.
+- El verificador de AE-73 no conoce 1.2 y la informa como `protocolo_sin_vinculo_r0`; para 1.2 se usa `evaluar_admision`.
+- Una prueba de AE-73 usaba `registro-prospectivo-ml/1.2` como ejemplo de versión desconocida. Al existir ahora 1.2, usa `1.9` con la misma intención; es la única línea cambiada en archivos de etapas anteriores.
+
+**Requisitos aún faltantes para uso operativo** (`REQUISITOS_FALTANTES`):
+- autenticación de R0 (firma o custodia verificable);
+- recepción antes del plazo (sello o recepción externa con reloj y margen, y D8);
+- completitud y unicidad del canal;
+- un protocolo real: 1.2 solo admite sintéticos y el protocolo real de AE-52 sigue siendo borrador;
+- la política de rechazo de D9;
+- la autorización de evaluación.
+
+**Archivos** (siete):
+- modificado `app/application/ml/registro_prospectivo.py`;
+- nuevo `app/application/ml/contrato_vinculo_r0.py`;
+- nuevo `tests/unit/ml/test_contrato_vinculo_r0.py`;
+- una línea en `tests/unit/ml/test_vinculo_r0_campo_explicito.py` (ejemplo de versión desconocida);
+- esta sección, y referencias breves en README y ROADMAP.
+
+**Pruebas** (`41` sintéticas en cuatro grupos):
+- **G1a (`13` casos): versión 1.2 de AE-52.**
+  - constantes;
+  - constructor y convivencia con 1.0 y 1.1;
+  - diez motivos;
+  - migraciones parciales y versiones desconocidas.
+- **G1b (`22`): contrato.**
+  - decisiones;
+  - vínculo;
+  - recorrido completo;
+  - borrador con pendientes y vínculo íntegro;
+  - marcadores en espera;
+  - R0 final imposible;
+  - planos;
+  - rutas no admitidas;
+  - vínculo doble y migraciones parciales;
+  - versión desconocida y predicción ligada a otro protocolo;
+  - cambios de declaración y pendientes contradictorios;
+  - transiciones;
+  - propagación;
+  - demostración;
+  - requisitos;
+  - pureza y vocabulario.
+- **G2 (`3`): invariantes.**
+  - huellas de AE-52 y de AE-63 a AE-72;
+  - huella de AE-73 calculada en la base (`0ab953f9…a54d`);
+  - bytes y hashes literales de 1.0 y 1.1;
+  - estados y bloqueos.
+- **G3 (`3`): premisas.**
+  - recorridos de AE-72 y AE-73;
+  - rechazos de AE-52;
+  - estados por elemento de AE-72.
+
+**Pruebas primero, sobre la base `9a6740e`.** Antes de cambiar AE-52 y de escribir el módulo se ejecutaron los cuatro grupos. El resultado fue `35 failed, 6 passed`, con código de pytest `1`:
+- **G1a:** los `13` casos fallan con `AttributeError`, porque los nombres de la versión 1.2 no existen.
+- **G1b:** los `22` fallan con `ModuleNotFoundError: No module named 'app.application.ml.contrato_vinculo_r0'`.
+- **G2 (`3`) y G3 (`3`):** pasan, incluidos los bytes y hashes literales de 1.0 y 1.1.
+
+Con el archivo de pruebas final se repitió la comprobación sobre una copia limpia de la base, con el mismo resultado.
+
+**Correcciones durante la implementación:**
+- **Prueba de AE-73:** fallaba porque usaba 1.2 como versión desconocida. Se cambió su ejemplo a 1.9.
+- **Prueba nueva de transiciones:** un segundo protocolo 1.2 en el mismo registro se rechaza primero por su esquema («esquema desconocido»), antes que por la regla del segundo protocolo. La prueba acepta ambos mensajes de rechazo.
+- **Textos del módulo:** dos textos usaban palabras excluidas por la prueba de vocabulario («autenticado» y «NO-GO»). Se cambió el texto, no la prueba.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `41 passed` (código `0`).
+- **AE-52:** `110 passed` (código `0`).
+- **AE-60 a AE-74:** `425 passed` (código `0`).
+- **Focalizadas:** `1124 + 41 = 1165 passed` (código `0`).
+- **Suite completa:** `5369 + 41 = 5410 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- **`pip check` y `git diff --check`:** código `0`.
+
+**Límites:**
+- R0, R9 y las ocho condiciones siguen `sin_fijar`, y las tres preguntas de AE-69 siguen abiertas en su registro.
+- F1, F2, O3, N2 y U1 siguen pendientes.
+- `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+- Lo verificado de RFC 9162 cubre certificados y precertificados y no se atribuye a entradas de predicción.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** rama `feature/ae74-contrato-vinculo-r0`; HEAD y base `9a6740e6a16c99d5ee36507923eea3fde0ec4ce7`.
+- **Parche:** el completo `ae74-contrato-vinculo-r0.patch`, SHA-256 `464a0c79451d40a50ef4ecbf77243c32afe0d4ef79f7b314280a6a9c98205d16`, con el hash comprobado.
+- **Aplicación:** la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los siete archivos esperados.
+- **Pruebas de AE-74:** `41 passed in 0.51s`.
+- **Pruebas propias de AE-52:** `110 passed in 4.89s`.
+- **AE-60 a AE-74:** `425 passed in 1.63s`.
+- **`pip check`:** `No broken requirements found`.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `1165 passed` (focalizadas) y `5410 passed, 0 skipped`, con los cinco avisos conocidos de Alembic (suite completa), corresponden solo al sandbox Linux de Claude y no se repitieron para este cierre.
+
+**Límites de esta validación**: «validada» cubre solo **el contrato versionado sintético, sus puertas de admisión y sus pruebas**.
+- **Solo sintético:** la versión 1.2 solo admite protocolos sintéticos.
+- **Decisiones:**
+  - D1, D2 y D7 están decididas para el contrato aprobado;
+  - D3 y D4, solo para esa ruta;
+  - D5 y D6 son inaplicables en ella;
+  - D8 sigue abierta, y D9 solo tiene la regla provisional de espera para marcadores textuales.
+- **Puertas independientes:** un borrador puede tener un vínculo íntegro y elementos pendientes a la vez.
+- **`r0_final`:** no puede superar la puerta con la evidencia actual, ni siquiera cuando la declaración es estructuralmente completa.
+- **Integridad de bytes:** **no** acredita autenticación, anterioridad, completitud o unicidad del canal ni aptitud inferencial.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-74 queda validada solo como contrato versionado sintético, con sus puertas de admisión y sus pruebas**; no equivale a fijar ni autenticar R0, a superar la puerta de R0 final ni a autorizar evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos, firmas, relojes ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-73 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas
