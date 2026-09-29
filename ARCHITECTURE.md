@@ -3954,6 +3954,183 @@ Con esta evidencia, **AE-72 queda validada solo como prototipo sintético optati
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-71 sin cambios.
 
+## Campo explícito y versionado para vincular la declaración R0 en el protocolo de AE-52 -Etapa AE-73, validada
+
+**Etapa AE-73 -campo explícito y versionado para vincular la declaración R0 en el protocolo de AE-52, validada:** AE-72 vinculó la declaración R0 sintética con el protocolo mediante una clave reservada de `estrategia.parametros`. AE-73 añade a AE-52 una **alternativa optativa y versionada** que no usa ese campo. Ambas rutas son **candidatas**:
+- D1–D9 siguen `sin_decidir`, y `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` siguen en `None`;
+- las decisiones que corresponden al operador, en especial D1 (topología), D2 (representación de pendientes) y D7 (admisión de pendientes al registrar), están marcadas como `destacada` en `DECISIONES_REQUERIDAS`.
+
+**Cambio en AE-52** (`app/application/ml/registro_prospectivo.py`):
+- **Versión optativa `registro-prospectivo-ml/1.1`, solo para la entrada `protocolo`** (`ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0`, `ESQUEMAS_PROTOCOLO`).
+  - Añade el campo propio `declaracion_r0` con exactamente estas claves:
+    - `regla`: `ae73-vinculo-r0-campo-explicito/1`;
+    - `esquema_declaracion`: `declaracion-r0-sintetica/1`, el de AE-72;
+    - `hash_declaracion`: SHA-256 en minúsculas;
+    - `pendientes`: lista ordenada y sin repetir de identificadores de elementos pendientes explícitos.
+  - Las predicciones y los resultados siguen en `1.0`.
+- **Construcción:** `construir_protocolo_con_vinculo_r0` produce la versión 1.1. `construir_protocolo` sigue produciendo 1.0 igual que antes; ambos usan ahora un auxiliar interno común.
+- **Validación estricta.** Cada vínculo mal formado lanza `VinculoR0InvalidoError`, una subclase de `EntradaRegistroInvalidaError` con el mismo código de salida, y un `motivo` distinguible (`MOTIVOS_VINCULO_R0`):
+
+  | `motivo` | Qué lo provoca |
+  |---|---|
+  | `vinculo_ausente_en_esquema_1_1` | versión 1.1 sin el campo |
+  | `vinculo_en_esquema_1_0` | versión 1.0 con el campo, es decir, un protocolo a medio migrar |
+  | `vinculo_no_es_objeto` | el campo no es un objeto |
+  | `claves_del_vinculo_distintas` | claves de más o de menos |
+  | `regla_desconocida` | otra regla o un tipo inválido |
+  | `esquema_de_declaracion_desconocido` | otro esquema de declaración |
+  | `hash_mal_formado` | el hash no es SHA-256 en minúsculas |
+  | `pendientes_mal_formados` | lista desordenada, repetida, con tipos o identificadores inválidos |
+  | `vinculo_solo_sintetico` | el protocolo no es sintético |
+  | `doble_vinculo` | también lleva la clave de AE-72 en `parametros` |
+
+  Una versión desconocida sigue dando el `EntradaRegistroInvalidaError` genérico «esquema desconocido». Un hash válido **no** equivale a una declaración autenticada.
+
+**Módulo nuevo** `app/application/ml/vinculo_r0_campo_explicito.py`:
+- `construir_vinculo_r0(declaracion)` y `construir_protocolo_con_campo_explicito(...)`: el protocolo es siempre sintético.
+- `ruta_del_protocolo`: devuelve `ae72_parametros`, `ae73_campo_explicito` o `None`.
+- `verificar_vinculo_r0(entradas, bytes_declaracion, ...)`: detecta la ruta. La de AE-72 se delega en su verificador sin cambios.
+- **Estados de la ruta 1.1** (con `motivo_de_registro` cuando AE-52 rechaza el vínculo):
+  - `vinculo_de_bytes_verificado`;
+  - `registro_invalido`;
+  - `protocolo_hash_no_coincide`;
+  - `regla_distinta`;
+  - `declaracion_ausente`;
+  - `declaracion_invalida`;
+  - `hash_de_declaracion_no_coincide`;
+  - `pendientes_no_coinciden`;
+  - `prediccion_omitida`;
+  - `protocolo_sin_vinculo_r0` para un registro sin vínculo.
+- `equivalencia_de_designacion(a, b)`: indica si dos registros designan el mismo hash de declaración y si comparten protocolo.
+
+**Cinco planos separados** (en el informe y aquí):
+
+| Plano | Estado |
+|---|---|
+| integridad de bytes | lo único que se comprueba |
+| autenticación de R0 | `sin_evidencia` |
+| recepción anterior al plazo | `sin_evidencia` |
+| completitud y unicidad del canal | `sin_evidencia` |
+| aptitud inferencial | `no_autorizada` mientras `AUTORIZA_EVALUACION = False` |
+
+Un elemento pendiente se informa como `sin_fijar_explicito` y un texto marcador como `declarado_con_marcador_textual`; **ninguno aparece como valor fijado**. `falta` enumera lo que sigue faltando.
+
+**Comparación verificable de las rutas** (`COMPARACION_DE_RUTAS`; cada fila está respaldada por una prueba):
+
+| Criterio | AE-72 (`parametros`) | AE-73 (campo explícito) |
+|---|---|---|
+| Cambio en AE-52 | ninguno | versión optativa 1.1 y su validación |
+| Semántica | reinterpreta un parámetro de la estrategia | campo propio |
+| AE-52 rechaza vínculos mal formados | no (solo el verificador de AE-72 lo detecta) | sí, con `motivo` |
+| Pendientes en el protocolo | no | sí, y se comprueban contra la declaración |
+| Rechaza doble vínculo | no | sí |
+| Solo sintético | lo impone el constructor | lo impone la validación de AE-52 |
+| Registros 1.0 | intactos | intactos: bytes y hashes literales comprobados |
+
+**Migración** (`REQUISITOS_DE_MIGRACION`; **no ejecutada**, `MIGRACION_EJECUTADA = False`):
+1. Decidir D1 y, en su caso, D2, D4 y D7.
+2. Construir un protocolo nuevo en la ruta de destino con la misma declaración. Su hash cambia y AE-52 no admite un segundo protocolo en el registro, así que hace falta **otro registro**.
+3. Aceptar que las predicciones anteriores no se trasladan.
+4. Comprobar la designación con `equivalencia_de_designacion`.
+5. Tener en cuenta que levantar la restricción a protocolos sintéticos exigiría otra decisión y otra etapa validada.
+
+**Compatibilidad** (`COMPATIBILIDAD`):
+- Los protocolos 1.0, las predicciones y los resultados no cambian. Un protocolo sintético 1.0, una de sus predicciones y el borrador real conservan los mismos hashes que en la base.
+- Las 110 pruebas propias de AE-52 y las de AE-72 siguen pasando.
+- AE-72 conserva su huella.
+- `resumir_registro` funciona con registros 1.1.
+
+**Archivos** (seis):
+- modificado `app/application/ml/registro_prospectivo.py`: versión 1.1, validación del vínculo y un párrafo en su docstring, sin cambiar sus constantes anteriores;
+- nuevo `app/application/ml/vinculo_r0_campo_explicito.py`;
+- nuevo `tests/unit/ml/test_vinculo_r0_campo_explicito.py`;
+- esta sección, y referencias breves en README y ROADMAP.
+
+**Pruebas** (`52` sintéticas en cuatro grupos):
+- **G1a (`23` casos): extensión de AE-52.**
+  - constantes;
+  - constructor 1.1 y convivencia con 1.0;
+  - los diez motivos;
+  - pendientes y tipos estrictos;
+  - versión desconocida y entradas posteriores 1.1.
+- **G1b (`22` casos): módulo nuevo.**
+  - recorrido de extremo a extremo por ambas rutas;
+  - declaración ausente, inválida o alterada;
+  - regla u hash de protocolo equivocados;
+  - predicción con protocolo distinto;
+  - completar un pendiente después, que exige otro protocolo y otro registro;
+  - pendientes que no coinciden;
+  - vínculo mal formado según la ruta;
+  - coexistencia de registros 1.0, AE-72 y 1.1;
+  - propagación de un cambio de elemento a los bytes, los hashes y la predicción;
+  - omisión;
+  - pendientes y marcadores;
+  - cinco planos;
+  - comparación;
+  - migración no ejecutada;
+  - decisiones;
+  - pureza por AST y vocabulario.
+- **G2 (`3`): invariantes.**
+  - huellas de AE-52 y de AE-63 a AE-71 sin cambios;
+  - huella de AE-72 calculada en la base (`f5dad072…157926`);
+  - hashes literales de registros 1.0;
+  - estados y bloqueos.
+- **G3 (`4`): premisas sobre código existente.**
+  - recorrido completo de AE-72;
+  - AE-52 1.0 rechaza claves de más y versiones desconocidas;
+  - las predicciones siguen en 1.0 y AE-52 rechaza un segundo protocolo;
+  - AE-52 acepta un vínculo mal formado dentro de `parametros`.
+
+**Pruebas primero, sobre la base `46815bf`.** Antes de cambiar AE-52 y de escribir el módulo se ejecutaron los cuatro grupos. El resultado fue `45 failed, 7 passed`, con código de pytest `1`:
+- **G1a:** los `23` casos fallan con `AttributeError`, porque los nombres nuevos no existen en `registro_prospectivo`.
+- **G1b:** los `22` fallan con `ModuleNotFoundError: No module named 'app.application.ml.vinculo_r0_campo_explicito'`.
+- **G2 (`3`) y G3 (`4`):** pasan, incluido el recorrido completo de AE-72.
+
+Con el archivo de pruebas final se repitió la comprobación sobre una copia limpia de la base, con el mismo resultado. Las huellas y los hashes literales de registros 1.0 se calcularon en la base antes de implementar.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, sin datos reales), en una única corrida:
+- **Nuevas:** `52 passed` (código `0`).
+- **AE-52** (`test_registro_prospectivo.py` y `test_registro_prospectivo_ml_script.py`): `110 passed` (código `0`).
+- **AE-60 a AE-73:** `384 passed` (código `0`).
+- **Focalizadas:** `1072 + 52 = 1124 passed` (código `0`).
+- **Suite completa:** `5317 + 52 = 5369 passed`, `0 skipped`, código `0`, con los cinco `DeprecationWarning` conocidos de Alembic.
+- **`pip check` y `git diff --check`:** código `0`.
+
+**Límites:**
+- AE-73 no elige ruta, representación ni regla, no ejecuta migraciones y no fija ni autentica R0.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`, y las tres preguntas de AE-69 siguen abiertas.
+- F1, F2, O3, N2 y U1 siguen pendientes.
+- `ESTADO_EXPEDIENTE` sigue en `expediente_sin_eleccion`.
+- Lo verificado de RFC 9162 cubre certificados y precertificados y no se atribuye a entradas de predicción.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** rama `feature/ae73-vinculo-r0-campo-explicito`; HEAD y base `46815bfdb18cc7cf4c5dd8560bbde1ec074e3cc4`.
+- **Parche:** el completo `ae73-vinculo-r0-campo-explicito.patch`, SHA-256 `3a42f3b77f20e734a7dc80d44928e0ccfeebe90f75641af92d6542c66b8b1b28`, con el hash comprobado.
+- **Aplicación:** la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los seis archivos esperados.
+- **Pruebas de AE-73:** `52 passed in 0.51s`.
+- **Pruebas propias de AE-52:** `110 passed in 12.06s`.
+- **AE-60 a AE-73:** `384 passed in 1.41s`.
+- **`pip check`:** `No broken requirements found`.
+
+**En Windows no se ejecutaron las focalizadas ni la suite completa.** Las cifras `1124 passed` (focalizadas) y `5369 passed, 0 skipped`, con los cinco avisos conocidos de Alembic (suite completa), corresponden exclusivamente al sandbox Linux de Claude y no se repitieron para este cierre.
+
+**Límites de esta validación**: «validada» cubre solo **la extensión optativa y sintética del esquema (versión 1.1), su verificador y sus pruebas**.
+- La versión 1.1 es optativa y solo sintética. D1–D9 siguen `sin_decidir`, y `TOPOLOGIA_ELEGIDA` y `REPRESENTACION_ELEGIDA` de AE-70 siguen en `None`.
+- No se ejecutó ninguna migración (`MIGRACION_EJECUTADA = False`).
+- R0 no está autenticada ni fijada. La integridad de bytes **no** acredita anterioridad, completitud o unicidad del canal ni aptitud inferencial.
+- R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- Lo verificado de RFC 9162 cubre certificados y precertificados y no se atribuye a entradas de predicción.
+- Todas las decisiones siguen sin valor. El expediente sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-73 queda validada solo como extensión optativa y sintética del esquema, su verificador y sus pruebas**; no equivale a elegir una ruta, migrar registros, fijar o autenticar R0 ni autorizar evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-72 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas

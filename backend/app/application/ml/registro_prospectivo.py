@@ -27,6 +27,13 @@ tenga otra detras, pero no acredita la fecha. Esa anterioridad exige
 un sellado temporal externo (ver `ALCANCE_REGISTRO` y la documentacion
 de AE-52).
 
+Version optativa de la entrada `protocolo` (AE-73): el esquema
+`registro-prospectivo-ml/1.1` anade el campo `declaracion_r0`, que vincula
+por hash una declaracion R0 sintetica con una regla versionada. Solo se
+admite en protocolos sinteticos y no autentica ni fecha la declaracion. Los
+protocolos 1.0, las predicciones y los resultados no cambian (siguen en
+1.0), y `construir_protocolo` sigue produciendo 1.0.
+
 Este modulo no genera predicciones, no entrena ni carga modelos, no
 evalua resultados y no modifica el NO-GO de AE-39 ni los bloqueos de
 AE-40 a AE-46. Es puro: sin reloj, sin azar, sin archivos ni base de
@@ -101,6 +108,23 @@ ALCANCE_REGISTRO = (
     "AE-39 sigue vigente."
 )
 
+# Vinculo optativo con la declaracion R0 (AE-73): version 1.1 solo para la
+# entrada protocolo. No cambia ESQUEMA_ENTRADA ni ninguna constante anterior.
+ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0 = "registro-prospectivo-ml/1.1"
+ESQUEMAS_PROTOCOLO = (ESQUEMA_ENTRADA, ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0)
+CAMPO_VINCULO_R0 = "declaracion_r0"
+REGLA_VINCULO_R0_CAMPO_EXPLICITO = "ae73-vinculo-r0-campo-explicito/1"
+ESQUEMA_DECLARACION_R0 = "declaracion-r0-sintetica/1"
+"""Esquema de la declaracion de AE-72 al que apunta `hash_declaracion`."""
+MOTIVOS_VINCULO_R0 = (
+    "vinculo_ausente_en_esquema_1_1", "vinculo_en_esquema_1_0", "vinculo_no_es_objeto",
+    "claves_del_vinculo_distintas", "regla_desconocida", "esquema_de_declaracion_desconocido", "hash_mal_formado",
+    "pendientes_mal_formados", "vinculo_solo_sintetico", "doble_vinculo",
+)
+_CLAVES_VINCULO_R0 = frozenset({"regla", "esquema_declaracion", "hash_declaracion", "pendientes"})
+_CLAVE_VINCULO_CANDIDATO_AE72 = "vinculo_r0_candidato"
+_ELEMENTO_R0 = re.compile(r"[a-z][a-z0-9_]*")
+
 _JUEGOS_DOMINIO = {"BALOTO": BalotoGame, "BALOTO_REVANCHA": BalotoRevanchaGame}
 _HASH = re.compile(r"[0-9a-f]{64}")
 _CLAVES_COMUNES = frozenset({"esquema", "secuencia", "tipo", "hash_anterior"})
@@ -126,6 +150,15 @@ class EntradaRegistroInvalidaError(RegistroProspectivoError):
 
 class CadenaRegistroInconsistenteError(RegistroProspectivoError):
     codigo_salida = 5
+
+
+class VinculoR0InvalidoError(EntradaRegistroInvalidaError):
+    """Vinculo `declaracion_r0` mal formado o fuera de su version; `motivo`
+    es uno de MOTIVOS_VINCULO_R0."""
+
+    def __init__(self, motivo: str, mensaje: str):
+        super().__init__(mensaje)
+        self.motivo = motivo
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +270,55 @@ def _validar_estrategia(estrategia) -> None:
 
 
 def _validar_protocolo(protocolo: dict) -> None:
+    """Valida un protocolo 1.0 exactamente como antes, o uno 1.1 con su
+    vinculo `declaracion_r0`. Un protocolo a medio migrar se rechaza."""
+    esquema = protocolo.get("esquema") if isinstance(protocolo, dict) else None
+    if isinstance(protocolo, dict) and CAMPO_VINCULO_R0 in protocolo and esquema not in ESQUEMAS_PROTOCOLO:
+        raise _invalida("protocolo: esquema desconocido")
+    if esquema == ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0:
+        if CAMPO_VINCULO_R0 not in protocolo:
+            raise VinculoR0InvalidoError("vinculo_ausente_en_esquema_1_1",
+                                         f"protocolo {esquema}: falta el campo {CAMPO_VINCULO_R0}")
+        base = {clave: valor for clave, valor in protocolo.items() if clave != CAMPO_VINCULO_R0}
+        _validar_protocolo_base({**base, "esquema": ESQUEMA_ENTRADA})
+        _validar_vinculo_r0(protocolo)
+        return
+    if esquema == ESQUEMA_ENTRADA and CAMPO_VINCULO_R0 in protocolo:
+        raise VinculoR0InvalidoError("vinculo_en_esquema_1_0",
+                                     f"protocolo {ESQUEMA_ENTRADA}: el campo {CAMPO_VINCULO_R0} exige la version "
+                                     f"{ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0}")
+    _validar_protocolo_base(protocolo)
+
+
+def _validar_vinculo_r0(protocolo: dict) -> None:
+    vinculo = protocolo[CAMPO_VINCULO_R0]
+
+    def rechazar(motivo: str, mensaje: str):
+        raise VinculoR0InvalidoError(motivo, f"{CAMPO_VINCULO_R0}: {mensaje}")
+
+    if not isinstance(vinculo, dict):
+        rechazar("vinculo_no_es_objeto", "debe ser un objeto")
+    if set(vinculo) != _CLAVES_VINCULO_R0:
+        rechazar("claves_del_vinculo_distintas", f"claves distintas de {sorted(_CLAVES_VINCULO_R0)}")
+    if vinculo["regla"] != REGLA_VINCULO_R0_CAMPO_EXPLICITO or not isinstance(vinculo["regla"], str):
+        rechazar("regla_desconocida", f"regla distinta de {REGLA_VINCULO_R0_CAMPO_EXPLICITO}")
+    if vinculo["esquema_declaracion"] != ESQUEMA_DECLARACION_R0 or not isinstance(vinculo["esquema_declaracion"], str):
+        rechazar("esquema_de_declaracion_desconocido", f"esquema de declaracion distinto de {ESQUEMA_DECLARACION_R0}")
+    hash_declaracion = vinculo["hash_declaracion"]
+    if not isinstance(hash_declaracion, str) or not _HASH.fullmatch(hash_declaracion):
+        rechazar("hash_mal_formado", "hash_declaracion debe ser SHA-256 hexadecimal en minusculas")
+    pendientes = vinculo["pendientes"]
+    if (not isinstance(pendientes, list)
+            or not all(isinstance(p, str) and _ELEMENTO_R0.fullmatch(p) for p in pendientes)
+            or pendientes != sorted(set(pendientes))):
+        rechazar("pendientes_mal_formados", "pendientes debe ser una lista ordenada y sin repetir de identificadores")
+    if protocolo["sintetico"] is not True:
+        rechazar("vinculo_solo_sintetico", "el vinculo solo se admite en protocolos sinteticos")
+    if _CLAVE_VINCULO_CANDIDATO_AE72 in protocolo["estrategia"]["parametros"]:
+        rechazar("doble_vinculo", f"el protocolo tambien lleva {_CLAVE_VINCULO_CANDIDATO_AE72} en parametros")
+
+
+def _validar_protocolo_base(protocolo: dict) -> None:
     _claves_exactas(protocolo, _CLAVES["protocolo"], "protocolo")
     if protocolo["esquema"] != ESQUEMA_ENTRADA:
         raise _invalida("protocolo: esquema desconocido")
@@ -279,14 +361,32 @@ def construir_protocolo(*, protocolo_id: str, estrategia: dict, cortes: dict, pe
     por juego al registrar el protocolo; solo cuentan objetivos
     posteriores. `sintetico=True` marca registros de prueba, que nunca
     cuentan como evidencia."""
+    protocolo = _protocolo_sin_validar(protocolo_id=protocolo_id, estrategia=estrategia, cortes=cortes,
+                                       pendientes=pendientes, sintetico=sintetico)
+    _validar_protocolo(protocolo)
+    return protocolo
+
+
+def _protocolo_sin_validar(*, protocolo_id, estrategia, cortes, pendientes, sintetico) -> dict:
     if not isinstance(cortes, dict):
         raise _invalida("cortes debe ser un objeto por juego")
-    protocolo = {
+    return {
         "esquema": ESQUEMA_ENTRADA, "secuencia": 1, "tipo": "protocolo", "hash_anterior": None,
         "protocolo_id": protocolo_id, "sintetico": sintetico, "estrategia": copy.deepcopy(estrategia),
         "juegos": {codigo: {"ultimo_sorteo_conocido": corte} for codigo, corte in cortes.items()},
         "reglas": copy.deepcopy(REGLAS_EVALUACION_AE52), "pendientes": list(pendientes), "nota": NOTA_PROTOCOLO,
     }
+
+
+def construir_protocolo_con_vinculo_r0(*, protocolo_id: str, estrategia: dict, cortes: dict,
+                                       pendientes: Sequence[str], sintetico: bool, vinculo_r0: dict) -> dict:
+    """Protocolo de la version optativa 1.1: el de `construir_protocolo`
+    mas el campo `declaracion_r0`. Solo sintetico; el vinculo no autentica
+    ni fecha la declaracion."""
+    protocolo = _protocolo_sin_validar(protocolo_id=protocolo_id, estrategia=estrategia, cortes=cortes,
+                                       pendientes=pendientes, sintetico=sintetico)
+    protocolo["esquema"] = ESQUEMA_ENTRADA_PROTOCOLO_VINCULO_R0
+    protocolo[CAMPO_VINCULO_R0] = copy.deepcopy(vinculo_r0)
     _validar_protocolo(protocolo)
     return protocolo
 

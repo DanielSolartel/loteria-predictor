@@ -4136,6 +4136,27 @@ AE-72 queda **validada solo como prototipo sintético optativo y sus pruebas**. 
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-71 sin cambios.
 
+**Etapa AE-73 -campo explícito y versionado para vincular la declaración R0 en el protocolo de AE-52, validada:** AE-52 admite ahora, de forma optativa, la versión `registro-prospectivo-ml/1.1` de la entrada `protocolo`.
+- **El campo:** `declaracion_r0` guarda la regla `ae73-vinculo-r0-campo-explicito/1`, el esquema de la declaración, el hash designado y los pendientes explícitos. Así el vínculo con la declaración R0 no ocupa `estrategia.parametros`.
+- **Validación:** es estricta y cada rechazo lleva un `motivo` distinguible.
+- **Solo sintético:** la versión 1.1 solo se admite en protocolos sintéticos.
+- **Compatibilidad:** los protocolos 1.0, las predicciones, los resultados y la ruta candidata de AE-72 no cambian.
+- **Código:** el nuevo módulo `app/application/ml/vinculo_r0_campo_explicito.py` verifica las dos rutas de extremo a extremo con datos sintéticos, compara ambas y documenta la migración sin ejecutarla. Lo acompañan `52` pruebas.
+
+**Límites:**
+- Las dos rutas son candidatas: D1–D9 siguen `sin_decidir`, sobre todo D1, D2 y D7.
+- Solo se comprueba integridad de bytes. La autenticación de R0, la recepción anterior al plazo y la completitud y unicidad del canal quedan `sin_evidencia`, y la aptitud inferencial `no_autorizada`.
+
+El detalle, la comparación, la compatibilidad y las mediciones están en la sección AE-73 de `ARCHITECTURE.md`.
+
+R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-73 queda **validada solo como extensión optativa y sintética del esquema, su verificador y sus pruebas**. La versión 1.1 sigue siendo optativa, D1–D9 siguen sin decidir y no se ejecutó migración.
+
+**Validación del operador en Windows** (atribuida al usuario): rama `feature/ae73-vinculo-r0-campo-explicito`, HEAD y base `46815bf`, SHA-256 del parche completo comprobado, seis archivos. Con Python `3.14.6` y pytest `9.1.1`: `52 passed in 0.51s` (AE-73), `110 passed in 12.06s` (AE-52), `384 passed in 1.41s` (AE-60 a AE-73) y `pip check` sin problemas. Las focalizadas (`1124 passed`) y la suite completa (`5369 passed, 0 skipped`) solo se ejecutaron en Linux. El detalle y los límites están en la sección AE-73 de `ARCHITECTURE.md`.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa ni sello temporal real. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-72 sin cambios.
+
 ---
 
 
