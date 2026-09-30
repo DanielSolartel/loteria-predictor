@@ -4312,6 +4312,253 @@ Con esta evidencia, **AE-74 queda validada solo como contrato versionado sintét
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos, firmas, relojes ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-73 sin cambios.
 
+## Sello temporal RFC 3161 del compromiso R0 por objetivo -Etapa AE-75, validada
+
+**Etapa AE-75 -sello temporal RFC 3161 del compromiso R0 por objetivo, validada:** ruta de verificación reproducible para un token de tiempo RFC 3161 (actualizado por RFC 5816) sobre un compromiso canónico y versionado del R0, su protocolo y un objetivo. El resultado se integra como un plano temporal separado del contrato de AE-74. **No habilita inferencia ni evaluación.**
+
+### Decisión del operador
+
+El operador aprobó D8 y la política de confianza temporal con seis ajustes:
+- **Compromiso por objetivo:** los bytes sellados incluyen juego, objetivo y plazo UTC. Un sello de un objetivo no sirve para otro. Sellar el plazo no prueba que sea oficial.
+- **Plazo:** en AE-75 solo se admite un plazo sintético explícito.
+  - La fuente operativa futura será un calendario oficial identificado, versionado y publicado antes del cierre.
+  - El plazo no se define con la hora real del sorteo, que se conoce después.
+  - El corte (número de sorteo) sigue siendo otra variable.
+  - La selección y verificación del calendario siguen pendientes.
+- **Comparación:** «anterior» solo si `genTime + accuracy + margen < plazo`. La igualdad no pasa y un intervalo que cruza el plazo no es concluyente. Sin `accuracy` ni una precisión comprobable en la política de la TSA, queda pendiente: nunca se supone cero.
+- **Criptografía:** con bibliotecas mantenidas, nunca con RSA, CMS, DER o cadenas X.509 escritos a mano.
+- **Política:** lista explícita de OID de política y anclas de prueba no operativas. La revocación sin comprobar deja el resultado pendiente y el plano no llega a `superada`.
+- **Alcance de D8:** regla comparativa aprobada solo para el modelo sintético. `evaluar_admision` y su puerta `r0_final` no cambian.
+
+`DECISIONES_DEL_CONTRATO["D8"]` de AE-74 pasa de `sin_decidir` a `aprobada_solo_para_el_modelo_sintetico`. Por eso cambia una línea de `test_contrato_vinculo_r0.py`, que esperaba `sin_decidir` y ahora espera el nuevo estado, con un comentario. El plazo operativo y `calendario_oficial` siguen sin fijar.
+
+### Compromiso `compromiso-sello-r0-objetivo/1`
+
+El nuevo módulo `app/application/ml/sello_temporal_r0.py` construye el compromiso con `construir_compromiso`. Se serializa con el JSON canónico de AE-52 (`bytes_de_compromiso`) y tiene exactamente diez claves:
+- `esquema`, `contrato` (`contrato-vinculo-r0/1`), `esquema_del_protocolo` (`registro-prospectivo-ml/1.2`) y `regla` (`ae74-vinculo-r0-contrato/1`);
+- `protocolo_hash` y `hash_declaracion`;
+- `codigo_juego`, `sorteo_objetivo`, `plazo_utc` y `procedencia_del_plazo` (solo `sintetica_de_prueba`).
+
+Solo se construye sobre un registro 1.2 del contrato con vínculo íntegro. El juego debe estar en el protocolo y el objetivo ser posterior a su corte. El plazo se escribe `AAAA-MM-DDTHH:MM:SS[.f]Z`: sin desfase, sin ceros finales en la fracción y sin segundo 60.
+
+`leer_compromiso` exige los bytes canónicos exactos y la versión 1. **Otra versión se rechaza y no se reinterpreta.** Los protocolos 1.0, 1.1 y 1.2 conservan sus bytes, hashes y rutas: el compromiso es un objeto aparte, no una entrada del registro de AE-52.
+
+### Lo que garantiza el estándar y lo que elige esta aplicación
+
+`FUENTES_PRIMARIAS` contiene diecisiete citas (E1 a E17) de los TXT oficiales de RFC 3161 y RFC 5816, con sección y líneas del archivo. Se comprobaron contra el texto de los archivos antes de entregar.
+
+| Estándar | Cita |
+|---|---|
+| El token afirma que un dato existía en un instante, según la autoridad | RFC 3161 §2, líneas 94–95 |
+| La confianza en la operación depende de la política de la autoridad | §1, líneas 84–90 |
+| El token no identifica a quien lo pidió | §2.1, líneas 137–138 |
+| Comprobar estado, campos, firma, impronta e identificador | §2.2, líneas 158–183 |
+| Revocación y aceptabilidad de la política: SHOULD | §2.2, líneas 185–191 |
+| Propósito de sellado único y crítico | §2.3, líneas 195–211 |
+| Un solo firmante | §2.4.2, líneas 411–414 |
+| `genTime` en UTC, sintaxis DER y `accuracy` | §2.4.2, líneas 478–548 |
+| ESSCertID o ESSCertIDv2 | RFC 5816 §2.2.1 y §2.2.2 |
+
+`POLITICA_ELEGIDA` (P1 a P13) separa lo que decide esta aplicación y en qué se apoya:
+- **Más estricta que el estándar:**
+  - la política es obligatoria, no solo recomendada;
+  - solo `SigningCertificateV2` con SHA-256 o superior (el estándar admite ESSCertID con SHA-1);
+  - solo PKIStatus `granted`;
+  - solo DER.
+- **Revocación sin datos:** pendiente.
+- **Vigencia de los certificados:** en el `genTime` decodificado, nunca con el reloj local.
+- **Claves y algoritmos:** RSA de al menos 2048 bits o EC P-256/P-384/P-521, con SHA-256 o superior.
+- **`genTime`:** exacto, leído del DER.
+
+### Qué comprueba cada herramienta
+
+`HERRAMIENTAS` documenta cada comprobación. Todas pasan por bibliotecas mantenidas:
+
+| Herramienta | Comprobaciones |
+|---|---|
+| `rfc3161-client` 1.0.9 (Trail of Bits, con OpenSSL incorporado) | Verificación integral con solo las anclas configuradas: firma PKCS#7, cadena construida por OpenSSL en `genTime`, propósito de sellado, único firmante e impronta. También el estado PKI y la política |
+| `cryptography` 50.0.1 (PyCA) | Firma del SignerInfo sobre los atributos firmados, propósito (EKU crítica y exclusiva), claves y algoritmos, extensiones críticas, vigencia en `genTime`, y un diagnóstico de cadena con `verify_directly_issued_by` que solo aporta la causa específica |
+| `cryptography.hazmat.asn1` 50.0.1 (decodificador DER declarativo de PyCA) | Lectura de `genTime` exacto, `accuracy`, atributos firmados y `SigningCertificateV2`, con esquemas transcritos de RFC 3161, 5652 y 5035 |
+| Este módulo | Solo compara valores ya decodificados y calcula el intervalo con aritmética racional exacta |
+
+**Hallazgos sobre las herramientas**, probados en G3 y en las fixtures:
+- **`rfc3161-client` 1.0.9 descarta la fracción de segundo de `genTime`:** devuelve `12:00:00` para `12:00:00.25`. Por eso `genTime` se lee del DER y la biblioteca solo se usa como contraste de su truncado (`gen_time_coherente`).
+- **`rfc3161-client` no compara el hash de `SigningCertificateV2` con el certificado firmante:** acepta un token cuyo identificador apunta a otro certificado. Esa comprobación la hace `identificador_del_certificado`, y OpenSSL también rechaza ese token.
+- **`rfc3161-client` rechaza conjuntos de certificados no ordenados según DER**, que CMS admite en BER. `openssl ts -reply` los produce al incluir la cadena, así que la fixture de OpenSSL incluye solo el certificado de la TSA.
+- **La comprobación de propósito de OpenSSL rechaza una EKU con un propósito adicional**, en `rfc3161-client` y en `openssl ts -verify`.
+
+`revocacion` queda siempre `pendiente`: no hay CRL ni OCSP.
+
+### Conclusión temporal
+
+`comparar_con_plazo(gen_time, precision, margen, plazo)` usa `Fraction` exacta:
+
+| Resultado | Condición |
+|---|---|
+| `anterior_al_plazo` | límite superior `genTime + accuracy + margen < plazo` |
+| `posterior_al_plazo` | límite inferior `genTime − accuracy − margen >= plazo` |
+| `no_concluyente_intervalo_cruza_el_plazo` | el límite superior es igual o posterior al plazo y el inferior, anterior |
+| `precision_ausente_pendiente` | sin `accuracy` |
+
+Con `accuracy` y margen cero y `genTime` igual al plazo, el resultado es «posterior». Coincide con la función de AE-67.
+
+**`genTime` solo se usa si todas las comprobaciones distintas de la revocación están superadas.** Con cualquier fallo, la conclusión es `no_evaluable` y no se expone ningún instante. Nunca se usa el reloj local ni la fecha de un archivo.
+
+### Resultados por caso
+
+| Caso | Plano `sello_temporal_de_r0` | Causa |
+|---|---|---|
+| Intervalo que cruza el plazo, incluida la igualdad | `no_concluyente` | `intervalo_cruza_el_plazo` |
+| Precisión ausente | `pendiente` | `precision_ausente` |
+| Política no admitida | `rechazada` | `politica_no_admitida` |
+| Certificado no confiable | `rechazada` | causa específica (ver abajo) |
+| Vínculo de bytes incorrecto | `rechazada` | causa específica (ver abajo) |
+| Objetivo distinto del sellado | `rechazada` | `objetivo_no_coincide` |
+| Posterior al plazo | `rechazada` | `sello_posterior_al_plazo` |
+| Dependencia criptográfica ausente | `pendiente` | `dependencia_criptografica_ausente` |
+| Todo correcto con ancla de prueba | `pendiente` | `ancla_de_prueba_no_operativa`, `revocacion_sin_comprobar`, `plazo_sintetico_sin_calendario_oficial` |
+
+Causas de un certificado no confiable:
+- `cadena_sin_ancla`;
+- `uso_extendido_no_critico`, `uso_extendido_no_exclusivo` o `uso_extendido_ausente`;
+- `certificado_no_vigente_en_gen_time`;
+- `identificador_de_certificado_no_coincide`, `identificador_de_certificado_solo_sha1` o `identificador_de_certificado_ausente`;
+- `extension_critica_desconocida`.
+
+Causas de un vínculo de bytes incorrecto:
+- `impronta_no_coincide`;
+- `protocolo_hash_no_coincide`;
+- `hash_de_declaracion_no_coincide`;
+- `contrato_o_regla_no_coincide`;
+- `version_de_compromiso_desconocida`.
+
+**`superada` no existe entre los estados del plano en AE-75.**
+
+### Plano temporal en el contrato de AE-74
+
+`evaluar_admision_con_plano_temporal` llama a `evaluar_admision` de AE-74 sin cambios y le añade el plano `sello_temporal_de_r0`. Se evalúa por objetivo y el estado global es el peor de ellos:
+- rechazada;
+- después, no concluyente;
+- después, pendiente, que incluye `objetivo_sin_sello` si falta un objetivo esperado.
+
+Las rutas 1.0, AE-72 y 1.1 dan `no_evaluable`.
+
+Las puertas, incluida `r0_final`, son idénticas con y sin sello, y se prueba con un token correcto. `autenticacion_de_r0`, `recepcion_antes_del_plazo` y `completitud_y_unicidad_del_canal` siguen en `sin_evidencia`, y `aptitud_inferencial` en `no_autorizada`. **Un sello del compromiso no prueba autenticación de R0, recepción de predicciones, completitud ni unicidad del canal.**
+
+### Dependencias
+
+`backend/requirements.txt` fija `cryptography==50.0.1` y `rfc3161-client==1.0.9`. Se eligen versiones exactas porque el comportamiento verificado, incluidos los hallazgos anteriores y el decodificador declarativo, depende de ellas.
+
+Ambas publican ruedas `abi3` para Windows: `cryptography-50.0.1-cp311-abi3-win_amd64.whl` y `rfc3161_client-1.0.9-cp39-abi3-win_amd64.whl`, que cubren Python 3.14. En el sandbox Linux se probaron con Python `3.11.15` y `3.14.0rc2`. Su funcionamiento en Windows depende de la validación del operador.
+
+### Fixtures y contraste independiente
+
+`tests/unit/ml/fixtures_sello_temporal.py` construye respuestas RFC 3161 de prueba solo con `cryptography`: claves, certificados X.509, firmas y el codificador DER declarativo, sin DER escrito a mano.
+- **Claves:** RSA-2048 generadas en cada ejecución.
+- **Nombres:** «… (fixture, no operativa)».
+- **Políticas:** en el arco de ejemplos `2.999`.
+- **Instantes:** fijados por cada prueba.
+- **Manipulaciones:** cada una es independiente de las demás.
+
+Hay dos contrastes independientes:
+- **Token emitido por `openssl ts -reply`:** OpenSSL 3.0.13 en el sandbox, sobre el compromiso de un registro sintético determinista, fijado en base64. Su `genTime` salió del reloj del sandbox y es solo una fixture. Las bibliotecas lo verifican frente a su CA.
+- **`openssl ts -verify`** acepta y rechaza los mismos tokens que esta ruta: el correcto, la firma alterada, la EKU con otro propósito, el identificador de otro certificado, el contenido alterado y la CA ajena. Si no hay `openssl` en `PATH`, esa prueba se omite con la causa explícita y el contraste queda pendiente en ese equipo. En Windows puede ejecutarse añadiendo al `PATH` un `openssl` como el que incluye Git para Windows.
+
+### Pruebas
+
+`test_sello_temporal_r0.py` contiene 75 pruebas.
+
+**G1:** 68 pruebas.
+- **Compromiso:** construcción, versión, claves, forma canónica, objetivo, plazo y ruta.
+- **Tiempo:** aritmética exacta y bordes de la regla (anterior, igual, posterior, intervalo que cruza y precisión ausente), también con tokens reales.
+- **Manipulaciones independientes:** firma, contenido, atributos, certificado, cadena, propósito, vigencia, extensiones, identificador, política, nombre de la TSA, impronta, precisión, estado, objetivo y plazo.
+- **Integración:** reutilización para otro objetivo, dependencia ausente, anclas, contrastes con OpenSSL, plano temporal, vocabulario, herramientas, fuentes, pureza, D8 y `requirements.txt`.
+
+**G2:** 4 pruebas.
+- **Huellas:** las de AE-52 y AE-63 a AE-74. En AE-74 cubren el contrato sin D8 y las decisiones sin D8.
+- **Hashes literales:** de los registros 1.0, 1.1 y 1.2.
+- **Estados y bloqueos.**
+- **`evaluar_admision`:** sin entrada de evidencia.
+
+**G3:** 3 premisas.
+- El corte es un número de sorteo.
+- La regla de AE-67 ya era estricta.
+- `rfc3161-client` descarta la fracción y no compara el identificador.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, pytest `9.1.1`; solo Linux, no validadas en Windows):
+- **Base `d4c7da6`:** una copia limpia con solo los dos archivos de prueba nuevos dio `68 failed, 7 passed` (código `1`).
+  - Las 68 de G1 fallan solo por lo que falta: 66 por `ModuleNotFoundError` del módulo nuevo, una porque D8 seguía en `sin_decidir` y una porque `requirements.txt` no tenía las dependencias.
+  - G2 y G3 pasan.
+  - Una corrida anterior tenía un error de la propia prueba en la ruta de `requirements.txt`, que se corrigió.
+- **Pruebas de AE-75:** `75 passed` (código `0`).
+- **Pruebas propias de AE-52:** `110 passed` (código `0`).
+- **AE-60 a AE-75:** `500 passed` (código `0`).
+- **Focalizadas (lista de AE-59 más AE-60 a AE-75):** `1240 passed` (código `0`). Se repitieron porque la primera corrida omitió por error AE-60 a AE-74 y dio `815 passed`.
+- **Suite completa:** `5485 passed, 0 skipped`, con los cinco avisos conocidos de Alembic (código `0`).
+- **`pip check`:** `No broken requirements found`; **`git diff --check`:** sin salida (código `0`).
+- **Python `3.14.0rc2` (Linux):** pruebas de AE-75 y AE-74, `116 passed` (código `0`); `uv pip check` sin incompatibilidades.
+
+### Límites
+
+- **Anclas:** solo de prueba. Una cadena correcta frente a una CA de fixture no es una TSA aprobada.
+- **Plazo y revocación:** el plazo es sintético y la revocación no se comprueba. `superada` no se alcanza.
+- **Perfil criptográfico:** acotado a RSA PKCS#1 v1.5 y ECDSA con SHA-2. PSS u otros algoritmos quedan pendientes con su causa.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1, **pendientes**.
+- **Pendientes de AE-52:** siguen abiertos los siete, entre ellos `mecanismo_de_sellado_temporal_externo` y `corte_temporal_por_juego`.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- la especificación candidata de AE-53, sin aprobar.
+
+**Requisitos para uso operativo** (`REQUISITOS_PARA_USO_OPERATIVO`), ninguno cubierto en AE-75:
+- una o dos autoridades de sellado aprobadas por el operador y declaradas en R0;
+- su CA raíz obtenida por un canal con autenticación, con su huella registrada;
+- los TSAPolicyId admitidos, con su política publicada y la precisión que declaran;
+- CRL u OCSP archivados con el token y un plan de renovación;
+- un calendario oficial identificado, versionado y publicado antes del cierre;
+- los otros dos elementos de `AUTENTICACION_DE_R0`;
+- un protocolo real;
+- prueba de recepción de cada predicción y de completitud y unicidad del canal.
+
+**Validación real del operador en Windows** (Python `3.14.6`, pytest `9.1.1`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Entorno:** rama `feature/ae75-sello-temporal-r0`; HEAD y base `d4c7da62d52d451eb14129ae675b4a64a98fc61b`.
+- **Parche:** el completo `ae75-sello-temporal-r0.patch`, 161723 bytes, SHA-256 `c969107f39477115d074fd94fc58eec43d2b3bf4a32304a5c7f53b6f2e11df60`, con el hash comprobado.
+- **Aplicación:** la aplicación, `git apply --reverse --check` y `git diff --check` fueron correctos, con exactamente los nueve archivos esperados.
+- **Dependencias:** `cryptography==50.0.1` y `rfc3161-client==1.0.9`, instaladas desde ruedas.
+- **Pruebas de AE-75:** `68 passed, 7 skipped in 2.74s`.
+- **Pruebas propias de AE-52:** `110 passed in 6.80s`.
+- **AE-60 a AE-75:** `493 passed, 7 skipped in 3.23s`.
+- **`pip check`:** `No broken requirements found`.
+
+**Las siete omisiones de Windows** son exclusivamente el contraste externo con `openssl ts -verify`: el ejecutable OpenSSL no estaba en `PATH`. Esos siete contrastes **no se ejecutaron en Windows** y no cuentan como superados allí; quedan pendientes en ese equipo.
+
+**Resultados solo del sandbox Linux de Claude** (no repetidos para este cierre):
+- los siete contrastes con `openssl ts -verify` (OpenSSL 3.0.13) pasaron: `75 passed` en las pruebas de AE-75 y `500 passed` en AE-60 a AE-75;
+- focalizadas `1240 passed`;
+- suite completa `5485 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+- Python `3.14.0rc2`: `116 passed` en las pruebas de AE-75 y AE-74.
+
+**Límites de esta validación**: «validada» cubre solo **la implementación y la verificación preparatoria sobre datos, anclas y plazos sintéticos**.
+- **D8:** aprobada solo para el modelo sintético; el calendario y el plazo operativos no están fijados.
+- **Confianza:** el ancla es de prueba y la revocación no se comprobó; el plano `sello_temporal_de_r0` no llega a `superada`.
+- **`r0_final`:** sigue rechazada.
+- **Alcance del sello:** un sello del compromiso R0 **no** autentica R0 ni prueba la recepción de predicciones, la completitud o la unicidad del canal.
+- **D9:** sigue con la espera provisional.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados; no da garantías sobre entradas de predicción.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+Con esta evidencia, **AE-75 queda validada solo como implementación y verificación preparatoria sobre datos, anclas y plazos sintéticos**; no equivale a sellar R0 con una autoridad operativa, fijar un plazo oficial, autenticar R0, superar la puerta de R0 final ni autorizar evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos ni autoridades operativas, relojes locales como prueba ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-74 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas

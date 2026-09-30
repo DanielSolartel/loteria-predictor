@@ -247,7 +247,9 @@ def test_g1b_contrato_versionado_y_decisiones_aprobadas():
     assert {k: d[k]["estado"] for k in aprobadas} == {k: "aprobada_por_el_operador" for k in aprobadas}
     assert d["D3"]["estado"] == d["D4"]["estado"] == "decidida_solo_para_esta_ruta"
     assert d["D5"]["estado"] == d["D6"]["estado"] == "inaplicable_a_esta_ruta"
-    assert d["D8"]["estado"] == "sin_decidir"
+    # AE-75: D8 paso de sin_decidir a una regla comparativa aprobada solo para el modelo sintetico;
+    # el plazo operativo y calendario_oficial siguen sin fijar.
+    assert d["D8"]["estado"] == "aprobada_solo_para_el_modelo_sintetico"
     assert d["D9"]["estado"] == "espera_provisional_aprobada"
     assert "rechazo" in d["D9"]["texto"] and "sin decidir" in d["D9"]["texto"]
     assert {v["estado"] for v in aa.DECISIONES_DEL_OPERADOR_AE71.values()} == {"sin_decidir"}
