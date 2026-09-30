@@ -1056,6 +1056,47 @@ def _cadena(b, hoja, certificados, anclas):
     return _r("rechazada", "cadena_sin_ancla", detalle="ruta demasiado larga"), None
 
 
+def _impronta(tst, datos: bytes) -> ResultadoDeComprobacion:
+    """Impronta del TSTInfo decodificado frente a los bytes sellados."""
+    if tst is None:
+        return _r("no_evaluable", "estructura_del_token_no_disponible")
+    impronta = tst.message_imprint
+    nombre = ALGORITMOS_DE_HASH.get(impronta.hash_algorithm.algorithm.dotted_string)
+    if nombre is None:
+        return _r("rechazada", "algoritmo_de_impronta_no_admitido",
+                  detalle=impronta.hash_algorithm.algorithm.dotted_string)
+    if impronta.hashed_message != _hash(nombre, datos):
+        return _r("rechazada", "impronta_no_coincide")
+    return _OK
+
+
+@dataclass(frozen=True)
+class TokenVerificado:
+    """Resultado de `verificar_token_sobre_bytes`: comprobaciones
+    criptograficas, impronta y, solo si se pudieron leer, genTime exacto y
+    precision. No contiene conclusion temporal ni vinculo con ningun
+    compromiso concreto."""
+    comprobaciones_criptograficas: dict
+    impronta: ResultadoDeComprobacion
+    gen_time: Fraction | None
+    precision: Fraction | None
+
+
+def verificar_token_sobre_bytes(respuesta_der: bytes, datos: bytes,
+                                politica: PoliticaDeConfianzaTemporal) -> TokenVerificado:
+    """AE-77: la misma verificacion criptografica que `verificar_sello`
+    aplica a un token, sobre bytes arbitrarios. Quien la usa decide que
+    compromiso son esos bytes y como se vincula; aqui no se interpreta."""
+    try:
+        b = _bibliotecas()
+    except ImportError as error:
+        cripto = {c: _r("pendiente", "dependencia_criptografica_ausente", detalle=str(error))
+                  for c in COMPROBACIONES_CRIPTOGRAFICAS}
+        return TokenVerificado(cripto, _r("pendiente", "dependencia_criptografica_ausente"), None, None)
+    cripto, extraido = _criptografia(b, EvidenciaDeSello(respuesta_der, datos), politica)
+    return TokenVerificado(cripto, _impronta(extraido.tst, datos), extraido.gen_time, extraido.precision)
+
+
 def verificar_sello(entradas: Sequence[bytes], bytes_declaracion: bytes | None, evidencia: EvidenciaDeSello,
                     politica: PoliticaDeConfianzaTemporal, *, codigo_juego: str,
                     sorteo_objetivo: int) -> InformeDeSello:
@@ -1083,18 +1124,7 @@ def verificar_sello(entradas: Sequence[bytes], bytes_declaracion: bytes | None, 
         vinculo["impronta_coincide"] = _r("pendiente", "dependencia_criptografica_ausente")
     else:
         cripto, extraido = _criptografia(b, evidencia, politica)
-        if extraido.tst is None:
-            vinculo["impronta_coincide"] = _r("no_evaluable", "estructura_del_token_no_disponible")
-        else:
-            impronta = extraido.tst.message_imprint
-            nombre = ALGORITMOS_DE_HASH.get(impronta.hash_algorithm.algorithm.dotted_string)
-            if nombre is None:
-                vinculo["impronta_coincide"] = _r("rechazada", "algoritmo_de_impronta_no_admitido",
-                                                  detalle=impronta.hash_algorithm.algorithm.dotted_string)
-            elif impronta.hashed_message != _hash(nombre, evidencia.bytes_compromiso):
-                vinculo["impronta_coincide"] = _r("rechazada", "impronta_no_coincide")
-            else:
-                vinculo["impronta_coincide"] = _OK
+        vinculo["impronta_coincide"] = _impronta(extraido.tst, evidencia.bytes_compromiso)
     vinculo = {clave: vinculo.get(clave, _r("no_evaluable", "compromiso_ilegible"))
                for clave in COMPROBACIONES_DEL_VINCULO}
 

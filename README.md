@@ -4223,6 +4223,20 @@ AE-76 queda **validada localmente como trabajo preparatorio**: el expediente sin
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades ni canales operativos, red ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-75 sin cambios.
 
+**Etapa AE-77 -recepción por objetivo: tiempo por acuse y conjunto esperado externo, validada localmente como trabajo preparatorio:** añade dos piezas independientes.
+- **Tiempo por acuse (C2):** `compromiso-sello-acuse/1` sella un acuse firmado concreto. Su token RFC 3161 se verifica con la misma ruta criptográfica de AE-75 (`verificar_token_sobre_bytes`). Se separan sello, impronta, anterioridad respecto del plazo, confianza en el ancla y revocación. Un sello de R0 nunca cuenta como sello de un acuse, y la hora del canal no es prueba.
+- **Conjunto esperado (C3):** `conjunto-esperado-observador/1`, firmado por un observador de fixture independiente del canal, declara los objetivos esperados para un corte sintético. Se compara con el registro, los acuses y el cierre de AE-76, y detecta omisiones, extras, duplicados, vínculos incorrectos, firmas alteradas y cambios de corte. Las vistas encadenadas se comprueban por continuidad y contradicciones, sin descartar historias ocultas.
+
+El informe compuesto separa seis planos. La autoridad del manifiesto y la completitud global quedan pendientes, y los estados de AE-74 a AE-76 no cambian: `r0_final` sigue rechazada.
+
+El detalle, la reutilización controlada de AE-75 y los límites están en la sección AE-77 de `ARCHITECTURE.md`.
+
+A1–A3 y C1–C3 siguen sin decidir; D8 sigue limitada al modelo sintético y D9 con su espera provisional. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-77 queda **validada localmente como trabajo preparatorio** (piezas y pruebas con fixtures). **Validación del operador en Windows** (Python `3.14.6`, atribuida al usuario): parche completo comprobado y ocho archivos; `29 passed` (AE-77), `110 passed` (AE-52), selección `1302 passed, 7 skipped` y `pip check` limpio. El comprobador informó `OMITIDOS 7/7` sin OpenSSL en `PATH`: esos siete contrastes no se ejecutaron en Windows y no cuentan como éxitos. Solo en el sandbox Linux: `569 passed` (AE-60 a AE-77), `1309 passed` en las focalizadas, suite completa `5554 passed, 0 skipped` y `SUPERADOS 7/7`. **GitHub Actions todavía no ha ejecutado AE-77.** La autoridad del conjunto esperado y la completitud global siguen pendientes. El detalle y los límites están en la sección AE-77 de `ARCHITECTURE.md`.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-76 sin cambios.
+
 ---
 
 
