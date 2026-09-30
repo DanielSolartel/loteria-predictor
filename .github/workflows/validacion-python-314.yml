@@ -43,7 +43,7 @@ jobs:
         run: python scripts/ci_contrastes_openssl.py ../resultados-linux.xml --modo exigir --resumen "$GITHUB_STEP_SUMMARY"
 
   windows:
-    name: Windows - seleccion AE-52 a AE-76
+    name: Windows - seleccion de tests/seleccion_windows.txt
     runs-on: windows-2025
     defaults:
       run:

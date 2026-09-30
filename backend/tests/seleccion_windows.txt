@@ -31,3 +31,5 @@ tests/unit/ml/test_sello_temporal_r0.py
 tests/unit/ml/test_expediente_r0_recepcion.py
 tests/unit/test_ci_contrastes_openssl_script.py
 tests/unit/ml/test_recepcion_por_objetivo.py
+tests/unit/ml/test_expediente_portable.py
+tests/unit/test_verificar_expediente_recepcion_script.py
