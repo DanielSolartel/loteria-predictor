@@ -4743,6 +4743,168 @@ Siguen igual:
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades ni canales operativos, red ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-75 sin cambios.
 
+## Recepción por objetivo: tiempo por acuse y conjunto esperado externo -Etapa AE-77, validada localmente como trabajo preparatorio
+
+**Etapa AE-77 -recepción por objetivo: tiempo por acuse y conjunto esperado externo, validada localmente como trabajo preparatorio:** extiende la ruta sintética AE-74 → AE-75 → AE-76 con dos piezas independientes:
+- **tiempo por acuse** (C2);
+- **conjunto esperado declarado por un observador externo de fixture** (C3).
+
+Un informe compuesto las combina sin promover los estados anteriores. **Todo es sintético y preparatorio: no habilita inferencia ni evaluación.**
+
+**Contexto de la base:** `8a1f951` (merge del PR #75). AE-76 está presente byte a byte, con su parche completo y su cierre. La primera ejecución real de GitHub Actions sobre `main` fue correcta en Linux y en Windows, con `SUPERADOS 7/7` de OpenSSL en ambos; según el operador, esa captura no incluye cifras de pytest y aquí no se le atribuyen. Los avisos de Node.js 20 de las acciones quedan como mantenimiento aparte: AE-77 no cambia el workflow.
+
+### Tiempo por acuse (C2)
+
+El nuevo módulo `app/application/ml/recepcion_por_objetivo.py` define `compromiso-sello-acuse/1`, en JSON canónico de AE-52.
+
+**Qué fija el compromiso:**
+- el hash de los bytes del acuse firmado y el hash de su firma;
+- la huella de la clave del canal;
+- el canal, el protocolo, la predicción, el juego, el objetivo y la secuencia;
+- un plazo UTC con procedencia `sintetica_de_prueba`.
+
+Así, un token sobre ese compromiso se refiere a un acuse concreto y a ningún otro.
+
+`verificar_tiempo_de_acuse` separa siete planos:
+
+| Plano | Qué comprueba |
+|---|---|
+| `acuse_firmado` | lectura, firma Ed25519, clave admitida para el rol `canal`, canal y vínculo con la predicción del registro (AE-76) |
+| `vinculo_del_compromiso` | que el compromiso sea de ese acuse: bytes, firma, clave, canal, protocolo, predicción, objetivo, secuencia y plazo |
+| `sello_criptografico` | las comprobaciones de AE-75 sobre el token, salvo la revocación |
+| `impronta` | que la impronta del token sea el hash de los bytes del compromiso |
+| `anterioridad_relativa_al_plazo` | la regla de D8 con la precisión del token y el margen de la política |
+| `confianza_en_el_ancla` | siempre `pendiente`: el ancla es de prueba |
+| `revocacion` | siempre `pendiente`: no hay datos de revocación |
+
+**Reglas:**
+- **Sello de R0:** nunca cuenta como sello de un acuse. Si los bytes presentados son un compromiso `compromiso-sello-r0-objetivo/1`, el vínculo se rechaza con `sello_de_r0_no_cuenta_como_sello_de_acuse`.
+- **Reutilización:** un token de otro acuse u otro objetivo se rechaza (`compromiso_de_otro_acuse`, `objetivo_no_coincide`).
+- **Hora del canal:** la hora declarada por el canal no se usa. Una prueba con horas de 1999 y 2099 da la misma conclusión.
+- **Tiempo:** `genTime` solo se usa si acuse, vínculo, sello e impronta están superados. Nunca se lee el reloj local.
+
+**Reutilización controlada de AE-75:**
+- `sello_temporal_r0.py` añade `verificar_token_sobre_bytes`, que aplica a bytes arbitrarios la misma verificación criptográfica que `verificar_sello`, y el auxiliar `_impronta`, extraído de `verificar_sello` sin cambiar su comportamiento.
+- Una prueba compara, para sellos de R0 correctos y manipulados, que el envoltorio y `verificar_sello` den las mismas comprobaciones y la misma impronta.
+- Las 75 pruebas de AE-75 siguen pasando y la huella de sus constantes no cambia.
+
+### Conjunto esperado externo (C3)
+
+`conjunto-esperado-observador/1` declara, para un corte sintético, los objetivos esperados:
+- **Contenido:** observador, `protocolo_hash`, corte, lista de objetivos, secuencia y hash anterior.
+- **Firma:** Ed25519 del observador. Solo hay claves de observador de fixture (`ClaveDeObservadorDePrueba`), y `OBSERVADORES_OPERATIVOS_ADMITIDOS` está vacía.
+- **Independencia:** una clave admitida para el canal o el firmante de AE-76 se rechaza como observador (`observador_no_independiente_del_canal`).
+
+`comparar_con_conjunto_esperado` contrasta la declaración con el registro, los acuses y el cierre de AE-76. Detecta:
+- **omisiones:**
+  - `objetivo_esperado_sin_prediccion`;
+  - `objetivo_esperado_sin_acuse`;
+  - `objetivo_esperado_fuera_del_cierre`.
+- **objetivos extra:** `objetivo_no_esperado`.
+- **duplicados:** `objetivo_esperado_duplicado` y `acuse_duplicado`.
+- **vínculos incorrectos:**
+  - `protocolo_hash_no_coincide`;
+  - `juego_fuera_del_protocolo`;
+  - `objetivo_esperado_no_posterior_al_corte_del_protocolo`.
+- **firmas alteradas:** `firma_no_coincide` y `clave_no_admitida`.
+- **cambios de corte:** `corte_distinto_del_esperado` y `objetivo_posterior_al_corte_declarado`.
+
+`verificar_vistas` comprueba varias vistas encadenadas del observador:
+- **Continuidad:** la secuencia y el hash anterior (`cadena_rota`).
+- **Solo anexado:** el corte no retrocede y ningún objetivo se retira (`corte_retrocede`, `objetivo_retirado`).
+- **Contradicciones:** la misma secuencia con contenido distinto (`vistas_contradictorias`).
+
+`LIMITES_DE_LAS_VISTAS` lo deja explícito: **esto no descarta historias ocultas sin monitores independientes, ni prueba completitud global sin una fuente autorizada del conjunto esperado.**
+
+### Informe compuesto
+
+`evaluar_recepcion_por_objetivo` evalúa primero el expediente de AE-76 con los mismos argumentos y lo conserva completo, con AE-74 y AE-75 dentro. Después añade seis planos propios, con nombres distintos de todos los anteriores:
+
+| Plano | Mejor estado posible |
+|---|---|
+| `integridad_de_bytes_de_las_piezas` | `superada` |
+| `firmas_y_roles_de_prueba` | `superada` (solo con claves de fixture) |
+| `tiempo_por_acuse` | `pendiente` (ancla de prueba, revocación y plazo sintético; o `acuse_sin_sello`) |
+| `completitud_respecto_del_manifiesto_presentado` | `superada` |
+| `autoridad_del_manifiesto` | `pendiente` (`observador_de_fixture_sin_autoridad`, `decision_c3_sin_tomar`) |
+| `completitud_global` | `pendiente` (`sin_monitores_independientes`, `sin_fuente_autorizada`) |
+
+**Aislamiento de fallos:** una firma del observador alterada rechaza `firmas_y_roles_de_prueba` sin tocar el tiempo por acuse. Una impronta de otros bytes rechaza la integridad y el tiempo, no las firmas.
+
+**Con todas las piezas sintéticas correctas:**
+- el expediente es idéntico al de AE-76 evaluado solo;
+- `r0_final` sigue rechazada;
+- `autenticacion_de_r0` y `recepcion_antes_del_plazo` siguen `sin_evidencia`;
+- `AUTORIZA_EVALUACION = False`.
+
+`DECISIONES_OPERATIVAS_PENDIENTES` recoge A1–A3 y C1–C3, todas `sin_decidir`. AE-77 no elige:
+- autoridad del firmante ni del observador;
+- TSA operativa;
+- política de revocación;
+- calendario oficial;
+- canal real.
+
+La selección de Windows (`tests/seleccion_windows.txt`) incluye las pruebas de AE-77; el workflow no cambia.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, pytest `9.1.1`; solo Linux, no validadas en Windows ni en GitHub Actions):
+- **Base `8a1f951`:** una copia limpia con solo los dos archivos de prueba nuevos dio `23 failed, 6 passed` (código `1`).
+  - 22 fallos son por `ModuleNotFoundError` del módulo nuevo y 1 por `AttributeError`, porque `verificar_token_sobre_bytes` no existía en AE-75.
+  - G2 y G3 pasan.
+- **Tras implementar** (todas con código `0` y `0 skipped`):
+  - pruebas de AE-77: `29 passed`;
+  - AE-52: `110 passed`;
+  - AE-60 a AE-77: `569 passed`;
+  - focalizadas (lista de AE-59 más AE-60 a AE-77) y la nueva selección de Windows: `1309 passed` cada una;
+  - suite completa: `5554 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+  - comprobador en modo `exigir`: `SUPERADOS 7/7`;
+  - `pip check` sin problemas y `git diff --check` sin salida.
+
+### Límites
+
+- **Fixtures:** claves, certificados, TSA y observador son de fixture; un plano superado solo prueba coherencia frente a esas fixtures.
+- **Completitud:** completo respecto del manifiesto presentado **no** es completitud global.
+- **Decisiones:**
+  - D8 sigue limitada al modelo sintético y D9 con su espera provisional;
+  - A1–A3 y C1–C3 siguen sin decidir;
+  - no hay acreditación operativa de R0 ni de una recepción completa y única.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados; no da garantías sobre este expediente.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Base:** `origin/main` y `origin/develop` coincidían con `8a1f951bb00d5743003b6505ea1f8e3cb810368f`.
+- **Parche:** el completo `ae77-recepcion-por-objetivo.patch`, 89595 bytes, SHA-256 `0dd01c416815bbbe55b506f85a07b92b14432202525d3d5557b1646a15c8a085`. Se aplicó, pasó `reverse --check` y dejó exactamente los ocho archivos previstos, sin archivos preparados.
+- **Espacios:** la comprobación con índice temporal fue limpia.
+- **Pruebas de AE-77:** `29 passed in 1.10s`.
+- **AE-52:** `110 passed in 11.28s`.
+- **Selección de Windows:** `1302 passed, 7 skipped in 19.99s`.
+- **`ci_contrastes_openssl.py`:** `OMITIDOS 7/7` sin OpenSSL en `PATH` (0 pasados, 7 omitidos, 0 fallidos, 0 errores). Los siete contrastes con `openssl ts -verify` **no se ejecutaron en Windows y no cuentan como éxitos**.
+- **`pip check`:** `No broken requirements found`.
+
+**Resultados solo del sandbox Linux de Claude** (Python `3.11.15`; no repetidos para este cierre):
+- `29 passed` (AE-77), `110 passed` (AE-52) y `569 passed` (AE-60 a AE-77);
+- `1309 passed` en las focalizadas y en la selección de Windows;
+- suite completa `5554 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+- `SUPERADOS 7/7` en los contrastes con OpenSSL.
+
+**GitHub Actions todavía no ha ejecutado AE-77.** La ejecución anterior sobre `main` (AE-76), correcta en Linux y en Windows con `SUPERADOS 7/7`, es evidencia distinta y no se atribuye a esta etapa.
+
+**Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **el tiempo por acuse, el conjunto esperado externo, el informe compuesto y sus pruebas, todo con claves, certificados, TSA y observador de fixture**.
+- **Decisiones:** A1–A3 y C1–C3 siguen sin decidir; D8 sigue limitada al modelo sintético y D9 con su espera provisional.
+- **Pendientes:** la autoridad del conjunto esperado y la completitud global.
+- **Alcance del sello:** un sello de un acuse sintético no prueba por sí solo la autenticidad de R0 ni la completitud del canal.
+- **`r0_final`:** sigue rechazada.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-76 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas
