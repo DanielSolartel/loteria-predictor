@@ -4559,6 +4559,190 @@ Con esta evidencia, **AE-75 queda validada solo como implementación y verificac
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos ni autoridades operativas, relojes locales como prueba ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-74 sin cambios.
 
+## Expediente preparatorio de autenticación de R0 y recepción de predicciones -Etapa AE-76, validada localmente como trabajo preparatorio
+
+**Etapa AE-76 -expediente preparatorio de autenticación de R0 y recepción de predicciones, validada localmente como trabajo preparatorio:** añade un sobre firmado de R0, acuses firmados por predicción, un cierre del canal y un informe conjunto que lee AE-74 y AE-75 sin cambiar sus puertas. También añade validación automática con Python 3.14 en Linux y Windows. **Todo es preparatorio y sintético: no habilita inferencia ni evaluación.**
+
+### Qué añade
+
+El nuevo módulo `app/application/ml/expediente_r0_recepcion.py` define tres piezas versionadas. Se serializan con el JSON canónico de AE-52 y se firman con Ed25519 mediante `cryptography`. La huella SHA-256 de la clave queda dentro de los bytes firmados.
+
+| Pieza | Esquema | Qué vincula |
+|---|---|---|
+| Sobre de autenticación | `sobre-autenticacion-r0/1` | declaración R0 (`hash_declaracion`), protocolo 1.2 (`protocolo_hash`), contrato, regla, alcance `declaracion_r0_y_protocolo_1_2_del_contrato` y clave |
+| Acuse | `acuse-recepcion-prediccion/1` | canal, protocolo, hash de la predicción, juego, objetivo, secuencia, acuse anterior (hash) y hora declarada por el canal |
+| Cierre | `cierre-canal-predicciones/1` | canal, protocolo, conjunto declarado de objetivos, hashes de los acuses en orden, total, cabeza y si declara completitud |
+
+Cada lector (`leer_sobre`, `leer_acuse`, `leer_cierre`) exige los bytes canónicos exactos, la versión 1, las claves exactas y los tipos. **Otra versión se rechaza y no se reinterpreta.** Las piezas no son entradas del registro de AE-52: los protocolos 1.0, 1.1 y 1.2 conservan sus bytes y hashes.
+
+### Autenticación preparatoria de R0
+
+`verificar_autenticacion` separa siete planos:
+
+| Plano | Qué comprueba | Mejor estado posible |
+|---|---|---|
+| `integridad_de_la_firma` | la firma Ed25519 con la clave aportada | `superada` |
+| `clave_admitida_de_prueba` | que la clave esté en `PoliticaDeClavesDePrueba` para el rol `firmante_r0` | `superada` |
+| `huella_declarada` | que la huella dentro del sobre sea la de la clave aportada | `superada` |
+| `vinculo_con_el_registro` | protocolo, declaración, contrato, regla y alcance frente al registro 1.2 | `superada` |
+| `identidad_del_firmante` | autoridad de firma | `pendiente` |
+| `publicacion_fuera_de_banda` | publicación del sobre | `pendiente` |
+| `reconocimiento_del_operador` | reconocimiento explícito | `pendiente` |
+
+**Una firma matemáticamente correcta con una clave que aporta el propio expediente no establece identidad ni autorización.**
+- **Clave no admitida:** se rechaza, aunque la firma sea correcta.
+- **Roles separados:** una clave admitida para el canal no sirve para firmar R0.
+- **Naturaleza:** `ClaveDePrueba` solo admite la naturaleza `fixture_de_prueba`, y `CLAVES_OPERATIVAS_ADMITIDAS` está vacía. AE-76 no elige autoridad, identidad ni política de firmas operativa.
+- **Estado:** el mejor posible es `pendiente`.
+
+### Recepción y cierre del canal
+
+`verificar_canal` comprueba cada acuse (lectura, firma, clave del rol `canal`, huella y vínculo con el registro), la secuencia y el cierre. Detecta:
+- **Acuse reutilizado en otro objetivo:** `acuse_de_otro_objetivo`, cuando el hash de la predicción corresponde a otro juego u objetivo.
+- **Duplicado:** `acuse_duplicado`.
+- **Omisión:**
+  - `acuse_omitido`: está en el cierre pero no se presentó;
+  - `secuencia_con_huecos`;
+  - `omision_respecto_del_conjunto_declarado`.
+- **Reordenamiento:**
+  - `orden_alterado`, en la presentación o en el cierre;
+  - `encadenamiento_roto`.
+- **Cierre manipulado:**
+  - `firma_no_coincide`;
+  - `total_o_cabeza_no_coincide`;
+  - `clave_no_admitida`.
+- **Declaración de completitud falsa:** `declaracion_de_completitud_falsa_frente_al_registro`, cuando el cierre se declara completo pero el registro presentado contiene predicciones fuera de su conjunto.
+
+**Tres niveles de completitud**, que se informan por separado:
+
+| Nivel | Qué significa | Mejor estado posible |
+|---|---|---|
+| `respecto_del_manifiesto` | el cierre firmado es coherente con los acuses presentados y declara completitud | `superada` |
+| `respecto_del_registro_presentado` | toda predicción del registro presentado tiene acuse | `superada` |
+| `respecto_de_lo_que_debio_existir` | no falta ninguna predicción que debió existir | `pendiente` |
+
+**Un manifiesto autocontrolado no prueba el tercer nivel:** el registro presentado podría estar recortado. La evidencia externa que faltaría está en `EVIDENCIA_EXTERNA_FALTANTE`:
+- un calendario oficial identificado, versionado y publicado antes del cierre que fije los objetivos esperados;
+- una bitácora externa de solo anexado con monitores independientes;
+- la unicidad del canal;
+- un sello o recepción independiente de cada acuse;
+- la declaración en R0 del canal, su clave y su revocación.
+
+**Recepción antes del plazo:** queda siempre `pendiente`, por tres razones:
+- la secuencia y la hora declaradas por el canal no prueban anterioridad (la prueba lo comprueba con horas imposibles de 2099);
+- el sello de AE-75 cubre el compromiso R0 por objetivo, no cada predicción;
+- no hay sello independiente de cada acuse.
+
+### Informe conjunto
+
+`evaluar_expediente` llama a `evaluar_admision_con_plano_temporal` de AE-75, que a su vez usa `evaluar_admision` de AE-74. Copia sus planos sin cambios y pone los resultados de AE-76 en `planos_preparatorios`, con nombres que no coinciden con ningún plano de AE-74 ni de AE-75:
+- `autenticacion_preparatoria_de_r0`;
+- `cierre_del_canal`;
+- tres planos de completitud;
+- `recepcion_preparatoria_antes_del_plazo`.
+
+**Con sobre, acuses, cierre y sello sintéticos correctos:**
+- `autenticacion_de_r0`, `recepcion_antes_del_plazo` y `completitud_y_unicidad_del_canal` de AE-74 siguen `sin_evidencia`;
+- `sello_temporal_de_r0` sigue `pendiente`;
+- `r0_final` sigue rechazada, idéntica a la de AE-74;
+- `AUTORIZA_EVALUACION = False`.
+
+**No hay promoción de estados por composición.**
+
+`DECISIONES_PENDIENTES_AE76`, todas `sin_decidir`, recoge lo que falta decidir:
+- **A1:** autoridad e identidad del firmante y su política de firmas;
+- **A2:** publicación fuera de banda y reconocimiento del operador;
+- **A3:** revocación y custodia de las claves;
+- **C1:** canal operativo;
+- **C2:** evidencia temporal de cada acuse;
+- **C3:** fuente externa del conjunto esperado y bitácora pública.
+
+### Validación automática (CI)
+
+El repositorio no tenía workflows. AE-76 añade `.github/workflows/validacion-python-314.yml`, con permisos `contents: read`, sin secretos, sin despliegue y sin descargar ejecutables:
+
+| Trabajo | Runner | Qué ejecuta |
+|---|---|---|
+| `linux` | `ubuntu-24.04`, Python `3.14` | dependencias fijadas, `httpx==0.28.1` para las pruebas HTTP, `pip check`, `openssl version`, suite completa con JUnit y el comprobador en modo `exigir` |
+| `windows` | `windows-2025`, Python `3.14`, `pwsh` | dependencias fijadas, `pip check`, informe de OpenSSL en `PATH`, la selección `tests/seleccion_windows.txt` (focalizadas más AE-60 a AE-76) con JUnit y el comprobador en modo `permitir_omision` |
+
+`backend/scripts/ci_contrastes_openssl.py` cuenta los siete casos de `test_g1_contraste_con_openssl_ts_verify` en el JUnit real:
+- **`exigir`:** los siete deben pasar.
+- **`permitir_omision`:** acepta los siete pasados, o los siete omitidos con la línea explícita `OMITIDOS 7/7 sin OpenSSL en PATH; no cuentan como superados`.
+- **Fallo (código 1) en cualquier otro caso:** fallos, errores, mezcla de pasados y omitidos, o un número de casos distinto de siete.
+- **Omisiones ajenas:** también falla si el JUnit contiene cualquier otra prueba omitida. Así ninguna omisión ajena pasa por éxito.
+
+**`httpx`:** no es una dependencia declarada del proyecto. Las pruebas HTTP con `TestClient` lo importan con `pytest.importorskip` y, sin él, se omiten 50 pruebas. El trabajo de Linux instala `httpx==0.28.1`, la versión que el operador validó en Windows, como dependencia solo de pruebas. `requirements.txt` no cambia. La selección de Windows no contiene pruebas HTTP.
+
+La línea de estado se añade al resumen del trabajo.
+
+**OpenSSL en Windows:** la documentación oficial de las imágenes (`actions/runner-images`) indica OpenSSL `3.6.4` preinstalado en Windows Server 2022 y 2025, y OpenSSL `3.0.13` en Ubuntu 24.04. El workflow no lo instala ni lo descarga: usa el del runner si está en `PATH`. Si no lo está, el trabajo lo informa y el comprobador deja el estado explícito de omisión.
+
+**El workflow no se ejecutó en GitHub desde esta etapa.** Los pasos se simularon en el sandbox Linux con Python `3.14.0rc2` (ver las mediciones). El trabajo de Windows está pendiente de su primera ejecución real.
+
+**Mediciones en el sandbox Linux de Claude** (solo Linux; no validadas en Windows ni en GitHub):
+- **Base `867e7c4`:** una copia limpia con solo los tres archivos de prueba nuevos dio `32 failed, 6 passed` (código `1`).
+  - 20 fallos son por `ModuleNotFoundError` del módulo nuevo y 12 por `FileNotFoundError` del script, la selección o el workflow, que aún no existían.
+  - G2 y G3 pasan.
+- **Python `3.11.15`, pytest `9.1.1`** (versión final del árbol; todas con código `0` y `0 skipped`):
+  - pruebas de AE-76: `40 passed`;
+  - AE-52: `110 passed`;
+  - AE-60 a AE-76: `540 passed`;
+  - focalizadas (lista de AE-59 más AE-60 a AE-76, los mismos archivos que la selección de Windows): `1280 passed`;
+  - suite completa: `5525 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+  - comprobador en modo `exigir` sobre el JUnit real: `SUPERADOS 7/7`;
+  - `pip check` sin problemas y `git diff --check` sin salida.
+- **Simulación del trabajo de Windows** (Python `3.14.0rc2`, sobre el árbol previo a la regla de omisiones ajenas):
+  - selección con OpenSSL en `PATH`: `1279 passed` y `SUPERADOS 7/7`;
+  - con un `PATH` sin OpenSSL: `1272 passed, 7 skipped`; `permitir_omision` informó `OMITIDOS 7/7 … no cuentan como superados` (código `0`) y `exigir` falló (código `1`).
+- **Simulación del trabajo de Linux** (Python `3.14.0rc2`):
+  - **Solo con `requirements.txt`:** hubo 50 omisiones por falta de `httpx`, que motivaron el paso de `httpx` y la regla de omisiones ajenas; el comprobador corregido rechaza ese JUnit (código `1`).
+  - **Con `httpx==0.28.1`:** `58 failed, 5467 passed` y `SUPERADOS 7/7`. Los 58 fallos tienen una sola causa, comprobada en el JUnit: pydantic `2.13.5` llama a `typing._eval_type(..., prefer_fwd_module=...)`, que el candidato `3.14.0rc2` del sandbox no admite. Afecta solo a pruebas que importan FastAPI (`test_generalizacion_juegos` y `test_auditoria_operativa_bloqueo_main`); ninguna es de ML ni de AE-76.
+  - No se pudo probar en el sandbox una versión final de 3.14. El runner de GitHub y la validación del operador usan versiones finales, con las que esas pruebas pasaron en etapas anteriores.
+
+### Límites
+
+- **Claves:** son de fixture, derivadas de etiquetas públicas; una firma correcta prueba integridad frente a una clave admitida en la prueba, no identidad, autoridad, publicación ni reconocimiento.
+- **Completitud:** completo respecto del manifiesto o del registro presentado **no** es completo respecto de lo que debió existir.
+- **Recepción:** la secuencia y la hora del canal no prueban recepción anterior al plazo.
+- **Decisiones y pendientes:**
+  - D8 sigue aprobada solo para el modelo sintético, y D9 con su espera provisional;
+  - siguen pendientes el calendario oficial, las anclas operativas, la revocación, la publicación fuera de banda, la autoridad del firmante y la completitud global.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados; no da garantías sobre entradas de predicción.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Parche:** el completo `ae76-expediente-r0-recepcion.patch`, 98788 bytes, SHA-256 `8a434f17a3c34fd00f41065e90d13b64f9631d01305509a035da6a09a8986929`, sobre la base `867e7c49874d1df4c5c5bd4ece3969c493ceda19`.
+- **Aplicación:** la aplicación, la comprobación inversa, `git diff --check` y el alcance de diez archivos fueron correctos.
+- **Pruebas nuevas de AE-76:** `40 passed`.
+- **Selección de Windows** (`tests/seleccion_windows.txt`): `1273 passed, 7 skipped`.
+- **Comprobador:** `OMITIDOS 7/7 sin OpenSSL en PATH`. Allí se superaron **cero** contrastes con `openssl ts -verify`: las siete omisiones **no** son éxitos y el contraste sigue pendiente en ese equipo.
+- **Módulos afectados en la simulación con `3.14.0rc2`** (`test_generalizacion_juegos` y `test_auditoria_operativa_bloqueo_main`): `1218 passed`, con los cinco avisos conocidos de Alembic.
+- **`pip check`:** limpio.
+
+**Resultados solo del sandbox Linux de Claude** (no repetidos para este cierre):
+- los siete contrastes con `openssl ts -verify` superados (`SUPERADOS 7/7`);
+- la suite completa, `5525 passed, 0 skipped`, con Python `3.11.15`;
+- la simulación con Python `3.14.0rc2` y `httpx==0.28.1`: `58 failed`, todos por la incompatibilidad de pydantic `2.13.5` con ese candidato (`prefer_fwd_module`). En Windows con `3.14.6`, esos dos módulos pasaron (`1218 passed`).
+
+**No se afirma que la suite completa haya pasado con Python 3.14 final:** en Windows se ejecutaron la selección y esos dos módulos, no la suite completa. **El workflow `validacion-python-314.yml` todavía no se ha ejecutado en GitHub Actions**, ni en Linux ni en Windows.
+
+**Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **el expediente sintético (sobre, acuses, cierre e informe conjunto), el comprobador, la selección y sus pruebas**.
+- **Claves y datos:** son de prueba; no hay acreditación operativa de R0 ni de una recepción completa y única.
+- **Decisiones:** D8 sigue aprobada solo para el modelo sintético y D9 con su espera provisional; A1 a A3 y C1 a C3 siguen sin decidir.
+- **`r0_final`:** sigue rechazada.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades ni canales operativos, red ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-75 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas

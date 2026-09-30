@@ -1,0 +1,72 @@
+# AE-76 (validada localmente como trabajo preparatorio; este workflow aun no se ha
+# ejecutado en GitHub Actions): validacion automatica con Python 3.14 en Linux y Windows.
+# Sin secretos, sin despliegue y sin descargar ejecutables: usa el OpenSSL que ya
+# trae cada imagen del runner. Los siete contrastes con `openssl ts -verify` se
+# cuentan desde el informe JUnit real; una omision nunca se presenta como exito.
+name: Validacion Python 3.14
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux - suite completa
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Dependencias fijadas
+        run: python -m pip install -r requirements.txt
+      # httpx no es dependencia declarada del proyecto: las pruebas HTTP con TestClient
+      # lo importan con pytest.importorskip. Se fija a la version validada por el operador
+      # para que la suite completa no tenga omisiones ajenas.
+      - name: Dependencia de pruebas HTTP
+        run: python -m pip install httpx==0.28.1
+      - name: Comprobacion de dependencias
+        run: python -m pip check
+      - name: OpenSSL del runner
+        run: openssl version
+      - name: Suite completa
+        run: python -m pytest -p no:cacheprovider -rsw --junitxml=../resultados-linux.xml
+      - name: Contrastes con openssl ts -verify (deben pasar los siete)
+        run: python scripts/ci_contrastes_openssl.py ../resultados-linux.xml --modo exigir --resumen "$GITHUB_STEP_SUMMARY"
+
+  windows:
+    name: Windows - seleccion AE-52 a AE-76
+    runs-on: windows-2025
+    defaults:
+      run:
+        working-directory: backend
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Dependencias fijadas
+        run: python -m pip install -r requirements.txt
+      - name: Comprobacion de dependencias
+        run: python -m pip check
+      - name: OpenSSL en PATH (informativo; no se instala nada)
+        run: |
+          $openssl = Get-Command openssl -ErrorAction SilentlyContinue
+          if ($openssl) { "OpenSSL en PATH: $($openssl.Source)"; openssl version }
+          else { "OpenSSL no esta en PATH: los contrastes quedaran OMITIDOS y no cuentan como superados" }
+      - name: Seleccion Windows
+        run: |
+          $rutas = Get-Content tests/seleccion_windows.txt | Where-Object { $_ }
+          python -m pytest -p no:cacheprovider -rsw --junitxml=../resultados-windows.xml @rutas
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Contrastes con openssl ts -verify (siete superados o siete omitidos, con estado explicito)
+        run: python scripts/ci_contrastes_openssl.py ../resultados-windows.xml --modo permitir_omision --resumen $env:GITHUB_STEP_SUMMARY

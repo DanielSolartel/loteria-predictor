@@ -4200,6 +4200,29 @@ AE-75 queda **validada solo como implementación y verificación preparatoria so
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos ni autoridades operativas, relojes locales como prueba ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-74 sin cambios.
 
+**Etapa AE-76 -expediente preparatorio de autenticación de R0 y recepción de predicciones, validada localmente como trabajo preparatorio:** añade tres piezas versionadas y firmadas con Ed25519 (`cryptography`).
+- **`sobre-autenticacion-r0/1`:** vincula R0, el protocolo 1.2, el contrato y el alcance de la firma.
+- **`acuse-recepcion-prediccion/1`:** un acuse por predicción, encadenado.
+- **`cierre-canal-predicciones/1`:** el manifiesto del canal.
+
+**Qué detecta y qué no concluye:**
+- Detecta una clave no admitida, una firma alterada, un R0 o un protocolo equivocados, un acuse reutilizado en otro objetivo, duplicados, omisiones, reordenamientos, un cierre manipulado y un manifiesto que se declara completo de forma falsa.
+- Distingue la completitud respecto del manifiesto, la del registro presentado y la de lo que debió existir; esta última queda pendiente sin evidencia externa.
+- Una firma de fixture no prueba identidad, y la hora o la secuencia del canal no prueban recepción antes del plazo.
+- El informe conjunto lee AE-74 y AE-75 sin cambiar sus puertas: `r0_final` sigue rechazada.
+
+**Validación automática:** el nuevo workflow `validacion-python-314.yml` usa Python 3.14.
+- En Linux ejecuta la suite completa y exige los siete contrastes con `openssl ts -verify`.
+- En Windows ejecuta una selección de AE-52 a AE-76 y acepta solo los siete contrastes superados o los siete omitidos, con estado explícito.
+
+El detalle, las decisiones pendientes y los límites están en la sección AE-76 de `ARCHITECTURE.md`.
+
+R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; D8 sigue aprobada solo para el modelo sintético y D9 con su espera provisional; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-76 queda **validada localmente como trabajo preparatorio**: el expediente sintético y sus pruebas. **Validación del operador en Windows** (Python `3.14.6`, atribuida al usuario): parche completo comprobado y diez archivos; `40 passed` (AE-76); selección `1273 passed, 7 skipped`, con `OMITIDOS 7/7` sin OpenSSL en `PATH` y cero contrastes superados allí; `1218 passed` en los dos módulos que fallaron con `3.14.0rc2`; `pip check` limpio. Los siete contrastes superados y la suite completa (`5525 passed`) son solo del sandbox Linux con Python `3.11.15`; los `58 failed` de la simulación con `3.14.0rc2` se deben a pydantic con ese candidato. No se afirma que la suite completa haya pasado con Python 3.14 final, y **el workflow todavía no se ha ejecutado en GitHub Actions**. El detalle y los límites están en la sección AE-76 de `ARCHITECTURE.md`.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades ni canales operativos, red ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-75 sin cambios.
+
 ---
 
 
