@@ -2946,6 +2946,26 @@ AE-74 queda **validada solo como contrato versionado sintético, con sus puertas
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos, firmas, relojes ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-73 sin cambios.
 
+**Etapa AE-75 -sello temporal RFC 3161 del compromiso R0 por objetivo, validada:** el operador aprobó D8 y la política de confianza temporal con seis ajustes.
+- **Compromiso por objetivo:** `compromiso-sello-r0-objetivo/1` sella la versión, el contrato, la regla, `protocolo_hash`, `hash_declaracion`, el juego, el objetivo y un plazo UTC sintético. Un sello de un objetivo no sirve para otro.
+- **Regla estricta:** «anterior» solo si `genTime + accuracy + margen < plazo`. La igualdad no pasa, cruzar el plazo no es concluyente y sin `accuracy` queda pendiente.
+- **Criptografía con bibliotecas mantenidas:**
+  - `rfc3161-client` 1.0.9, con OpenSSL incorporado, hace la verificación integral frente a un ancla explícita;
+  - `cryptography` 50.0.1 comprueba certificados y firma, y su decodificador DER lee `genTime` exacto y `SigningCertificateV2`.
+- **Anclas y políticas:** solo de prueba. La revocación sin comprobar deja todo `pendiente`.
+
+El nuevo plano `sello_temporal_de_r0` se añade al informe de AE-74 sin tocar `evaluar_admision` ni `r0_final`. **No prueba autenticación de R0, recepción de predicciones ni completitud o unicidad del canal.** D8 queda aprobada solo para el modelo sintético; el plazo operativo y `calendario_oficial` siguen sin fijar.
+
+El detalle, lo que comprueba cada herramienta, las citas de RFC 3161 y RFC 5816, los resultados por caso, las pruebas y los límites están en la sección AE-75 de `ARCHITECTURE.md`.
+
+R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-75 queda **validada solo como implementación y verificación preparatoria sobre datos, anclas y plazos sintéticos**. D8 está aprobada solo para el modelo sintético, el calendario y el plazo operativos no están fijados, la revocación no se comprobó, el ancla es de prueba, el plano temporal no llega a `superada` y `r0_final` sigue rechazada.
+
+**Validación del operador en Windows** (atribuida al usuario): rama `feature/ae75-sello-temporal-r0`, HEAD y base `d4c7da6`, SHA-256 del parche completo comprobado, nueve archivos. Con Python `3.14.6`, pytest `9.1.1` y las dependencias instaladas desde ruedas: `68 passed, 7 skipped in 2.74s` (AE-75), `110 passed in 6.80s` (AE-52), `493 passed, 7 skipped in 3.23s` (AE-60 a AE-75) y `pip check` sin problemas. Las siete omisiones son los contrastes con `openssl ts -verify`, sin OpenSSL en `PATH`: no se ejecutaron en Windows. Esos siete contrastes solo pasaron en el sandbox Linux, igual que las focalizadas (`1240 passed`) y la suite completa (`5485 passed, 0 skipped`). El detalle y los límites están en la sección AE-75 de `ARCHITECTURE.md`.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, sellos ni autoridades operativas, relojes locales como prueba ni canales reales. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-74 sin cambios.
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)

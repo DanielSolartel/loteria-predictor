@@ -19,7 +19,10 @@ El operador aprobo D1, D2 y D7:
   registro.
 
 D9 tiene una espera provisional (`marcadores_textuales_sin_resolver`); su
-politica de rechazo y D8 siguen sin decidir.
+politica de rechazo sigue sin decidir. D8 tiene desde AE-75 una regla
+comparativa aprobada por el operador solo para el modelo sintetico
+(`sello_temporal_r0`); el plazo operativo y `calendario_oficial` siguen sin
+fijar, y `evaluar_admision` no cambia.
 
 `evaluar_admision` responde con cuatro puertas independientes (borrador
 sintetico, vinculo integro, declaracion estructuralmente completa y R0
@@ -89,7 +92,12 @@ DECISIONES_DEL_CONTRATO = MappingProxyType({id_: MappingProxyType({"estado": est
     ("D7", "aprobada_por_el_operador",
      "pendientes solo en borradores sinteticos; un registro con pendientes nunca llega a R0 final y completarlos "
      "exige otro protocolo y otro registro"),
-    ("D8", "sin_decidir", "plazo frente a corte; la puerta de recepcion antes del plazo queda sin evidencia"),
+    ("D8", "aprobada_solo_para_el_modelo_sintetico",
+     "regla comparativa de AE-75 para el modelo sintetico: el corte (numero de sorteo) y el plazo (instante UTC) son "
+     "variables distintas; anterior solo si genTime + accuracy + margen < plazo, la igualdad no pasa, un intervalo que "
+     "cruza el plazo no es concluyente y sin accuracy ni precision comprobable en la politica de la TSA queda "
+     "pendiente. Solo admite un plazo sintetico explicito; el plazo operativo, su calendario oficial y "
+     "calendario_oficial siguen sin fijar, y la puerta de recepcion antes del plazo sigue sin evidencia"),
     ("D9", "espera_provisional_aprobada",
      "un texto marcador deja la completitud en espera (marcadores_textuales_sin_resolver) sin rechazar el borrador "
      "ni contar como valor suficiente; la politica definitiva de rechazo sigue sin decidir"),
