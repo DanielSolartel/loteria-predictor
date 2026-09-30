@@ -4905,6 +4905,214 @@ Siguen igual:
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-76 sin cambios.
 
+## Expediente portable y verificador offline de la recepción por objetivo -Etapa AE-78, validada localmente como trabajo preparatorio
+
+**Etapa AE-78 -expediente portable y verificador offline de la recepción por objetivo, validada localmente como trabajo preparatorio:** empaqueta en un directorio versionado todo lo que la evaluación compuesta de AE-77 necesita. Un comando de solo lectura la reproduce offline sobre ese directorio y emite un informe JSON determinista y un resumen legible. **Auditar un expediente nunca autoriza evaluación.**
+
+**Evidencia previa, en CI:** el operador comprobó AE-77 en GitHub Actions sobre `e71a4f5` (merge del PR #76). Ambos trabajos terminaron correctamente, con `SUPERADOS 7/7` de OpenSSL en cada uno. No se dispone de cifras de pytest de esa ejecución y no se atribuyen.
+
+### Formato del expediente
+
+`expediente-portable-recepcion/1` es un directorio con `manifiesto.json` en JSON canónico de AE-52. El manifiesto tiene tres claves:
+- `esquema`;
+- `archivos`: la lista ordenada de `{ruta, bytes, sha256}`;
+- `piezas`: qué archivo es cada pieza.
+
+| Pieza | Archivos |
+|---|---|
+| `registro` | `registro/NNNNNN.json`, entradas del registro 1.2 en orden |
+| `declaracion_r0` | `declaracion/declaracion_r0.json` |
+| `sobre`, `cierre`, `conjunto_esperado`, `acuses[i]`, `vistas[v][j]` | `datos.json`, `firma.bin` y `clave_publica.bin` de cada objeto firmado |
+| `sellos_r0` | `respuesta.tsr` y `compromiso.json` por (juego, objetivo) |
+| `sellos_de_acuses` | `respuesta.tsr` y `compromiso.json`, con el índice del acuse |
+
+El compositor escribe solo bytes de piezas, firmas, claves públicas y tokens; no incluye las claves privadas de fixture, y las pruebas comprueban que sus bytes no aparecen en el expediente ni en la política exportados. El compositor y el lector rechazan además las marcas textuales `PRIVATE KEY` y `OPENSSH PRIVATE` (`material_privado_detectado`). **Esa detección es textual:** no reconoce cualquier clave privada, por ejemplo una codificada como bytes crudos, así que el lector no garantiza por sí solo que un expediente ajeno carezca de material privado.
+
+### Política del verificador, aparte del expediente
+
+La confianza y las expectativas **no** viajan en el expediente. El verificador recibe un segundo directorio, `politica-verificador-de-prueba/1` (`politica.json`, con el mismo formato de archivos declarados). Contiene:
+- los certificados de ancla, los OID de política admitidos y el margen;
+- las claves públicas admitidas por rol (`firmante_r0`, `canal`) y las del observador;
+- el canal y el corte esperados (`auditoria`).
+
+Solo admite la naturaleza `fixture_de_prueba`. Así, quien presenta la evidencia no elige a través del expediente en quién confiar ni qué corte se espera. **Que la política llegue por separado no acredita por sí mismo su custodia ni una autoridad independiente:** de dónde saldría una política real sigue sin decidir.
+
+### Uso
+
+```
+cd backend
+python -m scripts.verificar_expediente_recepcion RUTA/EXPEDIENTE --politica RUTA/POLITICA
+python -m scripts.verificar_expediente_recepcion RUTA/EXPEDIENTE --politica RUTA/POLITICA --formato json
+python -m scripts.verificar_expediente_recepcion RUTA/EXPEDIENTE --politica RUTA/POLITICA --salida-json RUTA/informe.json
+```
+
+La API pura está en `app/application/ml/expediente_portable.py`:
+- `componer_expediente` y `componer_politica`;
+- `leer_expediente` y `leer_politica`;
+- `evaluar`, `informe_json` y `resumen_legible`.
+
+El script solo lee disco. Lo único que puede escribir es el informe de `--salida-json`: fuera de los directorios auditados, sin sobrescribir (`open(..., "xb")`).
+
+### Qué significa el informe
+
+El informe (`informe-expediente-recepcion/1`) separa cinco secciones. Reutiliza los verificadores y estados de AE-74 a AE-77 sin copiar su lógica:
+
+| Sección | Planos | Mejor estado posible |
+|---|---|---|
+| `integridad_y_firmas` | `integridad_de_bytes_de_las_piezas`, `firmas_y_roles_de_prueba`, `autenticacion_preparatoria_de_r0`, `cierre_del_canal`, `vistas_del_observador` | `superada`, frente al material presentado y a la política de prueba (autenticación de R0 y cierre: `pendiente`) |
+| `tiempo` | `tiempo_por_acuse`, `sello_temporal_de_r0`, `recepcion_preparatoria_antes_del_plazo`, con el detalle por acuse | `pendiente` (ancla de prueba, revocación sin comprobar, plazo sintético) |
+| `completitud_presentada` | completitud respecto del manifiesto presentado (AE-77), del manifiesto del canal y del registro presentado (AE-76) | `superada` |
+| `pendientes` | `autoridad_del_manifiesto`, `completitud_global`, `completitud_respecto_de_lo_que_debio_existir`; decisiones A1–A3 y C1–C3 | `pendiente` |
+| `autorizacion_operativa` | `estado`, `AUTORIZA_EVALUACION`, `r0_final`, planos de AE-74, D8 y D9 | siempre `denegada` y `False`; `r0_final` `rechazada` cuando se ejecuta la evaluación |
+
+Si la lectura endurecida rechaza el expediente o la política, **no se evalúa ningún plano, tampoco `r0_final`**. El informe queda con `secciones` vacío, registra el fallo en `lectura` y lleva solo `autorizacion_operativa` con `estado` `denegada` y `AUTORIZA_EVALUACION` `False`.
+
+El JSON es determinista: claves ordenadas, UTF-8 y LF final. La misma entrada produce los mismos bytes, cualquiera que sea el orden en que se lean los archivos.
+
+**Códigos de salida** (`CODIGOS_DE_SALIDA`; ninguno significa autorización):
+
+| Código | Significado |
+|---|---|
+| `0` | auditoría completada sin planos comprobables rechazados; los pendientes siguen pendientes |
+| `1` | auditoría completada con al menos un plano comprobable rechazado |
+| `2` | uso incorrecto: argumentos, salida dentro de un directorio auditado o ya existente |
+| `3` | la lectura endurecida rechazó el expediente o la política; no se evaluó ningún plano |
+
+### Lectura endurecida
+
+Todas las causas aparecen como `lectura.motivos`, con código `3`:
+- **Versión y manifiesto:**
+  - `version_desconocida` (versión desconocida);
+  - `manifiesto_ausente`, `manifiesto_ilegible` o `manifiesto_no_canonico` (JSON con claves duplicadas, `NaN` o forma no canónica);
+  - `estructura_invalida` (estructura distinta).
+- **Rutas:** `ruta_invalida` para:
+  - rutas absolutas (`/…`, `C:/…`, `\\…`);
+  - escapes (`..`), segmentos `.` o vacíos;
+  - barras invertidas y mayúsculas;
+  - nombres ocultos y longitudes excesivas.
+- **Archivos:**
+  - `archivo_faltante`;
+  - `archivo_no_declarado`;
+  - `archivo_sin_referencia` (declarado sin referencia);
+  - `referencia_no_declarada` (referencia no declarada);
+  - `referencia_duplicada` (en `archivos` o en `piezas`);
+  - `tamano_incorrecto` y `sha256_incorrecto`.
+- **Material privado:** `material_privado_detectado`.
+- **Límites:**
+  - `archivo_demasiado_grande`: 1 MiB por archivo;
+  - `expediente_demasiado_grande`: 16 MiB en total;
+  - `demasiados_archivos`: 512 archivos;
+  - `manifiesto_demasiado_grande`: 1 MiB de manifiesto.
+- **En disco:**
+  - `directorio_invalido`;
+  - `enlace_simbolico`, incluidas las uniones de Windows;
+  - `archivo_no_regular`;
+  - `ruta_fuera_del_directorio`;
+  - `archivo_cambio_durante_la_lectura`.
+
+**Alcance de la comprobación en disco:** enlaces, archivos no regulares y rutas se comprueban sobre un **directorio estable**. No hay garantía frente a cambios concurrentes del sistema de archivos durante la lectura. `archivo_cambio_durante_la_lectura` solo detecta que el número de bytes leídos difiere del tamaño consultado antes; no detecta sustituciones del mismo tamaño ni enlaces creados entre la consulta y la apertura. Los bytes que finalmente se leen se comprueban igualmente contra los tamaños y hashes del manifiesto leído.
+
+Sin red, reloj local, deserialización ejecutable (solo JSON estricto) ni secretos.
+
+**El manifiesto no está firmado:** prueba que los archivos coinciden con sus hashes declarados. Una alteración coherente de un archivo y del manifiesto solo la detectan las firmas y los vínculos de las piezas, como muestra el escenario del acuse alterado.
+
+### Demostración reproducible
+
+Los escenarios sintéticos de `tests/unit/ml/fixtures_expediente_portable.py` se ejecutan con el comando real sobre directorios en disco:
+
+| Escenario | Código | Plano y motivo que lo delatan |
+|---|---|---|
+| íntegro | `0` | integridad, firmas y completitud presentada `superada`; tiempo, autoridad y completitud global `pendiente` |
+| acuse alterado | `1` | `firmas_y_roles_de_prueba` y `tiempo_por_acuse`: `firma_no_coincide` |
+| sello de otro acuse | `1` | `tiempo_por_acuse` e integridad: `compromiso_de_otro_acuse` |
+| objetivo omitido | `1` | completitud respecto del manifiesto presentado: `objetivo_esperado_sin_acuse` |
+| vistas contradictorias | `1` | `vistas_del_observador` y completitud: `vistas_contradictorias` |
+| manifiesto alterado | `3` | lectura: `sha256_incorrecto` o `manifiesto_no_canonico` |
+| ruta maliciosa | `3` | lectura: `ruta_invalida` |
+
+En los cinco escenarios evaluados (códigos `0` y `1`), `autoridad_del_manifiesto`, `completitud_global` y la completitud respecto de lo que debió existir siguen `pendiente`, `r0_final` sale rechazada y la autorización denegada. En los dos de lectura rechazada (código `3`) no se evalúa ningún plano, tampoco `r0_final`: el informe registra el fallo de lectura y deniega la autorización. Las claves RSA de la TSA de prueba se generan en cada ejecución, así que los bytes de los tokens y el hash del manifiesto cambian entre ejecuciones; los estados, los motivos y los códigos no.
+
+### CI
+
+La selección de Windows (`tests/seleccion_windows.txt`) incluye las pruebas de AE-78. El trabajo de Windows pasa a llamarse `Windows - seleccion de tests/seleccion_windows.txt`, un nombre que no queda obsoleto en la siguiente etapa.
+
+No cambian la separación Linux/Windows, el recuento de los siete contrastes con OpenSSL ni las versiones de acciones o dependencias. Los avisos de Node.js 20 siguen como mantenimiento aparte.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, pytest `9.1.1`; solo Linux, no validadas en Windows ni en GitHub Actions):
+- **Base `e71a4f5`:** una copia limpia con solo los tres archivos de prueba nuevos dio `58 failed, 4 passed` (código `1`).
+  - 45 fallos son por `ModuleNotFoundError` del módulo nuevo, 12 por `FileNotFoundError` del script y 1 porque la selección de Windows no incluía las pruebas nuevas.
+  - G2 y G3 pasan.
+- **Tras implementar** (todas con código `0` y `0 skipped`):
+  - pruebas de AE-78: `64 passed`;
+  - AE-52: `110 passed`;
+  - AE-74 a AE-77: `185 passed`;
+  - AE-60 a AE-78: `633 passed`;
+  - focalizadas (lista de AE-59 más AE-60 a AE-78) y la selección de Windows: `1373 passed` cada una;
+  - suite completa: `5618 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+  - comprobador en modo `exigir`: `SUPERADOS 7/7`;
+  - `pip check` sin problemas y `git diff --check` sin salida.
+- **Enlaces simbólicos:** en Linux la prueba usa enlaces reales. La rama que usaría Windows sin privilegio para crearlos se ejerce también en Linux, forzando el fallo de `os.symlink`, y no hay omisiones.
+
+### Límites
+
+- **Material de fixture:** claves, certificados, TSA, observador y política del verificador son de fixture; un plano superado solo prueba coherencia frente a ese material.
+- **Política del verificador:** es de fixture y va aparte del expediente; su ubicación separada no acredita por sí misma custodia ni autoridad independiente.
+- **Material privado:** la detección del lector es textual (`PRIVATE KEY`, `OPENSSH PRIVATE`); no reconoce cualquier clave privada codificada como bytes crudos.
+- **Disco:** la comprobación de enlaces y rutas cubre un directorio estable; no hay garantía frente a cambios concurrentes durante la lectura.
+- **Completitud:** completo respecto del conjunto presentado **no** es completitud global. Las vistas presentadas no descartan historias ocultas sin monitores independientes y una fuente autorizada.
+- **Decisiones:**
+  - A1–A3 y C1–C3 siguen sin decisión operativa;
+  - D8 solo está aprobada en el modelo sintético y D9 conserva su espera provisional;
+  - no se elige autoridad, TSA, calendario, política de revocación, observador ni canal real.
+- **Estados:** `r0_final` sigue rechazada cuando se evalúa; R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados; el expediente no hereda sus garantías para predicciones.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Rama y base:** `feature/ae78-expediente-portable`, con HEAD en `e71a4f5f8115f8e736fb00bc3b59152f99f52706`.
+- **Parche:** el completo `ae78-expediente-portable.patch`, 98137 bytes, SHA-256 `3794cc294ac905c272992ef88759eb4aa341aab4990dcff1d83f2938f4e9cc4f`. Pasó `apply --check`, se aplicó, pasó `reverse --check` y dejó exactamente los diez archivos previstos, sin archivos preparados.
+- **Espacios:** la comprobación con índice temporal fue limpia.
+- **`pip check`:** sin requisitos incompatibles.
+- **Pruebas de AE-78:** `64 passed in 5.64s`.
+- **AE-52:** `110 passed in 10.03s`.
+- **Ejecución 1, selección de Windows sin OpenSSL en `PATH`:**
+  - `1366 passed, 7 skipped in 30.73s`;
+  - `ci_contrastes_openssl.py`: `OMITIDOS 7/7` (0 pasados, 7 omitidos, 0 fallidos, 0 errores). En esta ejecución los siete contrastes con `openssl ts -verify` **no se ejecutaron y no cuentan como éxitos**; la cifra de la selección no cambia por la ejecución 2;
+  - el JUnit quedó en el directorio temporal de Windows, fuera del repositorio.
+- **Ejecución 2, posterior y separada, con OpenSSL:** el operador añadió temporalmente al `PATH` el OpenSSL `3.5.6` incluido con Git.
+  - `test_sello_temporal_r0.py`: `75 passed in 2.48s`, `0 skipped`;
+  - comprobador: `SUPERADOS 7/7`.
+  - Solo cubre ese archivo de pruebas; la selección completa no se repitió con OpenSSL.
+
+**Resultados solo del sandbox Linux de Claude** (Python `3.11.15`; no repetidos para este cierre):
+- `64 passed` (AE-78), `110 passed` (AE-52), `185 passed` (AE-74 a AE-77) y `633 passed` (AE-60 a AE-78);
+- `1373 passed` en las focalizadas y en la selección de Windows;
+- suite completa `5618 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+- `SUPERADOS 7/7` en los contrastes con OpenSSL.
+
+**Corrección en el cierre, posterior a las validaciones previas** (sí cambia un texto del código y añade una prueba; revalidada después en Windows: `65 passed in 3.20s`):
+- **Código:** en `LIMITES` de `expediente_portable.py`, «r0_final sigue rechazada» pasa a «ejecutar la auditoria no autoriza evaluacion ni convierte R0 en final; AUTORIZA_EVALUACION es False». El texto anterior aparecía también en los informes de lectura rechazada, donde `r0_final` no se evalúa. No cambian los estados de los informes.
+- **Prueba:** la regresión `test_g1_lectura_rechazada_no_evalua_r0_final_y_la_evaluacion_lo_rechaza` comprueba que, con lectura rechazada, el informe y el resumen no mencionan `r0_final` y la autorización queda denegada, y que en la evaluación `r0_final` sale `rechazada`. Con el texto anterior falla.
+- **Recuento:** las pruebas de AE-78 pasan de 64 a 65. Las cifras de Windows y de Linux anteriores (`64 passed`, `1373 passed`, `5618 passed`) son previas a esta corrección.
+
+**GitHub Actions todavía no ha ejecutado AE-78.** La comprobación de AE-77 sobre `e71a4f5`, descrita al principio de esta sección, es evidencia distinta y no se atribuye a esta etapa.
+
+**Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **el formato del expediente portable, la lectura endurecida, el verificador offline de solo lectura y sus pruebas, todo con claves, certificados, TSA, observador y política del verificador de fixture**.
+- **Política del verificador:** de fixture y aparte del expediente; su ubicación separada no acredita por sí misma custodia ni autoridad independiente.
+- **Decisiones:** A1–A3 y C1–C3 siguen sin decidir; D8 sigue limitada al modelo sintético y D9 con su espera provisional.
+- **Pendientes:** la autoridad del conjunto esperado y la completitud global.
+- **`r0_final`:** sigue rechazada cuando se evalúa; con lectura rechazada no se evalúa.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`. Este cierre no autoriza inferencia ni evaluación.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-77 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas

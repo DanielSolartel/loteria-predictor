@@ -4237,6 +4237,23 @@ AE-77 queda **validada localmente como trabajo preparatorio** (piezas y pruebas 
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-76 sin cambios.
 
+**Etapa AE-78 -expediente portable y verificador offline de la recepción por objetivo, validada localmente como trabajo preparatorio:** el formato `expediente-portable-recepcion/1` es un directorio con un manifiesto canónico y archivos referenciados por ruta, tamaño y SHA-256.
+- **Qué contiene:** registro, declaración, sobre, sellos de R0, acuses con sus sellos, cierre, conjunto esperado y vistas.
+- **Qué hace el comando de solo lectura:** `python -m scripts.verificar_expediente_recepcion EXPEDIENTE --politica POLITICA` reproduce offline la evaluación de AE-77 con una política de prueba del verificador suministrada aparte (su ubicación separada no acredita por sí misma custodia ni autoridad independiente), y emite un informe JSON determinista y un resumen.
+- **Códigos de salida:** `0` sin rechazos, `1` con rechazos, `2` uso incorrecto, `3` lectura rechazada. Ninguno autoriza evaluación. Con lectura rechazada no se evalúa ningún plano, tampoco `r0_final`: el informe registra el fallo y deniega la autorización.
+- **Lectura endurecida:** rechaza versiones desconocidas, archivos faltantes o no declarados, duplicados, hashes o tamaños incorrectos, rutas absolutas o con escapes, enlaces y tamaños excesivos. Las comprobaciones en disco cubren un directorio estable, sin garantía frente a cambios concurrentes durante la lectura, y la detección de material privado es textual (`PRIVATE KEY`): no reconoce cualquier clave privada en bytes crudos.
+- **CI:** el trabajo de Windows pasa a llamarse `Windows - seleccion de tests/seleccion_windows.txt`.
+
+**Evidencia previa, en CI:** el operador comprobó AE-77 en GitHub Actions sobre `e71a4f5`: ambos trabajos correctos y `SUPERADOS 7/7` de OpenSSL en cada uno. No se atribuyen cifras de pytest.
+
+El formato, el uso, el significado de los resultados y los límites están en la sección AE-78 de `ARCHITECTURE.md`.
+
+A1–A3 y C1–C3 siguen sin decidir; D8 sigue limitada al modelo sintético y D9 con su espera provisional. La autoridad del conjunto esperado y la completitud global siguen pendientes. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `r0_final` sigue rechazada cuando se evalúa, `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-78 queda **validada localmente como trabajo preparatorio** (formato, lectura endurecida, verificador offline y pruebas con fixtures). **Validación del operador en Windows** (Python `3.14.6`, atribuida al usuario): parche completo comprobado y diez archivos; `64 passed` (AE-78), `110 passed` (AE-52), selección `1366 passed, 7 skipped` y `pip check` limpio. En esa selección, sin OpenSSL en `PATH`, el comprobador informó `OMITIDOS 7/7`: esos siete contrastes no se ejecutaron en ella y no cuentan como éxitos. En una ejecución posterior y separada, con el OpenSSL `3.5.6` incluido con Git añadido temporalmente al `PATH`, `test_sello_temporal_r0.py` dio `75 passed, 0 skipped` y el comprobador `SUPERADOS 7/7`; la selección completa no se repitió con OpenSSL. Solo en el sandbox Linux: `185 passed` (AE-74 a AE-77), `633 passed` (AE-60 a AE-78), `1373 passed` en las focalizadas y la selección, suite completa `5618 passed, 0 skipped` y `SUPERADOS 7/7`; no se repitió la suite para este cierre. Después de esas validaciones, el cierre corrige un texto de `LIMITES` en el código, que afirmaba que `r0_final` «sigue rechazada» también en informes de lectura rechazada, donde no se evalúa. Ahora dice que la auditoría no autoriza evaluación ni convierte R0 en final. Una prueba de regresión nueva lo comprueba (AE-78 pasa de 64 a 65 pruebas); después se revalidó la corrección en Windows: `65 passed in 3.20s` en las pruebas AE-78. **GitHub Actions todavía no ha ejecutado AE-78.** Este cierre no autoriza inferencia ni evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-77 sin cambios.
+
 ---
 
 
