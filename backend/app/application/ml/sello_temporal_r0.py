@@ -304,7 +304,12 @@ def leer_compromiso(datos: bytes) -> dict:
         raise CompromisoInvalido("version_de_compromiso_desconocida", str(compromiso.get("esquema")))
     if set(compromiso) != set(CLAVES_DEL_COMPROMISO):
         raise CompromisoInvalido("compromiso_ilegible", "claves distintas de las de la version 1")
-    if bytes_de_compromiso(compromiso) != datos:
+    try:
+        canonicos = bytes_de_compromiso(compromiso)
+    except _rp.EntradaRegistroInvalidaError as error:
+        # NaN, Infinity y 1e999 (correccion incluida en AE-80).
+        raise CompromisoInvalido("compromiso_ilegible", "constante JSON no estandar") from error
+    if canonicos != datos:
         raise CompromisoInvalido("compromiso_no_canonico")
     return compromiso
 

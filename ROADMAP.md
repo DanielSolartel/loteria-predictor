@@ -3038,9 +3038,33 @@ Una captura solo prueba que una clave de prueba firmó esos bytes. La coincidenc
 
 A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir; D8 sigue limitada al modelo sintético y D9 con su espera provisional. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `r0_final` sigue rechazada cuando se evalúa, `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
 
-AE-79 queda **validada localmente como trabajo preparatorio** (capturas, claves y políticas de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo corregido comprobado y doce archivos; `51 passed` (AE-79), `65 passed` (AE-78), `110 passed` (AE-52), selección `1425 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostración `5/5` y `pip check` limpio; la suite completa no se repitió en Windows. Solo en el sandbox Linux: `185 passed` (AE-74 a AE-77), `685 passed` (AE-60 a AE-79), suite completa `5670 passed, 0 skipped` y `SUPERADOS 7/7`. **GitHub Actions todavía no ha ejecutado AE-79**: la ejecución sobre `44b927b` corresponde a AE-78. Solo una captura con firma superada y política coincidente y, si se presenta su expediente, con todos sus campos coincidentes entra en la comparación cruzada; una no admitida nunca produce por sí sola una contradicción. No se acredita la autoridad operativa del conjunto esperado, la completitud global ni la autenticidad operativa de R0. Este cierre no autoriza inferencia ni evaluación.
+AE-79 queda **validada localmente como trabajo preparatorio** (capturas, claves y políticas de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo corregido comprobado y doce archivos; `51 passed` (AE-79), `65 passed` (AE-78), `110 passed` (AE-52), selección `1425 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostración `5/5` y `pip check` limpio; la suite completa no se repitió en Windows. Solo en el sandbox Linux: `185 passed` (AE-74 a AE-77), `685 passed` (AE-60 a AE-79), suite completa `5670 passed, 0 skipped` y `SUPERADOS 7/7`. **GitHub Actions:** la captura del workflow posterior al merge del PR #78 (`5015841`) muestra Linux y Windows correctos, sin cifras de pytest ni recuento de OpenSSL atribuibles; la ejecución sobre `44b927b` corresponde a AE-78. Solo una captura con firma superada y política coincidente y, si se presenta su expediente, con todos sus campos coincidentes entra en la comparación cruzada; una no admitida nunca produce por sí sola una contradicción. No se acredita la autoridad operativa del conjunto esperado, la completitud global ni la autenticidad operativa de R0. Este cierre no autoriza inferencia ni evaluación.
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-78 sin cambios.
+
+**Etapa AE-80 -constancias externas y verificables de una auditoría cruzada, validada localmente como trabajo preparatorio:** un tercero puede conservar una constancia firmada (`constancia-auditoria-cruzada/1`, con las primitivas de AE-76) del estado exacto de una auditoría AE-79 y presentarla después.
+- **Qué vincula:**
+  - el dominio de fixture;
+  - la serie, la posición y la constancia anterior;
+  - las huellas de las políticas y de las entradas;
+  - el alcance y la huella del informe AE-79 normalizado.
+- **Comando:** `python -m scripts.verificar_constancias_auditoria`, de solo lectura. Recalcula la auditoría AE-79 (nunca acepta un informe aportado) y la coteja con las constancias y con una política de claves suministrada aparte (`politica-constancias-de-prueba/1`).
+- **Detecta:**
+  - sustitución de informe o expediente;
+  - bifurcaciones firmadas del mismo firmante y desacuerdos entre firmantes (sin adjudicar);
+  - predecesores omitidos (pendiente, nunca «cadena íntegra»).
+- **No presentado frente a inválido:** distingue la entrada no presentada de la presentada pero inválida.
+- **Corrección de lectores de AE-75 a AE-78:** una constante JSON no estándar (`NaN`, `Infinity`, `1e999`) en una pieza, un compromiso o un manifiesto da un motivo de lectura (`pieza_ilegible`, `compromiso_ilegible` o `manifiesto_ilegible`) en lugar de terminar con un error.
+- **Códigos:** `0` coincidentes, `1` contradicción, `2` uso incorrecto, `3` lectura rechazada, `4` no coincide, `5` sin constancia admitida. Ninguno autoriza evaluación.
+- **Demostración:** `python -m tests.demostracion_constancias_auditoria` ejecuta el comando real en ocho escenarios; también se ejecuta en los dos trabajos del workflow.
+
+Una firma válida solo prueba la firma de esos bytes frente a una clave admitida. No prueba autoridad real, publicación fuera de banda, custodia independiente, cronología, completitud global ni que R0 sea final, y no se usa mayoría ni quorum. El detalle y la evidencia que faltaría para A2 y C3 están en la sección AE-80 de `ARCHITECTURE.md`.
+
+A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
+
+AE-80 queda **validada localmente como trabajo preparatorio** (claves y políticas de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo de 157378 bytes comprobado y quince archivos; `79 passed` (AE-80), `110 passed` (AE-52), selección `1504 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostraciones `5/5` y `8/8` y `pip check` limpio; la suite completa no se ejecutó en Windows. Solo en el sandbox Linux: `764 passed` (AE-60 a AE-80) y suite completa `5749 passed, 0 skipped`. **GitHub Actions todavía no ha ejecutado AE-80.** No se acredita autoridad operativa, completitud global, cronología ni R0 final. Esta validación local no autoriza inferencia ni evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-79 sin cambios.
 
 ---
 

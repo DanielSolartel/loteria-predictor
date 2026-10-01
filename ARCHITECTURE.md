@@ -5336,7 +5336,7 @@ AE-79 no toma ninguna. Para cada una:
 - suite completa `5670 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
 - demostración `5/5` y `SUPERADOS 7/7` en los contrastes con OpenSSL.
 
-**GitHub Actions todavía no ha ejecutado AE-79.** La ejecución `36741015148` sobre `44b927b` corresponde a AE-78 y no se atribuye a esta etapa.
+**Evidencia posterior, en GitHub Actions** (captura aportada por el operador; no ejecutada por Claude): el workflow posterior al merge del PR #78 (`5015841`) muestra los trabajos de Linux y de Windows correctos. La captura no muestra cifras de pytest ni el recuento de contrastes de OpenSSL, y no se atribuyen. La ejecución `36741015148` sobre `44b927b` corresponde a AE-78.
 
 **Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **los formatos de captura, de conjunto de capturas y de política de auditoría, el auditor cruzado, el comando de solo lectura, la demostración y sus pruebas, todo con capturas, claves y políticas de prueba**.
 - **Admisión:** a la comparación cruzada solo entra una captura con firma superada y política coincidente y, si se presenta su expediente, con todos sus campos coincidentes. Una captura no admitida nunca produce por sí sola una contradicción cruzada.
@@ -5353,6 +5353,233 @@ Siguen igual:
 - la especificación candidata de AE-53, sin aprobar.
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-78 sin cambios.
+
+## Constancias externas y verificables de una auditoría cruzada -Etapa AE-80, validada localmente como trabajo preparatorio
+
+**Etapa AE-80 -constancias externas y verificables de una auditoría cruzada, validada localmente como trabajo preparatorio:** permite que un tercero conserve una constancia firmada del estado exacto observado en una auditoría AE-79 y la presente después. El verificador recalcula la auditoría desde los expedientes y capturas presentados y la coteja con las constancias y con una política de claves suministrada aparte. **Verificar nunca autoriza evaluación:** `AUTORIZA_EVALUACION = False`.
+
+**Evidencia previa, en CI:** la captura del workflow posterior al merge del PR #78 (AE-79, `5015841`) muestra los trabajos de Linux y de Windows correctos. No muestra cifras de pytest ni el recuento de contrastes de OpenSSL, y no se le atribuyen.
+
+### Formatos
+
+| Formato | Contenido |
+|---|---|
+| `constancia-auditoria-cruzada/1` | pieza JSON canónica de AE-52 firmada con Ed25519 (el `ObjetoFirmado` de AE-76) |
+| `constancias-auditoria/1` | directorio con `constancias.json` y, por constancia, `datos.json`, `firma.bin` y `clave_publica.bin` |
+| `politica-constancias-de-prueba/1` | directorio con `politica_constancias.json` y las claves públicas de firmantes de prueba; solo naturaleza `fixture_de_prueba` |
+
+Los dos directorios usan el manifiesto de archivos declarados de AE-78 y su lectura endurecida. La política de claves rechaza una misma clave pública declarada dos veces con cualquier etiqueta (`clave_duplicada`). Nunca viaja dentro de las constancias ni de los expedientes.
+
+Una constancia vincula:
+- **Dominio y naturaleza:** `dominio` (separación de dominio de la firma, solo `DOMINIO_DE_PRUEBA`) y `naturaleza` (`fixture_de_prueba`).
+- **Posición:** `serie`, `secuencia` y `anterior` (hash de la constancia anterior de la misma serie y firmante; nulo solo en la primera).
+- **Políticas:** las huellas de la política del verificador y de la de auditoría usadas por AE-79.
+- **Entradas:** el SHA-256 del `manifiesto.json` de cada expediente y del `capturas.json` de cada conjunto de capturas.
+- **Alcance:** protocolo, canal y juegos de los expedientes resumibles.
+- **Informe:** `sha256_informe_ae79` y `resultado_ae79`, el informe AE-79 normalizado y su resultado.
+- **Firma:** `algoritmo` y `huella_de_clave`.
+
+**El informe AE-79 nunca se acepta aportado.** Se recalcula siempre con `auditoria_cruzada.auditar`, con nombres de entrada neutros y sin referencias externas. Así no depende de los nombres de los directorios, que sí aparecen en el informe que emite el comando de AE-79.
+
+El dominio y las series solo existen como fixtures. Su identidad operativa, quién firma constancias y dónde se publican son decisiones abiertas (`DECISIONES_ABIERTAS_AE80`).
+
+### Modelo de amenaza
+
+- **Quien presenta** controla expedientes, capturas y constancias: puede omitir, reordenar, sustituir o reempaquetar. El recálculo, las huellas y las firmas detectan lo que cambia bytes atestados. Lo no presentado no se puede detectar.
+- **Un firmante** puede firmar dos contenidos para la misma posición de una serie, romper el vínculo o atestiguar informes incompatibles para las mismas entradas. Se detecta si las firmas están presentes.
+- **Firmantes distintos** pueden discrepar sobre las mismas entradas y políticas. Se registra sin adjudicar quién tiene razón.
+- **Quien verifica** suministra aparte la política de claves y, cuando proceda, huellas esperadas de esa política y de constancias.
+- **Fuera de alcance:**
+  - la identidad real de las claves, el compromiso de claves y la revocación;
+  - la publicación fuera de banda, la cronología y la ocultación de otras constancias;
+  - la colusión de todos los firmantes y los cambios concurrentes del sistema de archivos.
+
+### Verificación, estados y motivos
+
+`verificar` (en `app/application/ml/constancias_auditoria.py`):
+
+1. **Recálculo:** el estado auditado (`estado_auditado`) sale de las entradas presentadas, y conserva el informe AE-79 completo y su procedencia.
+2. **Constancias:**
+   - **Lectura:** cada conjunto se lee con la lectura endurecida y cada pieza con lectura estricta, que da `dominio_no_admitido`, `naturaleza_no_admitida` o `pieza_mal_formada`, entre otros.
+     - La forma y los tipos de cada elemento de `alcance` se comprueban antes de su orden: una pieza canónica con tipos mezclados da `pieza_mal_formada`, no un error de comparación.
+     - Una constante JSON no estándar (`NaN`, `Infinity`, `1e999`) da `pieza_ilegible`: lo resuelve el lector compartido de AE-76, corregido en esta etapa junto con los de AE-75, AE-77 y AE-78.
+     - Una pieza ilegible deja la firma `no_evaluable` sin repetir el motivo de lectura.
+   - **Firma:** con las primitivas de AE-76 frente a la política de claves, con independencia de las claves del canal y del firmante de R0.
+   - **Admisión:** una constancia legible con firma superada queda **admitida**.
+   - **Duplicados:** solo se descartan copias idénticas; una copia con firma inválida no oculta a la válida.
+3. **Series por firmante:**
+   - **Contradicciones:** la misma posición con dos contenidos da `bifurcacion_firmada`; un `anterior` que no enlaza con la posición previa presentada da `vinculo_roto`.
+   - **Pendientes:** un predecesor ausente da `predecesor_no_presentado`, nunca «cadena íntegra».
+   - **Cabeza:** la mayor posición presentada. Debe coincidir con el estado recalculado; las anteriores son predecesores y pueden atestiguar otro estado.
+4. **Cotejo de cada cabeza:**
+   - **Políticas:** `politica_no_coincide`.
+   - **Entradas:**
+     - `entrada_atestada_no_presentada`, cuando la entrada atestada **no se presentó**;
+     - `entrada_atestada_presentada_pero_ilegible`, cuando **se presentó pero es inválida** (es lectura rechazada);
+     - `entrada_presentada_no_atestada`;
+     - `entrada_presentada_ilegible_sin_huella`.
+   - **Alcance, informe y resultado:** `alcance_no_coincide`, `informe_no_coincide` y `resultado_no_coincide`.
+5. **Entre constancias con las mismas políticas y entradas:**
+   - informes o resultados distintos de firmantes distintos: `desacuerdo_entre_firmantes`, sin adjudicar;
+   - del mismo firmante en series distintas: `informes_incompatibles_del_mismo_firmante`.
+6. **Procedencia:**
+   - huellas aportadas de la política de claves y de constancias, que coinciden o no; las que faltan se enumeran;
+   - cada cabeza queda `cabeza_sin_referencia_externa` salvo que su huella se haya aportado;
+   - `publicacion_externa` siempre `no_aportada`.
+
+**Códigos de salida** (`CODIGOS_DE_SALIDA`; ninguno significa autorización). La prioridad es 1, después 3, 4, 5 y por último 0:
+
+| Código | Resultado | Significado |
+|---|---|---|
+| `0` | `constancia_y_auditoria_coincidentes` | las cabezas admitidas coinciden con la auditoría recalculada; los pendientes siguen pendientes |
+| `1` | `contradiccion_comprobada` | bifurcación, vínculo roto o desacuerdo entre constancias firmadas presentadas |
+| `2` | `uso_incorrecto` | argumentos, número de entradas, directorio repetido, huella mal formada o salida no admitida |
+| `3` | `lectura_rechazada` | la lectura endurecida rechazó alguna entrada, o se superó el límite agregado |
+| `4` | `constancia_no_coincide` | una constancia, firma, política o huella esperada no coincide |
+| `5` | `sin_constancia_admitida` | no hay constancia admitida: nada queda atestiguado |
+
+El código `0` no dice nada sobre el resultado de AE-79: el informe lo conserva aparte (`informe_ae79`).
+
+### Uso
+
+```
+cd backend
+python -m scripts.verificar_constancias_auditoria EXP_1 EXP_2 [...] \
+    --politica POLITICA --politica-auditoria POLITICA_AUDITORIA [--capturas CAPTURAS ...] \
+    --politica-constancias POLITICA_CONSTANCIAS [--constancias CONSTANCIAS ...] \
+    [--huella-politica-constancias SHA256] [--huella-constancia SHA256 ...] \
+    [--formato texto|json] [--salida-json RUTA]
+```
+
+- **Lectura:** cada directorio se lee con la lectura endurecida de AE-78. Todas las entradas comparten el presupuesto agregado de AE-79 (64 MiB y 4096 archivos); hay como máximo 8 directorios de constancias con 64 constancias cada uno.
+- **Huella de una constancia:** el SHA-256 de su `datos.json`.
+- **Escritura:** el comando solo lee. Lo único que puede escribir es el informe de `--salida-json`, fuera de todos los directorios auditados y sin sobrescribir.
+- **Informe** (`informe-constancias-auditoria/1`): JSON determinista, independiente del orden de los argumentos, sin rutas absolutas, hora local ni secretos.
+- **Construir una constancia:** `estado_auditado` y `construir_constancia` dan la pieza sin firmar; la firma la pone quien tiene la clave.
+
+### Demostración reproducible
+
+`python -m tests.demostracion_constancias_auditoria` (desde `backend`):
+- escribe el material sintético en un directorio temporal;
+- ejecuta el comando real en un proceso aparte por escenario;
+- comprueba código y motivos, y borra el directorio.
+
+Estados sintéticos:
+- **S1:** E1, E2 y las capturas A1 y B1;
+- **S2:** como S1 más A2;
+- **sustituido:** como S1 con E2 reempaquetado sin un sello.
+
+Firmantes de prueba: X e Y.
+
+| Escenario | Presentado | Constancias | Código | Motivo |
+|---|---|---|---|---|
+| continuidad válida | S2 | X1(S1), X2(S2, anterior X1) | `0` | X2 cabeza `coincide`; serie `enlazada_desde_la_primera_entre_lo_presentado` |
+| informe sustituido | S1 | X1 con huella de informe falsa | `4` | `informe_no_coincide` |
+| expediente sustituido | sustituido | X1(S1) | `4` | `entrada_atestada_no_presentada`, `entrada_presentada_no_atestada` |
+| bifurcación firmada | S2 | X1, X2 y otra X2 sobre S1 | `1` | `bifurcacion_firmada` |
+| discrepancia entre firmantes | S1 | X1 e Y1 con otro resultado | `1` | `desacuerdo_entre_firmantes` |
+| predecesor omitido | S2 | X2 sin X1 | `0` | `predecesor_no_presentado`; serie `pendiente` |
+| clave no admitida | S1 | constancia de una clave ajena | `4` | `clave_no_admitida` |
+| política de claves incorrecta | S1 | X1 con una política que solo admite Y | `4` | `clave_no_admitida` |
+
+### Corrección de lectores ante constantes JSON no estándar
+
+`json.loads` admite `NaN`, `Infinity`, `-Infinity` y `1e999` (este último se lee como infinito sin pasar por `parse_constant`). La serialización canónica de AE-52 los rechaza con `EntradaRegistroInvalidaError`. Cuatro lectores comparaban con esa serialización sin convertir la excepción. Una pieza o un manifiesto así hacía terminar con un error, en lugar de con un informe, los recorridos de AE-75 a AE-80 y sus comandos.
+
+AE-80 incluye la corrección puntual de los cuatro. En cada uno se envuelve solo la serialización canónica y se convierte únicamente esa excepción, sin captura genérica en los comandos:
+
+| Lector | Etapa | Ahora da | Recorridos que dejaban de terminar con un error |
+|---|---|---|---|
+| `expediente_r0_recepcion._leer` | AE-76 | `ExpedienteInvalido("pieza_ilegible")` | lectores de AE-76, `leer_captura` y auditoría de AE-79, `leer_constancia` y recálculo de AE-80 |
+| `recepcion_por_objetivo._leer` | AE-77 | la excepción de dominio recibida, con `pieza_ilegible` | `leer_conjunto_esperado`, `leer_compromiso_de_acuse`, `verificar_vistas`, `verificar_tiempo_de_acuse` y el comando de AE-78 |
+| `sello_temporal_r0.leer_compromiso` | AE-75 | `CompromisoInvalido("compromiso_ilegible")` | `verificar_sello` y el comando de AE-78 con un compromiso R0 así |
+| `expediente_portable._leer_json_canonico` | AE-78 | `ExpedienteIlegible("manifiesto_ilegible")`, ya solo para `1e999` | `leer_expediente`, `leer_politica` y los comandos de AE-78 y AE-79 |
+
+La captura local que AE-80 había añadido en `leer_constancia` se retiró por redundante.
+
+**Compatibilidad:**
+- Las entradas válidas se leen igual, y se conservan `pieza_no_canonica`, `compromiso_no_canonico`, `manifiesto_no_canonico`, `version_desconocida` y `version_de_compromiso_desconocida`.
+- Comparando en el mismo proceso las funciones de la base y las corregidas, coinciden 60 casos de AE-76, AE-79 y AE-80 y 88 de AE-75, AE-77 y AE-78. Cubren piezas válidas, no canónicas, truncadas, de otra versión, sin objeto en la raíz, con UTF-8 inválido y con claves duplicadas.
+- Solo cambian los casos que antes terminaban en excepción.
+
+**Regresiones** (en las pruebas de AE-80):
+- lectura directa de cada lector con los cuatro literales;
+- recorridos públicos: `verificar_sello`, `verificar_vistas`, `verificar_tiempo_de_acuse`, la auditoría AE-79 y el recálculo de AE-80;
+- comandos reales de AE-78, AE-79 y AE-80, sin traceback y con stderr vacío;
+- entradas válidas sin cambio.
+
+### Evidencia que faltaría para A2 y C3
+
+| Decisión | Evidencia externa que falta | Quién tendría que proporcionarla o aprobarla | Comprobación que habilitaría | Por qué AE-80 no la satisface |
+|---|---|---|---|---|
+| A2 | publicación fuera de banda e independiente de las huellas de constancias y políticas, con identidad operativa del dominio y de las series y reconocimiento del operador | el operador y el medio de publicación que elija | cotejar cada cabeza con una publicación independiente, y que monitores distintos vean las mismas | AE-80 solo coteja huellas que aporta quien verifica; una huella copiada no es publicación, y una cabeza sin referencia externa no es la última |
+| C3 | fuente autorizada del conjunto esperado y monitores independientes que firmen y publiquen lo que ven | el operador y los monitores que designe | que `autoridad_del_conjunto_esperado` y `completitud_global` dejen de estar pendientes | firmantes y capturadores son de fixture, y la cantidad de firmas no sustituye a una fuente autorizada |
+
+A1, A3, C1, C2, D8 operativa y D9 definitiva siguen igual que en AE-79: sin decidir.
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, pytest `9.1.1`; solo Linux, no validadas en Windows ni en GitHub Actions):
+- **Base `5015841`:** una copia limpia con solo las dos pruebas nuevas y sus fixtures dio `74 failed, 5 passed` (código `1`).
+  - 45 fallos son por `ModuleNotFoundError` del módulo nuevo y 1 por el de la demostración; 8 por `FileNotFoundError` del comando; 1 porque la selección de Windows no incluía las pruebas nuevas.
+  - 17 son por `EntradaRegistroInvalidaError` de los lectores de AE-75 a AE-78, y 2 por el traceback o el código `1` del intérprete en los comandos reales de AE-78 y AE-79.
+  - Pasan G2, G3 y la prueba de entradas válidas de AE-75, AE-77 y AE-78, que no depende del módulo nuevo.
+  - Se corrigieron cuatro lectores de AE-75 a AE-78 ante constantes JSON no estándar; el resto del código de AE-52 y de AE-74 a AE-79 permanece igual (véase «Corrección de lectores ante constantes JSON no estándar»).
+- **Tras implementar** (todas con código `0` y `0 skipped`):
+  - pruebas de AE-80: `79 passed`;
+  - AE-79: `51 passed`; AE-78: `65 passed`; AE-77: `29 passed`; AE-76: `40 passed`; AE-75: `75 passed`; AE-74: `41 passed`; AE-52: `110 passed`; AE-60 a AE-80: `764 passed`;
+  - selección de Windows ejecutada en Linux: `1504 passed`;
+  - suite completa: `5749 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+  - comprobador en modo `exigir`: `SUPERADOS 7/7`;
+  - demostraciones: AE-79 `5/5` y AE-80 `8/8` escenarios como se esperaba;
+  - `pip check` sin problemas y `git diff --check`, con los archivos nuevos incluidos, sin salida.
+- **Windows y GitHub Actions:** estas mediciones son solo de Linux. La validación de Windows, atribuida al operador, va aparte, más abajo. GitHub Actions todavía no ha ejecutado AE-80.
+
+### Límites
+
+- **Material de fixture:** firmantes, políticas y constancias. Una firma válida solo prueba la firma de esos bytes frente a una clave admitida por la política suministrada.
+- **Qué no prueba:** que la clave pertenezca a una autoridad real, publicación fuera de banda, independencia de custodia, fecha anterior a un plazo, completitud global ni que R0 sea final.
+- **Secuencias y vínculos** solo relacionan bytes presentados: no prueban cronología ni que no existan otras constancias. Una cabeza sin referencia externa no es la última versión.
+- **Sin mayoría:** ni mayoría, ni quorum, ni cantidad de firmas sustituyen a la autoridad del conjunto esperado.
+- **Procedencia:** una huella copiada de los propios archivos no es una publicación independiente.
+- **Disco:** las comprobaciones cubren directorios estables, sin garantía frente a cambios concurrentes.
+- **Decisiones:** A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir; D8 solo está aprobada en el modelo sintético y D9 conserva su espera provisional.
+- **Estados:** `r0_final` sigue rechazada cuando se evalúa; R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance comprobado de certificados y precertificados; las constancias no heredan sus garantías.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Rama y base:** `feature/ae80-constancias-auditoria`, con HEAD en `501584185f5985eaab32ab0ab507526238f179cf`.
+- **Parche:** el completo `ae80-constancias-auditoria.patch`, 157378 bytes, SHA-256 `35f30caea62752b3b51d89aa73b3fc1c907bd01f93a8417df4f2a6851e24802b`.
+  - Pasaron la aplicación y `reverse --check`, y quedaron los 15 archivos esperados, sin archivos preparados.
+  - La comprobación de espacios con índice temporal fue limpia.
+- **`pip check`:** `No broken requirements found`.
+- **Pruebas de AE-80:** `79 passed in 21.07s`.
+- **AE-52:** `110 passed in 13.80s`.
+- **Selección de Windows:** `1504 passed in 51.09s`, sin omisiones.
+- **`ci_contrastes_openssl.py` en modo `exigir`:** `SUPERADOS 7/7`, con cero omitidos, fallidos o errores.
+- **Demostraciones:** AE-79 `5/5` y AE-80 `8/8`.
+- **Suite completa:** no se ejecutó en Windows para AE-80.
+
+**Resultados solo del sandbox Linux de Claude** (Python `3.11.15`; no repetidos para este cierre):
+- `79 passed` (AE-80), `110 passed` (AE-52) y `764 passed` (AE-60 a AE-80);
+- `1504 passed` en la selección de Windows;
+- suite completa `5749 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+- `SUPERADOS 7/7` en los contrastes con OpenSSL, y demostraciones AE-79 `5/5` y AE-80 `8/8`.
+
+**GitHub Actions todavía no ha ejecutado AE-80.**
+
+**Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **los formatos de constancia, de conjunto de constancias y de política de claves, el verificador offline, su comando, la demostración, las cuatro correcciones de lectores de AE-75 a AE-78 y sus pruebas, todo con claves y políticas de prueba**.
+- **Sin acreditación operativa:** no se acredita autoridad operativa de las claves ni del conjunto esperado, completitud global, cronología ni que R0 sea final; tampoco publicación fuera de banda ni custodia independiente.
+- **Decisiones:** A1–A3 y C1–C3 siguen sin decidir, incluida la evidencia que faltaría para A2 y C3; D8 sigue limitada al modelo sintético y D9 con su espera provisional, sin decisión operativa ni definitiva.
+- **Estados:** `r0_final` sigue rechazada cuando se evalúa; R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`. Esta validación local no autoriza inferencia ni evaluación.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-79 sin cambios.
 
 ---
 
