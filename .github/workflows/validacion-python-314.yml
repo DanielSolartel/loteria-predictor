@@ -49,6 +49,9 @@ jobs:
       - name: Demostracion AE-80 de extremo a extremo
         run: python -m tests.demostracion_constancias_auditoria
 
+      - name: Demostracion AE-81 de extremo a extremo
+        run: python -m tests.demostracion_publicacion_constancias
+
   windows:
     name: Windows - seleccion de tests/seleccion_windows.txt
     runs-on: windows-2025
@@ -84,4 +87,9 @@ jobs:
       - name: Demostracion AE-80 de extremo a extremo
         run: |
           python -m tests.demostracion_constancias_auditoria
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Demostracion AE-81 de extremo a extremo
+        run: |
+          python -m tests.demostracion_publicacion_constancias
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

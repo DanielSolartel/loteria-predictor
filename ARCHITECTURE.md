@@ -5581,6 +5581,259 @@ Siguen igual:
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-79 sin cambios.
 
+## Publicación y monitoreo cruzado de constancias -Etapa AE-81, validada localmente como trabajo preparatorio
+
+**Etapa AE-81 -publicación y monitoreo cruzado de constancias (modelo sintético), validada localmente como trabajo preparatorio:** añade, sobre las constancias de AE-80, un checkpoint firmado por un publicador y observaciones firmadas por monitores sobre los bytes exactos de ese checkpoint. El verificador recalcula AE-79 y AE-80 y comprueba checkpoints y observaciones frente a políticas de claves por rol y a un inventario esperado, suministrados aparte por quien verifica. **Todo es de fixture y verificar nunca autoriza evaluación:** `AUTORIZA_EVALUACION = False` y `r0_final` no se promociona.
+
+No hay publicación real, red, registro de transparencia ni monitores operativos. «Publicación» designa aquí solo un formato y unas comprobaciones sobre bytes presentados. Los checkpoints de AE-81 no son STH de RFC 9162 ni heredan sus garantías.
+
+### Formatos y bytes firmados
+
+| Formato | Contenido |
+|---|---|
+| `checkpoint-publicacion-constancias/1` | pieza JSON canónica de AE-52 firmada por un publicador con Ed25519 (el `ObjetoFirmado` de AE-76) |
+| `observacion-checkpoint/1` | pieza JSON canónica firmada por un monitor |
+| `checkpoints-publicacion/1` y `observaciones-monitor/1` | directorios con `checkpoints.json` u `observaciones.json` y, por pieza, `datos.json`, `firma.bin` y `clave_publica.bin`; como máximo 64 piezas |
+| `politica-rol-de-prueba/1` | `politica_rol.json` con el `rol` (`publicador` o `monitor`) y las claves públicas de prueba; solo naturaleza `fixture_de_prueba` |
+| `inventario-esperado-de-prueba/1` | `inventario.json` con los checkpoints esperados (`[publicador, registro, posicion, sha256]`), las cabezas AE-80 esperadas, los monitores esperados y su `procedencia` |
+
+Todos los directorios usan el manifiesto de archivos declarados de AE-78 y su lectura endurecida.
+
+**El checkpoint compromete** (`CLAVES_DEL_CHECKPOINT`):
+- **Dominio:** `esquema`, `dominio` (`DOMINIO_CHECKPOINT`, de fixture) y `naturaleza`.
+- **Posición:** `registro` (nombre del registro del publicador), `posicion` (entero desde 1) y `anterior`. `anterior` es el SHA-256 de los bytes del checkpoint de la posición previa, nulo solo en la posición 1.
+- **Política y dominio de AE-80:** `sha256_politica_de_constancias` y `dominio_de_constancias`.
+- **Cabezas AE-80:** `cabezas`, una lista ordenada y sin series repetidas de `[firmante, serie, secuencia, sha256_constancia]`.
+- **Firma:** `algoritmo` y `huella_de_clave`.
+
+**La observación compromete** (`CLAVES_DE_LA_OBSERVACION`):
+- **Dominio:** `esquema`, `dominio` (`DOMINIO_OBSERVACION`) y `naturaleza`.
+- **Bytes vistos:** `sha256_checkpoint`, el hash de los bytes exactos del checkpoint.
+- **Contexto declarado:** `publicador`, `registro` y `posicion`.
+- **Firma:** `algoritmo` y `huella_de_clave`.
+
+**Separación de dominio:** checkpoint, observación y constancia AE-80 tienen esquemas y dominios distintos. Unos bytes firmados como una pieza no se leen como otra (`version_desconocida` o `dominio_no_admitido`).
+
+**Lectura estricta:**
+- se usa el lector compartido de AE-76: JSON canónico, claves exactas, sin constantes no estándar (`pieza_ilegible`);
+- la forma y los tipos de `cabezas` se comprueban antes de su orden y unicidad (`pieza_mal_formada`, nunca un error de comparación).
+
+**Políticas por rol:** una política nunca viaja con las piezas. Se lee aparte para cada rol:
+- `rol_no_coincide` si se pasa la de otro rol;
+- `clave_duplicada` dentro de la política.
+
+`clave_reutilizada_entre_roles` aparece si una clave figura a la vez como publicador y como monitor, o coincide con un firmante de constancias AE-80. Ese caso es lectura rechazada y anula la evaluación de firmas de ambos roles.
+
+**Ni número de posición ni reloj como prueba:** la posición es un índice dentro de un registro. Ningún campo lleva hora, y el verificador no lee el reloj. Una posición mayor o un `anterior` que enlaza solo relacionan bytes presentados; no prueban anterioridad.
+
+### Reglas de vínculo
+
+`verificar` (en `app/application/ml/publicacion_constancias.py`):
+
+1. **Recálculo de AE-79 y AE-80** con sus verificadores reales. Ningún informe aportado se acepta. Las cabezas AE-80 admitidas y la huella de su política son la referencia de los checkpoints.
+   - Si AE-80 da contradicción: `contradiccion_en_constancias_ae80`.
+   - Si da lectura rechazada: `lectura_rechazada_en_ae80`.
+   - Si no coincide: `constancias_ae80_no_coinciden`.
+   - Sin constancias admitidas: `sin_constancias_ae80`.
+2. **Piezas:** cada conjunto se lee con la lectura endurecida y cada pieza con lectura estricta. La firma se comprueba con las primitivas de AE-76 frente a la política de su rol. Una pieza legible con firma superada queda **admitida**. Solo se descartan copias idénticas (datos, firma y clave): una copia con firma inválida no oculta a la válida.
+3. **Registro de cada publicador** (`publicador`, `registro`):
+   - **Contradicciones:**
+     - dos checkpoints admitidos en la misma posición: `bifurcacion_firmada_del_publicador`;
+     - un `anterior` que no enlaza con la posición previa presentada: `vinculo_roto`;
+     - una serie AE-80 que desaparece entre posiciones enlazadas: `serie_retirada`;
+     - una secuencia que baja: `cabeza_retrocede`.
+   - **Pendiente:** un predecesor ausente da `predecesor_no_presentado`, nunca «cadena íntegra».
+   - **Progresión:** `progresion_demostrable_entre_lo_presentado` (posiciones 1..n enlazadas), `posicion_unica`, `contradiccion` o `pendiente`.
+   - **Cabeza del registro:** la mayor posición presentada.
+4. **Cotejo de cada checkpoint:**
+   - `politica_de_constancias_no_coincide` y `dominio_de_constancias_no_coincide`;
+   - en la cabeza del registro, frente a las cabezas AE-80 recalculadas: `cabeza_no_publicada` (una cabeza AE-80 que el checkpoint omite) y `cabeza_publicada_no_presentada` (una cabeza publicada que no es cabeza AE-80 admitida del estado recalculado).
+5. **Observaciones:**
+   - el contexto declarado (publicador, registro, posición) distinto del checkpoint presentado con ese hash: `observacion_incompatible_con_el_checkpoint` (contradicción);
+   - observa bytes que no se presentaron: `checkpoint_observado_no_presentado` (pendiente);
+   - el mismo monitor, con dos hashes para la misma posición: `observaciones_incompatibles_del_mismo_monitor` (contradicción);
+   - monitores distintos, con hashes distintos para la misma posición, sin que los dos checkpoints se presenten: `discrepancia_entre_monitores`. Si los dos se presentan, la contradicción ya es la bifurcación del publicador y no se duplica.
+   - una observación de otro hash en una posición con checkpoint presentado: `observacion_de_otro_contenido`.
+   - Las dos últimas son **discrepancias**: no se adjudica quién tiene razón.
+6. **Inventario esperado**, suministrado por quien verifica:
+   - **Referencias:** coinciden, no coinciden, faltan o sobran. Motivos: `checkpoint_no_coincide_con_referencia`, `checkpoint_presentado_no_esperado` y `checkpoint_esperado_no_presentado`.
+   - **Cobertura:** cabezas y monitores que faltan o sobran. Motivos: `cabeza_esperada_no_presentada`, `cabeza_no_esperada`, `monitor_esperado_sin_observacion` y `monitor_no_esperado`. Un monitor cuenta solo si observó una cabeza de registro.
+   - **Procedencia:** `declarada_por_quien_verifica` o `copiada_de_lo_presentado`. La copiada se etiqueta y no acredita nada externo.
+   - Sin inventario: `inventario_no_aportado`. Nunca se declara contradicción por falta de contexto.
+
+### Modelo de amenaza
+
+- **Quien presenta** controla todos los directorios: puede omitir, reordenar, duplicar, sustituir o reempaquetar.
+  - Las firmas, los hashes, los vínculos y el recálculo detectan lo que cambia bytes comprometidos.
+  - El inventario detecta lo esperado que falta.
+  - Lo que nadie espera ni se presenta no se puede detectar.
+- **Un publicador** puede firmar dos checkpoints para la misma posición, romper el vínculo, retirar una serie u omitir cabezas. Se detecta si las firmas están presentes.
+- **Un monitor** puede firmar contextos falsos o contradictorios. Se detecta frente al checkpoint presentado o frente a sus propias observaciones.
+- **Monitores distintos** pueden ver contenidos distintos. Se registra como discrepancia, sin adjudicar.
+- **Quien verifica** suministra las políticas por rol y el inventario.
+- **Fuera de alcance:**
+  - la identidad real de las claves, su compromiso y su revocación;
+  - la publicación real, su disponibilidad y su retención;
+  - la independencia de los monitores, la colusión de publicador y monitores, y la ocultación coordinada;
+  - la cronología y los cambios concurrentes del sistema de archivos.
+
+### Estados, planos y códigos
+
+El informe (`informe-publicacion-constancias/1`) separa ocho planos:
+
+| Plano | Estados posibles | Qué dice |
+|---|---|---|
+| `integridad_de_bytes_y_firmas` | `superada`, `rechazada` | lectura y firmas de checkpoints y observaciones, y lectura de políticas e inventario |
+| `concordancia_con_referencias` | `coincide`, `no_coincide`, `incompleta`, `no_evaluable` | checkpoints frente a las referencias del inventario, con su procedencia |
+| `cobertura_del_inventario` | `completa_respecto_del_inventario`, `no_coincide`, `incompleta`, `no_evaluable` | cabezas y monitores esperados; no es completitud global |
+| `publicacion_externa` | siempre `no_acreditada` | un archivo local no es publicación |
+| `autoridad_de_claves_y_del_conjunto_esperado` | siempre `pendiente` | claves de fixture; A1, A3 y C3 sin decidir |
+| `cronologia` | siempre `pendiente` | la posición no es tiempo; no hay sello |
+| `completitud_global` | siempre `pendiente` | sin fuente autorizada ni monitores independientes acreditados |
+| `autorizacion_operativa` | siempre `denegada` | `AUTORIZA_EVALUACION = False`, `r0_final: no_se_promociona` |
+
+**Códigos de salida** (`CODIGOS_DE_SALIDA`; ninguno significa autorización). La prioridad es 1, después 3, 4, 6, 5 y por último 0:
+
+| Código | Resultado | Significado |
+|---|---|---|
+| `0` | `coincidente_con_lo_suministrado` | lo presentado coincide con las referencias y el inventario suministrados; no acredita publicación externa |
+| `1` | `contradiccion_comprobada` | bytes firmados presentados que se contradicen; no adjudica cuál es cierto |
+| `2` | `uso_incorrecto` | argumentos, número de entradas, directorio repetido o salida no admitida |
+| `3` | `lectura_rechazada` | la lectura endurecida rechazó una entrada, se superó el límite agregado o las políticas de rol son incompatibles |
+| `4` | `no_coincide` | firma, clave, referencia, cabeza o inventario que no coincide |
+| `5` | `evidencia_incompleta` | faltan referencias, predecesores, checkpoints, cabezas o monitores esperados |
+| `6` | `discrepancia_entre_actores` | actores que no coinciden sin contexto para probar una contradicción |
+
+**Cinco situaciones distintas:**
+
+| Situación | Ejemplo | Código |
+|---|---|---|
+| bifurcación firmada del mismo publicador | dos checkpoints de P en la posición 2 | `1` |
+| observación incompatible con el mismo checkpoint | M declara posición 3 para bytes que dicen posición 2 | `1` |
+| progresión válida | C1 y C2 enlazados; M1 vio C1 y M2 vio C2 | `0` |
+| evidencia ausente | C2 sin C1, o sin inventario | `5` |
+| mera discrepancia entre actores | M1 vio C2 y M2 vio otro contenido no presentado | `6` |
+
+### Uso
+
+```
+cd backend
+python -m scripts.verificar_publicacion_constancias EXP_1 EXP_2 [...] \
+    --politica POLITICA --politica-auditoria POLITICA_AUDITORIA [--capturas CAPTURAS ...] \
+    --politica-constancias POLITICA_CONSTANCIAS [--constancias CONSTANCIAS ...] \
+    --politica-publicadores POLITICA_ROL --politica-monitores POLITICA_ROL \
+    [--checkpoints CHECKPOINTS ...] [--observaciones OBSERVACIONES ...] \
+    [--inventario INVENTARIO] [--formato texto|json] [--salida-json RUTA]
+```
+
+- **Entradas:** como máximo 8 directorios de checkpoints y 8 de observaciones, con 64 piezas cada uno. Todas las entradas comparten el presupuesto agregado de AE-79 (64 MiB y 4096 archivos).
+- **Referencias e inventario:** se pasan aparte de lo presentado (`--politica-publicadores`, `--politica-monitores` e `--inventario`).
+- **Escritura:** el comando solo lee. Lo único que puede escribir es el informe de `--salida-json`, fuera de todos los directorios auditados y sin sobrescribir.
+- **Informe:** JSON determinista, independiente del orden de los argumentos y de cómo se repartan las piezas entre directorios, sin rutas absolutas, hora local ni secretos.
+- **Construir piezas:** `construir_checkpoint` y `construir_observacion` dan la pieza sin firmar; `cabezas_de_constancias` extrae las cabezas de un informe AE-80. La firma la pone quien tiene la clave.
+
+### Demostración reproducible
+
+`python -m tests.demostracion_publicacion_constancias` (desde `backend`):
+- escribe el material sintético en un directorio temporal;
+- ejecuta el comando real dos veces por escenario en procesos aparte, con rutas relativas;
+- comprueba el código, los motivos, la igualdad de las dos salidas y stderr vacío;
+- borra el directorio.
+
+Estado AE-80 de los escenarios: S2 con constancias X1, X2 (anterior X1) e Y1, cuyas cabezas son X2 e Y1. Publicador P, con C1 (posición 1, cabeza X1) y C2 (posición 2, anterior C1, cabezas X2 e Y1). C2′ es otro checkpoint de P en la posición 2 que omite Y1. Los monitores son M1, M2 y M3.
+
+| Escenario | Checkpoints | Observaciones | Inventario | Código | Motivo |
+|---|---|---|---|---|---|
+| continuidad válida | C1, C2 | M1 y M2 de C2 | C1, C2; M1, M2 | `0` | `progresion_demostrable_entre_lo_presentado` |
+| cabeza omitida | C1, C2′ | M1 y M2 de C2′ | C1, C2′; M1, M2 | `4` | `cabeza_no_publicada` |
+| predecesor omitido | C2 | M1 y M2 de C2 | completo | `5` | `predecesor_no_presentado`, `checkpoint_esperado_no_presentado` |
+| sustitución de checkpoint | C1, C2′ | M1 y M2 de C2 | C1, C2 | `4` | `checkpoint_no_coincide_con_referencia`, `cabeza_no_publicada` |
+| firma o clave incorrecta | C1 y un C2 firmado por una clave ajena | M1 de C2 | completo | `4` | `clave_no_admitida` |
+| bifurcación del publicador | C1, C2, C2′ | M1 y M2 de C2 | completo | `1` | `bifurcacion_firmada_del_publicador` |
+| monitores incompatibles | C1, C2 | M1 de C2, M2 de C2′ | completo | `6` | `discrepancia_entre_monitores` |
+| progresión observada | C1, C2 | M1 de C1, M2 de C2 | C1, C2; M2 | `0` | — |
+| inventario incompleto | C1, C2 | M1 y M2 de C2 | espera M3 | `5` | `monitor_esperado_sin_observacion` |
+| referencias no proporcionadas | C1, C2 | M1 y M2 de C2 | ninguno | `5` | `inventario_no_aportado` |
+
+### Cuadro de decisiones A1–A3 y C1–C3
+
+AE-81 **no adopta** claves, autoridades, canal, calendario, quorum ni fuente operativa del conjunto esperado. Las seis decisiones siguen sin decidir:
+
+| Decisión | Alternativas posibles (sin elegir) | Evidencia externa necesaria | Quién la aprobaría | Qué comprobación de AE-81 habilitaría |
+|---|---|---|---|---|
+| A1 autoridad e identidad de publicadores y monitores | claves de una entidad del operador; de terceros independientes; de una autoridad reconocida | identidad verificable de cada clave, política de firmas y reconocimiento escrito del operador | el operador, con cada tercero designado | que `autoridad_de_claves_y_del_conjunto_esperado` deje de estar `pendiente` para las firmas |
+| A2 medio de publicación fuera de banda | sitio estático del operador; registro de transparencia propio; publicación por varios canales independientes | publicación accesible a terceros de los checkpoints y del inventario, con su retención y su política de disponibilidad | el operador y el responsable del medio que elija | que `publicacion_externa` deje de ser `no_acreditada`; que el inventario no sea `copiada_de_lo_presentado` |
+| A3 revocación y custodia de claves | sin revocación (claves de un uso); lista de revocación publicada; rotación periódica | procedimiento de custodia, lista o registro de revocación y su publicación | el operador y los custodios | rechazar firmas de claves revocadas; hoy no se modela |
+| C1 canal operativo | canal del operador; canal de un tercero | definición del canal por el que se reciben constancias, checkpoints y observaciones | el operador | ninguna de AE-81 por sí sola; delimita qué se presenta |
+| C2 evidencia temporal | sello de una autoridad de tiempo; inclusión en un registro con marcas de tiempo; ninguna | sellos o marcas verificables de los checkpoints y las observaciones | el operador y la autoridad de tiempo que elija | que `cronologia` deje de estar `pendiente`; la posición nunca la sustituye |
+| C3 fuente del conjunto esperado y monitores independientes | inventario firmado por el operador; por un comité; derivado de un registro público | inventario firmado por una fuente autorizada y monitores cuya independencia se acredite | el operador y los monitores que designe | que `completitud_global` y la autoridad del conjunto esperado dejen de estar `pendiente`; la cantidad de firmas no la sustituye |
+
+D8 operativa y D9 definitiva siguen igual que en AE-79 y AE-80: sin decidir. `DECISIONES_ABIERTAS_AE81` añade tres pendientes propios, sin valor: el medio de publicación (A2), los monitores (C3) y el inventario autorizado (A2, C3).
+
+### Mediciones en el sandbox Linux de Claude
+
+(Python `3.11.15`, pytest `9.1.1`; solo Linux, no validadas en Windows ni en GitHub Actions.)
+
+- **Base `69758c2`:** una copia limpia con solo las dos pruebas nuevas y sus fixtures dio `41 failed, 3 passed` (código `1`).
+  - 31 fallos son por `ModuleNotFoundError` del módulo nuevo y 1 por el de la demostración.
+  - 8 son por `FileNotFoundError` del comando.
+  - 1 es porque la selección de Windows no incluía las pruebas nuevas.
+  - Pasan G2 (huellas de AE-52, AE-74 y AE-78 a AE-80, y estados del expediente) y G3 (las filas del informe AE-80 identifican cabezas admitidas y su política).
+  - No se encontró ningún defecto alcanzable en AE-52 ni en AE-74 a AE-80: su código no cambia.
+- **Tras implementar** (todas con código `0` y `0 skipped`):
+  - pruebas de AE-81: `44 passed`;
+  - AE-80: `79 passed`; AE-79: `51 passed`; AE-78: `65 passed`; AE-77: `29 passed`; AE-76: `40 passed`; AE-75: `75 passed`; AE-74: `41 passed`; AE-52: `110 passed`; AE-60 a AE-81: `808 passed`;
+  - selección de Windows ejecutada en Linux: `1548 passed`;
+  - suite completa: `5793 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+  - comprobador en modo `exigir`, sobre el JUnit de la suite completa: `SUPERADOS 7/7`;
+  - demostraciones: AE-79 `5/5`, AE-80 `8/8` y AE-81 `10/10` escenarios como se esperaba;
+  - `pip check` sin problemas y `git diff --check`, con los archivos nuevos incluidos, sin salida.
+- **Windows y GitHub Actions:** estas mediciones son solo de Linux. La validación de Windows, atribuida al operador, va aparte, más abajo. GitHub Actions todavía no ha ejecutado AE-81.
+
+### Límites
+
+- **Material de fixture:** publicadores, monitores, políticas por rol, inventarios, checkpoints y observaciones. Una firma válida solo prueba la firma de esos bytes frente a una clave admitida por la política de su rol.
+- **Publicación:** un archivo local, dos firmas o una huella copiada no acreditan publicación externa, independencia de los monitores ni completitud.
+- **Posiciones y vínculos** solo relacionan bytes presentados: no prueban anterioridad, cronología ni que no existan otros checkpoints u observaciones.
+- **Sin mayoría:** ni mayoría, ni quorum, ni cantidad de firmas sustituyen a la autoridad del conjunto esperado.
+- **Referencias:** el inventario lo suministra quien verifica. Si se copió de lo presentado, se etiqueta así y no acredita nada externo.
+- **Recálculo:** AE-79 y AE-80 se recalculan siempre; ningún informe aportado se acepta.
+- **Disco:** las comprobaciones cubren directorios estables, sin garantía frente a cambios concurrentes.
+- **Decisiones:** A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir.
+- **Estados:** `r0_final` sigue rechazada cuando se evalúa; R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance comprobado de certificados y precertificados; checkpoints, observaciones y constancias no heredan sus garantías.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Rama y base:** `feature/ae81-publicacion-constancias`, con base y HEAD en `69758c2ddef8e871b10d80d030edb362fdf6dfd0`.
+- **Parche:** el completo `ae81-publicacion-constancias.patch`, 137563 bytes, SHA-256 `197807df777cb3bfdea097447a227bea39b24af0bddf84a5b834f31abb55954a`.
+  - Pasaron la aplicación y `reverse --check`, y quedaron exactamente los 11 archivos previstos, sin archivos preparados.
+  - La comprobación de espacios, con los archivos nuevos incluidos, fue limpia.
+- **`pip check`:** `No broken requirements found`.
+- **Pruebas de AE-81:** `44 passed in 13.22s`.
+- **AE-52:** `110 passed in 6.20s`.
+- **Selección de Windows:** `1548 passed in 55.09s`, sin omisiones.
+- **`ci_contrastes_openssl.py` en modo `exigir`:** `SUPERADOS 7/7` (7 pasados, 0 omitidos, 0 fallidos, 0 errores).
+- **Demostraciones:** AE-79 `5/5`, AE-80 `8/8` y AE-81 `10/10`.
+- **Suite completa:** no se ejecutó en Windows para AE-81.
+
+**Resultados solo del sandbox Linux de Claude** (Python `3.11.15`; no repetidos para este cierre):
+- `44 passed` (AE-81), `79 passed` (AE-80), `110 passed` (AE-52) y `808 passed` (AE-60 a AE-81);
+- `1548 passed` en la selección de Windows;
+- suite completa `5793 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+- `SUPERADOS 7/7` en los contrastes con OpenSSL, y demostraciones AE-79 `5/5`, AE-80 `8/8` y AE-81 `10/10`.
+
+**GitHub Actions todavía no ha ejecutado AE-81.**
+
+**Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **los formatos de checkpoint, de observación, de conjuntos, de política por rol y de inventario esperado, el verificador offline, su comando, la demostración y sus pruebas, todo con claves, políticas e inventarios de prueba**.
+- **Sin acreditación operativa:** la publicación externa sigue `no_acreditada`; la autoridad de las claves y del conjunto esperado, la cronología y la completitud global siguen **pendientes**; no se acredita la independencia de los monitores.
+- **Decisiones:** A1–A3 y C1–C3 siguen sin decidir, igual que D8 operativa y D9 definitiva y los tres pendientes de `DECISIONES_ABIERTAS_AE81`.
+- **Estados:** `r0_final` no se promociona y sigue rechazada cuando se evalúa; R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`. Esta validación local no autoriza inferencia ni evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, publicadores, monitores ni canales operativos, red, servicios de publicación, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-80 sin cambios.
+
 ---
 
 ## Visualizaciones web de estadísticas

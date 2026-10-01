@@ -4300,6 +4300,27 @@ AE-80 queda **validada localmente como trabajo preparatorio** (claves y polític
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-79 sin cambios.
 
+**Etapa AE-81 -publicación y monitoreo cruzado de constancias (modelo sintético), validada localmente como trabajo preparatorio:** sobre las constancias de AE-80, un publicador firma checkpoints y unos monitores firman observaciones de los bytes exactos de esos checkpoints.
+- **Formatos:**
+  - `checkpoint-publicacion-constancias/1`: registro, posición, checkpoint anterior, huella de la política de AE-80 y cabezas AE-80;
+  - `observacion-checkpoint/1`: SHA-256 del checkpoint visto y su contexto;
+  - `politica-rol-de-prueba/1`: una política de claves por rol, sin claves compartidas entre roles;
+  - `inventario-esperado-de-prueba/1`: checkpoints, cabezas y monitores esperados, con procedencia etiquetada.
+  - Todos son JSON canónico con separación de dominio; ninguno usa números de posición ni reloj como prueba de anterioridad.
+- **Comando:** `python -m scripts.verificar_publicacion_constancias`, de solo lectura. Recalcula AE-79 y AE-80 (nunca acepta un informe aportado) y coteja checkpoints y observaciones con las políticas por rol y el inventario, que suministra aparte quien verifica. Enumera lo que falta, sobra o no coincide.
+- **Distingue:** bifurcación firmada del mismo publicador, observación incompatible con el checkpoint, progresión válida, evidencia ausente y mera discrepancia entre actores. Sin contexto no declara contradicción.
+- **Planos separados:** integridad, referencias, cobertura del inventario, publicación externa (siempre `no_acreditada`), autoridad, cronología y completitud global (`pendiente`) y autorización operativa (`denegada`).
+- **Códigos:** `0` coincidente con lo suministrado, `1` contradicción, `2` uso incorrecto, `3` lectura rechazada, `4` no coincide, `5` evidencia incompleta, `6` discrepancia entre actores. Ninguno autoriza evaluación.
+- **Demostración:** `python -m tests.demostracion_publicacion_constancias` ejecuta el comando real en diez escenarios; también se ejecuta en los dos trabajos del workflow.
+
+Un archivo local, dos firmas o una huella copiada no acreditan publicación externa, independencia de los monitores, cronología ni completitud; no se usa mayoría ni quorum, y no se afirma ninguna garantía de RFC 9162 para estas piezas. El detalle, el modelo de amenaza y el cuadro de decisiones A1–A3 y C1–C3 están en la sección AE-81 de `ARCHITECTURE.md`.
+
+A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`; `r0_final` no se promociona.
+
+AE-81 queda **validada localmente como trabajo preparatorio** (claves, políticas e inventarios de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo de 137563 bytes comprobado y once archivos; `44 passed` (AE-81), `110 passed` (AE-52), selección `1548 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostraciones `5/5`, `8/8` y `10/10` y `pip check` limpio; la suite completa no se ejecutó en Windows. Solo en el sandbox Linux: `808 passed` (AE-60 a AE-81) y suite completa `5793 passed, 0 skipped`. **GitHub Actions todavía no ha ejecutado AE-81.** La publicación externa sigue no acreditada; autoridad, cronología y completitud global siguen pendientes. Esta validación local no autoriza inferencia ni evaluación.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, publicadores, monitores ni canales operativos, red, servicios de publicación, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-80 sin cambios.
+
 ---
 
 

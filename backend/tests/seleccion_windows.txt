@@ -37,3 +37,5 @@ tests/unit/ml/test_auditoria_cruzada.py
 tests/unit/test_auditar_expedientes_cruzados_script.py
 tests/unit/ml/test_constancias_auditoria.py
 tests/unit/test_verificar_constancias_auditoria_script.py
+tests/unit/ml/test_publicacion_constancias.py
+tests/unit/test_verificar_publicacion_constancias_script.py
