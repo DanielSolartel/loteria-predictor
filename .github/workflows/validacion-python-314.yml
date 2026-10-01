@@ -66,6 +66,8 @@ jobs:
           python-version: "3.14"
       - name: Dependencias fijadas
         run: python -m pip install -r requirements.txt
+      - name: Dependencia de pruebas HTTP
+        run: python -m pip install httpx==0.28.1
       - name: Comprobacion de dependencias
         run: python -m pip check
       - name: OpenSSL en PATH (informativo; no se instala nada)
