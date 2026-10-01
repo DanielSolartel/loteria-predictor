@@ -33,3 +33,5 @@ tests/unit/test_ci_contrastes_openssl_script.py
 tests/unit/ml/test_recepcion_por_objetivo.py
 tests/unit/ml/test_expediente_portable.py
 tests/unit/test_verificar_expediente_recepcion_script.py
+tests/unit/ml/test_auditoria_cruzada.py
+tests/unit/test_auditar_expedientes_cruzados_script.py
