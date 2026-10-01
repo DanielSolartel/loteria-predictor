@@ -138,7 +138,8 @@ def _es_ruta(valor) -> bool:
 def _comprobar_archivos(archivos: Mapping[str, bytes], nombre: str, manifiesto: dict, referencias: list,
                         limites: Limites):
     """Rutas, duplicados, archivos faltantes o no declarados, tamanos, hashes,
-    referencias y material privado. El orden de las comprobaciones es fijo."""
+    referencias y material privado (tambien en el propio manifiesto, desde
+    AE-79). El orden de las comprobaciones es fijo."""
     lista = manifiesto["archivos"]
     _exigir(isinstance(lista, list), "archivos")
     for entrada in lista:
@@ -167,7 +168,7 @@ def _comprobar_archivos(archivos: Mapping[str, bytes], nombre: str, manifiesto: 
             _rechazar("tamano_incorrecto", entrada["ruta"])
         if hashlib.sha256(datos).hexdigest() != entrada["sha256"]:
             _rechazar("sha256_incorrecto", entrada["ruta"])
-    for ruta in declaradas:
+    for ruta in [nombre, *declaradas]:
         if any(marca in archivos[ruta] for marca in _MARCAS_PRIVADAS):
             _rechazar("material_privado_detectado", ruta)
     no_declaradas = sorted(set(referencias) - set(declaradas))
@@ -211,7 +212,10 @@ def _con_manifiesto(nombre: str, cabecera: dict, archivos: dict) -> dict:
     for ruta, datos in archivos.items():
         if not _es_ruta(ruta) or any(marca in datos for marca in _MARCAS_PRIVADAS):
             raise ValueError(f"no se exporta {ruta!r}")
-    return {**archivos, nombre: _rp.serializar_entrada({**cabecera, "archivos": lista})}
+    manifiesto = _rp.serializar_entrada({**cabecera, "archivos": lista})
+    if any(marca in manifiesto for marca in _MARCAS_PRIVADAS):
+        raise ValueError(f"no se exporta {nombre!r}")
+    return {**archivos, nombre: manifiesto}
 
 
 def componer_expediente(*, entradas: Sequence[bytes], bytes_declaracion: bytes, sobre, sellos_r0: Mapping,

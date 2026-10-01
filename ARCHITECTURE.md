@@ -4926,7 +4926,7 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
 | `sellos_r0` | `respuesta.tsr` y `compromiso.json` por (juego, objetivo) |
 | `sellos_de_acuses` | `respuesta.tsr` y `compromiso.json`, con el índice del acuse |
 
-El compositor escribe solo bytes de piezas, firmas, claves públicas y tokens; no incluye las claves privadas de fixture, y las pruebas comprueban que sus bytes no aparecen en el expediente ni en la política exportados. El compositor y el lector rechazan además las marcas textuales `PRIVATE KEY` y `OPENSSH PRIVATE` (`material_privado_detectado`). **Esa detección es textual:** no reconoce cualquier clave privada, por ejemplo una codificada como bytes crudos, así que el lector no garantiza por sí solo que un expediente ajeno carezca de material privado.
+El compositor escribe solo bytes de piezas, firmas, claves públicas y tokens; no incluye las claves privadas de fixture, y las pruebas comprueban que sus bytes no aparecen en el expediente ni en la política exportados. El compositor y el lector rechazan además las marcas textuales `PRIVATE KEY` y `OPENSSH PRIVATE` (`material_privado_detectado`). **Esa detección es textual:** no reconoce cualquier clave privada, por ejemplo una codificada como bytes crudos, así que el lector no garantiza por sí solo que un expediente ajeno carezca de material privado. **Corrección en AE-79:** hasta `44b927b` esa comprobación no cubría el propio manifiesto; desde AE-79 también lo cubre (véase la sección AE-79).
 
 ### Política del verificador, aparte del expediente
 
@@ -5095,7 +5095,7 @@ No cambian la separación Linux/Windows, el recuento de los siete contrastes con
 - **Prueba:** la regresión `test_g1_lectura_rechazada_no_evalua_r0_final_y_la_evaluacion_lo_rechaza` comprueba que, con lectura rechazada, el informe y el resumen no mencionan `r0_final` y la autorización queda denegada, y que en la evaluación `r0_final` sale `rechazada`. Con el texto anterior falla.
 - **Recuento:** las pruebas de AE-78 pasan de 64 a 65. Las cifras de Windows y de Linux anteriores (`64 passed`, `1373 passed`, `5618 passed`) son previas a esta corrección.
 
-**GitHub Actions todavía no ha ejecutado AE-78.** La comprobación de AE-77 sobre `e71a4f5`, descrita al principio de esta sección, es evidencia distinta y no se atribuye a esta etapa.
+**Evidencia posterior, en GitHub Actions** (captura aportada por el operador; no ejecutada por Claude): el workflow «Validacion Python 3.14», ejecución `36741015148` sobre el push de `44b927b` (merge del PR #77), terminó con estado Success. Los dos trabajos, «Linux - suite completa» y «Windows - seleccion de tests/seleccion_windows.txt», fueron correctos, con `contrastes_openssl: SUPERADOS 7/7` en cada uno. La captura no muestra cifras de pytest y no se atribuyen. La comprobación de AE-77 sobre `e71a4f5`, descrita al principio de esta sección, es evidencia distinta.
 
 **Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **el formato del expediente portable, la lectura endurecida, el verificador offline de solo lectura y sus pruebas, todo con claves, certificados, TSA, observador y política del verificador de fixture**.
 - **Política del verificador:** de fixture y aparte del expediente; su ubicación separada no acredita por sí misma custodia ni autoridad independiente.
@@ -5112,6 +5112,247 @@ Siguen igual:
 - la especificación candidata de AE-53, sin aprobar.
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-77 sin cambios.
+
+## Auditoría cruzada de expedientes portables y capturas de observadores -Etapa AE-79, validada localmente como trabajo preparatorio
+
+**Etapa AE-79 -auditoría cruzada de expedientes portables y capturas de observadores, validada localmente como trabajo preparatorio:** compara varios expedientes AE-78 entre sí y con capturas firmadas fuera de cada expediente. El objetivo es detectar conflictos que no aparecen al examinar cada expediente por separado y aceptar una evolución legítima. **Auditar nunca autoriza evaluación:** `AUTORIZA_EVALUACION = False`.
+
+### Formatos
+
+| Formato | Contenido |
+|---|---|
+| `captura-observador-expediente/1` | pieza JSON canónica de AE-52 firmada con Ed25519 (el `ObjetoFirmado` de AE-76) |
+| `capturas-de-observador/1` | directorio con `capturas.json` y, por captura, `datos.json`, `firma.bin` y `clave_publica.bin` |
+| `politica-auditoria-cruzada-de-prueba/1` | directorio con `politica_auditoria.json`: claves públicas de capturadores de prueba y cortes sintéticos admitidos; solo naturaleza `fixture_de_prueba` |
+
+Los dos directorios usan el manifiesto de archivos declarados de AE-78 (ruta, tamaño y SHA-256) y su lectura endurecida. La política de auditoría rechaza una misma clave pública declarada dos veces (`clave_duplicada`), sea cual sea la etiqueta.
+
+Una captura vincula:
+- el SHA-256 exacto del manifiesto del expediente (`sha256_manifiesto`) y el de la política del verificador usada (`sha256_politica`);
+- el protocolo (`protocolo_hash`), el canal, el alcance de corte (juegos cubiertos) y el corte sintético;
+- el hash del conjunto esperado firmado, sus objetivos, la historia de acuses (hash, juego y objetivo) y la de cada vista del observador de AE-77;
+- la posición en la secuencia del firmante (`secuencia`) y el hash de su captura anterior (`anterior`, nulo solo en la primera);
+- `algoritmo` y `huella_de_clave`, como las piezas de AE-76.
+
+Los campos del expediente se derivan de sus bytes (`resumen_del_expediente`). La firma se verifica con las primitivas de AE-76 (`_firma`), sin una segunda implementación criptográfica. **Un firmante es una clave pública:** una etiqueta u `observador` distinto con la misma clave no es otro firmante. Un capturador cuya clave está admitida como canal o firmante de R0 en la política del verificador se rechaza (`capturador_no_independiente_del_canal`).
+
+**Una captura solo prueba que una clave de prueba firmó esos bytes.** No acredita fecha de publicación, custodia independiente, autoridad operativa ni completitud global.
+
+### Modelo de amenaza
+
+- **Quien presenta** controla los directorios de expedientes y capturas: puede omitir, reordenar, sustituir o reempaquetar. La lectura endurecida, las firmas y los vínculos detectan lo que cambia bytes firmados o declarados. Lo no presentado no se puede detectar.
+- **Un firmante** (capturador, canal u observador de AE-77) puede firmar dos contenidos para la misma posición o reescribir su historia. La auditoría lo detecta si ambas firmas están presentes.
+- **Firmantes distintos** pueden discrepar. La auditoría registra la discrepancia **sin adjudicar** cuál dice la verdad.
+- **Quien audita** suministra aparte la política del verificador, la política de auditoría y, cuando proceda, huellas esperadas.
+- **Fuera de alcance:**
+  - la colusión de todos los firmantes, porque una mentira coherente no se contradice;
+  - el compromiso de claves y la revocación;
+  - la cronología y la ocultación de lo no presentado;
+  - los cambios concurrentes del sistema de archivos.
+
+### Auditor y reglas
+
+`auditar` (en `app/application/ml/auditoria_cruzada.py`) recibe entre **2 y 8** expedientes, hasta **8** directorios de capturas con **64** capturas cada uno, las dos políticas y las referencias externas.
+
+1. **Cada expediente:** lectura endurecida y evaluación de AE-78 sin copiar su lógica.
+   - El informe conserva su resultado individual con planos y motivos.
+   - Con lectura rechazada, solo registra la lectura: no inventa planos ni `r0_final`.
+   - El corte esperado de cada expediente es el de su conjunto esperado solo si está en `cortes_admitidos` de la política de auditoría; si no, el de la política del verificador. Así un expediente anterior de una evolución legítima no se rechaza por el corte, y quien presenta no elige el corte.
+2. **Cada captura:** lectura estricta, firma frente a la política de auditoría, política del verificador capturada y coincidencia con el expediente referido (`captura_no_coincide_con_el_expediente` y los campos que difieren).
+   - Solo se descartan copias idénticas (datos, firma y clave). Una copia con firma inválida no oculta a la válida y queda como evidencia que no coincide.
+   - **Admisión para la comparación cruzada** (`CRITERIO_DE_ADMISION`, campo `admitida_para_comparar` de cada captura). Una captura se admite solo si cumple las cuatro condiciones:
+     1. lectura estricta superada;
+     2. firma íntegra, con clave admitida como capturador, huella declarada e independencia del canal y del firmante de R0;
+     3. `sha256_politica` igual a la política del verificador usada en esta auditoría;
+     4. si su expediente se presentó, que este se pueda resumir y que todos sus campos coincidan; si no se presentó, la comprobación queda pendiente y la captura se admite como declaración firmada.
+   - Una captura no admitida sigue en el informe como evidencia individual que no coincide (código `4`) y **nunca produce una contradicción**. Por ejemplo, una captura firmada con otra política o con campos distintos de su expediente no da `equivocacion_del_firmante` frente a la captura correcta del mismo firmante.
+   - Si el manifiesto capturado no se presentó, pero sí otro del mismo alcance y corte que nadie capturó, se marca `manifiesto_distinto_del_capturado`. No se afirma cuál se alteró.
+   - Si no hay tal expediente, queda pendiente: `expediente_de_la_captura_no_presentado`.
+3. **Entre expedientes, sin capturas:** acuses del canal y declaraciones del observador de AE-77 con firma admitida, por posición. Dos contenidos distintos para la misma posición dan `acuses_contradictorios_del_canal` o `declaraciones_contradictorias_del_observador`.
+4. **Entre capturas admitidas,** solo dentro de un mismo protocolo, canal y alcance de corte:
+   - **Mismo firmante:**
+     - misma posición con contenidos distintos: `equivocacion_del_firmante`;
+     - `anterior` que no enlaza con la captura presentada en la posición previa: `vinculo_roto`; si esa captura falta, queda pendiente con `anterior_no_presentado`;
+     - posterior que cambia de alcance: `cadena_cambia_de_alcance`;
+     - corte que baja: `corte_retrocede`;
+     - objetivos que desaparecen: `objetivo_retirado`;
+     - acuses o vistas que no extienden como prefijo: `historia_reescrita`.
+   - **Firmantes distintos:** a igual corte, objetivos iguales e historias en relación de prefijo; a corte mayor, extensión. Si no, `discrepancia_entre_firmantes`, sin adjudicar.
+   - **Omisión:** `omision_comprobable` cuando un conjunto esperado firmado exige objetivos que falta en la historia de acuses de otra captura de corte igual o posterior.
+   - **Progresión:** `progresion_demostrable` cuando dos capturas enlazadas del mismo firmante extienden la historia sin conflicto.
+   - Pares de protocolo, canal o alcance distintos son **incomparables** (`protocolo_distinto_sin_base_comun`, `canal_distinto`, `alcance_de_corte_distinto`), no una contradicción.
+5. **Procedencia:**
+   - Quien audita puede aportar huellas esperadas de la política del verificador, de la de auditoría, de manifiestos y de capturas (la huella de una captura es el SHA-256 de su `datos.json`). El informe dice cuáles se aportaron, cuáles coinciden y cuáles faltan.
+   - Para cada firmante, la captura de mayor posición presentada es su «cabeza». Sin huella aportada queda `cabeza_sin_referencia_externa`: no puede llamarse «última».
+   - **Una huella copiada de los propios archivos no es una publicación independiente.**
+
+**Tres nociones distintas:**
+
+| Noción | Qué comprueba | Estado máximo en AE-79 |
+|---|---|---|
+| Completitud respecto de lo presentado | cada expediente frente a su propio conjunto esperado, canal y registro (AE-76 a AE-78) | `superada`, solo frente al material de fixture |
+| Consistencia entre capturas | que las capturas y expedientes presentados no se contradigan | `sin_contradiccion_detectable`: nada más que eso |
+| Completitud global | que no exista otra historia ni otro objetivo que debiera estar | siempre `pendiente`: exige una fuente autorizada y monitores independientes (C3) |
+
+La coincidencia de dos firmantes de fixture, o de todos los presentados, **no** convierte `completitud_global`, `autoridad_del_manifiesto` ni R0 en superados. No se usa mayoría ni quorum.
+
+### Uso
+
+```
+cd backend
+python -m scripts.auditar_expedientes_cruzados EXP_1 EXP_2 [EXP_3 ...] \
+    --politica POLITICA --politica-auditoria POLITICA_AUDITORIA \
+    [--capturas CAPTURAS ...] \
+    [--huella-politica SHA256] [--huella-politica-auditoria SHA256] \
+    [--huella-manifiesto SHA256 ...] [--huella-captura SHA256 ...] \
+    [--formato texto|json] [--salida-json RUTA]
+```
+
+- **Lectura:** cada directorio se carga con `cargar_directorio` de AE-78 (sin enlaces ni archivos no regulares, con sus límites por directorio).
+- **Límites agregados:** 64 MiB y 4096 archivos para toda la auditoría (`limite_agregado_superado`).
+- **Escritura:** el comando solo lee disco. Lo único que puede escribir es el informe de `--salida-json`, fuera de todos los directorios auditados y sin sobrescribir.
+- **Informe** (`informe-auditoria-cruzada/1`): JSON determinista, independiente del orden de los argumentos, sin rutas absolutas, hora local ni secretos. El resumen legible da el resultado por expediente, por captura, entre expedientes y de procedencia.
+
+**Códigos de salida** (`CODIGOS_DE_SALIDA`; ninguno significa autorización). La prioridad es 1, después 3, después 4 y por último 0:
+
+| Código | Resultado | Significado |
+|---|---|---|
+| `0` | `sin_contradiccion_detectable` | solo eso, frente a lo presentado; los pendientes siguen pendientes |
+| `1` | `contradiccion_comprobada` | bytes firmados presentados que se contradicen; no adjudica cuál es cierto |
+| `2` | `uso_incorrecto` | argumentos, número de entradas, directorio repetido, huella mal formada o salida no admitida |
+| `3` | `lectura_rechazada` | la lectura endurecida rechazó al menos una entrada, o se superó el límite agregado |
+| `4` | `evidencia_no_coincide` | firmas, hashes, vínculos, políticas o huellas esperadas que no coinciden, sin contradicción comprobada |
+
+### Demostración reproducible
+
+`python -m tests.demostracion_auditoria_cruzada` (desde `backend`):
+- escribe en un directorio temporal dos políticas y los expedientes de cada escenario;
+- ejecuta el comando real en un proceso aparte, con rutas relativas;
+- comprueba código y estado, y borra el directorio temporal.
+
+Historias sintéticas del mismo protocolo, canal y alcance:
+- **E1:** 2714 y 2715, corte 2715;
+- **E2:** 2714, 2715 y 2716, corte 2716; extiende E1;
+- **E3:** 2714 y 2716, corte 2716; diverge de E2 en la posición 2;
+- **E4:** otra declaración R0, luego otro protocolo.
+
+Hay tres capturadores de prueba: A, B y C.
+
+| Escenario | Entradas | Código | Entre expedientes | Qué lo muestra |
+|---|---|---|---|---|
+| dos capturas compatibles | E1, E2; A1(E1), B1(E2) | `0` | `compatibles` | prefijos y cortes en orden |
+| tercera captura que extiende | E1, E2; A1, B1, A2(E2, anterior A1) | `0` | `progresion_demostrable` | cadena A1 → A2 sin conflicto |
+| conflicto firmado | E1, E2, E3; A1, B1, A2, C1(E3) | `1` | `contradiccion_comprobada` | `discrepancia_entre_firmantes`, `omision_comprobable`, `acuses_contradictorios_del_canal`, `declaraciones_contradictorias_del_observador`; cada expediente, por separado, `sin_rechazos` |
+| incomparables | E1, E4; A1, C1(E4) | `0` | `incomparables` | `protocolo_distinto_sin_base_comun` |
+| manifiesto sustituido | E1, E2 reempaquetado sin un sello; A1, B1(E2) | `4` | `compatibles` | B1: `manifiesto_distinto_del_capturado`; AE-78, por separado, `sin_rechazos` |
+
+Comando de cada escenario, desde el directorio temporal:
+
+```
+python -m scripts.auditar_expedientes_cruzados ESCENARIO/e1 ESCENARIO/e2 [ESCENARIO/e3] \
+    --politica politica --politica-auditoria politica_auditoria --capturas ESCENARIO/capturas --formato json
+```
+
+En todos los escenarios, `autoridad_del_manifiesto`, `completitud_global` y la completitud respecto de lo que debió existir siguen `pendiente`. En los expedientes evaluados, `r0_final` sale rechazada, y la autorización queda denegada. Las pruebas cubren además:
+- la equivocación del firmante, también con dos etiquetas y la misma clave;
+- el vínculo roto y el retroceso;
+- las firmas no admitidas, las políticas distintas y los campos que no coinciden con su expediente, que quedan fuera de la comparación cruzada;
+- la lectura rechazada (`3`), el límite agregado (`3`) y el uso incorrecto (`2`).
+
+### Premisa corregida de AE-78
+
+AE-78 documentaba que el compositor y el lector rechazan las marcas textuales `PRIVATE KEY` y `OPENSSH PRIVATE`. Solo miraban los archivos declarados, no el propio manifiesto. Sobre la base `44b927b`, una política con esa marca en una `etiqueta` se componía y se leía sin error. La prueba `test_g1_premisa_corregida_de_ae78_marcas_privadas_tambien_en_el_manifiesto` lo muestra y falla sobre la base.
+
+AE-79 extiende la comprobación al manifiesto en `_con_manifiesto` y `_comprobar_archivos` de `expediente_portable.py`. Efecto sobre la compatibilidad:
+- un manifiesto que contenga esas marcas pasa a rechazarse con `material_privado_detectado`;
+- los expedientes y políticas válidos no cambian de bytes ni de resultado;
+- las 65 pruebas de AE-78 siguen pasando y la huella de sus constantes no cambia.
+
+La detección sigue siendo textual: no reconoce cualquier clave privada en bytes crudos.
+
+### Decisiones abiertas y evidencia que falta
+
+AE-79 no toma ninguna. Para cada una:
+- **Quién:** nombra el papel, no a una persona ni una entidad.
+- **Comprobación:** la que habilitaría esa evidencia.
+- **AE-79:** por qué esta etapa no la satisface.
+
+| Decisión | Evidencia externa que falta | Quién tendría que proporcionarla o aprobarla | Comprobación que habilitaría | Por qué AE-79 no la satisface |
+|---|---|---|---|---|
+| A1 | identidad del firmante de R0 y su política de firmas operativa | el operador, y la autoridad que designe | verificar el sobre de R0 frente a una clave operativa con identidad acreditada | solo hay claves de fixture; las capturas no autentican R0 |
+| A2 | publicación fuera de banda de huellas (manifiestos, capturas, políticas) y reconocimiento del operador | el operador y el medio de publicación que elija | comparar las huellas con una publicación independiente y fechada | AE-79 solo compara huellas que aporta quien audita; una huella copiada no es publicación |
+| A3 | revocación y custodia de las claves de firma, canal, observador y capturadores | el operador y quien custodie las claves | rechazar capturas o piezas firmadas con claves revocadas o fuera de su vigencia | no hay estado de revocación ni custodia; las claves son de fixture |
+| C1 | canal operativo, su clave y su declaración en R0 | el operador | exigir que el canal de acuses y capturas sea el declarado en R0 | el canal lo fija la política de prueba del verificador |
+| C2 | autoridad de sellado operativa para los acuses: ancla, política y revocación | el operador y la TSA que elija | que `tiempo_por_acuse` pueda superarse | las capturas no llevan tiempo; el ancla de AE-75 es de prueba |
+| C3 | fuente autorizada del conjunto esperado, su observador y monitores independientes con capturas publicadas | el operador y los monitores que designe | que `autoridad_del_manifiesto` y `completitud_global` dejen de estar pendientes | los capturadores son de fixture y la coincidencia no sustituye a una fuente autorizada |
+| D8 operativa | plazo operativo, calendario oficial y su relación con el corte real | aprobación del operador | comparar sellos con plazos reales | D8 sigue aprobada solo para el modelo sintético; los cortes admitidos son sintéticos |
+| D9 definitiva | política de rechazo de marcadores textuales en la declaración | aprobación del operador | rechazar o aceptar borradores con marcadores | AE-79 no toca la declaración; D9 conserva su espera provisional |
+
+**Mediciones en el sandbox Linux de Claude** (Python `3.11.15`, pytest `9.1.1`; solo Linux, no validadas en Windows ni en GitHub Actions):
+- **Base `44b927b`:** una copia limpia con solo las dos pruebas nuevas y sus fixtures dio `47 failed, 4 passed` (código `1`).
+  - 35 fallos son por `ModuleNotFoundError` del módulo nuevo y 1 por el de la demostración; 9 por `FileNotFoundError` del comando; 1 porque la selección de Windows no incluía las pruebas nuevas.
+  - 1 es la premisa de AE-78 (`DID NOT RAISE`): una marca privada en el manifiesto se aceptaba.
+  - G2 y G3 pasan.
+- **Tras implementar** (todas con código `0` y `0 skipped`):
+  - pruebas de AE-79: `51 passed`;
+  - AE-78: `65 passed`; AE-52: `110 passed`; AE-74 a AE-77: `185 passed`; AE-60 a AE-79: `685 passed`;
+  - selección de Windows ejecutada en Linux: `1425 passed`;
+  - suite completa: `5670 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+  - comprobador en modo `exigir`: `SUPERADOS 7/7`;
+  - demostración: `5/5` escenarios como se esperaba (código `0`);
+  - `pip check` sin problemas y `git diff --check`, con los archivos nuevos incluidos, sin salida.
+- **Windows y GitHub Actions:** estas mediciones son solo de Linux. La validación de Windows, atribuida al operador, va aparte, más abajo. La ejecución `36741015148` de Actions es evidencia de AE-78, no de esta etapa.
+
+### Límites
+
+- **Material de fixture:** claves de capturadores, canal, observador y TSA, y las dos políticas; un resultado solo prueba coherencia frente a ese material.
+- **Capturas:** solo prueban que una clave de prueba firmó esos bytes; no acreditan fecha de publicación, custodia independiente, autoridad operativa ni completitud global.
+- **Sin contradicción detectable** significa solo eso frente a lo presentado; lo no presentado puede contradecirlo.
+- **Firmantes:** una clave pública; etiquetas distintas con la misma clave no son otro firmante; ni mayoría ni quorum sustituyen a una fuente autorizada.
+- **Procedencia:** una huella copiada de los propios archivos no es una publicación independiente; una captura antigua no puede llamarse «última» sin referencia externa.
+- **Disco:** las comprobaciones cubren directorios estables, sin garantía frente a cambios concurrentes.
+- **Decisiones:** A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir; D8 solo está aprobada en el modelo sintético y D9 conserva su espera provisional; no se elige autoridad, TSA, observador, monitor ni canal real.
+- **Estados:** `r0_final` sigue rechazada cuando se evalúa; R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance comprobado de certificados y precertificados; las capturas no heredan sus garantías.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`.
+
+**Validación real del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`; evidencia atribuida al usuario, no ejecutada por Claude):
+- **Rama y base:** `feature/ae79-auditoria-cruzada`, con HEAD en `44b927bd8d4f6de01a1c4e3d4474473006b8b6a4`.
+- **Parche:** el completo corregido `ae79-auditoria-cruzada.patch`, 164242 bytes, SHA-256 `85b64d22860bee407b5674c577924f98d5051afa05ebd1d56d3b64d2cf6db979`.
+  - Se comprobó el hash, pasó `apply --check` y la comprobación inversa, y dejó exactamente los 12 archivos previstos, sin archivos preparados.
+  - La comprobación de espacios con índice temporal fue limpia.
+- **`pip check`:** sin incompatibilidades.
+- **Pruebas de AE-79:** `51 passed in 11.30s`.
+- **AE-78:** `65 passed in 4.42s`.
+- **AE-52:** `110 passed in 18.07s`.
+- **Selección de `tests/seleccion_windows.txt`:** `1425 passed in 42.26s`, sin omisiones.
+- **`ci_contrastes_openssl.py` en modo `exigir`:** `SUPERADOS 7/7` (7 pasados, 0 omitidos, 0 fallidos, 0 errores).
+- **Demostración con el comando real:** `5/5` escenarios con los códigos esperados, incluido `evidencia_no_coincide` (código `4`) para el manifiesto sustituido.
+- **Suite completa:** no se repitió en Windows para AE-79.
+
+**Resultados solo del sandbox Linux de Claude** (Python `3.11.15`; no repetidos para este cierre):
+- `51 passed` (AE-79), `65 passed` (AE-78), `110 passed` (AE-52), `185 passed` (AE-74 a AE-77) y `685 passed` (AE-60 a AE-79);
+- `1425 passed` en la selección de Windows;
+- suite completa `5670 passed, 0 skipped`, con los cinco avisos conocidos de Alembic;
+- demostración `5/5` y `SUPERADOS 7/7` en los contrastes con OpenSSL.
+
+**GitHub Actions todavía no ha ejecutado AE-79.** La ejecución `36741015148` sobre `44b927b` corresponde a AE-78 y no se atribuye a esta etapa.
+
+**Límites de esta validación:** «validada localmente como trabajo preparatorio» cubre solo **los formatos de captura, de conjunto de capturas y de política de auditoría, el auditor cruzado, el comando de solo lectura, la demostración y sus pruebas, todo con capturas, claves y políticas de prueba**.
+- **Admisión:** a la comparación cruzada solo entra una captura con firma superada y política coincidente y, si se presenta su expediente, con todos sus campos coincidentes. Una captura no admitida nunca produce por sí sola una contradicción cruzada.
+- **Sin acreditación operativa:** no se acredita la autoridad operativa del conjunto esperado, la completitud global ni la autenticidad operativa de R0.
+- **Decisiones:** A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir; D8 sigue limitada al modelo sintético y D9 con su espera provisional.
+- **`r0_final`:** sigue rechazada cuando se evalúa.
+- **Estados:** R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen **pendientes**.
+- **RFC 9162:** conserva solo el alcance de certificados y precertificados.
+- **Expediente:** sigue en `expediente_sin_eleccion` con `AUTORIZA_EVALUACION = False`. Este cierre no autoriza inferencia ni evaluación.
+
+Siguen igual:
+- el NO-GO de AE-39 y los bloqueos de AE-41 y AE-46;
+- los siete pendientes de AE-52, abiertos;
+- la especificación candidata de AE-53, sin aprobar.
+
+No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-78 sin cambios.
 
 ---
 

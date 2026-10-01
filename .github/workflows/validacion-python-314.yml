@@ -41,6 +41,10 @@ jobs:
         run: python -m pytest -p no:cacheprovider -rsw --junitxml=../resultados-linux.xml
       - name: Contrastes con openssl ts -verify (deben pasar los siete)
         run: python scripts/ci_contrastes_openssl.py ../resultados-linux.xml --modo exigir --resumen "$GITHUB_STEP_SUMMARY"
+      # AE-79: la auditoria cruzada de extremo a extremo, con el comando real sobre
+      # directorios temporales y material de fixture (sin red ni secretos).
+      - name: Demostracion AE-79 de extremo a extremo
+        run: python -m tests.demostracion_auditoria_cruzada
 
   windows:
     name: Windows - seleccion de tests/seleccion_windows.txt
@@ -70,3 +74,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Contrastes con openssl ts -verify (siete superados o siete omitidos, con estado explicito)
         run: python scripts/ci_contrastes_openssl.py ../resultados-windows.xml --modo permitir_omision --resumen $env:GITHUB_STEP_SUMMARY
+      - name: Demostracion AE-79 de extremo a extremo
+        run: |
+          python -m tests.demostracion_auditoria_cruzada
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
