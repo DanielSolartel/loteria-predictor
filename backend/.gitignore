@@ -6,3 +6,5 @@ storage/html/*.html
 storage/logs/*.log
 !storage/html/.gitkeep
 !storage/logs/.gitkeep
+storage/pronosticos/*
+!storage/pronosticos/.gitkeep

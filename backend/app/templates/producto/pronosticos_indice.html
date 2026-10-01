@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Pronósticos experimentales{% endblock %}
+{% block content %}
+<h3 class="mb-3">Pronósticos experimentales</h3>
+{% include "producto/_aviso_experimental.html" %}
+<div class="row g-3">
+{% for j in juegos %}
+    <div class="col-md-6"><div class="card stat-card p-3 h-100">
+        <span class="badge game-badge mb-2 align-self-start">{{ j.codigo }}</span>
+        <h5>{{ j.nombre }}</h5>
+        {% if j.ultimo %}{% set a = j.ultimo.artefacto %}
+            <div class="small text-muted mb-1">Objetivo: sorteo {{ a.pronostico.objetivo }} · datos hasta el sorteo {{ a.datos.corte }} ({{ a.datos.ultima_fecha }}){% if j.ultimo.versiones and j.ultimo.versiones > 1 %} · versión {{ j.ultimo.version }} de {{ j.ultimo.versiones }}{% endif %}</div>
+            {% set c = j.actual.clasificacion_temporal if j.actual else a.generacion.clasificacion_temporal %}{% set f = j.actual.frescura if j.actual else a.generacion.frescura %}{% set titulo = "Ahora, frente a la base actual" if j.actual else "Al generarse" %}{% include "producto/_clasificacion.html" %}
+            <div class="mb-2">{% for n in a.pronostico.numeros_sugeridos %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+                {% if a.superbalota %}<span class="numero-bolita superbalota-bolita">{{ a.superbalota.pronostico.sugerida }}</span>{% endif %}</div>
+            {% set c = a.evaluacion_walk_forward.agregado.comparacion %}
+            <p class="small mb-2 {% if c.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}text-danger{% else %}text-success{% endif %}">
+                Histórico walk-forward: {% if c.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}el modelo no supera a la referencia uniforme{% else %}el modelo supera a la referencia en Log Loss y Brier (sin significancia estadística evaluada){% endif %}.
+            </p>
+            <div class="small text-muted mb-2">Generado: {{ a.generacion.generado_en }} · {{ j.total }} guardado(s)</div>
+        {% else %}
+            <p class="text-muted small">Todavía no hay pronósticos guardados.</p>
+        {% endif %}
+        {% if j.ilegibles %}<p class="small text-danger">{{ j.ilegibles|length }} archivo(s) alterado(s) o ilegible(s) en el almacén.</p>{% endif %}
+        <div class="mt-auto"><a class="btn btn-sm btn-primary" href="/pronosticos/{{ j.slug }}">Ver y generar</a></div>
+    </div></div>
+{% endfor %}
+</div>
+{% endblock %}

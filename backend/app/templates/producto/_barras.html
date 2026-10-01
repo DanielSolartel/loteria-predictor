@@ -1,0 +1,17 @@
+{# filas: lista de {valor, apariciones, frecuencia_relativa}; maximo: entero;
+   etiqueta_relativa: que significa frecuencia_relativa en esta tabla #}
+<table class="table table-sm align-middle mb-0 tabla-barras">
+    <thead><tr><th class="small fw-normal text-muted">Valor</th><th></th>
+        <th class="small fw-normal text-muted text-end">Apariciones · {{ etiqueta_relativa }}</th></tr></thead>
+    <tbody>
+    {% for f in filas %}
+        <tr>
+            <td class="text-nowrap" style="width: 5.5rem">
+                {% if colores is defined and colores %}<span class="color-swatch color-{{ f.valor|lower }}"></span>{% endif %}{{ f.valor }}
+            </td>
+            <td><div class="barra" style="width: {{ (100 * f.apariciones / maximo) if maximo else 0 }}%"></div></td>
+            <td class="text-end text-muted small text-nowrap" style="width: 9rem">{{ f.apariciones }} · {{ '%.3f'|format(f.frecuencia_relativa) }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

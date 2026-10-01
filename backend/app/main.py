@@ -18,12 +18,14 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.rest.routers import colores as rest_colores
 from app.api.rest.routers import juegos as rest_juegos
+from app.api.rest.routers import producto as rest_producto
 from app.api.rest.routers import sorteos as rest_sorteos
 from app.api.web.routers import colores as web_colores
 from app.api.web.routers import dashboard as web_dashboard
 from app.api.web.routers import estadisticas as web_estadisticas
 from app.api.web.routers import importacion as web_importacion
 from app.api.web.routers import juegos as web_juegos
+from app.api.web.routers import producto as web_producto
 from app.api.web.routers import sorteos as web_sorteos
 from app.application.exceptions import (
     ColorNoVigenteError,
@@ -48,12 +50,14 @@ app.include_router(web_juegos.router)
 app.include_router(web_sorteos.router)
 app.include_router(web_colores.router)
 app.include_router(web_importacion.router)
+app.include_router(web_producto.router)
 app.include_router(web_estadisticas.router)
 
 # Adaptador REST (JSON, puente hacia una futura UI en React/Next.js)
 app.include_router(rest_juegos.router)
 app.include_router(rest_sorteos.router)
 app.include_router(rest_colores.router)
+app.include_router(rest_producto.router)
 
 
 _STATUS_POR_EXCEPCION = {

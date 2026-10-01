@@ -1,0 +1,9 @@
+{# m: modelo, u: referencia, c: comparacion #}
+<table class="table table-sm mb-2">
+    <thead><tr><th>Métrica</th><th class="text-end">Modelo</th><th class="text-end">Referencia uniforme</th><th>Mejor</th></tr></thead>
+    <tbody>
+        <tr><td>Log Loss <span class="text-muted small">(menor es mejor)</span></td><td class="text-end">{{ '%.6f'|format(m.log_loss) }}</td><td class="text-end">{{ '%.6f'|format(u.log_loss) }}</td><td>{{ 'Modelo' if c.log_loss == 'modelo' else ('Empate' if c.log_loss == 'empate' else 'Referencia') }}</td></tr>
+        <tr><td>Brier <span class="text-muted small">(menor es mejor)</span></td><td class="text-end">{{ '%.6f'|format(m.brier) }}</td><td class="text-end">{{ '%.6f'|format(u.brier) }}</td><td>{{ 'Modelo' if c.brier == 'modelo' else ('Empate' if c.brier == 'empate' else 'Referencia') }}</td></tr>
+        <tr><td>Aciertos top-5 por sorteo</td><td class="text-end">{{ '%.3f'|format(m.aciertos_top5_por_sorteo) }}</td><td class="text-end">{{ '%.3f'|format(u.aciertos_top5_por_sorteo) }}</td><td>{{ 'Modelo' if c.aciertos_top5 == 'modelo' else ('Empate' if c.aciertos_top5 == 'empate' else 'Referencia') }}</td></tr>
+    </tbody>
+</table>

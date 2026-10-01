@@ -94,3 +94,96 @@ body {
     text-align: center;
     color: #8a8aa3;
 }
+
+/* Producto 1: barras de frecuencia y tablas largas */
+.barra {
+    height: 0.7rem;
+    background-color: var(--brand);
+    border-radius: 3px;
+    min-width: 2px;
+}
+
+.tabla-barras td {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+}
+
+.tabla-desplazable {
+    max-height: 32rem;
+    overflow-y: auto;
+}
+
+/* Texto que solo aparece al imprimir (p. ej. el nombre de cada color de ColorLoto). */
+.solo-impresion,
+.solo-impresion-bloque {
+    display: none;
+}
+
+/* Impresion y PDF de las paginas de Producto 1 (plantillas en
+   templates/producto/, que marcan <body class="producto1-impresion">).
+   Ninguna regla afecta a otras paginas ni cambia nada en pantalla. */
+@media print {
+    body.producto1-impresion aside.sidebar,
+    body.producto1-impresion nav.topbar,
+    body.producto1-impresion .content-area form,
+    body.producto1-impresion .content-area .btn {
+        display: none !important;
+    }
+
+    body.producto1-impresion .content-area {
+        max-width: none;
+        padding: 0 !important;
+    }
+
+    /* Las tablas con desplazamiento se imprimen completas. */
+    body.producto1-impresion .tabla-desplazable {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* Mantener colores de muestras, barras y bolitas si el navegador lo permite. */
+    body.producto1-impresion .color-swatch,
+    body.producto1-impresion .barra,
+    body.producto1-impresion .numero-bolita {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Si el navegador omite los fondos, la barra conserva su contorno. */
+    body.producto1-impresion .barra {
+        border: 1px solid var(--brand);
+    }
+
+    /* El nombre del color queda como texto legible. */
+    body.producto1-impresion .solo-impresion {
+        display: inline;
+    }
+
+    /* Solo el desplegable de los bloques del pronostico: se imprime su
+       copia abierta. Otros <details> del sitio no se tocan. */
+    body.producto1-impresion details.detalle-bloques {
+        display: none !important;
+    }
+
+    body.producto1-impresion .solo-impresion-bloque {
+        display: block;
+    }
+
+    /* Evitar cortes dentro de tarjetas, avisos, filas y titulos. */
+    body.producto1-impresion .stat-card,
+    body.producto1-impresion .alert,
+    body.producto1-impresion tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    body.producto1-impresion h3,
+    body.producto1-impresion h6 {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    body.producto1-impresion thead {
+        display: table-header-group;
+    }
+}
