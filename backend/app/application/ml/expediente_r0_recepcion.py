@@ -165,7 +165,13 @@ def _leer(datos: bytes, esquema: str, claves: tuple) -> dict:
         raise ExpedienteInvalido("version_desconocida", str(pieza.get("esquema")))
     if set(pieza) != set(claves):
         raise ExpedienteInvalido("pieza_ilegible", "claves distintas de las de la version 1")
-    if bytes_canonicos(pieza) != datos:
+    try:
+        canonicos = bytes_canonicos(pieza)
+    except _rp.EntradaRegistroInvalidaError as error:
+        # `json.loads` admite NaN, Infinity y 1e999; la serializacion
+        # canonica de AE-52 no (correccion incluida en AE-80).
+        raise ExpedienteInvalido("pieza_ilegible", "constante JSON no estandar") from error
+    if canonicos != datos:
         raise ExpedienteInvalido("pieza_no_canonica")
     return pieza
 

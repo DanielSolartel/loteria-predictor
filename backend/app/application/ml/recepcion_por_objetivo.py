@@ -100,7 +100,12 @@ def _leer(datos: bytes, esquema: str, claves: tuple, error) -> dict:
         raise error("version_desconocida", str(pieza.get("esquema")))
     if set(pieza) != set(claves):
         raise error("pieza_ilegible", "claves distintas de las de la version 1")
-    if _rp.serializar_entrada(pieza) != datos:
+    try:
+        canonicos = _rp.serializar_entrada(pieza)
+    except _rp.EntradaRegistroInvalidaError as fallo:
+        # NaN, Infinity y 1e999 (correccion incluida en AE-80).
+        raise error("pieza_ilegible", "constante JSON no estandar") from fallo
+    if canonicos != datos:
         raise error("pieza_no_canonica")
     return pieza
 

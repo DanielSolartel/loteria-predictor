@@ -117,7 +117,13 @@ def _leer_json_canonico(datos: bytes) -> dict:
         _rechazar("manifiesto_ilegible", str(error))
     if not isinstance(valor, dict):
         _rechazar("manifiesto_ilegible", "la raiz no es un objeto")
-    if _rp.serializar_entrada(valor) != datos:
+    try:
+        canonicos = _rp.serializar_entrada(valor)
+    except _rp.EntradaRegistroInvalidaError as error:
+        # 1e999 se lee como infinito sin pasar por `parse_constant`
+        # (correccion incluida en AE-80).
+        raise ExpedienteIlegible("manifiesto_ilegible", "numero fuera de rango") from error
+    if canonicos != datos:
         _rechazar("manifiesto_no_canonico")
     return valor
 
