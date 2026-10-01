@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}{{ nombre }} — Verificación del pronóstico{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ nombre }} — verificación de reproducción</h3>
+{% if resultado is none %}
+<p>Verificar recalcula el pronóstico <code>{{ identificador[:16] }}…</code> con el histórico actual hasta su corte y su configuración: <strong>vuelve a entrenar el modelo</strong> (unos segundos de CPU) y no guarda nada. Solo puede lanzarse desde esta misma máquina.</p>
+<form method="post" action="/pronosticos/{{ slug }}/verificar">
+    <input type="hidden" name="token_local" value="{{ token_local }}">
+    <input type="hidden" name="id" value="{{ identificador }}">
+    <button class="btn btn-sm btn-primary">Verificar ahora</button>
+</form>
+{% elif resultado.error %}
+<div class="alert alert-warning">{{ resultado.error }}</div>
+{% else %}
+<p class="small text-muted">Se recalculó el pronóstico <code>{{ resultado.identificador[:16] }}…</code> con el histórico actual hasta su corte y su configuración. No se guardó nada.</p>
+<ul>
+    <li>Mismos datos (SHA-256 del histórico): <strong>{{ 'sí' if resultado.mismos_datos else 'no: el histórico hasta el corte cambió desde que se generó' }}</strong></li>
+    <li>Huella de reproducción idéntica: <strong>{{ 'sí' if resultado.huella_exacta else 'no' }}</strong></li>
+    <li>Mismos números sugeridos: <strong>{{ 'sí' if resultado.mismos_numeros_sugeridos else 'no' }}</strong></li>
+    <li>Máxima diferencia de probabilidad: <strong>{{ resultado.maxima_diferencia_de_probabilidad }}</strong></li>
+</ul>
+<p class="small text-muted">Una huella distinta con los mismos datos suele deberse a otra plataforma o a otras versiones de scikit-learn o NumPy; el artefacto guardado no cambia.</p>
+{% endif %}
+<a class="btn btn-sm btn-outline-secondary mt-2" href="/pronosticos/{{ slug }}?id={{ identificador }}">Volver al pronóstico</a>
+{% endblock %}

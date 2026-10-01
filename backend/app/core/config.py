@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # crece mucho más de lo esperado.
     max_paginas_absoluto_conectores: int = 2000
 
+    # Producto 1: carpeta de los pronosticos experimentales guardados
+    # (un JSON canonico por artefacto, nunca sobrescrito). Relativa al
+    # directorio desde el que se arranca la aplicacion (`backend/`).
+    directorio_pronosticos_experimentales: str = "storage/pronosticos"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}{{ nombre }} — Estadísticas{% endblock %}
+{% block content %}
+<ul class="nav nav-pills mb-3">
+    {% for s, n in juegos %}
+    <li class="nav-item"><a class="nav-link {% if s == slug %}active{% endif %}" href="/estadisticas/{{ s }}/resumen">{{ n }}</a></li>
+    {% endfor %}
+</ul>
+<h3 class="mb-1">{{ nombre }}</h3>
+
+{% if not db_conectada %}
+<div class="alert alert-danger">Sin conexión a la base de datos: no se pueden calcular estadísticas.</div>
+{% elif datos %}
+{% set r = datos %}
+<form class="row g-2 align-items-end mb-3" method="get">
+    <div class="col-auto">
+        <label class="form-label small mb-0" for="corte">Corte (hasta el sorteo)</label>
+        <input class="form-control form-control-sm" id="corte" type="number" min="1" name="hasta_numero_sorteo" value="{{ hasta_numero_sorteo or '' }}">
+    </div>
+    <div class="col-auto"><button class="btn btn-sm btn-primary">Aplicar</button>
+        <a class="btn btn-sm btn-outline-secondary" href="/estadisticas/{{ slug }}/resumen">Quitar corte</a></div>
+</form>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Sorteos analizados</div><div class="fw-bold fs-5">{{ r.total_sorteos }}</div><div class="small text-muted">de {{ r.total_sorteos_sin_corte }} cargados</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Período</div>
+        {% if r.periodo %}<div class="fw-bold">{{ r.periodo.primera_fecha }} → {{ r.periodo.ultima_fecha }}</div><div class="small text-muted">sorteos {{ r.periodo.primer_sorteo }}–{{ r.periodo.ultimo_sorteo }}</div>{% else %}<div class="fw-bold">—</div>{% endif %}</div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Corte aplicado</div><div class="fw-bold">{{ r.corte.descripcion }}</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Último sorteo disponible</div>
+        {% if r.ultimo_sorteo_disponible %}<div class="fw-bold">#{{ r.ultimo_sorteo_disponible.numero_sorteo }} · {{ r.ultimo_sorteo_disponible.fecha }}</div>{% else %}<div class="fw-bold">—</div>{% endif %}
+        <div>{% include "producto/_frescura.html" %}</div></div></div>
+</div>
+
+<div class="alert {% if r.frescura.estado == 'al_dia' %}alert-light{% else %}alert-warning{% endif %} py-2 small">{{ r.frescura.mensaje }}
+    {% if r.huecos.cantidad %} Hay {{ r.huecos.cantidad }} número(s) de sorteo sin cargar en el período (p. ej. {{ r.huecos.primeros[:5]|join(', ') }}).{% endif %}
+</div>
+
+<p class="small text-muted">Reglas: {% if r.reglas.tipo == 'colorloto' %}{{ r.reglas.cantidad_balotas }} balotas, número {{ r.reglas.rango[0] }}–{{ r.reglas.rango[1] }} con color ({{ r.reglas.colores|join(', ') or 'paleta vacía' }}), con repetición.{% else %}{{ r.reglas.cantidad_numeros }} números distintos de {{ r.reglas.rango[0] }} a {{ r.reglas.rango[1] }}{% if r.reglas.superbalota %} + superbalota de {{ r.reglas.superbalota[0] }} a {{ r.reglas.superbalota[1] }}{% else %}, sin superbalota{% endif %}.{% endif %}</p>
+
+{% if not r.estadisticas %}
+<div class="alert alert-info">No hay sorteos {% if hasta_numero_sorteo %}hasta el corte indicado{% else %}cargados para este juego{% endif %}. Sincroniza desde <a href="/importacion">Importación</a>.</div>
+{% else %}
+{% set e = r.estadisticas %}
+<div class="mb-3">
+    <span class="small text-muted me-1">Último resultado analizado:</span>
+    {% if r.reglas.tipo == 'colorloto' %}
+        {% for n, c in r.ultimo_resultado.pares %}<span class="me-2 text-nowrap"><span class="color-swatch color-{{ c|lower }}" title="{{ c }}"></span>{{ n }}<span class="solo-impresion"> {{ c|lower }}</span></span>{% endfor %}
+    {% else %}
+        {% for n in r.ultimo_resultado.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+        {% if r.ultimo_resultado.superbalota is not none %}<span class="numero-bolita superbalota-bolita">{{ r.ultimo_resultado.superbalota }}</span>{% endif %}
+    {% endif %}
+</div>
+
+{% if r.reglas.tipo == 'colorloto' %}
+<div class="row g-3">
+    <div class="col-md-6"><div class="card stat-card p-3 h-100"><h6>Frecuencia de colores</h6>
+        <p class="small text-muted mb-1">Promedio de apariciones por sorteo: cada sorteo tiene 6 balotas y un color puede salir varias veces, así que el valor puede superar 1. No es una probabilidad.</p>
+        {% set filas = e.frecuencia_colores.todas %}{% set maximo = filas|map(attribute='apariciones')|max %}{% set colores = True %}{% set etiqueta_relativa = "promedio por sorteo" %}{% include "producto/_barras.html" %}
+        {% if e.colores_fuera_de_la_paleta_vigente %}<p class="small text-warning mt-2 mb-0">Colores observados fuera de la paleta vigente: {{ e.colores_fuera_de_la_paleta_vigente|join(', ') }}</p>{% endif %}</div></div>
+    <div class="col-md-6"><div class="card stat-card p-3 h-100"><h6>Frecuencia de números (1–7)</h6>
+        <p class="small text-muted mb-1">Promedio de apariciones por sorteo (6 balotas con repetición): puede superar 1 y no es una probabilidad.</p>
+        {% set filas = e.frecuencia_numeros.todas %}{% set maximo = filas|map(attribute='apariciones')|max %}{% set colores = False %}{% set etiqueta_relativa = "promedio por sorteo" %}{% include "producto/_barras.html" %}</div></div>
+    <div class="col-md-6"><div class="card stat-card p-3 h-100"><h6>Atraso de colores</h6>
+        <table class="table table-sm mb-0"><thead><tr><th>Color</th><th class="text-end">Sorteos sin salir</th></tr></thead><tbody>
+        {% for a in e.atrasos_colores.mayores %}<tr><td><span class="color-swatch color-{{ a.valor|lower }}"></span>{{ a.valor }}</td><td class="text-end">{{ a.atraso }}</td></tr>{% endfor %}
+        {% for v in e.atrasos_colores.nunca_observados %}<tr><td><span class="color-swatch color-{{ v|lower }}"></span>{{ v }}</td><td class="text-end text-muted">nunca observado</td></tr>{% endfor %}
+        </tbody></table></div></div>
+    <div class="col-md-6"><div class="card stat-card p-3 h-100"><h6>Pares número-color más y menos frecuentes</h6>
+        <div class="row"><div class="col-6"><div class="small text-muted">Más</div>{% for f in e.frecuencia_pares.mas_frecuentes %}<div class="small">{{ f.valor }}: {{ f.apariciones }}</div>{% endfor %}</div>
+        <div class="col-6"><div class="small text-muted">Menos</div>{% for f in e.frecuencia_pares.menos_frecuentes %}<div class="small">{{ f.valor }}: {{ f.apariciones }}</div>{% endfor %}</div></div></div></div>
+    <div class="col-md-6"><div class="card stat-card p-3 h-100"><h6>Máximo de balotas del mismo color por sorteo</h6>
+        <table class="table table-sm mb-0"><thead><tr><th>Máximo</th><th class="text-end">Sorteos</th><th class="text-end">%</th></tr></thead><tbody>
+        {% for d in e.maximo_repeticion_color %}<tr><td>{{ d.valor }}</td><td class="text-end">{{ d.sorteos }}</td><td class="text-end">{{ '%.1f'|format(100 * d.frecuencia_relativa) }}</td></tr>{% endfor %}</tbody></table></div></div>
+    <div class="col-md-6"><div class="card stat-card p-3 h-100"><h6>Números pares por sorteo</h6>
+        <table class="table table-sm mb-0"><thead><tr><th>Pares</th><th class="text-end">Sorteos</th><th class="text-end">%</th></tr></thead><tbody>
+        {% for d in e.pares_impares %}<tr><td>{{ d.valor }}</td><td class="text-end">{{ d.sorteos }}</td><td class="text-end">{{ '%.1f'|format(100 * d.frecuencia_relativa) }}</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+<p class="mt-3 small"><a href="/estadisticas/colorloto/frecuencia-numeros">Más análisis de ColorLoto →</a></p>
+{% else %}
+<div class="row g-3">
+    <div class="col-md-8"><div class="card stat-card p-3 h-100"><h6>Frecuencia de números ({{ r.reglas.rango[0] }}–{{ r.reglas.rango[1] }})</h6>
+        {% set filas = e.frecuencia_numeros.todas %}{% set maximo = filas|map(attribute='apariciones')|max %}{% set colores = False %}{% set etiqueta_relativa = "fracción de sorteos" %}
+        <div class="tabla-desplazable">{% include "producto/_barras.html" %}</div></div></div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3 mb-3"><h6>Mayores atrasos</h6>
+            <table class="table table-sm mb-0"><thead><tr><th>Número</th><th class="text-end">Sorteos sin salir</th></tr></thead><tbody>
+            {% for a in e.atrasos_numeros.mayores %}<tr><td>{{ a.valor }}</td><td class="text-end">{{ a.atraso }}</td></tr>{% endfor %}
+            </tbody></table>
+            {% if e.atrasos_numeros.nunca_observados %}<p class="small text-muted mb-0">Nunca observados: {{ e.atrasos_numeros.nunca_observados|join(', ') }}</p>{% endif %}</div>
+        <div class="card stat-card p-3 mb-3"><h6>Más y menos frecuentes</h6>
+            <div class="small">Más: {{ e.frecuencia_numeros.mas_frecuentes|map(attribute='valor')|join(', ') }}</div>
+            <div class="small">Menos: {{ e.frecuencia_numeros.menos_frecuentes|map(attribute='valor')|join(', ') }}</div></div>
+        {% if e.superbalota %}
+        <div class="card stat-card p-3"><h6>Superbalota</h6>
+            <div class="small">Más frecuentes: {{ e.superbalota.frecuencia.mas_frecuentes|map(attribute='valor')|join(', ') }}</div>
+            <div class="small">Mayor atraso: {% for a in e.superbalota.atrasos.mayores %}{{ a.valor }} ({{ a.atraso }}){% if not loop.last %}, {% endif %}{% endfor %}</div>
+            <a class="small" href="/estadisticas/{{ slug }}/frecuencia-superbalota">Ver frecuencia completa →</a></div>
+        {% else %}
+        <div class="card stat-card p-3"><h6>Superbalota</h6><p class="small text-muted mb-0">{{ nombre }} no tiene superbalota.</p></div>
+        {% endif %}
+    </div>
+    {% set dec = e.decenas_sobre_numeros_extraidos %}
+    <div class="col-md-4"><div class="card stat-card p-3 h-100"><h6>Números por decena</h6>
+        <p class="small text-muted mb-1">Porcentaje de todos los números extraídos: {{ dec.denominador.sorteos }} sorteos × {{ dec.denominador.numeros_por_sorteo }} números = {{ dec.denominador.numeros_extraidos }} números extraídos.</p>
+        <table class="table table-sm mb-0"><thead><tr><th>Franja</th><th class="text-end">Apariciones</th><th class="text-end">% de los números extraídos</th></tr></thead><tbody>
+        {% for d in dec.filas %}<tr><td>{{ d.valor }}</td><td class="text-end">{{ d.apariciones }}</td><td class="text-end">{{ '%.1f'|format(d.porcentaje_de_numeros_extraidos) if d.porcentaje_de_numeros_extraidos is not none else '—' }}</td></tr>{% endfor %}
+        </tbody></table></div></div>
+    {% for titulo, dist, etiqueta in [('Números pares por sorteo', e.pares_impares, 'Pares'), ('Números bajos por sorteo', e.altos_bajos, 'Bajos')] %}
+    <div class="col-md-4"><div class="card stat-card p-3 h-100"><h6>{{ titulo }}</h6>
+        <table class="table table-sm mb-0"><thead><tr><th>{{ etiqueta }}</th><th class="text-end">Sorteos</th><th class="text-end">% de sorteos</th></tr></thead><tbody>
+        {% for d in dist %}<tr><td>{{ d.valor }}</td><td class="text-end">{{ d.sorteos }}</td><td class="text-end">{{ '%.1f'|format(100 * d.frecuencia_relativa) }}</td></tr>{% endfor %}</tbody></table></div></div>
+    {% endfor %}
+</div>
+<p class="mt-3 small">
+    <a href="/estadisticas/{{ slug }}/frecuencia-numeros">Frecuencia detallada</a> ·
+    <a href="/estadisticas/{{ slug }}/frecuencia-observada-esperada">Observada vs. esperada</a> ·
+    <a href="/estadisticas/{{ slug }}/atrasos-numeros">Atrasos</a> ·
+    <a href="/estadisticas/{{ slug }}/coocurrencia-pares">Coocurrencia</a>
+    {% if tiene_pronostico %} · <a href="/pronosticos/{{ slug }}">Pronóstico experimental</a>{% endif %}
+</p>
+{% endif %}
+{% endif %}
+{% endif %}
+{% endblock %}

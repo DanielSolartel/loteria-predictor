@@ -9,7 +9,7 @@
     <link href="/static/css/styles.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js"></script>
 </head>
-<body>
+<body{% block clase_body %}{% endblock %}>
     <nav class="navbar navbar-dark topbar sticky-top">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
@@ -49,21 +49,28 @@
                         <i class="bi bi-cloud-arrow-down-fill me-2"></i>Importación
                     </a>
                 </li>
-                <li class="nav-item mt-3">
-                    <span class="nav-link disabled text-muted small text-uppercase">Próximamente</span>
-                </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if active_page == 'estadisticas' %}active{% endif %}" href="/estadisticas/baloto/frecuencia-numeros">
+                    <a class="nav-link {% if active_page == 'estadisticas' %}active{% endif %}" href="/estadisticas">
                         <i class="bi bi-bar-chart-fill me-2"></i>Estadísticas
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if active_page == 'estadisticas' %}active{% endif %}" href="/estadisticas/colorloto/frecuencia-numeros">
-                        <i class="bi bi-palette-fill me-2"></i>ColorLoto
+                    <a class="nav-link small ps-4" href="/estadisticas/baloto/frecuencia-numeros">
+                        <i class="bi bi-list-columns me-2"></i>Análisis detallado
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link disabled"><i class="bi bi-cpu-fill me-2"></i>Modelos ML</a>
+                    <a class="nav-link small ps-4" href="/estadisticas/colorloto/frecuencia-numeros">
+                        <i class="bi bi-palette-fill me-2"></i>ColorLoto detallado
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_page == 'pronosticos' %}active{% endif %}" href="/pronosticos">
+                        <i class="bi bi-cpu-fill me-2"></i>Pronóstico experimental
+                    </a>
+                </li>
+                <li class="nav-item mt-3">
+                    <span class="nav-link disabled text-muted small text-uppercase">Próximamente</span>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link disabled"><i class="bi bi-graph-up me-2"></i>Simulaciones</a>

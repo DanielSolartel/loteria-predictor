@@ -1,0 +1,20 @@
+{# c: clasificacion_temporal; f: frescura; titulo: texto #}
+{% if c %}
+<div class="alert {% if c.tipo == 'simulacion_retrospectiva' %}alert-info{% elif c.tipo == 'pronostico_sobre_el_ultimo_dato_disponible' %}alert-light border{% else %}alert-secondary{% endif %} py-2 mb-2">
+    <div class="small text-muted">{{ titulo }}</div>
+    {% if c.tipo == 'simulacion_retrospectiva' %}
+        <strong>Simulación retrospectiva (replay):</strong> el sorteo objetivo {{ c.objetivo }} ya figura en la base. El pronóstico usa solo datos hasta el corte y se compara con lo que salió.
+        {% if c.resultado_observado %}
+        <div class="mt-1">Resultado observado: {% for n in c.resultado_observado.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}{% if c.resultado_observado.superbalota is not none %}<span class="numero-bolita superbalota-bolita">{{ c.resultado_observado.superbalota }}</span>{% endif %}
+            · aciertos de los números sugeridos: <strong>{{ c.resultado_observado.aciertos_numeros_sugeridos }}</strong>{% if c.resultado_observado.acierto_superbalota is not none %} · superbalota {{ 'acertada' if c.resultado_observado.acierto_superbalota else 'no acertada' }}{% endif %}</div>
+        {% endif %}
+    {% elif c.tipo == 'pronostico_sobre_el_ultimo_dato_disponible' %}
+        <strong>Pronóstico experimental sobre el último dato disponible:</strong> el objetivo {{ c.objetivo }} es el siguiente al último sorteo cargado ({{ c.ultimo_sorteo_disponible }}, {{ c.ultima_fecha_disponible }}). Esto no prueba que el sorteo no se haya celebrado: no hay evidencia de calendario ni de que el histórico esté actualizado.
+    {% else %}
+        <strong>Objetivo no cargado:</strong> el sorteo {{ c.objetivo }} no figura en la base, pero hay sorteos posteriores (hasta {{ c.ultimo_sorteo_disponible }}). Es una simulación retrospectiva sobre un hueco, sin resultado observado.
+    {% endif %}
+</div>
+{% if f and f.estado == 'desactualizado' %}
+<div class="alert alert-warning py-2 mb-2"><strong>Histórico desactualizado:</strong> {{ f.mensaje }}</div>
+{% endif %}
+{% endif %}

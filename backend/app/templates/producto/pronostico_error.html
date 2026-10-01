@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}{{ nombre }} — Pronóstico experimental{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ nombre }} — no se pudo generar el pronóstico</h3>
+<div class="alert alert-warning">{{ mensaje }}</div>
+<a class="btn btn-sm btn-outline-secondary" href="/pronosticos/{{ slug }}">Volver</a>
+{% endblock %}

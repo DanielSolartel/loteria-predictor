@@ -1,0 +1,4 @@
+{% set f = r.frescura %}
+<span class="badge {% if f.estado == 'al_dia' %}bg-success{% elif f.estado == 'desactualizado' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+    {% if f.estado == 'al_dia' %}Al día{% elif f.estado == 'desactualizado' %}Desactualizado{% else %}Sin datos{% endif %}
+</span>

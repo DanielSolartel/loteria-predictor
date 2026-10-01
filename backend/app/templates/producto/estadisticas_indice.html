@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Estadísticas — Sistema Predictivo de Loterías{% endblock %}
+{% block content %}
+<h3 class="mb-1">Estadísticas por juego</h3>
+<p class="text-muted">Datos descriptivos del histórico cargado. Las frecuencias y atrasos describen el pasado; no son probabilidades del próximo sorteo.</p>
+
+{% if not db_conectada %}
+<div class="alert alert-danger">Sin conexión a la base de datos: no se pueden calcular estadísticas. Revisa <code>DATABASE_URL</code> y que PostgreSQL esté en marcha.</div>
+{% endif %}
+
+<div class="row g-3">
+{% for t in tarjetas %}
+    <div class="col-md-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="badge game-badge mb-2">{{ t.codigo }}</span>
+                    <h5 class="mb-1">{{ t.nombre }}</h5>
+                </div>
+                {% if t.resumen %}{% set r = t.resumen %}{% include "producto/_frescura.html" %}{% endif %}
+            </div>
+            {% if t.error %}
+                <p class="text-danger small mb-2">{{ t.error }}</p>
+            {% elif t.resumen and t.resumen.total_sorteos %}
+                {% set r = t.resumen %}
+                <div class="small text-muted mb-2">
+                    {{ r.total_sorteos }} sorteos · {{ r.periodo.primera_fecha }} a {{ r.periodo.ultima_fecha }}
+                    (sorteos {{ r.periodo.primer_sorteo }}–{{ r.periodo.ultimo_sorteo }})
+                </div>
+                <div class="mb-2">
+                    <span class="small text-muted me-1">Último:</span>
+                    {% if r.reglas.tipo == 'colorloto' %}
+                        {% for n, c in r.ultimo_resultado.pares %}<span class="me-2 text-nowrap"><span class="color-swatch color-{{ c|lower }}" title="{{ c }}"></span>{{ n }}<span class="solo-impresion"> {{ c|lower }}</span></span>{% endfor %}
+                    {% else %}
+                        {% for n in r.ultimo_resultado.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+                        {% if r.ultimo_resultado.superbalota is not none %}<span class="numero-bolita superbalota-bolita">{{ r.ultimo_resultado.superbalota }}</span>{% endif %}
+                    {% endif %}
+                </div>
+                <p class="small mb-2">{{ r.frescura.mensaje }}</p>
+            {% elif t.resumen %}
+                <p class="text-muted small">{{ t.resumen.frescura.mensaje }}</p>
+            {% endif %}
+            <div class="mt-auto">
+                <a class="btn btn-sm btn-primary" href="/estadisticas/{{ t.slug }}/resumen">Ver resumen</a>
+                {% if t.codigo in ('BALOTO', 'BALOTO_REVANCHA') %}
+                <a class="btn btn-sm btn-outline-secondary" href="/pronosticos/{{ t.slug }}">Pronóstico experimental</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}

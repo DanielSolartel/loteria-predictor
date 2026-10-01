@@ -3087,6 +3087,42 @@ AE-81 queda **validada localmente como trabajo preparatorio** (claves, política
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, publicadores, monitores ni canales operativos, red, servicios de publicación, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-80 sin cambios.
 
+**Producto 1 -estadísticas y pronósticos experimentales:** primera entrega orientada al usuario. Añade funciones visibles sin abrir otra etapa AE.
+- **Estadísticas por juego:**
+  - `/estadisticas` presenta los cuatro juegos;
+  - `/estadisticas/{baloto|baloto-revancha|miloto|colorloto}/resumen` muestra el último sorteo, la cantidad y el período, el corte, la frescura y los huecos, además de frecuencias, atrasos y distribuciones;
+  - las reglas salen de cada clase de dominio: MiLoto `1..39` sin superbalota, Baloto y Revancha `1..43` con superbalota `1..16`, ColorLoto con sus colores;
+  - el historial vacío y los datos antiguos tienen mensajes claros.
+- **Pronóstico experimental de Baloto y Revancha:** sigue la línea histórico real → features sin fuga de AE-36 → regresión logística calibrada (semilla 42) → walk-forward frente a la referencia uniforme (Log Loss, Brier, aciertos top-5) → artefacto JSON canónico de AE-52 con SHA-256 → pronóstico experimental del sorteo siguiente al corte (clasificado como se indica abajo). La superbalota es un objetivo separado. Se accede por la pantalla `/pronosticos`, por JSON en `/api/pronosticos/{JUEGO}` y por el comando `python -m scripts.pronostico_experimental`.
+- **Clasificación temporal:** al generarlo, el objetivo se compara con todo el histórico cargado, sin el corte pedido, y se clasifica en uno de tres tipos:
+  - **simulación retrospectiva (replay):** el objetivo ya figura en la base y se muestra el resultado observado con los aciertos;
+  - **pronóstico sobre el último dato disponible:** el objetivo es el siguiente al último sorteo cargado, lo que no prueba que no se haya celebrado;
+  - **objetivo no cargado con sorteos posteriores:** un hueco del histórico.
+
+  Un histórico con más de 7 días sin sorteos produce un aviso visible. Las pantallas y la API muestran también el estado actual frente a la base.
+- **Identidad e idempotencia:** el identificador es la `clave_de_entrada`, que resume juego, reglas, corte, SHA-256 del histórico, configuración, versión de la línea y versiones de scikit-learn y NumPy.
+  - Repetir la misma entrada, por ejemplo con dos clics, devuelve el artefacto ya guardado sin reentrenar ni cambiar su fecha.
+  - Si el histórico se corrigió, se guarda otra versión del mismo objetivo y las anteriores se conservan.
+  - Las versiones se numeran por un orden de emisión persistente, nunca por la fecha declarada, el hash, el orden del directorio ni las fechas del sistema de archivos. Cada artefacto lleva sellados `secuencia_en_el_objetivo` y `version_anterior` (la clave de la versión previa). La secuencia se reserva de forma atómica con un archivo `<objetivo>-<secuencia>.secuencia` creado en modo exclusivo.
+  - El orden se conserva al reconstruir el almacén desde los JSON. Límites:
+    - la creación exclusiva atómica exige un disco local; no se garantiza en carpetas de red;
+    - un proceso interrumpido entre la reserva y la escritura deja un hueco en la secuencia, sin alterar la numeración de las versiones;
+    - mientras otro proceso escribe, un lector puede ver un instante el archivo nuevo como ilegible.
+  - Los archivos se escriben en `backend/storage/pronosticos/<JUEGO>/<objetivo>-<clave>.json` en modo `xb`, con un sello SHA-256 que cubre todo el artefacto, incluida la fecha. Una alteración se informa.
+- **Presentación:**
+  - «Números por decena» muestra el porcentaje de todos los números extraídos: apariciones / (sorteos × números por sorteo) × 100, con el denominador visible. Los campos previos de la API se conservan.
+  - En ColorLoto, la frecuencia de colores y de números se rotula como promedio de apariciones por sorteo, que puede superar 1 y no es una probabilidad.
+  - Al imprimir o guardar como PDF las páginas de Producto 1, las tablas con desplazamiento salen completas, los nombres de color aparecen como texto y la tabla por bloque del pronóstico se imprime abierta. Las reglas se limitan a esas páginas, marcadas con `body.producto1-impresion`: no afectan a formularios ni a `<details>` de otras páginas ni cambian la vista en pantalla.
+- **Acceso:** la aplicación no tiene autenticación. Entrenar (`POST /pronosticos/{juego}/generar`) y verificar (`POST /pronosticos/{juego}/verificar`, que reentrena) solo se aceptan con todas estas condiciones:
+  - desde la propia máquina;
+  - con `Host` local;
+  - sin origen ajeno;
+  - con el token del formulario.
+
+  Se ejecuta un entrenamiento a la vez. El comando de línea sigue disponible en local.
+- **Contrato explícito:** el estado es `experimental_no_acreditado` (`CONTRATO_DE_USO_EXPERIMENTAL`). No es un resultado acreditado ni una recomendación. No modifica el NO-GO de AE-39, el estado operativo de AE-41 ni `AUTORIZA_EVALUACION = False`. Lee como histórico los sorteos desde `2706`, que no se convierten en evidencia prospectiva. Si el modelo pierde frente a la referencia uniforme, la pantalla lo muestra.
+- **Datos y validación:** sin escrituras en PostgreSQL. Las fixtures son sintéticas y solo sirven para pruebas. El histórico real solo existe en la base del operador. Las instrucciones de Windows están en `backend/docs/producto1_windows.md` y el inventario en `backend/docs/producto1_inventario.md`.
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)

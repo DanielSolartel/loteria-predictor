@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}{{ nombre }} — Pronóstico experimental{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ nombre }} — pronóstico experimental</h3>
+{% include "producto/_aviso_experimental.html" %}
+
+{% if reutilizado %}<div class="alert alert-success py-2">Ese pronóstico ya existía con exactamente la misma entrada (juego, corte, histórico, configuración y versión): se muestra el original, con su fecha de generación, sin volver a entrenar.</div>{% endif %}
+<form method="post" action="/pronosticos/{{ slug }}/generar" class="row g-2 align-items-end mb-4">
+    <input type="hidden" name="token_local" value="{{ token_local }}">
+    <div class="col-auto">
+        <label class="form-label small mb-0" for="corte">Corte (opcional, hasta el sorteo)</label>
+        <input class="form-control form-control-sm" id="corte" type="number" min="1" name="hasta_numero_sorteo" placeholder="último cargado">
+    </div>
+    <div class="col-auto"><button class="btn btn-sm btn-primary" {% if not db_conectada %}disabled{% endif %}>Entrenar y generar nuevo pronóstico</button></div>
+    {% if not db_conectada %}<div class="col-12 small text-danger">Sin conexión a la base de datos: se pueden consultar los pronósticos guardados, pero no generar uno nuevo.</div>{% endif %}
+    <div class="col-12 small text-muted">Tarda unos segundos y solo funciona desde esta misma máquina. Si la entrada (juego, corte, histórico, configuración y versión) es idéntica a la de un pronóstico guardado, se devuelve ese mismo; si el histórico cambió, se guarda como otra versión. Nada se sobrescribe.</div>
+</form>
+
+{% if seleccionado is none %}
+    <div class="alert alert-info">No hay pronósticos guardados para {{ nombre }}.</div>
+{% elif seleccionado.motivo is defined %}
+    <div class="alert alert-danger">El pronóstico {{ seleccionado.identificador[:16] }} no se puede leer: {{ seleccionado.motivo }}.</div>
+{% else %}
+{% set a = seleccionado.artefacto %}
+<div class="row g-3 mb-3">
+    <div class="col-md-7"><div class="card stat-card p-3 h-100">
+        <div class="d-flex justify-content-between"><h6>Objetivo: sorteo {{ a.pronostico.objetivo }}{% if seleccionado.versiones %} · versión {{ seleccionado.version }} de {{ seleccionado.versiones }}{% endif %}</h6><span class="badge bg-warning text-dark">experimental</span></div>
+        {% set c = a.generacion.clasificacion_temporal %}{% set f = a.generacion.frescura %}{% set titulo = "Al generarse (" ~ a.generacion.generado_en ~ ")" %}{% include "producto/_clasificacion.html" %}
+        {% if actual and actual.clasificacion_temporal.tipo != (a.generacion.clasificacion_temporal or {}).get('tipo') %}
+            {% set c = actual.clasificacion_temporal %}{% set f = actual.frescura %}{% set titulo = "Ahora, frente a la base actual" %}{% include "producto/_clasificacion.html" %}
+        {% elif actual and actual.frescura.estado == 'desactualizado' and (a.generacion.frescura or {}).get('estado') != 'desactualizado' %}
+            <div class="alert alert-warning py-2 mb-2"><strong>Histórico desactualizado:</strong> {{ actual.frescura.mensaje }}</div>
+        {% endif %}
+        <div class="mb-2">{% for n in a.pronostico.numeros_sugeridos %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+            {% if a.superbalota %}<span class="numero-bolita superbalota-bolita" title="superbalota">{{ a.superbalota.pronostico.sugerida }}</span>{% endif %}</div>
+        <p class="small text-muted mb-1">Los cinco números con mayor probabilidad estimada por el modelo para el objetivo; la superbalota (rosa) es un objetivo separado.</p>
+        <h6 class="mt-2">Ranking de números</h6>
+        <div class="tabla-desplazable"><table class="table table-sm mb-0">
+            <thead><tr><th>#</th><th>Número</th><th class="text-end">Probabilidad del modelo</th><th class="text-end">Uniforme</th></tr></thead><tbody>
+            {% for f in a.pronostico.ranking %}<tr {% if loop.index <= 5 %}class="table-primary"{% endif %}><td>{{ loop.index }}</td><td>{{ f.numero }}</td><td class="text-end">{{ '%.4f'|format(f.probabilidad) }}</td><td class="text-end text-muted">{{ '%.4f'|format(f.probabilidad_uniforme) }}</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div></div>
+    <div class="col-md-5">
+        <div class="card stat-card p-3 mb-3"><h6>Trazabilidad</h6>
+            <dl class="row small mb-0">
+                <dt class="col-5">Estrategia</dt><dd class="col-7">{{ a.estrategia.numeros }}</dd>
+                <dt class="col-5">Versión</dt><dd class="col-7">{{ a.version_de_la_linea }} · {{ a.esquema }}</dd>
+                <dt class="col-5">Datos</dt><dd class="col-7">{{ a.datos.total_sorteos }} sorteos, {{ a.datos.primer_sorteo }}–{{ a.datos.ultimo_sorteo }} ({{ a.datos.primera_fecha }} a {{ a.datos.ultima_fecha }})</dd>
+                <dt class="col-5">Corte de datos</dt><dd class="col-7">sorteo {{ a.datos.corte }}</dd>
+                <dt class="col-5">Entrenamiento final</dt><dd class="col-7">objetivos {{ a.entrenamiento_final.objetivos[0] }}–{{ a.entrenamiento_final.objetivos[1] }} ({{ a.entrenamiento_final.sorteos_objetivo }})</dd>
+                <dt class="col-5">Semilla</dt><dd class="col-7">{{ a.configuracion.semilla }}</dd>
+                <dt class="col-5">Generado</dt><dd class="col-7">{{ a.generacion.generado_en }} <span class="text-muted">(reloj local; no prueba anterioridad)</span></dd>
+                <dt class="col-5">SHA-256 histórico</dt><dd class="col-7"><code>{{ a.datos.sha256_historico[:16] }}…</code></dd>
+                <dt class="col-5">Huella de reproducción</dt><dd class="col-7"><code>{{ a.huella_de_reproduccion[:16] }}…</code></dd>
+                <dt class="col-5">Clave de entrada</dt><dd class="col-7"><code>{{ seleccionado.identificador[:16] }}…</code> (identificador)</dd>
+                <dt class="col-5">Sorteos ≥ 2706</dt><dd class="col-7">{{ a.datos.sorteos_desde_el_holdout_de_ae39 }} (leídos como histórico en uso experimental)</dd>
+            </dl>
+            <a class="small" href="/pronosticos/{{ slug }}/verificar?id={{ seleccionado.identificador }}">Verificar reproducción (reentrena) →</a> ·
+            <a class="small" href="/api/pronosticos/{{ codigo }}/{{ seleccionado.identificador }}">JSON</a>
+        </div>
+        {% if a.superbalota %}
+        <div class="card stat-card p-3"><h6>Superbalota (objetivo separado)</h6>
+            <p class="small mb-1">Más probables: {% for f in a.superbalota.pronostico.ranking[:3] %}{{ f.superbalota }} ({{ '%.4f'|format(f.probabilidad) }}){% if not loop.last %}, {% endif %}{% endfor %} · uniforme {{ '%.4f'|format(a.superbalota.pronostico.ranking[0].probabilidad_uniforme) }}</p>
+            {% set ws = a.superbalota.evaluacion_walk_forward %}
+            {% if ws.estrategia %}<p class="small mb-0 {% if ws.veredicto == 'la_estrategia_no_supera_a_la_referencia_uniforme' %}text-danger{% else %}text-success{% endif %}">
+                Walk-forward ({{ ws.estrategia.sorteos }} sorteos): Log Loss {{ '%.4f'|format(ws.estrategia.log_loss) }} vs {{ '%.4f'|format(ws.referencia_uniforme.log_loss) }}; Brier {{ '%.4f'|format(ws.estrategia.brier) }} vs {{ '%.4f'|format(ws.referencia_uniforme.brier) }}.
+                {% if ws.veredicto == 'la_estrategia_no_supera_a_la_referencia_uniforme' %}No supera a la referencia uniforme.{% else %}Supera a la referencia en este histórico.{% endif %}</p>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% set ag = a.evaluacion_walk_forward.agregado %}
+<div class="card stat-card p-3 mb-3">
+    <h6>Rendimiento histórico frente a la referencia uniforme (walk-forward)</h6>
+    <p class="small {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}text-danger{% else %}text-success{% endif %} mb-2">
+        {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}
+        En los {{ ag.modelo.sorteos }} sorteos evaluados, el modelo <strong>no supera</strong> a la referencia uniforme en Log Loss y Brier. El pronóstico se muestra igualmente como experimento.
+        {% else %}
+        En los {{ ag.modelo.sorteos }} sorteos evaluados, el modelo obtuvo menor Log Loss y Brier que la referencia uniforme. Es una descripción de este histórico, sin prueba de significancia: no acredita ventaja predictiva.
+        {% endif %}
+    </p>
+    {% set m = ag.modelo %}{% set u = ag.referencia_uniforme %}{% set c = ag.comparacion %}{% include "producto/_comparacion.html" %}
+    {% set tabla_por_bloque %}
+        <table class="table table-sm small mt-2"><thead><tr><th>Objetivos</th><th>Entrenamiento</th><th class="text-end">LL modelo</th><th class="text-end">LL uniforme</th><th class="text-end">Brier modelo</th><th class="text-end">Brier uniforme</th><th class="text-end">Top-5 modelo</th><th class="text-end">Top-5 uniforme</th></tr></thead><tbody>
+        {% for b in a.evaluacion_walk_forward.bloques %}<tr><td>{{ b.objetivos[0] }}–{{ b.objetivos[1] }}</td><td>{{ b.entrenamiento.objetivos[0] }}–{{ b.entrenamiento.objetivos[1] }}</td>
+            <td class="text-end">{{ '%.5f'|format(b.modelo.log_loss) }}</td><td class="text-end">{{ '%.5f'|format(b.referencia_uniforme.log_loss) }}</td>
+            <td class="text-end">{{ '%.5f'|format(b.modelo.brier) }}</td><td class="text-end">{{ '%.5f'|format(b.referencia_uniforme.brier) }}</td>
+            <td class="text-end">{{ '%.2f'|format(b.modelo.aciertos_top5_por_sorteo) }}</td><td class="text-end">{{ '%.2f'|format(b.referencia_uniforme.aciertos_top5_por_sorteo) }}</td></tr>{% endfor %}
+        </tbody></table>
+        <p class="small text-muted">{{ a.evaluacion_walk_forward.definiciones }}</p>
+    {% endset %}
+    <details class="detalle-bloques"><summary class="small">Detalle por bloque ({{ a.evaluacion_walk_forward.bloques|length }} bloques de {{ a.configuracion.tamano_bloque }} sorteos)</summary>{{ tabla_por_bloque }}</details>
+    <div class="solo-impresion-bloque"><h6 class="mt-2">Detalle por bloque</h6>{{ tabla_por_bloque }}</div>
+</div>
+{% endif %}
+
+{% if historial %}
+<div class="card stat-card p-3">
+    <h6>Pronósticos guardados</h6>
+    <p class="small text-muted">Ordenados por objetivo (más reciente primero) y, dentro de cada objetivo, por versión. Una versión nueva aparece cuando cambia el histórico usado (por ejemplo, tras corregir un sorteo); las anteriores se conservan.</p>
+    <table class="table table-sm small mb-0"><thead><tr><th>Objetivo</th><th>Versión</th><th>Tipo al generarse</th><th>Corte</th><th>Números</th><th>Veredicto histórico</th><th>Generado</th><th></th></tr></thead><tbody>
+    {% for g in historial %}{% set x = g.artefacto %}<tr {% if seleccionado is not none and g.identificador == seleccionado.identificador %}class="table-primary"{% endif %}>
+        <td>{{ x.pronostico.objetivo }}</td><td>{{ g.version }} de {{ g.versiones }}</td>
+        <td>{% set tipo = (x.generacion.clasificacion_temporal or {}).get('tipo') %}{{ {'simulacion_retrospectiva': 'simulación retrospectiva', 'pronostico_sobre_el_ultimo_dato_disponible': 'sobre el último dato', 'objetivo_no_cargado_con_sorteos_posteriores': 'objetivo no cargado'}.get(tipo, '—') }}</td>
+        <td>{{ x.datos.corte }}</td><td>{{ x.pronostico.numeros_sugeridos|join(' ') }}</td>
+        <td>{{ 'no supera al uniforme' if x.evaluacion_walk_forward.agregado.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' else 'supera en LL y Brier' }}</td>
+        <td>{{ x.generacion.generado_en }}</td><td>{% if seleccionado is not none and g.identificador == seleccionado.identificador %}mostrado{% else %}<a href="/pronosticos/{{ slug }}?id={{ g.identificador }}">ver</a>{% endif %}</td></tr>{% endfor %}
+    </tbody></table>
+</div>
+{% endif %}
+{% if ilegibles %}<div class="alert alert-danger mt-3 small">{{ ilegibles|length }} archivo(s) del almacén no se pueden leer o fueron alterados: {% for e in ilegibles %}{{ e.identificador[:16] }} ({{ e.motivo }}){% if not loop.last %}, {% endif %}{% endfor %}.</div>{% endif %}
+{% endblock %}

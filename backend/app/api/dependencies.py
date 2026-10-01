@@ -18,6 +18,7 @@ from app.application.use_cases.editar_sorteo import EditarSorteo
 from app.application.use_cases.eliminar_sorteo import EliminarSorteo
 from app.application.use_cases.calcular_y_persistir_estadistica import CalcularYPersistirEstadistica
 from app.application.use_cases.consultar_juegos import ListarJuegos, ObtenerJuego
+from app.application.use_cases.consultar_resumen_juego import ConsultarResumenJuego
 from app.application.use_cases.game_factory import GameFactory
 from app.application.use_cases.generar_reporte_calidad_datos import GenerarReporteCalidadDatos
 from app.application.use_cases.gestionar_paleta_colores import GestionarPaletaColores
@@ -26,11 +27,17 @@ from app.application.use_cases.obtener_estado_importacion import ObtenerEstadoIm
 from app.application.use_cases.obtener_resumen_sistema import ObtenerResumenSistema
 from app.application.use_cases.obtener_sorteo import ObtenerSorteo
 from app.application.use_cases.obtener_sorteo_con_pareja import ObtenerSorteoConPareja
+from app.application.use_cases.pronostico_experimental import (
+    ConsultarPronosticosExperimentales,
+    GenerarPronosticoExperimental,
+    VerificarPronosticoExperimental,
+)
 from app.application.use_cases.registrar_sorteo import RegistrarSorteo
 from app.application.use_cases.reimportar_sorteo import ReimportarSorteo
 from app.application.use_cases.reprocesar_sorteos_desde_html import ReprocesarSorteosDesdeHtml
 from app.application.use_cases.sincronizar_sorteos import SincronizarSorteos
 from app.application.use_cases.validar_integridad import ValidarIntegridadDatos
+from app.core.config import get_settings
 from app.infrastructure.connectors.registry import ConnectorRegistry
 from app.infrastructure.db.session import get_db
 from app.infrastructure.db.unit_of_work import SqlAlchemyUnitOfWork
@@ -45,6 +52,7 @@ from app.infrastructure.repositories.sincronizacion_repository_sqlalchemy import
 )
 from app.infrastructure.repositories.sorteo_repository_sqlalchemy import SorteoRepositorySQLAlchemy
 from app.infrastructure.storage.html_file_storage import HtmlFileStorage
+from app.infrastructure.storage.pronostico_experimental_file_store import PronosticoExperimentalFileStore
 
 # Un único HtmlStorage y un único ConnectorRegistry para todo el
 # proceso: los conectores mantienen su propia sesión HTTP (con
@@ -260,3 +268,43 @@ def get_calcular_y_persistir_estadistica(
         historico_repository=historico_repo, estadistica_repository=estadistica_repo,
         color_repository=color_repo,
     )
+
+
+# ---------------------------------------------------------------------------
+# Producto 1: resumen por juego y pronostico experimental
+# ---------------------------------------------------------------------------
+
+def get_consultar_resumen_juego(
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+    color_repo: ColorRepositorySQLAlchemy = Depends(get_color_repository),
+) -> ConsultarResumenJuego:
+    return ConsultarResumenJuego(juego_repo, historico_repo, color_repo)
+
+
+def get_almacen_pronosticos() -> PronosticoExperimentalFileStore:
+    return PronosticoExperimentalFileStore(get_settings().directorio_pronosticos_experimentales)
+
+
+def get_consultar_pronosticos(
+    almacen: PronosticoExperimentalFileStore = Depends(get_almacen_pronosticos),
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+) -> ConsultarPronosticosExperimentales:
+    return ConsultarPronosticosExperimentales(almacen, juego_repo, historico_repo)
+
+
+def get_generar_pronostico(
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+    almacen: PronosticoExperimentalFileStore = Depends(get_almacen_pronosticos),
+) -> GenerarPronosticoExperimental:
+    return GenerarPronosticoExperimental(juego_repo, historico_repo, almacen)
+
+
+def get_verificar_pronostico(
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+    almacen: PronosticoExperimentalFileStore = Depends(get_almacen_pronosticos),
+) -> VerificarPronosticoExperimental:
+    return VerificarPronosticoExperimental(juego_repo, historico_repo, almacen)
