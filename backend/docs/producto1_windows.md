@@ -20,6 +20,7 @@ git apply --reverse --check .\producto1-estadisticas-pronosticos.patch
 cd backend
 .venv\Scripts\activate
 pip install -r requirements.txt
+python -m pip install httpx==0.28.1  # TestClient en las pruebas HTTP
 pip check
 alembic current                              # 0006; el cambio no añade migraciones
 python -m pytest -q tests/unit/ml/test_pronostico_experimental.py tests/unit/test_producto1_estadisticas.py tests/unit/test_producto1_pronosticos.py tests/unit/test_producto1_correcciones.py tests/unit/test_producto1_versiones.py tests/unit/test_producto1_presentacion.py
