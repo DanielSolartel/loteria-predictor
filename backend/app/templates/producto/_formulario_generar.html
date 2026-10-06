@@ -1,0 +1,12 @@
+{# slug, token_local, db_conectada, reutilizado, nombre #}
+{% if reutilizado %}<div class="alert alert-success py-2">Ese pronóstico ya existía con exactamente la misma entrada (juego, corte, histórico, configuración y versión): se muestra el original, con su fecha de generación, sin volver a entrenar.</div>{% endif %}
+<form method="post" action="/pronosticos/{{ slug }}/generar" class="row g-2 align-items-end mb-4">
+    <input type="hidden" name="token_local" value="{{ token_local }}">
+    <div class="col-auto">
+        <label class="form-label small mb-0" for="corte">Corte (opcional, hasta el sorteo)</label>
+        <input class="form-control form-control-sm" id="corte" type="number" min="1" name="hasta_numero_sorteo" placeholder="último cargado">
+    </div>
+    <div class="col-auto"><button class="btn btn-sm btn-primary" {% if not db_conectada %}disabled{% endif %}>Entrenar y generar nuevo pronóstico</button></div>
+    {% if not db_conectada %}<div class="col-12 small text-danger">Sin conexión a la base de datos: se pueden consultar los pronósticos guardados, pero no generar uno nuevo.</div>{% endif %}
+    <div class="col-12 small text-muted">Tarda unos segundos y solo funciona desde esta misma máquina. Si la entrada (juego, corte, histórico, configuración y versión) es idéntica a la de un pronóstico guardado, se devuelve ese mismo; si el histórico cambió, se guarda como otra versión. Nada se sobrescribe.</div>
+</form>

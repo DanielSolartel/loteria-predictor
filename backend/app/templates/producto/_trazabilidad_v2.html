@@ -1,0 +1,19 @@
+{# a: artefacto v2; seleccionado; slug; codigo #}
+<div class="card stat-card p-3 mb-3"><h6>Trazabilidad</h6>
+    <dl class="row small mb-0">
+        <dt class="col-5">Estrategia</dt><dd class="col-7"><code>{{ a.estrategia.nombre }}</code></dd>
+        <dt class="col-5">Referencia</dt><dd class="col-7">{{ a.estrategia.referencia }}</dd>
+        <dt class="col-5">Versión</dt><dd class="col-7">{{ a.version_de_la_linea }} · {{ a.esquema }}</dd>
+        <dt class="col-5">Datos</dt><dd class="col-7">{{ a.datos.total_sorteos }} sorteos, {{ a.datos.primer_sorteo }}–{{ a.datos.ultimo_sorteo }} ({{ a.datos.primera_fecha }} a {{ a.datos.ultima_fecha }}){% if a.datos.huecos.cantidad %} · {{ a.datos.huecos.cantidad }} hueco(s) en la numeración{% endif %}</dd>
+        <dt class="col-5">Corte de datos</dt><dd class="col-7">sorteo {{ a.datos.corte }}</dd>
+        <dt class="col-5">Entrenamiento final</dt><dd class="col-7">sorteos {{ a.datos.primer_sorteo }}–{{ a.pronostico.calculado_hasta_sorteo }} (todos los anteriores al objetivo)</dd>
+        <dt class="col-5">Configuración</dt><dd class="col-7">{% for k, v in a.configuracion.items() %}{{ k }} = {{ v }}{% if not loop.last %}; {% endif %}{% endfor %}</dd>
+        <dt class="col-5">Generado</dt><dd class="col-7">{{ a.generacion.generado_en }} <span class="text-muted">(reloj local; no prueba anterioridad)</span></dd>
+        <dt class="col-5">SHA-256 histórico</dt><dd class="col-7"><code>{{ a.datos.sha256_historico[:16] }}…</code></dd>
+        <dt class="col-5">Huella de reproducción</dt><dd class="col-7"><code>{{ a.huella_de_reproduccion[:16] }}…</code></dd>
+        <dt class="col-5">Clave de entrada</dt><dd class="col-7"><code>{{ seleccionado.identificador[:16] }}…</code> (identificador)</dd>
+        <dt class="col-5">Decisión previa</dt><dd class="col-7">{{ a.contexto.decision_previa }}</dd>
+    </dl>
+    <a class="small" href="/pronosticos/{{ slug }}/verificar?id={{ seleccionado.identificador }}">Verificar reproducción (reentrena) →</a> ·
+    <a class="small" href="/api/pronosticos/{{ codigo }}/{{ seleccionado.identificador }}">JSON</a>
+</div>

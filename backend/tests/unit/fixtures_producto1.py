@@ -103,13 +103,14 @@ class _SesionFalsa:
 
 
 def cliente(juegos_repo, resultados, colores, almacen, *, conectada: bool = True, reloj=None, configuracion=None,
-            client=("testclient", 50000)):
+            client=("testclient", 50000), configuraciones=None):
     """TestClient de la aplicacion real con las dependencias sustituidas."""
     from fastapi.testclient import TestClient
 
     from app.api import dependencies as dep
     from app.application.use_cases.consultar_resumen_juego import ConsultarResumenJuego
     from app.application.use_cases.pronostico_experimental import (
+        CompararConResultadosObservados,
         ConsultarPronosticosExperimentales,
         GenerarPronosticoExperimental,
         VerificarPronosticoExperimental,
@@ -121,6 +122,8 @@ def cliente(juegos_repo, resultados, colores, almacen, *, conectada: bool = True
     kwargs_reloj = dict(kwargs)
     if configuracion is not None:
         kwargs["configuracion"] = configuracion
+    if configuraciones is not None:
+        kwargs["configuraciones"] = configuraciones
     app.dependency_overrides = {
         get_db: lambda: _SesionFalsa(conectada),
         dep.get_consultar_resumen_juego: lambda: ConsultarResumenJuego(juegos_repo, resultados, colores),
@@ -128,5 +131,6 @@ def cliente(juegos_repo, resultados, colores, almacen, *, conectada: bool = True
                                                                                   **kwargs_reloj),
         dep.get_generar_pronostico: lambda: GenerarPronosticoExperimental(juegos_repo, resultados, almacen, **kwargs),
         dep.get_verificar_pronostico: lambda: VerificarPronosticoExperimental(juegos_repo, resultados, almacen),
+        dep.get_comparar_resultados: lambda: CompararConResultadosObservados(almacen, juegos_repo, resultados),
     }
     return TestClient(app, base_url="http://localhost:8000", client=client)

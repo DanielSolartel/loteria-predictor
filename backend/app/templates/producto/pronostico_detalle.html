@@ -5,17 +5,7 @@
 <h3 class="mb-3">{{ nombre }} — pronóstico experimental</h3>
 {% include "producto/_aviso_experimental.html" %}
 
-{% if reutilizado %}<div class="alert alert-success py-2">Ese pronóstico ya existía con exactamente la misma entrada (juego, corte, histórico, configuración y versión): se muestra el original, con su fecha de generación, sin volver a entrenar.</div>{% endif %}
-<form method="post" action="/pronosticos/{{ slug }}/generar" class="row g-2 align-items-end mb-4">
-    <input type="hidden" name="token_local" value="{{ token_local }}">
-    <div class="col-auto">
-        <label class="form-label small mb-0" for="corte">Corte (opcional, hasta el sorteo)</label>
-        <input class="form-control form-control-sm" id="corte" type="number" min="1" name="hasta_numero_sorteo" placeholder="último cargado">
-    </div>
-    <div class="col-auto"><button class="btn btn-sm btn-primary" {% if not db_conectada %}disabled{% endif %}>Entrenar y generar nuevo pronóstico</button></div>
-    {% if not db_conectada %}<div class="col-12 small text-danger">Sin conexión a la base de datos: se pueden consultar los pronósticos guardados, pero no generar uno nuevo.</div>{% endif %}
-    <div class="col-12 small text-muted">Tarda unos segundos y solo funciona desde esta misma máquina. Si la entrada (juego, corte, histórico, configuración y versión) es idéntica a la de un pronóstico guardado, se devuelve ese mismo; si el histórico cambió, se guarda como otra versión. Nada se sobrescribe.</div>
-</form>
+{% include "producto/_formulario_generar.html" %}
 
 {% if seleccionado is none %}
     <div class="alert alert-info">No hay pronósticos guardados para {{ nombre }}.</div>
@@ -24,7 +14,7 @@
 {% else %}
 {% set a = seleccionado.artefacto %}
 <div class="row g-3 mb-3">
-    <div class="col-md-7"><div class="card stat-card p-3 h-100">
+    <div class="col-md-7"><div class="card stat-card impresion-fragmentable p-3 h-100">
         <div class="d-flex justify-content-between"><h6>Objetivo: sorteo {{ a.pronostico.objetivo }}{% if seleccionado.versiones %} · versión {{ seleccionado.version }} de {{ seleccionado.versiones }}{% endif %}</h6><span class="badge bg-warning text-dark">experimental</span></div>
         {% set c = a.generacion.clasificacion_temporal %}{% set f = a.generacion.frescura %}{% set titulo = "Al generarse (" ~ a.generacion.generado_en ~ ")" %}{% include "producto/_clasificacion.html" %}
         {% if actual and actual.clasificacion_temporal.tipo != (a.generacion.clasificacion_temporal or {}).get('tipo') %}
@@ -72,7 +62,7 @@
 </div>
 
 {% set ag = a.evaluacion_walk_forward.agregado %}
-<div class="card stat-card p-3 mb-3">
+<div class="card stat-card impresion-fragmentable p-3 mb-3">
     <h6>Rendimiento histórico frente a la referencia uniforme (walk-forward)</h6>
     <p class="small {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}text-danger{% else %}text-success{% endif %} mb-2">
         {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}
@@ -96,8 +86,10 @@
 </div>
 {% endif %}
 
+{% include "producto/_resultados_observados.html" %}
+
 {% if historial %}
-<div class="card stat-card p-3">
+<div class="card stat-card impresion-fragmentable p-3">
     <h6>Pronósticos guardados</h6>
     <p class="small text-muted">Ordenados por objetivo (más reciente primero) y, dentro de cada objetivo, por versión. Una versión nueva aparece cuando cambia el histórico usado (por ejemplo, tras corregir un sorteo); las anteriores se conservan.</p>
     <table class="table table-sm small mb-0"><thead><tr><th>Objetivo</th><th>Versión</th><th>Tipo al generarse</th><th>Corte</th><th>Números</th><th>Veredicto histórico</th><th>Generado</th><th></th></tr></thead><tbody>

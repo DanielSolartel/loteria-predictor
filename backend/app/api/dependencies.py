@@ -28,6 +28,7 @@ from app.application.use_cases.obtener_resumen_sistema import ObtenerResumenSist
 from app.application.use_cases.obtener_sorteo import ObtenerSorteo
 from app.application.use_cases.obtener_sorteo_con_pareja import ObtenerSorteoConPareja
 from app.application.use_cases.pronostico_experimental import (
+    CompararConResultadosObservados,
     ConsultarPronosticosExperimentales,
     GenerarPronosticoExperimental,
     VerificarPronosticoExperimental,
@@ -308,3 +309,11 @@ def get_verificar_pronostico(
     almacen: PronosticoExperimentalFileStore = Depends(get_almacen_pronosticos),
 ) -> VerificarPronosticoExperimental:
     return VerificarPronosticoExperimental(juego_repo, historico_repo, almacen)
+
+
+def get_comparar_resultados(
+    almacen: PronosticoExperimentalFileStore = Depends(get_almacen_pronosticos),
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+) -> CompararConResultadosObservados:
+    return CompararConResultadosObservados(almacen, juego_repo, historico_repo)

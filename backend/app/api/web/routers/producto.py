@@ -1,13 +1,13 @@
 """
-Router web de Producto 1: resumen estadistico por juego y pronostico
-experimental de Baloto y Revancha.
+Router web de Productos 1 y 2: resumen estadistico por juego y pronostico
+experimental de Baloto, Revancha, MiLoto y ColorLoto.
 
 - `/estadisticas`: entrada con los cuatro juegos.
 - `/estadisticas/{slug}/resumen`: resumen de un juego (`baloto`,
   `baloto-revancha`, `miloto`, `colorloto`), con corte opcional.
-- `/pronosticos`: pronosticos experimentales guardados de Baloto y
-  Revancha, con su comparacion frente a la referencia uniforme y el NO-GO
-  historico de AE-39.
+- `/pronosticos`: pronosticos experimentales guardados de Baloto,
+  Revancha, MiLoto y ColorLoto, con su comparacion frente a la referencia
+  uniforme de cada juego, sus resultados observados y el NO-GO de AE-39.
 - `/pronosticos/{slug}`: detalle con versiones y clasificacion temporal;
   `POST /pronosticos/{slug}/generar` entrena y guarda (o devuelve el ya
   guardado con la misma entrada); `GET /pronosticos/{slug}/verificar`
@@ -51,7 +51,12 @@ from app.infrastructure.db.session import get_db
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-SLUG_A_CODIGO_PRONOSTICO = {"baloto": "BALOTO", "baloto-revancha": "BALOTO_REVANCHA"}
+SLUG_A_CODIGO_PRONOSTICO = {"baloto": "BALOTO", "baloto-revancha": "BALOTO_REVANCHA", "miloto": "MILOTO",
+                            "colorloto": "COLORLOTO"}
+PLANTILLA_DE_DETALLE = {"BALOTO": "producto/pronostico_detalle.html",
+                        "BALOTO_REVANCHA": "producto/pronostico_detalle.html",
+                        "MILOTO": "producto/pronostico_detalle_miloto.html",
+                        "COLORLOTO": "producto/pronostico_detalle_colorloto.html"}
 NOMBRES = {"BALOTO": "Baloto", "BALOTO_REVANCHA": "Baloto Revancha", "MILOTO": "MiLoto", "COLORLOTO": "ColorLoto"}
 CODIGO_A_SLUG = {codigo: slug for slug, codigo in SLUG_A_CODIGO_RESUMEN.items()}
 
@@ -114,8 +119,8 @@ def _codigo_pronostico(juego_slug: str) -> str:
     codigo = SLUG_A_CODIGO_PRONOSTICO.get(juego_slug)
     if codigo is None:
         raise HTTPException(status_code=404,
-                            detail=f"El pronóstico experimental solo existe para Baloto y Baloto Revancha, no para "
-                                   f"'{juego_slug}'")
+                            detail=f"El pronóstico experimental existe para Baloto, Baloto Revancha, MiLoto y "
+                                   f"ColorLoto, no para '{juego_slug}'")
     return codigo
 
 
@@ -132,8 +137,10 @@ def indice_pronosticos(request: Request, db: Session = Depends(get_db),
     for slug, codigo in SLUG_A_CODIGO_PRONOSTICO.items():
         resumen = consultar.resumen(codigo)
         actual = consultar.estado_actual(codigo, resumen.ultimo.artefacto) if resumen.ultimo else None
+        observado = consultar.resultado_observado(codigo, resumen.ultimo.artefacto) if resumen.ultimo else None
         juegos.append({"slug": slug, "codigo": codigo, "nombre": NOMBRES[codigo], "ultimo": resumen.ultimo,
-                       "actual": actual, "total": len(resumen.guardados), "ilegibles": resumen.ilegibles})
+                       "actual": actual, "observado": observado, "total": len(resumen.guardados),
+                       "ilegibles": resumen.ilegibles})
     return templates.TemplateResponse(request=request, name="producto/pronosticos_indice.html", context={
         **_base(request, "pronosticos", _conectada(db)), "juegos": juegos, "no_go": decisiones_ae39()})
 
@@ -141,7 +148,8 @@ def indice_pronosticos(request: Request, db: Session = Depends(get_db),
 @router.get("/pronosticos/{juego_slug}")
 def detalle_pronostico(juego_slug: str, request: Request, id: str | None = Query(default=None),
                        reutilizado: int = Query(default=0), db: Session = Depends(get_db),
-                       consultar: ConsultarPronosticosExperimentales = Depends(get_consultar_pronosticos)):
+                       consultar: ConsultarPronosticosExperimentales = Depends(get_consultar_pronosticos),
+                       generar: GenerarPronosticoExperimental = Depends(get_generar_pronostico)):
     codigo = _codigo_pronostico(juego_slug)
     resumen = consultar.resumen(codigo)
     seleccionado = resumen.ultimo
@@ -152,11 +160,26 @@ def detalle_pronostico(juego_slug: str, request: Request, id: str | None = Query
     actual = None
     if seleccionado is not None and not hasattr(seleccionado, "motivo"):
         actual = consultar.estado_actual(codigo, seleccionado.artefacto)
-    return templates.TemplateResponse(request=request, name="producto/pronostico_detalle.html", context={
+    observados = consultar.resultados_observados(codigo, resumen.guardados)
+    plantilla = PLANTILLA_DE_DETALLE[codigo]
+    if seleccionado is not None and not hasattr(seleccionado, "motivo") and \
+            seleccionado.artefacto.get("esquema") == "pronostico-experimental/1":
+        plantilla = "producto/pronostico_detalle.html"
+    return templates.TemplateResponse(request=request, name=plantilla, context={
         **_base(request, "pronosticos", _conectada(db)), "slug": juego_slug, "codigo": codigo,
         "nombre": NOMBRES[codigo], "seleccionado": seleccionado, "actual": actual, "historial": resumen.guardados,
         "ilegibles": resumen.ilegibles, "no_go": decisiones_ae39(), "reutilizado": bool(reutilizado),
+        "observados": observados, "minimos": _minimos(generar.configuracion(codigo)),
         "token_local": proteccion_local.token_local()})
+
+
+def _minimos(configuracion) -> dict | None:
+    """Sorteos minimos hasta el corte para MiLoto y ColorLoto."""
+    entrenamiento = getattr(configuracion, "minimo_sorteos_de_entrenamiento", None)
+    if entrenamiento is None:
+        return None
+    objetivos = configuracion.minimo_objetivos_evaluados
+    return {"entrenamiento": entrenamiento, "objetivos": objetivos, "sorteos": entrenamiento + objetivos}
 
 
 @router.post("/pronosticos/{juego_slug}/generar")

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}{{ nombre }} — Pronóstico experimental{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ nombre }} — pronóstico experimental</h3>
+{% include "producto/_aviso_experimental.html" %}
+<div class="alert alert-light border small">
+    MiLoto: cinco números distintos del 1 al 39, sin superbalota. Con la muestra corta de MiLoto no se usa el modelo logístico de Baloto: el estimador es la frecuencia de cada número contraída hacia la referencia uniforme (5/39), evaluada con ventana creciente.
+    {% if minimos %}Hacen falta al menos {{ minimos.sorteos }} sorteos hasta el corte ({{ minimos.entrenamiento }} de entrenamiento mínimo y {{ minimos.objetivos }} objetivos evaluados); con menos, no se genera nada y se informa «datos insuficientes».{% endif %}
+</div>
+{% include "producto/_formulario_generar.html" %}
+
+{% if seleccionado is none %}
+    <div class="alert alert-info">No hay pronósticos guardados para {{ nombre }}.</div>
+{% elif seleccionado.motivo is defined %}
+    <div class="alert alert-danger">El pronóstico {{ seleccionado.identificador[:16] }} no se puede leer: {{ seleccionado.motivo }}.</div>
+{% else %}
+{% set a = seleccionado.artefacto %}
+<div class="row g-3 mb-3">
+    <div class="col-md-7"><div class="card stat-card impresion-fragmentable p-3 h-100">
+        <div class="d-flex justify-content-between impresion-cabecera"><h6>Objetivo: sorteo {{ a.pronostico.objetivo }}{% if seleccionado.versiones %} · versión {{ seleccionado.version }} de {{ seleccionado.versiones }}{% endif %}</h6><span class="badge bg-warning text-dark">experimental</span></div>
+        {% set c = a.generacion.clasificacion_temporal %}{% set f = a.generacion.frescura %}{% set titulo = "Al generarse (" ~ a.generacion.generado_en ~ ")" %}{% include "producto/_clasificacion.html" %}
+        {% if actual and actual.clasificacion_temporal.tipo != (a.generacion.clasificacion_temporal or {}).get('tipo') %}
+            {% set c = actual.clasificacion_temporal %}{% set f = actual.frescura %}{% set titulo = "Ahora, frente a la base actual" %}{% include "producto/_clasificacion.html" %}
+        {% elif actual and actual.frescura.estado == 'desactualizado' and (a.generacion.frescura or {}).get('estado') != 'desactualizado' %}
+            <div class="alert alert-warning py-2 mb-2"><strong>Histórico desactualizado:</strong> {{ actual.frescura.mensaje }}</div>
+        {% endif %}
+        <div class="impresion-sugerencia">
+        <div class="mb-2">{% for n in a.pronostico.numeros_sugeridos %}<span class="numero-bolita">{{ n }}</span>{% endfor %}</div>
+        <p class="small text-muted mb-1">Los cinco números con mayor probabilidad estimada de aparecer en el objetivo. No es una garantía: la referencia uniforme da 5/39 ≈ 0,1282 a cada número.</p>
+        </div>
+        <h6 class="mt-2">Ranking de números</h6>
+        <div class="tabla-desplazable"><table class="table table-sm mb-0">
+            <thead><tr><th>#</th><th>Número</th><th class="text-end">Probabilidad del modelo</th><th class="text-end">Uniforme (5/39)</th></tr></thead><tbody>
+            {% for f in a.pronostico.ranking %}<tr {% if loop.index <= 5 %}class="table-primary"{% endif %}><td>{{ loop.index }}</td><td>{{ f.numero }}</td><td class="text-end">{{ '%.4f'|format(f.probabilidad) }}</td><td class="text-end text-muted">{{ '%.4f'|format(f.probabilidad_uniforme) }}</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div></div>
+    <div class="col-md-5">{% include "producto/_trazabilidad_v2.html" %}
+        <div class="card stat-card p-3"><h6>Por qué este estimador</h6>
+            <p class="small mb-1">{{ a.estrategia.descripcion }}.</p>
+            <p class="small text-muted mb-0">{{ a.estrategia.por_que_no_ae36 }}.</p>
+        </div>
+    </div>
+</div>
+
+{% set w = a.evaluacion_walk_forward %}{% set ag = w.agregado %}{% set mu = w.muestra %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3">
+    <h6>Rendimiento histórico frente a la referencia uniforme (walk-forward)</h6>
+    <p class="small mb-1">{{ w.esquema }}. Objetivos evaluados: <strong>{{ mu.objetivos_evaluados }}</strong> (sorteos {{ mu.primer_objetivo }}–{{ mu.ultimo_objetivo }}) de {{ mu.sorteos }} sorteos hasta el corte; mínimos: {{ mu.minimo_sorteos_de_entrenamiento }} de entrenamiento y {{ mu.minimo_objetivos_evaluados }} objetivos.</p>
+    <p class="small {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}text-danger{% else %}text-success{% endif %} mb-2">
+        {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}
+        En los {{ ag.modelo.sorteos }} objetivos evaluados, el modelo <strong>no supera</strong> a la referencia uniforme en Log Loss y Brier. El pronóstico se muestra igualmente como experimento.
+        {% else %}
+        En los {{ ag.modelo.sorteos }} objetivos evaluados, el modelo obtuvo menor Log Loss y Brier que la referencia uniforme. Es una descripción de esta muestra corta, sin prueba de significancia: no acredita ventaja predictiva.
+        {% endif %}
+    </p>
+    {% set m = ag.modelo %}{% set u = ag.referencia_uniforme %}{% set c = ag.comparacion %}
+    {% set metricas = [("log_loss", "Log Loss", "menor es mejor", "%.6f"), ("brier", "Brier", "menor es mejor", "%.6f"), ("aciertos_top5_por_sorteo", "Aciertos de los 5 sugeridos por sorteo", "mayor es mejor; de 5", "%.3f")] %}
+    {% include "producto/_comparacion_v2.html" %}
+    <p class="small text-muted">Referencia uniforme: probabilidad 5/39 para cada número; sus 5 sugeridos son los números más bajos (desempate fijo). Denominadores: {{ m.sorteos }} sorteos objetivo y {{ m.filas }} filas número-sorteo ({{ m.sorteos }} × 39).</p>
+    {% set tabla_por_bloque %}
+        <table class="table table-sm small mt-2"><thead><tr><th>Objetivos</th><th>Entrenamiento al inicio</th><th class="text-end">Sorteos</th><th class="text-end">LL modelo</th><th class="text-end">LL uniforme</th><th class="text-end">Brier modelo</th><th class="text-end">Brier uniforme</th><th class="text-end">Top-5 modelo</th><th class="text-end">Top-5 uniforme</th></tr></thead><tbody>
+        {% for b in w.bloques %}<tr><td>{{ b.objetivos[0] }}–{{ b.objetivos[1] }}</td><td>{{ b.entrenamiento.desde }}–{{ b.entrenamiento.hasta }}</td><td class="text-end">{{ b.modelo.sorteos }}</td>
+            <td class="text-end">{{ '%.5f'|format(b.modelo.log_loss) }}</td><td class="text-end">{{ '%.5f'|format(b.referencia_uniforme.log_loss) }}</td>
+            <td class="text-end">{{ '%.5f'|format(b.modelo.brier) }}</td><td class="text-end">{{ '%.5f'|format(b.referencia_uniforme.brier) }}</td>
+            <td class="text-end">{{ '%.2f'|format(b.modelo.aciertos_top5_por_sorteo) }}</td><td class="text-end">{{ '%.2f'|format(b.referencia_uniforme.aciertos_top5_por_sorteo) }}</td></tr>{% endfor %}
+        </tbody></table>
+        <p class="small text-muted">{{ w.definiciones.rstrip('.') }}. Los bloques solo agrupan objetivos para mostrarlos; cada objetivo se predice con todos los sorteos anteriores a él.</p>
+    {% endset %}
+    <details class="detalle-bloques"><summary class="small">Detalle por bloque ({{ w.bloques|length }} bloques de hasta {{ a.configuracion.tamano_bloque }} objetivos)</summary>{{ tabla_por_bloque }}</details>
+    <div class="solo-impresion-bloque"><h6 class="mt-2">Detalle por bloque</h6>{{ tabla_por_bloque }}</div>
+</div>
+{% endif %}
+
+{% include "producto/_resultados_observados.html" %}
+{% include "producto/_historial_v2.html" %}
+{% endblock %}

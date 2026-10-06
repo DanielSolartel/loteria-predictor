@@ -4,7 +4,10 @@
     <div class="small text-muted">{{ titulo }}</div>
     {% if c.tipo == 'simulacion_retrospectiva' %}
         <strong>Simulación retrospectiva (replay):</strong> el sorteo objetivo {{ c.objetivo }} ya figura en la base. El pronóstico usa solo datos hasta el corte y se compara con lo que salió.
-        {% if c.resultado_observado %}
+        {% if c.resultado_observado and c.resultado_observado.pares is defined %}
+        <div class="mt-1">Resultado observado: {% for p in c.resultado_observado.pares %}<span class="badge bg-light text-dark border me-1">{{ p[0] }} {{ p[1] }}</span>{% endfor %}
+            · pares acertados de la combinación sugerida: <strong>{{ c.resultado_observado.aciertos_pares }}</strong> de 6</div>
+        {% elif c.resultado_observado %}
         <div class="mt-1">Resultado observado: {% for n in c.resultado_observado.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}{% if c.resultado_observado.superbalota is not none %}<span class="numero-bolita superbalota-bolita">{{ c.resultado_observado.superbalota }}</span>{% endif %}
             · aciertos de los números sugeridos: <strong>{{ c.resultado_observado.aciertos_numeros_sugeridos }}</strong>{% if c.resultado_observado.acierto_superbalota is not none %} · superbalota {{ 'acertada' if c.resultado_observado.acierto_superbalota else 'no acertada' }}{% endif %}</div>
         {% endif %}
