@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}{{ nombre }} — Pronóstico experimental{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ nombre }} — pronóstico experimental</h3>
+{% include "producto/_aviso_experimental.html" %}
+<div class="alert alert-light border small">
+    ColorLoto: seis pares número (1 a 7) y color, con repetición. El orden de extracción no forma parte del objetivo: cada sorteo se trata como un multiconjunto de pares. La paleta de colores se toma solo de los sorteos anteriores al corte.
+    {% if minimos %}Hacen falta al menos {{ minimos.sorteos }} sorteos hasta el corte ({{ minimos.entrenamiento }} de entrenamiento mínimo y {{ minimos.objetivos }} objetivos evaluados); con menos, no se genera nada y se informa «datos insuficientes».{% endif %}
+</div>
+{% include "producto/_formulario_generar.html" %}
+
+{% if seleccionado is none %}
+    <div class="alert alert-info">No hay pronósticos guardados para {{ nombre }}.</div>
+{% elif seleccionado.motivo is defined %}
+    <div class="alert alert-danger">El pronóstico {{ seleccionado.identificador[:16] }} no se puede leer: {{ seleccionado.motivo }}.</div>
+{% else %}
+{% set a = seleccionado.artefacto %}{% set p = a.pronostico %}
+<div class="row g-3 mb-3">
+    <div class="col-md-7"><div class="card stat-card impresion-fragmentable p-3 h-100">
+        <div class="d-flex justify-content-between impresion-cabecera"><h6>Objetivo: sorteo {{ p.objetivo }}{% if seleccionado.versiones %} · versión {{ seleccionado.version }} de {{ seleccionado.versiones }}{% endif %}</h6><span class="badge bg-warning text-dark">experimental</span></div>
+        {% set c = a.generacion.clasificacion_temporal %}{% set f = a.generacion.frescura %}{% set titulo = "Al generarse (" ~ a.generacion.generado_en ~ ")" %}{% include "producto/_clasificacion.html" %}
+        {% if actual and actual.clasificacion_temporal.tipo != (a.generacion.clasificacion_temporal or {}).get('tipo') %}
+            {% set c = actual.clasificacion_temporal %}{% set f = actual.frescura %}{% set titulo = "Ahora, frente a la base actual" %}{% include "producto/_clasificacion.html" %}
+        {% elif actual and actual.frescura.estado == 'desactualizado' and (a.generacion.frescura or {}).get('estado') != 'desactualizado' %}
+            <div class="alert alert-warning py-2 mb-2"><strong>Histórico desactualizado:</strong> {{ actual.frescura.mensaje }}</div>
+        {% endif %}
+        <div class="impresion-sugerencia">
+        <h6 class="mt-1">Combinación más probable (multiconjunto)</h6>
+        <div class="mb-1">{% for x in p.pares %}<span class="badge bg-light text-dark border me-1 fs-6">{{ x.numero }} {{ x.color }}</span>{% endfor %}</div>
+        <p class="small text-muted mb-2">Probabilidad del modelo para exactamente este multiconjunto: {{ '%.3e'|format(p.probabilidad_del_multiconjunto) }}. Puede repetir un par. Referencia uniforme por par: {{ '%.4f'|format(p.probabilidad_uniforme_por_par) }} (1/{{ p.ranking_de_pares|length }}).</p>
+        </div>
+        <p class="small mb-2">Muestra reproducible con semilla {{ p.muestra_con_semilla.semilla }}: {% for x in p.muestra_con_semilla.pares %}{{ x.numero }} {{ x.color }}{% if not loop.last %} · {% endif %}{% endfor %} <span class="text-muted">(un sorteo simulado del modelo, no una recomendación)</span></p>
+        <p class="small mb-2"><strong>Paleta del corte:</strong> {{ p.paleta|join(', ') }} ({{ p.paleta|length }} colores). {{ a.estrategia.colores_nuevos }}.</p>
+        <h6 class="mt-2">Ranking de pares</h6>
+        <div class="tabla-desplazable"><table class="table table-sm mb-0">
+            <thead><tr><th>#</th><th>Par</th><th class="text-end">Probabilidad por balota</th><th class="text-end">Uniforme</th></tr></thead><tbody>
+            {% for x in p.ranking_de_pares %}<tr><td>{{ loop.index }}</td><td>{{ x.numero }} {{ x.color }}</td><td class="text-end">{{ '%.4f'|format(x.probabilidad) }}</td><td class="text-end text-muted">{{ '%.4f'|format(x.probabilidad_uniforme) }}</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div></div>
+    <div class="col-md-5">{% include "producto/_trazabilidad_v2.html" %}
+        <div class="card stat-card p-3"><h6>Modelo</h6>
+            <p class="small mb-1">{{ a.estrategia.descripcion }}.</p>
+            <p class="small text-muted mb-0">{{ a.estrategia.orden }}.</p>
+        </div>
+    </div>
+</div>
+
+{% set w = a.evaluacion_walk_forward %}{% set ag = w.agregado %}{% set mu = w.muestra %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3">
+    <h6>Rendimiento histórico frente a la referencia uniforme (walk-forward)</h6>
+    <p class="small mb-1">{{ w.esquema }}. Objetivos evaluados: <strong>{{ mu.objetivos_evaluados }}</strong> (sorteos {{ mu.primer_objetivo }}–{{ mu.ultimo_objetivo }}) de {{ mu.sorteos }} sorteos hasta el corte; mínimos: {{ mu.minimo_sorteos_de_entrenamiento }} de entrenamiento y {{ mu.minimo_objetivos_evaluados }} objetivos.
+        {% if mu.objetivos_excluidos_por_color_nuevo %}<br><span class="text-warning-emphasis">Excluidos por color nuevo: {{ mu.objetivos_excluidos_por_color_nuevo }} (primeros: {{ mu.primeros_objetivos_excluidos|join(', ') }}). {{ mu.motivo_de_exclusion }}.</span>{% else %}Ningún objetivo excluido por color nuevo.{% endif %}</p>
+    <p class="small {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}text-danger{% else %}text-success{% endif %} mb-2">
+        {% if ag.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}
+        En los {{ ag.modelo.sorteos }} objetivos evaluados, el modelo <strong>no supera</strong> a la referencia uniforme en Log Loss por balota y Brier por balota. El pronóstico se muestra igualmente como experimento.
+        {% else %}
+        En los {{ ag.modelo.sorteos }} objetivos evaluados, el modelo obtuvo menor Log Loss y Brier por balota que la referencia uniforme. Es una descripción de este histórico, sin prueba de significancia: no acredita ventaja predictiva.
+        {% endif %}
+    </p>
+    {% set m = ag.modelo %}{% set u = ag.referencia_uniforme %}{% set c = ag.comparacion %}
+    {% set metricas = [("log_loss_por_balota", "Log Loss por balota", "menor es mejor", "%.6f"), ("brier_por_balota", "Brier por balota", "menor es mejor", "%.6f"), ("log_loss_multiconjunto", "Log Loss del multiconjunto", "menor es mejor", "%.4f"), ("coincidencias_de_pares_por_sorteo", "Coincidencias de pares por sorteo", "mayor es mejor; de 6, con repetición", "%.3f")] %}
+    {% include "producto/_comparacion_v2.html" %}
+    <p class="small text-muted">Referencia uniforme: 1/(7·K) para cada par de la paleta del corte; su combinación son los seis primeros pares en orden fijo. Denominadores: {{ m.sorteos }} sorteos objetivo y {{ m.balotas }} balotas ({{ m.sorteos }} × 6). Estas métricas no comparten escala con las de Baloto o MiLoto: no se comparan entre juegos.</p>
+    {% set tabla_por_bloque %}
+        <table class="table table-sm small mt-2"><thead><tr><th>Objetivos</th><th>Entrenamiento al inicio</th><th class="text-end">Sorteos</th><th class="text-end">LL/balota modelo</th><th class="text-end">LL/balota uniforme</th><th class="text-end">Brier modelo</th><th class="text-end">Brier uniforme</th><th class="text-end">Pares modelo</th><th class="text-end">Pares uniforme</th></tr></thead><tbody>
+        {% for b in w.bloques %}<tr><td>{{ b.objetivos[0] }}–{{ b.objetivos[1] }}</td><td>{{ b.entrenamiento.desde }}–{{ b.entrenamiento.hasta }}</td><td class="text-end">{{ b.modelo.sorteos }}</td>
+            <td class="text-end">{{ '%.5f'|format(b.modelo.log_loss_por_balota) }}</td><td class="text-end">{{ '%.5f'|format(b.referencia_uniforme.log_loss_por_balota) }}</td>
+            <td class="text-end">{{ '%.5f'|format(b.modelo.brier_por_balota) }}</td><td class="text-end">{{ '%.5f'|format(b.referencia_uniforme.brier_por_balota) }}</td>
+            <td class="text-end">{{ '%.2f'|format(b.modelo.coincidencias_de_pares_por_sorteo) }}</td><td class="text-end">{{ '%.2f'|format(b.referencia_uniforme.coincidencias_de_pares_por_sorteo) }}</td></tr>{% endfor %}
+        </tbody></table>
+        <p class="small text-muted">{{ w.definiciones.rstrip('.') }}. Los bloques solo agrupan objetivos para mostrarlos; cada objetivo se predice con todos los sorteos anteriores a él.</p>
+    {% endset %}
+    <details class="detalle-bloques"><summary class="small">Detalle por bloque ({{ w.bloques|length }} bloques de hasta {{ a.configuracion.tamano_bloque }} objetivos)</summary>{{ tabla_por_bloque }}</details>
+    <div class="solo-impresion-bloque"><h6 class="mt-2">Detalle por bloque</h6>{{ tabla_por_bloque }}</div>
+</div>
+{% endif %}
+
+{% include "producto/_resultados_observados.html" %}
+{% include "producto/_historial_v2.html" %}
+{% endblock %}

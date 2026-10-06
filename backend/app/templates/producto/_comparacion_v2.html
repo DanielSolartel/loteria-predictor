@@ -1,0 +1,9 @@
+{# m: modelo, u: referencia, c: comparacion, metricas: [(clave, etiqueta, nota, formato)] #}
+<table class="table table-sm mb-2">
+    <thead><tr><th>Métrica</th><th class="text-end">Modelo</th><th class="text-end">Referencia uniforme</th><th>Mejor</th></tr></thead>
+    <tbody>
+    {% for clave, etiqueta, nota, formato in metricas %}
+        <tr><td>{{ etiqueta }} <span class="text-muted small">({{ nota }})</span></td><td class="text-end">{{ formato|format(m[clave]) }}</td><td class="text-end">{{ formato|format(u[clave]) }}</td><td>{{ 'Modelo' if c[clave] == 'modelo' else ('Empate' if c[clave] == 'empate' else 'Referencia') }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table>

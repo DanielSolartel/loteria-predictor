@@ -1,0 +1,17 @@
+{# historial, seleccionado, slug #}
+{% if historial %}
+<div class="card stat-card impresion-fragmentable p-3">
+    <h6>Pronósticos guardados</h6>
+    <p class="small text-muted">Ordenados por objetivo (más reciente primero) y, dentro de cada objetivo, por versión. Una versión nueva aparece cuando cambia el histórico usado (por ejemplo, tras corregir un sorteo); las anteriores se conservan.</p>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>Objetivo</th><th>Versión</th><th>Tipo al generarse</th><th>Corte</th><th>Sugerencia</th><th>Veredicto histórico</th><th>Generado</th><th></th></tr></thead><tbody>
+    {% for g in historial %}{% set x = g.artefacto %}<tr {% if seleccionado is not none and g.identificador == seleccionado.identificador %}class="table-primary"{% endif %}>
+        <td>{{ x.pronostico.objetivo }}</td><td>{{ g.version }} de {{ g.versiones }}</td>
+        <td>{% set tipo = (x.generacion.clasificacion_temporal or {}).get('tipo') %}{{ {'simulacion_retrospectiva': 'simulación retrospectiva', 'pronostico_sobre_el_ultimo_dato_disponible': 'sobre el último dato', 'objetivo_no_cargado_con_sorteos_posteriores': 'objetivo no cargado'}.get(tipo, '—') }}</td>
+        <td>{{ x.datos.corte }}</td>
+        <td>{% if x.pronostico.pares is defined %}{% for p in x.pronostico.pares %}{{ p.numero }} {{ p.color }}{% if not loop.last %} · {% endif %}{% endfor %}{% else %}{{ x.pronostico.numeros_sugeridos|join(' ') }}{% endif %}</td>
+        <td>{{ 'no supera al uniforme' if x.evaluacion_walk_forward.agregado.comparacion.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' else 'supera en las dos métricas principales' }}</td>
+        <td>{{ x.generacion.generado_en }}</td><td>{% if seleccionado is not none and g.identificador == seleccionado.identificador %}mostrado{% else %}<a href="/pronosticos/{{ slug }}?id={{ g.identificador }}">ver</a>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endif %}
+{% if ilegibles %}<div class="alert alert-danger mt-3 small">{{ ilegibles|length }} archivo(s) del almacén no se pueden leer o fueron alterados: {% for e in ilegibles %}{{ e.identificador[:16] }} ({{ e.motivo }}){% if not loop.last %}, {% endif %}{% endfor %}.</div>{% endif %}

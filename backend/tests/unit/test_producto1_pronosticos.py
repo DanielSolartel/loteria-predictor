@@ -116,11 +116,14 @@ def test_almacen_detecta_alteraciones_y_nombres_ajenos(entorno):
 def test_almacen_vacio_y_juegos_no_admitidos(entorno):
     consulta = ConsultarPronosticosExperimentales(entorno[3])
     assert consulta.resumen("BALOTO_REVANCHA").ultimo is None
-    for codigo in ("MILOTO", "COLORLOTO"):
-        with pytest.raises(PronosticoExperimentalNoDisponibleError):
-            consulta.resumen(codigo)
-        with pytest.raises(PronosticoExperimentalNoDisponibleError):
-            _generar(entorno, codigo)
+    for codigo in ("MILOTO", "COLORLOTO"):  # Producto 2: admitidos, sin pronosticos guardados
+        assert consulta.resumen(codigo).ultimo is None
+    with pytest.raises(PronosticoExperimentalNoDisponibleError):
+        consulta.resumen("QUINA")
+    with pytest.raises(PronosticoExperimentalNoDisponibleError):
+        _generar(entorno, "QUINA")
+    with pytest.raises(PronosticoExperimentalNoDisponibleError, match="Datos insuficientes"):
+        _generar(entorno, "COLORLOTO")  # 10 sorteos sinteticos
 
 
 def test_historico_insuficiente_es_error_claro(entorno):
@@ -195,7 +198,7 @@ def test_generar_con_corte_e_historico_insuficiente(cliente):
 
 
 def test_juegos_sin_pronostico_404(cliente):
-    for slug in ("miloto", "colorloto", "quina"):
+    for slug in ("quina", "keno"):
         assert cliente.get(f"/pronosticos/{slug}").status_code == 404
         assert cliente.post(f"/pronosticos/{slug}/generar", data={}).status_code == 404
     assert cliente.get("/pronosticos/baloto?id=" + "0" * 64).status_code == 404
@@ -211,7 +214,7 @@ def test_verificar_y_rest(cliente, entorno):
     assert j["no_go_historico"]["decisiones"]["BALOTO_REVANCHA"] == "no_go_sin_evidencia_suficiente"
     detalle = cliente.get(f"/api/pronosticos/BALOTO_REVANCHA/{g.identificador}").json()
     assert detalle["pronostico"] == g.artefacto["pronostico"]
-    assert cliente.get("/api/pronosticos/MILOTO").status_code == 404
+    assert cliente.get("/api/pronosticos/QUINA").status_code == 404
     assert cliente.get("/api/pronosticos/BALOTO/" + "f" * 64).status_code == 404
 
 
@@ -248,10 +251,11 @@ def _comando(entorno, argv):
 
 def test_comando_entrenar_listar_y_verificar(entorno):
     codigo, out, err = _comando(entorno, ["entrenar", "--juego", "todos"])
-    assert codigo == 0 and err == ""
     datos = json.loads(out)
-    assert [d["juego"] for d in datos] == ["BALOTO", "BALOTO_REVANCHA"]
-    assert all(d["estado_de_uso"] == "experimental_no_acreditado" and d["objetivo"] == 2211 for d in datos)
+    assert [d["juego"] for d in datos] == ["BALOTO", "BALOTO_REVANCHA", "MILOTO", "COLORLOTO"]
+    # Producto 2: ColorLoto (10 sorteos sinteticos) no tiene datos suficientes; los demas se generan igual
+    assert codigo == 4 and "COLORLOTO" in err and "Datos insuficientes" in datos[3]["error"]
+    assert all(d["estado_de_uso"] == "experimental_no_acreditado" and d["objetivo"] == 2211 for d in datos[:2])
     assert datos[0]["walk_forward"]["veredicto"] in ("el_modelo_no_supera_a_la_referencia_uniforme",
                                                      "el_modelo_supera_a_la_referencia_en_log_loss_y_brier")
     codigo, out, _ = _comando(entorno, ["listar", "--juego", "BALOTO"])
@@ -262,7 +266,7 @@ def test_comando_entrenar_listar_y_verificar(entorno):
 
 
 def test_comando_codigos_de_error(entorno):
-    assert _comando(entorno, ["entrenar", "--juego", "MILOTO"])[0] == 2
+    assert _comando(entorno, ["entrenar", "--juego", "QUINA"])[0] == 2
     assert _comando(entorno, ["entrenar", "--juego", "BALOTO", "--hasta-sorteo", "0"])[0] == 2
     codigo, _, err = _comando(entorno, ["entrenar", "--juego", "BALOTO", "--hasta-sorteo", "2150"])
     assert codigo == 4 and "Historico insuficiente" in err

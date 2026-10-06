@@ -12,12 +12,19 @@
         {% if j.ultimo %}{% set a = j.ultimo.artefacto %}
             <div class="small text-muted mb-1">Objetivo: sorteo {{ a.pronostico.objetivo }} · datos hasta el sorteo {{ a.datos.corte }} ({{ a.datos.ultima_fecha }}){% if j.ultimo.versiones and j.ultimo.versiones > 1 %} · versión {{ j.ultimo.version }} de {{ j.ultimo.versiones }}{% endif %}</div>
             {% set c = j.actual.clasificacion_temporal if j.actual else a.generacion.clasificacion_temporal %}{% set f = j.actual.frescura if j.actual else a.generacion.frescura %}{% set titulo = "Ahora, frente a la base actual" if j.actual else "Al generarse" %}{% include "producto/_clasificacion.html" %}
-            <div class="mb-2">{% for n in a.pronostico.numeros_sugeridos %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
-                {% if a.superbalota %}<span class="numero-bolita superbalota-bolita">{{ a.superbalota.pronostico.sugerida }}</span>{% endif %}</div>
+            <div class="mb-2">{% if a.pronostico.pares is defined %}{% for x in a.pronostico.pares %}<span class="badge bg-light text-dark border me-1">{{ x.numero }} {{ x.color }}</span>{% endfor %}
+                {% else %}{% for n in a.pronostico.numeros_sugeridos %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+                {% if a.superbalota %}<span class="numero-bolita superbalota-bolita">{{ a.superbalota.pronostico.sugerida }}</span>{% endif %}{% endif %}</div>
+            {% if a.estrategia.nombre is defined %}<div class="small text-muted mb-1">Estrategia: <code>{{ a.estrategia.nombre }}</code> · {{ a.evaluacion_walk_forward.muestra.objetivos_evaluados }} objetivos evaluados · referencia: {{ a.estrategia.referencia }}</div>{% endif %}
             {% set c = a.evaluacion_walk_forward.agregado.comparacion %}
             <p class="small mb-2 {% if c.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}text-danger{% else %}text-success{% endif %}">
-                Histórico walk-forward: {% if c.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}el modelo no supera a la referencia uniforme{% else %}el modelo supera a la referencia en Log Loss y Brier (sin significancia estadística evaluada){% endif %}.
+                Histórico walk-forward: {% if c.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' %}el modelo no supera a la referencia uniforme{% else %}el modelo supera a la referencia en las dos métricas principales (sin significancia estadística evaluada){% endif %}.
             </p>
+            {% if j.observado %}{% set o = j.observado %}
+            <p class="small mb-2">Resultado observado: <strong>{{ {'observado': 'observado', 'pendiente': 'pendiente', 'no_corresponde': 'no corresponde'}[o.estado] }}</strong>{% if o.coincidencias and o.coincidencias.pares is defined %} · {{ o.coincidencias.pares }} de {{ o.coincidencias.de }} pares{% elif o.coincidencias %} · {{ o.coincidencias.numeros }} de {{ o.coincidencias.de }} números{% if o.coincidencias.superbalota is defined %}, superbalota {{ 'sí' if o.coincidencias.superbalota else 'no' }}{% endif %}{% endif %} <span class="text-muted">({{ o.motivo }})</span>
+                {% if o.discrepancias %}<br><span class="text-danger">El histórico cambió desde que se generó: ver detalle.</span>{% endif %}
+                {% if (o.historico_hasta_el_corte or {}).estado == 'no_disponible' %}<br><span class="text-warning-emphasis">No se puede verificar la entrada: el histórico hasta el corte no está disponible.</span>{% endif %}</p>
+            {% endif %}
             <div class="small text-muted mb-2">Generado: {{ a.generacion.generado_en }} · {{ j.total }} guardado(s)</div>
         {% else %}
             <p class="text-muted small">Todavía no hay pronósticos guardados.</p>

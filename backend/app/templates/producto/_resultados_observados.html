@@ -1,0 +1,31 @@
+{# historial: pronosticos guardados; observados: {identificador: comparacion} o None sin base; slug #}
+<div class="card stat-card impresion-fragmentable p-3 mb-3">
+    <h6>Resultados observados</h6>
+    <p class="small text-muted mb-2">Cada pronóstico guardado frente a su sorteo objetivo en la base actual, en solo lectura: los artefactos no se modifican.
+        <strong>Emitido sin el resultado en la base local</strong> significa que, al generarse, el objetivo no figuraba en la base de esta máquina; <strong>reconstrucción retrospectiva</strong>, que ya figuraba (o había sorteos posteriores). La fecha de generación es del reloj local y no acredita anterioridad frente al sorteo real.</p>
+    {% if observados is none %}
+        <div class="alert alert-secondary py-2 small mb-0">Sin conexión a la base de datos: no se puede consultar el resultado de los objetivos.</div>
+    {% elif not historial %}
+        <p class="small text-muted mb-0">No hay pronósticos guardados que comparar.</p>
+    {% else %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Objetivo</th><th>Versión</th><th>Emisión</th><th>Estado</th><th>Fecha del sorteo</th><th>Resultado</th><th>Coincidencias</th><th>Avisos</th></tr></thead><tbody>
+        {% for g in historial %}{% set o = observados.get(g.identificador) %}{% if o %}
+        <tr {% if seleccionado is not none and seleccionado.identificador is defined and g.identificador == seleccionado.identificador %}class="table-primary"{% endif %}>
+            <td><a href="/pronosticos/{{ slug }}?id={{ g.identificador }}">{{ o.objetivo }}</a></td>
+            <td>{{ g.version }} de {{ g.versiones }}</td>
+            <td>{{ {'emitido_sin_el_resultado_en_la_base_local': 'emitido sin el resultado en la base local', 'reconstruccion_retrospectiva': 'reconstrucción retrospectiva'}.get(o.emision, 'sin clasificación al generar') }}</td>
+            <td><span class="badge {% if o.estado == 'observado' %}bg-success{% elif o.estado == 'pendiente' %}bg-secondary{% else %}bg-dark{% endif %}">{{ {'observado': 'observado', 'pendiente': 'pendiente', 'no_corresponde': 'no corresponde'}[o.estado] }}</span>
+                <div class="text-muted">{{ o.motivo }}</div></td>
+            <td>{{ o.fecha or '—' }}</td>
+            <td>{% if o.resultado and o.resultado.pares is defined %}{% for p in o.resultado.pares %}{{ p[0] }} {{ p[1] }}{% if not loop.last %} · {% endif %}{% endfor %}
+                {% elif o.resultado %}{{ o.resultado.numeros|join(' ') }}{% if o.resultado.superbalota is not none %} + {{ o.resultado.superbalota }}{% endif %}{% else %}—{% endif %}</td>
+            <td>{% if o.coincidencias and o.coincidencias.pares is defined %}{{ o.coincidencias.pares }} de {{ o.coincidencias.de }} pares <span class="text-muted">(números {{ o.coincidencias.numeros }}, colores {{ o.coincidencias.colores }}, con repetición)</span>
+                {% elif o.coincidencias %}{{ o.coincidencias.numeros }} de {{ o.coincidencias.de }} números{% if o.coincidencias.superbalota is defined %} · superbalota {{ 'sí' if o.coincidencias.superbalota else 'no' }}{% endif %}{% else %}—{% endif %}</td>
+            <td>{% set hc = o.historico_hasta_el_corte or {} %}{% if hc.estado == 'no_disponible' %}<div class="text-warning-emphasis">No se puede verificar la entrada: el histórico hasta el corte ({{ g.artefacto.datos.corte }}) no está disponible en la base actual. No es una coincidencia ni un cambio demostrado.</div>{% elif hc.estado == 'coincide' %}<div class="text-muted">Entrada verificada: el histórico hasta el corte es el mismo.</div>{% endif %}
+                {% for d in o.discrepancias %}<div class="text-danger">{{ {'historico_hasta_el_corte_cambio': 'El histórico hasta el corte cambió desde que se generó', 'resultado_observado_cambio': 'El resultado del objetivo cambió desde que se generó'}.get(d.tipo, d.tipo) }}</div>{% endfor %}</td>
+        </tr>{% endif %}{% endfor %}
+    </tbody></table></div>
+    <p class="small text-muted mt-2 mb-0">Una coincidencia es una descripción del sorteo observado, no evidencia de capacidad predictiva: con tan pocos pronósticos, cualquier número de aciertos es compatible con el azar.</p>
+    {% endif %}
+</div>

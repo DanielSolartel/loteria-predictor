@@ -5872,6 +5872,125 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
 - **Contrato explícito:** el estado es `experimental_no_acreditado` (`CONTRATO_DE_USO_EXPERIMENTAL`). No es un resultado acreditado ni una recomendación. No modifica el NO-GO de AE-39, el estado operativo de AE-41 ni `AUTORIZA_EVALUACION = False`. Lee como histórico los sorteos desde `2706`, que no se convierten en evidencia prospectiva. Si el modelo pierde frente a la referencia uniforme, la pantalla lo muestra.
 - **Datos y validación:** sin escrituras en PostgreSQL. Las fixtures son sintéticas y solo sirven para pruebas. El histórico real solo existe en la base del operador. Las instrucciones de Windows están en `backend/docs/producto1_windows.md` y el inventario en `backend/docs/producto1_inventario.md`.
 
+## Producto 2 -pronósticos de MiLoto y ColorLoto y resultados observados
+
+**Producto 2 -pronósticos de MiLoto y ColorLoto y resultados observados:** amplía Producto 1 sin abrir otra etapa AE. Todo pronóstico nuevo es `experimental_no_acreditado`. El NO-GO de AE-39, el NO-GO temporal de MiLoto y el aplazamiento de ColorLoto de AE-35, los bloqueos R0, el estado de AE-41 y `AUTORIZA_EVALUACION = False` siguen igual.
+- **MiLoto** (`app/application/ml/pronostico_miloto.py`): cinco números distintos `1..39`, sin superbalota.
+  - La logística de AE-36 no se usa, porque exige 50 sorteos de calentamiento y 100 objetivos de entrenamiento y la muestra de MiLoto es corta.
+  - El estimador es la frecuencia de cada número contraída hacia la uniforme: `p(n) = (c_n + β·5/39) / (T + β)`, con `β = 39` fijado de antemano.
+  - Los cinco sugeridos son los de mayor `p(n)`; la referencia es la uniforme 5/39.
+  - La evaluación usa ventana creciente: cada sorteo con al menos 20 anteriores es un objetivo predicho solo con ellos. Hacen falta 10 objetivos evaluados, es decir, 30 sorteos hasta el corte.
+  - Con menos datos se responde «Datos insuficientes» (HTTP 422, código de salida 4) y no se guarda nada.
+  - Los bloques de 8 objetivos solo agrupan la presentación; no se reutilizan los 10 bloques de 20 de Baloto.
+- **ColorLoto** (`app/application/ml/pronostico_colorloto.py`): seis pares (número `1..7`, color) con repetición.
+  - El orden de extracción no forma parte del objetivo, así que cada sorteo se trata como un multiconjunto. La huella del histórico ordena los pares de cada sorteo.
+  - La paleta se toma solo de los sorteos anteriores al corte; ninguna regla oficial de colores se fija en el código.
+  - El modelo (`pares_multinomial_con_suavizado_aditivo`) es una multinomial de 6 balotas independientes sobre los `7·K` pares de la paleta, con probabilidades suavizadas `p(n,c) = (conteo + α) / (6T + α·7K)` y `α = 1` para los pares escasos o nunca vistos.
+  - Esas probabilidades son la media a posteriori de una Dirichlet(α), usada como estimación puntual. La probabilidad de un multiconjunto es la multinomial `6!/∏m! · ∏p^m`. No es la distribución predictiva Dirichlet-multinomial; una prueba fija esta elección.
+  - La combinación sugerida es el multiconjunto exacto más probable, que puede repetir un par. Se añade una muestra reproducible con semilla (42), etiquetada como sorteo simulado.
+  - Un objetivo con un color ausente de la paleta de su corte se excluye de la evaluación; el total y los primeros excluidos se informan con su motivo.
+  - Métricas, con sus denominadores (sorteos y balotas):
+    - Log Loss y Brier por balota;
+    - Log Loss del multiconjunto;
+    - coincidencias de pares por sorteo, como intersección con repetición.
+  - La referencia es la uniforme `1/(7K)`. Si faltan datos no se recurre a ella en silencio: se informa «Datos insuficientes».
+- **Comparación honesta:** cada juego se compara solo con su propia referencia uniforme.
+  - Las métricas de juegos distintos no comparten escala y no se comparan entre sí.
+  - El veredicto `el_modelo_no_supera_a_la_referencia_uniforme` aparece en la página y en el JSON cuando el modelo no gana en las dos métricas principales.
+  - Ganar en un histórico corto no acredita ventaja: no hay prueba de significancia.
+- **Resultados observados** (`app/application/ml/resultados_observados.py`): cada pronóstico guardado de los cuatro juegos se compara en lectura con su sorteo objetivo en la base actual, sin cambiar los bytes del artefacto.
+  - **Estado:**
+    - `observado`, con fecha, resultado y coincidencias;
+    - `pendiente`, si el objetivo es posterior al último cargado;
+    - `no_corresponde`, si hay un hueco o no hay histórico.
+  - **Coincidencias:**
+    - Baloto y Revancha: números y superbalota;
+    - MiLoto: números de 5;
+    - ColorLoto: pares de 6 con repetición, y aparte números y colores.
+  - **Emisión:** `emitido_sin_el_resultado_en_la_base_local` frente a `reconstruccion_retrospectiva`. La fecha de generación es del reloj local y no acredita anterioridad.
+  - **Correcciones del histórico:** se informan como `historico_hasta_el_corte_cambio` y `resultado_observado_cambio`.
+  - **Verificación de la entrada:** `historico_hasta_el_corte` vale `coincide`, `cambio` o `no_disponible`. Vale `no_disponible` si ya no queda ningún sorteo hasta el corte en la base: la entrada no se puede verificar, lo que no es una coincidencia ni un cambio demostrado. Se muestra en la página y en la API.
+- **Pantallas, API y comando:**
+  - `/pronosticos` muestra los cuatro juegos;
+  - `/pronosticos/miloto` y `/pronosticos/colorloto` muestran:
+    - estrategia, referencia, corte, fecha, versión y configuración;
+    - métricas agregadas y por bloque, y tamaño de muestra;
+    - versiones, resultados observados y avisos;
+  - las páginas de Baloto y Revancha también muestran los resultados observados;
+  - API: `GET /api/pronosticos/{BALOTO|BALOTO_REVANCHA|MILOTO|COLORLOTO}`, que incluye `resultado_observado`, y `GET /api/resultados-observados/{JUEGO}`. Responde 404 si el juego no se admite y 503 si la base no está disponible;
+  - comando: `python -m scripts.pronostico_experimental {entrenar|listar|verificar|resultados} --juego {JUEGO|todos}`. Con `todos`, un juego sin datos no impide los demás. `corte-retrospectivo --juego {MILOTO|COLORLOTO}` propone, desde la base y en solo lectura, un corte existente con al menos 30 sorteos hasta él y cuyo objetivo también está cargado.
+  - Se mantienen la protección local de los POST y el CSS de impresión acotado a `body.producto1-impresion`.
+- **Artefactos:**
+  - Baloto y Revancha siguen con `pronostico-experimental/1`, sin cambios en su módulo ni en el almacén (huellas fijadas en las pruebas).
+  - MiLoto y ColorLoto usan el esquema explícito `pronostico-experimental/2`, con las mismas claves de primer nivel, que el mismo almacén lee sin cambios.
+  - Se conservan el SHA-256, el sello, la inmutabilidad, la idempotencia, la secuencia por objetivo y `version_anterior`.
+- **Datos y validación:** sin escrituras en PostgreSQL. En Cloud solo se usaron fixtures sintéticas; el histórico real (MiLoto y ColorLoto incluidos) solo existe en la base del operador. Las instrucciones de Windows están en `backend/docs/producto2_windows.md`.
+- **Validación y evidencia.** Cada entorno se registra por separado.
+  - **Linux (Cloud, fixtures sintéticas), antes de la corrección de impresión:**
+    - pruebas: Producto 2 `55 passed`, Producto 1 `102 passed`;
+    - selección de Windows `1705 passed`;
+    - suite completa `5950 passed`;
+    - OpenSSL `SUPERADOS 7/7` en modo exigir.
+  - **Windows (operador, Python 3.14.6, OpenSSL 3.5.6), antes de la corrección de impresión:**
+    - pruebas: Producto 2 `55 passed`, Producto 1 `102 passed`;
+    - selección `1705 passed` sin omisiones;
+    - OpenSSL `SUPERADOS 7/7` en modo exigir;
+    - `pip check` limpio;
+    - un único aviso de deprecación de Starlette/TestClient, que no es un fallo.
+
+    La suite completa no se ejecutó en Windows.
+  - **Demostración con el histórico real (Windows):**
+    - Baloto 636 sorteos y Revancha 636, ambos con corte 2716 y objetivo 2717;
+    - MiLoto 84 sorteos, corte 615, objetivo 616;
+    - ColorLoto 222 sorteos, corte 222, objetivo 223.
+
+    En MiLoto y ColorLoto, repetir la entrada devuelve el mismo identificador. La verificación dio `huella_exacta`, `mismos_datos` y `mismos_numeros_sugeridos` verdaderos, y `maxima_diferencia_de_probabilidad = 0`.
+  - **Reconstrucciones retrospectivas verificadas (Windows):** en las dos, `historico_hasta_el_corte.estado = coincide` y `discrepancias` vacío.
+    - MiLoto: corte 614, objetivo 615 (2026-09-29), `observado`, 1 de 5 números;
+    - ColorLoto: corte 221, objetivo 222 (2026-09-28), `observado`, 0 de 6 pares.
+  - **Después, con los objetivos nuevos ya cargados (PDF de Windows):** los resultados anteriores siguen visibles.
+    - Baloto 2717: 0 de 5, superbalota no;
+    - Revancha 2717: 1 de 5, superbalota no;
+    - MiLoto 616: 0 de 5;
+    - ColorLoto 223: 1 de 6 pares.
+
+    Estos aciertos no demuestran capacidad predictiva ni anterioridad frente al sorteo real. Que el resultado faltara en la base local al generar no prueba que el sorteo no se hubiera celebrado.
+  - **Evaluación histórica con datos reales:**
+    - MiLoto y ColorLoto: la referencia uniforme gana;
+    - Baloto: mejora las dos métricas principales, sin significancia estadística evaluada;
+    - Revancha: no supera a la uniforme.
+  - **Corrección de impresión (`producto2-impresion-cierre.patch`), validación visual parcial en Windows:** los PDF anteriores y nuevos usan el mismo formato, Carta horizontal (792 × 612 pt).
+    - Baloto y MiLoto ya muestran la sugerencia en la primera página.
+    - ColorLoto pasó de 7 a 6 páginas y conserva las 42 filas, pero sus seis pares sugeridos seguían en la segunda página, después de los avisos.
+  - **Ajuste de ColorLoto (`producto2-colorloto-impresion.patch`), validado en Windows:** Python 3.14.6, OpenSSL 3.5.6.
+    - Pruebas: Producto 2 `60 passed`, Producto 1 `102 passed`, selección `1710 passed` sin omisiones.
+    - OpenSSL `SUPERADOS 7/7` en modo exigir; `pip check` limpio; un aviso de Starlette, sin fallos.
+    - La suite completa no se ejecutó en Windows.
+    - Las sugerencias de MiLoto y ColorLoto aparecen junto al objetivo en la primera página.
+    - Defecto observado en el PDF de MiLoto en Carta vertical: «Trazabilidad» tapaba las filas 38 y 39 del ranking.
+  - **Altura de las tarjetas al imprimir (`producto2-impresion-alturas.patch`), validada en Windows (2026-10-06):**
+    - Python 3.14.6 y OpenSSL 3.5.6. Producto 2: `61 passed`; Producto 1: `102 passed`; selección: `1711 passed`, sin omisiones.
+    - OpenSSL `SUPERADOS 7/7` en modo exigir; `pip check` limpio; un aviso de deprecación de Starlette, sin fallos.
+    - PDF de Windows revisados en Carta vertical: MiLoto conserva las 39 filas y ColorLoto las 42, sin solapamientos. Las sugerencias aparecen en la primera página y se conservan avisos, trazabilidad, métricas, resultados observados y versiones.
+    - Esta revisión visual cubre esos dos PDF en Carta vertical. No hay evidencia de ejecución de la suite completa en Windows.
+  - **GitHub Actions:** todavía no ha validado esta rama.
+- **Impresión de las páginas de pronóstico.**
+  - **Causa:** la regla `break-inside: avoid` se aplicaba a todas las tarjetas. La del pronóstico, con el ranking de 39 o 42 filas, no cabía en el espacio que quedaba en la primera página, así que el navegador la empujaba entera a la segunda. La primera página quedaba con solo el título, los avisos y la introducción.
+  - **Corrección:** las tarjetas largas (`impresion-fragmentable`) pueden fragmentarse. Esto cubre el pronóstico, la evaluación, los resultados observados y las versiones.
+  - **Lo que no cambia:**
+    - filas, avisos y títulos siguen sin cortarse;
+    - las cabeceras de tabla se repiten en cada página;
+    - la regla sigue limitada a `body.producto1-impresion` y la pantalla no cambia;
+    - las columnas de Bootstrap, las filas flex y `h-100` no eran la causa: al ancho de impresión las columnas ya se apilan.
+  - **Orden de la sugerencia:** al imprimir, la sugerencia va justo después del objetivo y antes de los avisos. Es la combinación de ColorLoto y los cinco números de MiLoto.
+    - Con el histórico desactualizado y el resultado ya observado, los avisos llenaban la primera página en Carta horizontal.
+    - Solo cambia el `order` dentro de la columna flex de la tarjeta, y solo en `@media print`.
+    - Los avisos se conservan completos y la pantalla no cambia.
+  - **Altura de las tarjetas:** al imprimir, `h-100` deja de fijar la altura de las tarjetas de producto.
+    - **Causa:** fijaba la altura a la de la columna, calculada antes de fragmentar. Al partirse entre páginas, el contenido crecía más que la caja y la tarjeta siguiente se pintaba encima.
+    - **Casos encontrados:** «Trazabilidad» sobre las últimas filas del ranking de MiLoto, Baloto y Revancha en Carta vertical. También, en el índice y en las estadísticas, una tarjeta sobre la anterior.
+    - **Pantalla:** sin cambios.
+
 Capas:
 - dominio sin cambios;
 - `application/estadisticas/resumen_juego.py` y `application/ml/pronostico_experimental.py`, puros (el segundo usa sklearn solo a través de `modelo.py`);

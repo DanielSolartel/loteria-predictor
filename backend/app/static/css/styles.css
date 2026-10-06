@@ -177,6 +177,40 @@ body {
         page-break-inside: avoid;
     }
 
+    /* Las tarjetas largas (pronostico con su ranking, evaluacion, resultados
+       observados y versiones) si pueden fragmentarse. Con `avoid`, una
+       tarjeta mas alta que el espacio restante se empujaba entera a la
+       pagina siguiente y la primera quedaba casi vacia; despues se cortaba
+       igualmente. Filas, avisos y titulos siguen sin cortarse y las
+       cabeceras de tabla se repiten en cada pagina. */
+    body.producto1-impresion .stat-card.impresion-fragmentable {
+        break-inside: auto;
+        page-break-inside: auto;
+    }
+
+    /* `h-100` fija la altura de una tarjeta a la de su columna, calculada
+       antes de fragmentar. Al pasar o partirse entre paginas (cabecera
+       repetida, filas que no se cortan) el contenido crecia mas que esa caja
+       y la tarjeta siguiente se pintaba encima: Trazabilidad sobre las
+       ultimas filas del ranking, o la tarjeta de otro juego o de otra
+       estadistica sobre la anterior. Al imprimir, la altura sigue al
+       contenido; en pantalla `h-100` no cambia. */
+    body.producto1-impresion .stat-card.h-100 {
+        height: auto !important;
+    }
+
+    /* En la tarjeta del pronostico, la sugerencia se imprime justo despues
+       del objetivo y antes de los avisos (que se conservan completos). La
+       tarjeta ya es una columna flex de Bootstrap: solo cambia el orden
+       visual al imprimir; en pantalla no cambia nada. */
+    body.producto1-impresion .impresion-cabecera {
+        order: -2;
+    }
+
+    body.producto1-impresion .impresion-sugerencia {
+        order: -1;
+    }
+
     body.producto1-impresion h3,
     body.producto1-impresion h6 {
         break-after: avoid;
