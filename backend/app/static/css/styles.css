@@ -113,6 +113,22 @@ body {
     overflow-y: auto;
 }
 
+/* Paginas de producto en pantalla estrecha (movil): el area de contenido
+   puede encoger por debajo del ancho de su contenido y las tablas anchas se
+   desplazan en horizontal dentro de su tarjeta, sin desbordar la pagina.
+   Solo en pantalla estrecha (ni el escritorio ni la impresion cambian) y en las paginas marcadas
+   con `producto1-impresion`. */
+@media screen and (max-width: 767.98px) {
+    body.producto1-impresion .content-area {
+        min-width: 0;
+    }
+
+    body.producto1-impresion .tabla-desplazable,
+    body.producto1-impresion .stat-card {
+        overflow-x: auto;
+    }
+}
+
 /* Texto que solo aparece al imprimir (p. ej. el nombre de cada color de ColorLoto). */
 .solo-impresion,
 .solo-impresion-bloque {

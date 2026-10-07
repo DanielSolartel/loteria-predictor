@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Ejecución — Panel diario{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h3 class="mb-0">Ejecución del panel diario</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/operacion">Volver al panel</a>
+</div>
+{% include "operacion/_ejecucion_estado.html" %}
+{% endblock %}

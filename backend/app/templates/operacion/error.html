@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Panel diario{% endblock %}
+{% block content %}
+<h3 class="mb-3">Panel diario</h3>
+<div class="alert alert-warning">{{ mensaje }}</div>
+{% if activas %}
+<ul class="small">{% for juego, ejecucion in activas.items() %}
+    <li>{{ nombres.get(juego, juego) }}: {% if ejecucion %}<a href="/operacion/ejecuciones/{{ ejecucion }}">ver la ejecución en curso</a>{% else %}en curso{% endif %}</li>
+{% endfor %}</ul>
+{% endif %}
+<a class="btn btn-sm btn-outline-secondary" href="/operacion">Volver al panel</a>
+{% endblock %}

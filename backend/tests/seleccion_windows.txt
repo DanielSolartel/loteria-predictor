@@ -48,3 +48,9 @@ tests/unit/test_producto1_presentacion.py
 tests/unit/ml/test_pronostico_miloto.py
 tests/unit/ml/test_pronostico_colorloto.py
 tests/unit/test_producto2.py
+tests/unit/test_producto3_almacen.py
+tests/unit/test_producto3_operacion.py
+tests/unit/test_producto3_rendimiento.py
+tests/unit/test_producto3_web.py
+tests/unit/test_producto3_cli.py
+tests/unit/test_producto3_recuperacion.py

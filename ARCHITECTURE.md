@@ -6001,6 +6001,117 @@ Capas:
 
 Prueba de ausencia de fuga: alterar todos los sorteos desde el primer objetivo de un bloque no cambia ninguna fila de su entrenamiento, y añadir sorteos posteriores no cambia las métricas de un bloque ya evaluado.
 
+
+## Producto 3 -panel diario, actualización de pronósticos y seguimiento del rendimiento
+
+**Producto 3 -panel diario, actualización de pronósticos y seguimiento del rendimiento:** conecta lo construido con el uso diario, sin abrir otra etapa AE. Los pronósticos siguen siendo `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
+- **Publicación del almacén (issue #83):**
+  - Cada JSON se escribe en un temporal de la misma carpeta, con `fsync`, y se publica con `os.link`. Crear un enlace duro es atómico y no sobrescribe un destino existente, en Linux y en NTFS; `os.replace` no sirve porque sustituye el destino en silencio.
+  - Un lector nunca ve un JSON final a medio escribir, y dos escritores (hilos o procesos: el comando y el servidor) no se pisan.
+  - Una interrupción antes de publicar deja solo un temporal y una reserva de secuencia. No son pronósticos ni errores de integridad, y no se borran automáticamente.
+  - Se conservan los bytes de los artefactos existentes, la idempotencia, la secuencia y `version_anterior`.
+  - Ante un corte de energía solo se promete lo que da el sistema: `fsync` del contenido antes de publicar y, en POSIX, del directorio.
+  - Requiere enlaces duros: disco local NTFS o POSIX.
+- **Operación diaria (`OperacionDiaria`):** un caso de uso común a la web y al comando. Por cada juego:
+  1. estado inicial;
+  2. con «Actualizar datos y generar», la importación incremental existente (`SincronizarSorteos`);
+  3. validación del histórico con las reglas actuales;
+  4. resultados observados;
+  5. generación o reutilización del pronóstico del corte actual;
+  6. resumen registrado.
+  - «Generar con datos locales» usa una transacción de solo lectura y no escribe sorteos.
+  - Si la actualización de un juego falla, ese juego no se genera con su histórico anterior; los demás siguen.
+  - Estado global: `exito`, `parcial` o `fallo`.
+- **Ejecuciones:**
+  - La web responde en seguida con un identificador y el trabajo sigue en un hilo. Cada juego usa su propia sesión de base de datos.
+  - El progreso queda en `storage/operacion/ejecuciones/<id>.json`, separado de los artefactos, sin credenciales ni HTML.
+  - Un cerrojo del sistema operativo por juego (`flock` / `msvcrt.locking`) impide dos ejecuciones simultáneas del mismo juego, aunque una venga de la web y otra del comando.
+  - Cada ejecución mantiene además su propio cerrojo hasta terminar de escribir el cierre global. Sin ese cerrojo (proceso muerto, disco lleno al cerrar, hilo que no se pudo lanzar), la ejecución se muestra como `interrumpida` aunque sus juegos hubieran terminado.
+    - Los juegos completados conservan su resultado, y nunca se anota un éxito no registrado.
+    - Volver a ejecutar reutiliza lo ya publicado.
+  - La adquisición de cerrojos es «todos o ninguno» y segura frente a excepciones: si algo falla, libera lo propio. Solo la contención real se informa como «ocupado».
+  - El comando `rutas` muestra solo las rutas de almacenamiento resueltas, para comprobar el aislamiento frente a Producto 2. Las guías fijan `DIRECTORIO_PRONOSTICOS_EXPERIMENTALES` y `DIRECTORIO_OPERACION` en cada ventana.
+  - No hay programador dentro de uvicorn.
+- **Panel diario (`/operacion`):** muestra los cuatro juegos, con estos datos en cada tarjeta:
+  - último sorteo y fecha, frescura y huecos;
+  - objetivo y combinación del pronóstico actual;
+  - resultado pendiente o conocido;
+  - comparación del histórico hasta el corte;
+  - última ejecución, ejecución activa y avisos.
+
+  Tiene acciones por juego y para todos, con la protección local de los POST. Una tarjeta con error no oculta las demás.
+- **Rendimiento (`/rendimiento`):** desde los pronósticos guardados y el histórico actual, sin copias de resultados.
+  - **Selección:** una emisión por objetivo, la primera según la secuencia sellada. No se reemplaza por otra más favorable si es ilegible, ambigua o su histórico cambió.
+  - **Tipos:** las reconstrucciones retrospectivas y el seguimiento de emisiones con objetivo no cargado se muestran por separado.
+  - **Métricas:** aciertos, Log Loss y Brier frente a la uniforme del artefacto, con las métricas del dominio; superbalota aparte; ColorLoto por balota y por multiconjunto.
+  - **Gráfica:** diferencia acumulada en SVG local, con su tabla.
+  - **Filtros:** juego, tipo y período (por fecha de generación), aplicados igual en JSON, tabla y gráfica.
+  - Es descriptivo: no demuestra ventaja.
+- **Comando y API:**
+  - `python -m scripts.operacion_diaria {ejecutar|consultar|ejecuciones|recuperar|rendimiento|rutas}`, con códigos de salida: 0 éxito, 2 uso, 3 base, 5 parcial, 6 ya activa, 7 fallo.
+  - API de solo lectura: `GET /api/operacion/panel`, `/api/operacion/ejecuciones[/{id}]` y `/api/rendimiento/{JUEGO}`.
+  - La guía del Programador de tareas de Windows está en `backend/docs/producto3_windows.md`.
+- **Pantalla e impresión:** en pantallas estrechas, las páginas de producto ya no desbordan en horizontal (`@media screen and (max-width: 767.98px)`). El escritorio y la impresión no cambian, y se conservan las correcciones de impresión de Producto 2.
+- **Validación: validado localmente en Windows con histórico real.** Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`. Validar el funcionamiento no acredita ninguna ventaja predictiva.
+  - **Pruebas en Windows (operador; Python 3.14.6, OpenSSL 3.5.6):**
+    - el parche completo (234715 bytes) se aplicó tras comprobar tamaño, SHA-256, rama, base y el alcance de 38 archivos;
+    - Producto 3 `62 passed`, Producto 2 `61 passed`, Producto 1 `102 passed` y selección de Windows `1773 passed`;
+    - OpenSSL `SUPERADOS 7/7` (`exigir`) y `pip check` limpio;
+    - demostración 6/6, con fixtures sintéticas, no con la base real;
+    - un aviso de Starlette por usar `httpx` en `TestClient`, que es un aviso, no un fallo.
+
+    La suite completa no se ejecutó en Windows.
+  - **Generación local con el histórico real:**
+    - Dos ejecuciones de los cuatro juegos, ambas correctas.
+    - La segunda reutilizó los cuatro pronósticos con los mismos identificadores y objetivos: 2718 en Baloto y Revancha, 618 en MiLoto y 224 en ColorLoto.
+    - La verificación reprodujo exactamente esos cuatro pronósticos, anteriores a la actualización: huella exacta, mismos datos y diferencia máxima de probabilidad 0.
+    - Se copiaron o comprobaron 12 archivos desde el almacén de Producto 2, incluidos auxiliares. Se conservaron byte a byte en el origen y en el almacén separado de Producto 3.
+  - **Actualización desde el origen** (6 de octubre de 2026, hacia las 20:02 hora de Colombia; las marcas UTC de la interfaz muestran el 7 de octubre):
+    - resultado `exito`, código 0;
+    - cada juego, con 1 sorteo nuevo y 0 fallidos:
+
+      | Juego | Último antes → después | Objetivo nuevo |
+      |---|---|---|
+      | Baloto y Revancha | 2717 → 2718 | 2719 |
+      | MiLoto | 617 → 618 | 619 |
+      | ColorLoto | 223 → 224 | 225 |
+
+    - los 10 pronósticos JSON previos se conservaron byte a byte.
+    - **Aviso de MiLoto:** el conector emitió `DATOS_INCOMPLETOS` porque no encontró una etiqueta `table` para el desglose de premios. La sincronización y la generación terminaron bien, pero esta ejecución no acredita un desglose completo de premios para ese sorteo. La causa no se comprobó.
+  - **Panel e impresión:**
+    - El panel funcionó en el puerto 8002. Una generación local de MiLoto desde la interfaz reutilizó el objetivo 618.
+    - Se revisaron los PDF del panel y del rendimiento de MiLoto y ColorLoto tras la actualización: tres páginas cada uno, en Carta vertical, sin solapamientos.
+    - Esta revisión no cubre la vista móvil, la Carta horizontal ni otras resoluciones.
+  - **Rendimiento tras la actualización:** la muestra es muy pequeña, y en estos promedios la referencia uniforme tiene menor pérdida.
+    - **MiLoto:**
+      - 1 reconstrucción retrospectiva;
+      - seguimiento: 616 y 618 incluidos, 619 pendiente, 0 excluidos;
+      - Log Loss 0.38710 frente a 0.38296 de la uniforme (+0.00414), y Brier 0.11289 frente a 0.11177;
+      - walk-forward del último artefacto: 0.38697 frente a 0.38296, en 67 sorteos.
+    - **ColorLoto:**
+      - 1 reconstrucción retrospectiva;
+      - seguimiento: 223 y 224 incluidos, 225 pendiente, 0 excluidos;
+      - por balota, Log Loss 3.81323 frente a 3.73767 (+0.07556) y Brier 0.97972 frente a 0.97619;
+      - multiconjunto: 16.30014 frente a 15.84677;
+      - walk-forward: 3.76537 frente a 3.73767, en 204 sorteos.
+    - **Lectura de las categorías:**
+      - «Objetivo no cargado al generar» describe la base local, no que la emisión precediera al sorteo real; hay emisiones generadas después de la fecha del resultado.
+      - Los «observados» que informa el comando incluyen las reconstrucciones retrospectivas, así que no equivalen a los objetivos incluidos en seguimiento.
+  - **Linux (Cloud, solo fixtures sintéticas):** son los resultados de la entrega del parche completo:
+    - Producto 3 `62 passed`, Producto 2 `61 passed` y Producto 1 `102 passed`;
+    - selección `1773 passed`, sin omisiones;
+    - suite completa `6018 passed`, sin omisiones ni fallos, con cinco avisos conocidos de Alembic;
+    - OpenSSL 7/7 y demostración 6/6;
+    - `pip check` y la comprobación de espacios, limpios;
+    - extracción limpia con los 38 archivos idénticos y 225 pruebas focales.
+  - **GitHub Actions:** todavía no ha ejecutado Producto 3.
+  - **Límites:**
+    - Las regresiones de publicación atómica y de lectura parcial pasaron en Windows, pero no se ensayó una pérdida de energía, así que no se acredita una durabilidad absoluta en NTFS.
+    - No se creó ninguna tarea real del Programador de tareas.
+    - La sincronización incremental no prueba que se detecten correcciones de sorteos antiguos.
+    - Las métricas de distintos juegos no se fusionan en una precisión global.
+
+
 ---
 
 ## Visualizaciones web de estadísticas

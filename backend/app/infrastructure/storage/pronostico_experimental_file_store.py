@@ -3,8 +3,7 @@ Almacen de pronosticos experimentales en archivos JSON canonicos.
 
 Un archivo por clave de entrada en
 `<directorio>/<CODIGO_JUEGO>/<objetivo>-<clave_de_entrada>.json`, con la
-serializacion canonica de AE-52, creado en modo exclusivo (`xb`): nunca se
-sobrescribe. Al leer se comprueba que los bytes sean canonicos, que el
+serializacion canonica de AE-52; nunca se sobrescribe. Al leer se comprueba que los bytes sean canonicos, que el
 sello SHA-256 cubra todo el artefacto (incluida la fecha de generacion),
 que la huella de reproduccion corresponda al cuerpo y que la clave
 coincida con el nombre; si no, el artefacto se informa como alterado.
@@ -19,9 +18,29 @@ secuencia: nunca por la fecha declarada, el nombre (hash), el orden de
 `iterdir()` ni fechas del sistema de archivos. Reconstruir el almacen
 desde los JSON (incluso sin las reservas) conserva el orden.
 
-Concurrencia local: dos escritores con la misma clave no duplican
-(`xb` sobre el nombre con la clave; el perdedor libera su reserva); dos
-con claves distintas obtienen secuencias distintas. Si un proceso muere
+PUBLICACION (issue #83). El contenido completo se escribe primero en un
+temporal de la misma carpeta (`.<objetivo>-<clave>.<aleatorio>.tmp`,
+creado con `xb`, vaciado con `flush` + `fsync`) y se publica con
+`os.link(temporal, final)`: crear un enlace duro es atomico y falla con
+`FileExistsError` si el nombre final ya existe, en Linux y en NTFS
+(`CreateHardLinkW`). Asi un lector nunca ve un JSON final a medio escribir
+y nunca se sobrescribe un destino existente (ni siquiera uno ilegible).
+`os.replace` no sirve: sustituye el destino en silencio. Despues se borra
+el nombre temporal. Garantias: visibilidad atomica del nombre final y
+exclusion entre escritores (hilos o procesos, p. ej. el comando y el
+servidor). Frente a un corte de energia solo se promete lo que da el
+sistema: el contenido se sincroniza con `fsync` antes de publicar y, en
+POSIX, tambien el directorio despues; en Windows no se sincroniza el
+directorio. Un proceso interrumpido antes de publicar no deja JSON final:
+deja un temporal (ignorado al listar y visible con `temporales()`) y una
+reserva de secuencia huerfana. Ninguno se borra automaticamente, porque
+podria pertenecer a una escritura activa; volver a generar la misma
+entrada publica normalmente. Requiere enlaces duros: disco local NTFS o un
+sistema de archivos POSIX (no FAT ni algunas carpetas de red).
+
+Concurrencia local: dos escritores con la misma clave no duplican (el
+perdedor recibe `FileExistsError`, borra su temporal y libera su
+reserva); dos con claves distintas obtienen secuencias distintas. Si un proceso muere
 entre la reserva y la escritura queda una reserva huerfana: la secuencia
 tiene un hueco, pero el numero de version (posicion) no cambia. Limites:
 requiere un sistema de archivos con creacion exclusiva atomica (disco
@@ -32,6 +51,7 @@ from __future__ import annotations
 
 import os
 import re
+import secrets
 from dataclasses import replace
 from pathlib import Path
 
@@ -52,6 +72,12 @@ _CODIGO = re.compile(r"^[A-Z][A-Z_]{1,29}$")
 _NOMBRE = re.compile(r"^(\d{1,9})-([0-9a-f]{64})\.json$")
 _IDENTIFICADOR = re.compile(r"^[0-9a-f]{64}$")
 _RESERVA = re.compile(r"^(\d{1,9})-(\d{6})\.secuencia$")
+_TEMPORAL = re.compile(r"^\.(\d{1,9})-([0-9a-f]{64})\.[0-9a-f]{16}\.tmp$")
+
+
+class PublicacionNoAdmitidaError(OSError):
+    """El sistema de archivos no admite enlaces duros: no se puede publicar
+    sin riesgo de lecturas parciales ni de sobrescritura."""
 
 
 def _secuencia(guardado: PronosticoGuardado) -> int:
@@ -108,16 +134,68 @@ class PronosticoExperimentalFileStore(PronosticoExperimentalStore):
         anteriores = [g for g in previas if _secuencia(g) < secuencia]
         sellado = con_orden_de_emision(artefacto, secuencia=secuencia,
                                        version_anterior=anteriores[-1].identificador if anteriores else None)
-        try:
-            with open(ruta, "xb") as flujo:
-                flujo.write(serializar_entrada(sellado))
-        except FileExistsError:  # otro escritor guardo la misma clave: se libera la reserva
-            os.remove(self._reserva(carpeta, objetivo, secuencia))
-            raise
+        self._publicar(carpeta, ruta, objetivo, clave, secuencia, serializar_entrada(sellado))
         guardado = self.obtener(codigo_juego, clave)
         if not isinstance(guardado, PronosticoGuardado):
             raise ValueError("el artefacto recien guardado no se pudo releer")
         return guardado
+
+    def _publicar(self, carpeta: Path, ruta: Path, objetivo: int, clave: str, secuencia: int, contenido: bytes):
+        """Escribe en un temporal y lo publica con `os.link` (ver el
+        docstring del modulo). Una interrupcion (excepcion no `OSError`, o
+        la muerte del proceso) antes del enlace deja el temporal y la
+        reserva, y ningun JSON final."""
+        temporal = carpeta / f".{objetivo}-{clave}.{secrets.token_hex(8)}.tmp"
+        with open(temporal, "xb") as flujo:
+            flujo.write(contenido)
+            flujo.flush()
+            os.fsync(flujo.fileno())
+        try:
+            os.link(temporal, ruta)
+        except FileExistsError:  # otro escritor publico la misma clave: se retira este intento
+            self._retirar(temporal, self._reserva(carpeta, objetivo, secuencia))
+            raise
+        except OSError as error:  # sin enlaces duros no hay publicacion segura
+            self._retirar(temporal, self._reserva(carpeta, objetivo, secuencia))
+            raise PublicacionNoAdmitidaError(
+                f"no se pudo publicar el pronostico con un enlace duro en {carpeta} ({error}); use un disco "
+                "local NTFS o un sistema de archivos POSIX") from error
+        temporal.unlink()
+        _sincronizar_directorio(carpeta)
+
+    @staticmethod
+    def _retirar(*rutas: Path) -> None:
+        for ruta in rutas:
+            try:
+                ruta.unlink()
+            except FileNotFoundError:
+                pass
+
+    def temporales(self, codigo_juego: str) -> list[str]:
+        """Temporales de escrituras en curso o interrumpidas antes de
+        publicar. No son pronosticos ni errores de integridad, y no se
+        borran automaticamente."""
+        carpeta = self._carpeta(codigo_juego)
+        if not carpeta.is_dir():
+            return []
+        return sorted(p.name for p in carpeta.iterdir() if _TEMPORAL.fullmatch(p.name))
+
+    def objetivos_de_archivos(self, codigo_juego: str) -> dict[str, int | None]:
+        """{identificador: objetivo segun el nombre del archivo} de cada JSON
+        de la carpeta, incluidos los ilegibles (None si el nombre no sigue el
+        formato). Permite saber a que objetivo pertenece un artefacto
+        alterado sin confiar en su contenido."""
+        carpeta = self._carpeta(codigo_juego)
+        if not carpeta.is_dir():
+            return {}
+        salida: dict[str, int | None] = {}
+        for ruta in carpeta.iterdir():
+            if ruta.suffix != ".json":
+                continue
+            coincidencia = _NOMBRE.fullmatch(ruta.name)
+            salida[coincidencia.group(2) if coincidencia else ruta.name] = (
+                int(coincidencia.group(1)) if coincidencia else None)
+        return salida
 
     def _leer(self, codigo_juego: str, ruta: Path):
         coincidencia = _NOMBRE.fullmatch(ruta.name)
@@ -168,3 +246,16 @@ class PronosticoExperimentalFileStore(PronosticoExperimentalStore):
             if elemento.identificador == identificador:
                 return elemento
         return None
+
+
+def _sincronizar_directorio(carpeta: Path) -> None:
+    """En POSIX, `fsync` del directorio para que la entrada publicada
+    sobreviva a un corte de energia; en Windows no hay equivalente
+    portable y no se intenta."""
+    if os.name != "posix":
+        return
+    descriptor = os.open(carpeta, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)

@@ -173,6 +173,18 @@ class GenerarPronosticoExperimental:
     def configuracion(self, codigo_juego: str):
         return self._configuraciones.get(codigo_juego) or configuracion_por_defecto(codigo_juego)
 
+    def validar(self, codigo_juego: str, hasta_numero_sorteo: int | None = None) -> dict:
+        """Valida el historico cargado con las reglas actuales de la linea del
+        juego (las mismas que aplica `ejecutar`) sin entrenar. Devuelve el
+        corte, los sorteos validados y la clave de entrada que tendria el
+        pronostico; lanza `PronosticoExperimentalNoDisponibleError` si el
+        historico no es valido."""
+        configuracion = self.configuracion(_juego(codigo_juego))
+        historico, _ = _historicos(self._juegos, self._resultados, codigo_juego, hasta_numero_sorteo)
+        clave = _clave(codigo_juego, historico, hasta_numero_sorteo, configuracion)
+        return {"sorteos": len(historico), "corte": max((r.numero_sorteo for r in historico), default=None),
+                "clave_de_entrada": clave}
+
     def _existente(self, codigo_juego: str, clave: str) -> PronosticoGuardado | None:
         existente = self._almacen.obtener(codigo_juego, clave)
         if isinstance(existente, PronosticoIlegible):

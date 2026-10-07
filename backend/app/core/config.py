@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # directorio desde el que se arranca la aplicacion (`backend/`).
     directorio_pronosticos_experimentales: str = "storage/pronosticos"
 
+    # Producto 3: registro de ejecuciones de la operacion diaria y cerrojos
+    # por juego, separados de los artefactos de pronostico.
+    directorio_operacion: str = "storage/operacion"
+
 
 @lru_cache
 def get_settings() -> Settings:

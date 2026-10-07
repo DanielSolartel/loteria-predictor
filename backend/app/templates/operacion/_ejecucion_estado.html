@@ -1,0 +1,33 @@
+{# e: ejecucion; nombres; slugs; modos #}
+<div id="estado-ejecucion" {% if e.estado == 'en_curso' %}hx-get="/operacion/ejecuciones/{{ e.id }}/estado" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+    {% set colores = {'exito': 'alert-success', 'parcial': 'alert-warning', 'fallo': 'alert-danger', 'en_curso': 'alert-info', 'interrumpida': 'alert-danger', 'ilegible': 'alert-danger'} %}
+    {% set textos = {'exito': 'Completada: todos los juegos terminaron bien.', 'parcial': 'Completada en parte: algún juego necesita atención.', 'fallo': 'Falló: ningún juego terminó bien.', 'en_curso': 'En curso. Esta página se actualiza sola; también puedes recargarla.', 'interrumpida': 'Interrumpida.', 'ilegible': 'El registro de esta ejecución no se puede leer.'} %}
+    <div class="alert {{ colores.get(e.estado, 'alert-secondary') }} py-2">
+        <strong>{{ textos.get(e.estado, e.estado) }}</strong>
+        {% if e.mensaje %}<div class="small">{{ e.mensaje }}</div>{% endif %}
+        <div class="small text-muted">{{ modos.get(e.modo, e.modo) }} · iniciada {{ (e.iniciada_en or '')[:19]|replace('T', ' ') }}{% if e.finalizada_en %} · terminada {{ e.finalizada_en[:19]|replace('T', ' ') }}{% endif %} · origen: {{ e.origen }}</div>
+    </div>
+    <div class="row g-3">
+    {% for codigo in (e.orden or e.juegos.keys()|list) %}{% set r = e.juegos[codigo] %}
+        <div class="col-lg-6"><div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between"><h6>{{ nombres.get(codigo, codigo) }}</h6>
+                {% set badges = {'ok': ('bg-success', 'completado'), 'fallo': ('bg-danger', 'falló'), 'datos_insuficientes': ('bg-warning text-dark', 'datos insuficientes'), 'pendiente': ('bg-secondary', 'pendiente'), 'en_curso': ('bg-info text-dark', 'en curso'), 'interrumpido': ('bg-danger', 'interrumpido')} %}
+                {% set b = badges.get(r.estado, ('bg-secondary', r.estado)) %}<span class="badge {{ b[0] }}">{{ b[1] }}</span></div>
+            {% if r.mensaje %}<div class="alert alert-warning py-1 px-2 small mb-2">{{ r.mensaje }}</div>{% endif %}
+            <dl class="row small mb-1">
+                {% if r.ultimo_antes %}<dt class="col-5">Último sorteo antes</dt><dd class="col-7">{{ r.ultimo_antes.ultimo_sorteo or '—' }} {% if r.ultimo_antes.fecha %}({{ r.ultimo_antes.fecha }}){% endif %}</dd>{% endif %}
+                {% if r.ultimo_despues %}<dt class="col-5">Último sorteo después</dt><dd class="col-7">{{ r.ultimo_despues.ultimo_sorteo or '—' }} {% if r.ultimo_despues.fecha %}({{ r.ultimo_despues.fecha }}){% endif %}</dd>{% endif %}
+                {% if r.sincronizacion %}<dt class="col-5">Actualización</dt><dd class="col-7">{{ 'correcta' if r.sincronizacion.estado == 'completado' else 'fallida' }}{% if r.sincronizacion.sorteos_nuevos is defined %} · {{ r.sincronizacion.sorteos_nuevos }} nuevo(s), {{ r.sincronizacion.sorteos_duplicados }} ya cargado(s), {{ r.sincronizacion.sorteos_fallidos }} con error{% endif %}
+                    {% if r.sincronizacion.sorteos_nuevos is defined %}<br><span class="text-muted">Correcciones de sorteos ya cargados: el importador no las informa.</span>{% endif %}
+                    {% for err in r.sincronizacion.errores or [] %}<br><span class="text-danger">{{ err }}</span>{% endfor %}</dd>{% endif %}
+                {% if r.validacion %}<dt class="col-5">Validación</dt><dd class="col-7">{{ {'valido': 'histórico válido', 'datos_insuficientes': 'datos insuficientes', 'invalido': 'histórico no válido'}[r.validacion.estado] }}{% if r.validacion.sorteos %} ({{ r.validacion.sorteos }} sorteos){% endif %}</dd>{% endif %}
+                {% if r.resultados %}<dt class="col-5">Resultados observados</dt><dd class="col-7">{{ r.resultados.observados }} conocido(s), {{ r.resultados.pendientes }} pendiente(s){% if r.resultados.no_corresponde %}, {{ r.resultados.no_corresponde }} sin resultado aplicable{% endif %}</dd>{% endif %}
+                {% if r.pronostico %}<dt class="col-5">Pronóstico</dt><dd class="col-7">objetivo {{ r.pronostico.objetivo }} · {{ 'reutilizado (misma entrada)' if r.pronostico.reutilizado else 'nuevo' }}{% if r.pronostico.versiones and r.pronostico.versiones > 1 %} · versión {{ r.pronostico.version }} de {{ r.pronostico.versiones }}{% endif %}
+                    · <a href="/pronosticos/{{ slugs.get(codigo, '') }}?id={{ r.pronostico.identificador }}">ver</a></dd>{% endif %}
+            </dl>
+            {% if r.pasos %}<details class="small"><summary class="text-muted">Pasos ({{ r.pasos|length }})</summary>
+                <ol class="mb-0">{% for p in r.pasos %}<li>{{ p.paso|replace('_', ' ') }} · {{ p.en[11:19] }}</li>{% endfor %}</ol></details>{% endif %}
+        </div></div>
+    {% endfor %}
+    </div>
+</div>

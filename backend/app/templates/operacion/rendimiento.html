@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Rendimiento — {{ nombres[juego] }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Rendimiento · {{ nombres[juego] }}</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/operacion"><i class="bi bi-calendar-check me-1"></i>Panel diario</a>
+</div>
+<div class="alert alert-warning py-2 small">
+    Seguimiento descriptivo de pronósticos experimentales frente a los resultados cargados. Una diferencia favorable sobre pocos objetivos no demuestra ventaja predictiva. Cada juego se mide con su propia escala: no hay una «precisión global» de los cuatro juegos.
+</div>
+
+<form method="get" action="/rendimiento" class="row g-2 align-items-end mb-3">
+    <div class="col-6 col-md-3"><label class="form-label small mb-0" for="f-juego">Juego</label>
+        <select class="form-select form-select-sm" id="f-juego" name="juego">{% for c, n in nombres.items() %}<option value="{{ c }}" {% if c == juego %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-3"><label class="form-label small mb-0" for="f-emision">Tipo de emisión</label>
+        <select class="form-select form-select-sm" id="f-emision" name="emision">
+            {% for f in filtros_emision %}<option value="{{ f }}" {% if f == emision %}selected{% endif %}>{{ {'todas': 'Ambos tipos (por separado)', 'retrospectiva': 'Reconstrucciones retrospectivas', 'seguimiento': 'Seguimiento (objetivo no cargado al generar)'}[f] }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-2"><label class="form-label small mb-0" for="f-desde">Generado desde</label>
+        <input class="form-control form-control-sm" type="date" id="f-desde" name="desde" value="{{ desde or '' }}"></div>
+    <div class="col-6 col-md-2"><label class="form-label small mb-0" for="f-hasta">Generado hasta</label>
+        <input class="form-control form-control-sm" type="date" id="f-hasta" name="hasta" value="{{ hasta or '' }}"></div>
+    <div class="col-12 col-md-2"><button class="btn btn-sm btn-primary w-100">Aplicar</button></div>
+</form>
+
+{% if error %}
+<div class="alert alert-danger">No se pudo calcular el rendimiento: {{ error }}</div>
+{% elif datos %}
+<p class="small text-muted">{{ datos.politica }} El período se filtra por la fecha de generación del pronóstico seleccionado. Los filtros se aplican igual a las métricas, la gráfica y las tablas.{% if datos.artefactos_ilegibles %} Hay {{ datos.artefactos_ilegibles }} artefacto(s) ilegible(s): su objetivo queda excluido.{% endif %}</p>
+
+{% set titulos = {'retrospectiva': 'Reconstrucciones retrospectivas', 'seguimiento': 'Seguimiento de emisiones con objetivo no cargado al generar'} %}
+{% for tipo, agg in datos.por_tipo.items() %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3" id="tipo-{{ tipo }}">
+    <h6>{{ titulos[tipo] }}</h6>
+    {% if tipo == 'seguimiento' %}<p class="small text-muted mb-2">{{ datos.nota_seguimiento }}</p>{% else %}<p class="small text-muted mb-2">El objetivo ya estaba en la base local cuando se generó el pronóstico (con datos solo hasta el corte).</p>{% endif %}
+    <p class="small mb-2"><strong>Objetivos:</strong> {{ agg.objetivos }} · incluidos {{ agg.incluidos }} · pendientes {{ agg.pendientes }} · excluidos {{ agg.excluidos }}
+        {% if agg.excluidos_por_motivo %}<span class="text-muted">({% for m, n in agg.excluidos_por_motivo.items() %}{{ m|replace('_', ' ') }}: {{ n }}{% if not loop.last %}; {% endif %}{% endfor %})</span>{% endif %}</p>
+    {% if agg.incluidos %}
+        {% if agg.muestra_pequena %}<div class="alert alert-secondary py-1 px-2 small">Muestra pequeña: {{ agg.incluidos }} objetivo(s). Los promedios pueden variar mucho con un solo sorteo.</div>{% endif %}
+        <p class="small mb-2"><strong>Aciertos:</strong> {{ agg.aciertos.suma }} en {{ agg.aciertos.objetivos }} objetivo(s) · promedio {{ '%.2f'|format(agg.aciertos.promedio) }} de {{ agg.aciertos.de }} por objetivo
+            {% if juego == 'COLORLOTO' %}(pares con repetición){% else %}(números principales){% endif %}.</p>
+        <div class="tabla-desplazable"><table class="table table-sm small mb-2">
+            <thead><tr><th>Métrica (menor es mejor)</th><th class="text-end">Modelo</th><th class="text-end">Uniforme</th><th class="text-end">Diferencia</th><th class="text-end">Objetivos</th></tr></thead><tbody>
+            {% set etiquetas = {'log_loss': 'Log Loss' ~ (' por balota' if juego == 'COLORLOTO' else ''), 'brier': 'Brier' ~ (' por balota' if juego == 'COLORLOTO' else ''), 'log_loss_multiconjunto': 'Log Loss del multiconjunto'} %}
+            {% for clave, v in agg.perdidas.items() %}<tr><td>{{ etiquetas[clave] }}</td><td class="text-end">{{ '%.5f'|format(v.modelo) }}</td><td class="text-end">{{ '%.5f'|format(v.uniforme) }}</td>
+                <td class="text-end {% if v.diferencia < 0 %}text-success{% elif v.diferencia > 0 %}text-danger{% endif %}">{{ '%+.5f'|format(v.diferencia) }}</td><td class="text-end">{{ v.objetivos }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        {% if agg.superbalota %}{% set sb = agg.superbalota %}
+        <p class="small mb-2"><strong>Superbalota (aparte):</strong> {{ sb.aciertos }} acierto(s) en {{ sb.objetivos }} objetivo(s) · Log Loss {{ '%.4f'|format(sb.log_loss.modelo) }} frente a {{ '%.4f'|format(sb.log_loss.uniforme) }} (diferencia {{ '%+.4f'|format(sb.log_loss.diferencia) }}) · Brier {{ '%.4f'|format(sb.brier.modelo) }} frente a {{ '%.4f'|format(sb.brier.uniforme) }}.</p>
+        {% endif %}
+        {% set g = graficas[tipo] %}
+        {% if g %}
+        <h6 class="small mt-2">Diferencia acumulada de Log Loss frente a la uniforme</h6>
+        <p class="small text-muted mb-1">{{ datos.signo }}</p>
+        <svg class="grafica-rendimiento" viewBox="0 0 {{ g.ancho }} {{ g.alto }}" role="img" aria-labelledby="titulo-{{ tipo }}" style="max-width: 100%; height: auto;">
+            <title id="titulo-{{ tipo }}">Diferencia acumulada por objetivo; valor final {{ '%+.4f'|format(g.final) }}</title>
+            <line x1="{{ g.margen }}" y1="{{ g.cero }}" x2="{{ g.ancho - g.margen }}" y2="{{ g.cero }}" stroke="#6c757d" stroke-dasharray="4 3"/>
+            <text x="4" y="{{ g.cero + 4 }}" font-size="11" fill="#6c757d">0</text>
+            <text x="4" y="{{ g.margen - 8 }}" font-size="11" fill="#6c757d">peor que la uniforme ↑</text>
+            <text x="4" y="{{ g.alto - 6 }}" font-size="11" fill="#6c757d">mejor que la uniforme ↓</text>
+            <polyline points="{{ g.polilinea }}" fill="none" stroke="#4b3f8f" stroke-width="2"/>
+            {% for p in g.puntos %}<circle cx="{{ p.x }}" cy="{{ p.y }}" r="3" fill="#4b3f8f"><title>Objetivo {{ p.objetivo }}: {{ '%+.4f'|format(p.acumulada) }}</title></circle>{% endfor %}
+        </svg>
+        {% set tabla_serie %}
+            <table class="table table-sm small mb-0"><caption class="small">Diferencia de Log Loss (modelo - uniforme) por objetivo y acumulada; los mismos puntos de la gráfica.</caption>
+            <thead><tr><th>Objetivo</th><th class="text-end">Diferencia del objetivo</th><th class="text-end">Acumulada</th></tr></thead><tbody>
+            {% for s in agg.serie %}<tr><td>{{ s.objetivo }}</td><td class="text-end">{{ '%+.5f'|format(s.diferencia) }}</td><td class="text-end">{{ '%+.5f'|format(s.acumulada) }}</td></tr>{% endfor %}
+            </tbody></table>
+        {% endset %}
+        <details class="small detalle-bloques"><summary>Datos de la gráfica ({{ agg.serie|length }} puntos)</summary>{{ tabla_serie }}</details>
+        <div class="solo-impresion-bloque">{{ tabla_serie }}</div>
+        {% endif %}
+    {% else %}
+        <p class="small text-muted mb-0">Sin objetivos evaluables con estos filtros.</p>
+    {% endif %}
+</div>
+{% endfor %}
+
+<div class="card stat-card impresion-fragmentable p-3 mb-3">
+    <h6>Objetivos</h6>
+    {% if datos.filas %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Objetivo</th><th>Tipo</th><th>Estado</th><th>Generado</th><th>Sorteo</th><th class="text-end">Aciertos</th><th class="text-end">LL modelo</th><th class="text-end">LL uniforme</th><th>Versiones</th><th>Avisos</th></tr></thead><tbody>
+        {% for f in datos.filas %}<tr>
+            <td>{% if f.identificador %}<a href="/pronosticos/{{ slugs[juego] }}?id={{ f.identificador }}">{{ f.objetivo }}</a>{% else %}{{ f.objetivo }}{% endif %}</td>
+            <td>{{ {'retrospectiva': 'retrospectiva', 'seguimiento': 'seguimiento'}.get(f.tipo, 'sin clasificar') }}</td>
+            <td>{{ f.estado }}{% if f.motivo %}<div class="text-muted">{{ f.motivo|replace('_', ' ') }}</div>{% endif %}</td>
+            <td>{{ f.fecha_generacion or '—' }}</td><td>{{ f.fecha_sorteo or '—' }}</td>
+            <td class="text-end">{% if f.aciertos is not none %}{{ f.aciertos }} de {{ f.de }}{% if f.superbalota %} · SB {{ 'sí' if f.superbalota.acierto else 'no' }}{% endif %}{% else %}—{% endif %}</td>
+            <td class="text-end">{{ '%.5f'|format(f.metricas.log_loss) if f.metricas else '—' }}</td>
+            <td class="text-end">{{ '%.5f'|format(f.metricas.log_loss_uniforme) if f.metricas else '—' }}</td>
+            <td>{{ 'primera de ' ~ f.versiones if f.versiones > 1 else '1' }}</td>
+            <td>{% for a in f.avisos %}<span class="text-danger">{{ {'resultado_observado_cambio': 'resultado corregido', 'historico_hasta_el_corte_cambio': 'histórico cambiado'}.get(a, a) }}</span>{% if not loop.last %}; {% endif %}{% else %}—{% endfor %}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<p class="small text-muted mb-0">No hay pronósticos guardados que cumplan los filtros.</p>{% endif %}
+</div>
+
+{% set w = datos.walk_forward_del_ultimo_artefacto %}
+<div class="card stat-card p-3">
+    <h6>Evaluación walk-forward incluida en el último artefacto</h6>
+    {% if w %}
+    <p class="small mb-1">Pronóstico del objetivo {{ w.objetivo }}: {{ w.modelo.sorteos }} sorteos evaluados antes del corte, con datos solo anteriores a cada uno. Es distinta del seguimiento de arriba.</p>
+    <p class="small mb-0">Log Loss {{ '%.5f'|format(w.modelo.log_loss if w.modelo.log_loss is defined else w.modelo.log_loss_por_balota) }} frente a {{ '%.5f'|format(w.referencia_uniforme.log_loss if w.referencia_uniforme.log_loss is defined else w.referencia_uniforme.log_loss_por_balota) }} (uniforme) ·
+        {{ 'el modelo no supera a la referencia uniforme' if w.veredicto == 'el_modelo_no_supera_a_la_referencia_uniforme' else 'el modelo tuvo menor Log Loss y Brier en ese histórico (sin significancia evaluada)' }}.</p>
+    {% else %}<p class="small text-muted mb-0">Todavía no hay pronósticos guardados para este juego.</p>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
