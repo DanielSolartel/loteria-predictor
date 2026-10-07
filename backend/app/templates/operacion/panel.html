@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Panel diario{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Panel diario</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/rendimiento"><i class="bi bi-graph-up me-1"></i>Rendimiento</a>
+</div>
+<div class="alert alert-warning py-2 small">
+    <strong>Pronósticos experimentales, no acreditados.</strong> Sirven para seguir su comportamiento en los sorteos
+    que van llegando; no son una recomendación de apuesta ni demuestran ventaja. <code>AUTORIZA_EVALUACION = False</code>.
+</div>
+{% if aviso_registro %}<div class="alert alert-danger py-2 small">El registro de ejecuciones no se pudo leer: {{ aviso_registro }}</div>{% endif %}
+
+<div class="card stat-card p-3 mb-3">
+    <h6 class="mb-1">Los cuatro juegos</h6>
+    <p class="small text-muted mb-2">«Generar con datos locales» usa solo el histórico ya cargado y no escribe sorteos. «Actualizar datos y generar» importa antes los sorteos nuevos desde el origen. Ninguna se ejecuta al abrir esta página; solo funcionan desde esta misma máquina.</p>
+    <div class="d-flex flex-wrap gap-2">
+        {% for modo, etiqueta in modos.items() %}
+        <form method="post" action="/operacion/ejecutar" class="m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}">
+            <input type="hidden" name="juego" value="todos"><input type="hidden" name="modo" value="{{ modo }}">
+            <button class="btn btn-sm {% if modo == 'actualizar' %}btn-primary{% else %}btn-outline-primary{% endif %}" {% if not db_conectada %}disabled{% endif %}>{{ etiqueta }} (todos)</button>
+        </form>
+        {% endfor %}
+    </div>
+    {% if not db_conectada %}<div class="small text-danger mt-2">Sin conexión a la base de datos: el panel muestra lo guardado, pero no se puede generar ni actualizar.</div>{% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+{% for j in juegos %}
+    <div class="col-lg-6"><div class="card stat-card p-3 h-100 tarjeta-juego" id="juego-{{ j.slug }}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0">{{ j.nombre }}</h5>
+            {% set colores = {'ok': 'bg-success', 'atencion': 'bg-warning text-dark', 'error': 'bg-danger', 'en_curso': 'bg-info text-dark'} %}
+            {% set textos = {'ok': 'Al día', 'atencion': 'Requiere atención', 'error': 'Error', 'en_curso': 'Ejecución en curso'} %}
+            <span class="badge {{ colores[j.estado] }}">{{ textos[j.estado] }}</span>
+        </div>
+        {% if j.error %}<div class="alert alert-danger py-2 small mb-2">{{ j.error }}</div>{% endif %}
+        {% if j.activa %}<div class="alert alert-info py-2 small mb-2">Ejecución en curso: <a href="/operacion/ejecuciones/{{ j.activa }}">ver progreso</a>.</div>{% endif %}
+
+        {% set h = j.historico %}
+        <dl class="row small mb-2">
+            <dt class="col-5">Último sorteo cargado</dt>
+            <dd class="col-7">{% if h and h.ultimo_sorteo %}{{ h.ultimo_sorteo }} · {{ h.fecha }}{% elif h %}sin sorteos{% else %}—{% endif %}</dd>
+            <dt class="col-5">Histórico</dt>
+            <dd class="col-7">{% if h %}{{ h.sorteos }} sorteos{% if h.huecos %} · {{ h.huecos }} hueco(s) ({{ h.cobertura }} % completo){% else %} · sin huecos{% endif %}
+                <br><span class="{% if h.frescura.estado == 'desactualizado' %}text-danger{% else %}text-muted{% endif %}">{{ h.frescura.mensaje }}</span>{% else %}no disponible{% endif %}</dd>
+        </dl>
+
+        {% set p = j.pronostico %}
+        {% if p %}
+        <div class="mb-2">
+            <div class="small text-muted">Pronóstico actual · objetivo sorteo {{ p.objetivo }}{% if p.versiones and p.versiones > 1 %} · versión {{ p.version }} de {{ p.versiones }}{% endif %}</div>
+            {% if p.pares is defined %}{% for x in p.pares %}<span class="badge bg-light text-dark border me-1">{{ x[0] }} {{ x[1] }}</span>{% endfor %}
+            {% else %}{% for n in p.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}{% if p.superbalota %}<span class="numero-bolita superbalota-bolita" title="superbalota">{{ p.superbalota }}</span>{% endif %}{% endif %}
+        </div>
+        {% set o = j.observado %}
+        {% if o %}
+        <p class="small mb-1"><strong>Resultado:</strong>
+            {% if o.estado == 'observado' %}conocido ({{ o.fecha }}) ·
+                {% if o.coincidencias.pares is defined %}{{ o.coincidencias.pares }} de {{ o.coincidencias.de }} pares{% else %}{{ o.coincidencias.numeros }} de {{ o.coincidencias.de }} números{% if o.coincidencias.superbalota is defined %}, superbalota {{ 'sí' if o.coincidencias.superbalota else 'no' }}{% endif %}{% endif %}
+            {% elif o.estado == 'pendiente' %}pendiente{% else %}no corresponde ({{ o.motivo }}){% endif %}</p>
+        {% set hc = (o.historico_hasta_el_corte or {}).estado %}
+        <p class="small mb-2"><strong>Histórico hasta el corte:</strong>
+            {% if hc == 'coincide' %}<span class="text-success">coincide</span>{% elif hc == 'cambio' %}<span class="text-danger">cambió desde que se generó</span>{% else %}<span class="text-warning-emphasis">no disponible para verificar</span>{% endif %}</p>
+        {% endif %}
+        {% else %}
+        <p class="small text-muted mb-2">Todavía no hay pronósticos guardados.</p>
+        {% endif %}
+
+        {% set u = j.ultima_ejecucion %}
+        <p class="small mb-2"><strong>Última ejecución:</strong>
+            {% if u %}<a href="/operacion/ejecuciones/{{ u.id }}">{{ u.iniciada_en[:16]|replace('T', ' ') }}</a> · {{ modos.get(u.modo, u.modo) }} ·
+                {{ {'ok': 'completada', 'fallo': 'falló', 'datos_insuficientes': 'datos insuficientes', 'pendiente': 'pendiente', 'en_curso': 'en curso', 'interrumpido': 'interrumpida'}.get(u.resultado.estado, u.resultado.estado) }}
+                {% if u.resultado.pronostico %}({{ 'pronóstico reutilizado' if u.resultado.pronostico.reutilizado else 'pronóstico nuevo' }}){% endif %}
+            {% else %}ninguna registrada{% endif %}</p>
+        {% for m in j.atencion %}<div class="alert alert-warning py-1 px-2 small mb-1">{{ m }}</div>{% endfor %}
+
+        <div class="d-flex flex-wrap gap-2 mt-auto pt-2">
+            {% for modo, etiqueta in modos.items() %}
+            <form method="post" action="/operacion/ejecutar" class="m-0">
+                <input type="hidden" name="token_local" value="{{ token_local }}">
+                <input type="hidden" name="juego" value="{{ j.codigo }}"><input type="hidden" name="modo" value="{{ modo }}">
+                <button class="btn btn-sm btn-outline-primary" {% if not db_conectada or j.activa %}disabled{% endif %}>{{ etiqueta }}</button>
+            </form>
+            {% endfor %}
+        </div>
+        <div class="small mt-2">
+            <a href="/pronosticos/{{ j.slug }}">Detalle del pronóstico</a> ·
+            <a href="/estadisticas/{{ j.slug }}/resumen">Estadísticas</a> ·
+            <a href="/rendimiento?juego={{ j.codigo }}">Rendimiento</a>
+        </div>
+        {% if p or j.temporales or j.ilegibles %}
+        <details class="small mt-1"><summary class="text-muted">Trazabilidad</summary>
+            {% if p %}Identificador <code>{{ p.identificador[:16] }}…</code> · corte {{ p.corte }} · generado {{ p.generado_en }} (reloj local).{% endif %}
+            {% if j.temporales %}<br>{{ j.temporales }} temporal(es) de escrituras interrumpidas en el almacén (no son pronósticos; no se borran solos).{% endif %}
+            {% if j.ilegibles %}<br>{{ j.ilegibles }} artefacto(s) ilegible(s) o alterado(s).{% endif %}
+        </details>
+        {% endif %}
+    </div></div>
+{% endfor %}
+</div>
+
+<div class="card stat-card p-3">
+    <h6>Ejecuciones recientes</h6>
+    {% if ejecuciones_recientes %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Inicio</th><th>Acción</th><th>Juegos</th><th>Estado</th><th></th></tr></thead><tbody>
+        {% for e in ejecuciones_recientes %}<tr>
+            <td>{{ (e.iniciada_en or '—')[:19]|replace('T', ' ') }}</td><td>{{ modos.get(e.modo, e.modo) }} <span class="text-muted">({{ e.origen or '—' }})</span></td>
+            <td>{{ (e.orden or [])|length }}</td>
+            <td>{{ {'exito': 'éxito', 'parcial': 'parcial', 'fallo': 'fallo', 'en_curso': 'en curso', 'interrumpida': 'interrumpida', 'ilegible': 'registro ilegible'}.get(e.estado, e.estado) }}</td>
+            <td><a href="/operacion/ejecuciones/{{ e.id }}">ver</a></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<p class="small text-muted mb-0">Todavía no hay ejecuciones registradas.</p>{% endif %}
+</div>
+{% endblock %}

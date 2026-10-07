@@ -138,6 +138,13 @@ def _metricas_objetivo(distribucion: dict, objetivo: Sequence) -> dict:
             "coincidencias_de_pares_por_sorteo": coincidencias(multiconjunto_mas_probable(distribucion), objetivo)}
 
 
+def metricas_de_objetivo(distribucion: dict, objetivo: Sequence) -> dict:
+    """Metricas de un objetivo ColorLoto con una distribucion de pares dada
+    (la misma definicion que usa la evaluacion walk-forward). Producto 3 la
+    usa con las probabilidades guardadas en el artefacto."""
+    return _metricas_objetivo(distribucion, objetivo)
+
+
 # ---------------------------------------------------------------------------
 # Historico, identidad y linea completa
 # ---------------------------------------------------------------------------

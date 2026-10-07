@@ -485,12 +485,13 @@ def test_h100_no_fija_la_altura_al_imprimir(cliente, entorno):
 # ---------------------------------------------------------------------------
 
 def test_modulo_v1_y_almacen_sin_cambios():
-    """El modulo de la linea v1 y el almacen se conservan byte a byte."""
+    """El modulo de la linea v1 y la interfaz del almacen se conservan byte a
+    byte. La implementacion del almacen cambio en Producto 3 (issue #83:
+    publicacion con temporal y `os.link`); su compatibilidad con los
+    artefactos existentes se prueba en `test_producto3_almacen.py`."""
     huellas = {
         "app/application/ml/pronostico_experimental.py":
             "5bd9bb544d6ae3ffe350b035370b37f3b96217a648c5ee6f0d276a61f5cfd17c",
-        "app/infrastructure/storage/pronostico_experimental_file_store.py":
-            "e1fd24875d2c0a4fcfb933cd0db817001c1d4a6dd56652236ef423c2600e2baa",
         "app/application/interfaces/pronostico_experimental_store.py":
             "45ce749b6c162ae4f91eb288e1a7761d4584bb3b33b79a3a362d36c349c691d0",
     }

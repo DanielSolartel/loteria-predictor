@@ -11,7 +11,11 @@ comparten exactamente la misma lógica de negocio.
 from __future__ import annotations
 
 
+import threading
+from contextlib import contextmanager
+
 from fastapi import Depends
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.application.use_cases.editar_sorteo import EditarSorteo
@@ -33,13 +37,17 @@ from app.application.use_cases.pronostico_experimental import (
     GenerarPronosticoExperimental,
     VerificarPronosticoExperimental,
 )
+from app.application.use_cases.operacion_diaria import DependenciasDeJuego, OperacionDiaria
+from app.application.use_cases.panel_diario import ConsultarPanelDiario
 from app.application.use_cases.registrar_sorteo import RegistrarSorteo
+from app.application.use_cases.rendimiento import ConsultarRendimiento
 from app.application.use_cases.reimportar_sorteo import ReimportarSorteo
 from app.application.use_cases.reprocesar_sorteos_desde_html import ReprocesarSorteosDesdeHtml
 from app.application.use_cases.sincronizar_sorteos import SincronizarSorteos
 from app.application.use_cases.validar_integridad import ValidarIntegridadDatos
 from app.core.config import get_settings
 from app.infrastructure.connectors.registry import ConnectorRegistry
+from app.infrastructure.db import session as db_session
 from app.infrastructure.db.session import get_db
 from app.infrastructure.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.infrastructure.repositories.color_repository_sqlalchemy import ColorRepositorySQLAlchemy
@@ -53,6 +61,7 @@ from app.infrastructure.repositories.sincronizacion_repository_sqlalchemy import
 )
 from app.infrastructure.repositories.sorteo_repository_sqlalchemy import SorteoRepositorySQLAlchemy
 from app.infrastructure.storage.html_file_storage import HtmlFileStorage
+from app.infrastructure.storage.operacion_file_store import CerrojoPorJuego, RegistroEjecucionesArchivo
 from app.infrastructure.storage.pronostico_experimental_file_store import PronosticoExperimentalFileStore
 
 # Un único HtmlStorage y un único ConnectorRegistry para todo el
@@ -317,3 +326,77 @@ def get_comparar_resultados(
     historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
 ) -> CompararConResultadosObservados:
     return CompararConResultadosObservados(almacen, juego_repo, historico_repo)
+
+
+# ---------------------------------------------------------------------------
+# Producto 3: operacion diaria, panel y rendimiento
+# ---------------------------------------------------------------------------
+
+@contextmanager
+def abrir_dependencias_de_operacion(codigo_juego: str, modo: str):
+    """Dependencias de UN juego para la operacion diaria, con su PROPIA
+    sesion (cada trabajador abre la suya; nunca se comparte entre hilos).
+    En modo `local` la transaccion es de solo lectura (PostgreSQL rechaza
+    cualquier escritura) y termina en ROLLBACK. En modo `actualizar` se usa
+    `SincronizarSorteos`, que confirma sorteo a sorteo como en Importacion."""
+    session = db_session.SessionLocal()
+    try:
+        if modo == "local":
+            session.execute(text("SET TRANSACTION READ ONLY"))
+        juegos = JuegoRepositorySQLAlchemy(session)
+        resultados = ResultadosHistoricosRepositorySQLAlchemy(session)
+        sincronizar = None
+        if modo == "actualizar":
+            colores = ColorRepositorySQLAlchemy(session)
+            caso = SincronizarSorteos(
+                juego_repository=juegos, sorteo_repository=SorteoRepositorySQLAlchemy(session),
+                sincronizacion_repository=SincronizacionRepositorySQLAlchemy(session), color_repository=colores,
+                game_factory=GameFactory(color_repository=colores), obtener_conector=_connector_registry.obtener,
+                unit_of_work=SqlAlchemyUnitOfWork(session),
+                estadistica_repository=EstadisticaRepositorySQLAlchemy(session))
+            sincronizar = caso.ejecutar
+        yield DependenciasDeJuego(juegos, resultados, sincronizar)
+        if modo == "local":
+            session.rollback()
+        else:
+            session.commit()
+    except BaseException:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def get_operacion_diaria() -> OperacionDiaria:
+    ajustes = get_settings()
+    return OperacionDiaria(PronosticoExperimentalFileStore(ajustes.directorio_pronosticos_experimentales),
+                           RegistroEjecucionesArchivo(ajustes.directorio_operacion),
+                           CerrojoPorJuego(ajustes.directorio_operacion), abrir_dependencias_de_operacion)
+
+
+def get_consultar_panel(
+    almacen: PronosticoExperimentalFileStore = Depends(get_almacen_pronosticos),
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+    operacion: OperacionDiaria = Depends(get_operacion_diaria),
+) -> ConsultarPanelDiario:
+    return ConsultarPanelDiario(almacen, juego_repo, historico_repo, operacion)
+
+
+def get_consultar_rendimiento(
+    almacen: PronosticoExperimentalFileStore = Depends(get_almacen_pronosticos),
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+) -> ConsultarRendimiento:
+    return ConsultarRendimiento(almacen, juego_repo, historico_repo)
+
+
+def _lanzar_en_hilo(funcion, inicio) -> None:
+    """La web no espera al entrenamiento: un hilo por ejecucion, que abre
+    sus propias sesiones por juego. Sin programador ni servicios externos."""
+    threading.Thread(target=funcion, args=(inicio,), daemon=True,
+                     name=f"operacion-{inicio.ejecucion['id']}").start()
+
+
+def get_lanzador_de_operacion():
+    return _lanzar_en_hilo
