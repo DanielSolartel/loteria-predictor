@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set colores = juego == 'COLORLOTO' %}
+{% set historicos = {'coincide': 'coincide', 'cambio': 'cambió', 'no_disponible': 'no disponible', 'no_valido': 'no válido'} %}
+{% block title %}Seguimiento de carteras — {{ nombres[juego] }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Seguimiento de carteras · {{ nombres[juego] }}</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/carteras/{{ slugs[juego] }}">{{ nombres[juego] }}</a>
+</div>
+<div class="alert alert-warning py-2 small">Aciertos OBSERVADOS en sorteos reales cargados: no se mezclan con frecuencias simuladas ni con pérdidas del modelo. {{ datos.nota }} Una diferencia favorable en pocos objetivos no demuestra ventaja. {% if datos.base == 'no_disponible' %}<strong>Base no disponible:</strong> no se pueden consultar resultados.{% endif %}</div>
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-6 col-md-4"><label class="form-label small mb-0" for="f-linea">Línea</label><select class="form-select form-select-sm" id="f-linea" name="linea"><option value="">Todas</option>{% for l in todas_las_lineas %}<option value="{{ l }}" {% if l == linea %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-4"><label class="form-label small mb-0" for="f-tipo">Comparar entre líneas</label><select class="form-select form-select-sm" id="f-tipo" name="tipo">{% for t in ('seguimiento', 'retrospectiva') %}<option value="{{ t }}" {% if t == tipo %}selected{% endif %}>{{ {'seguimiento': 'Seguimiento (objetivo no cargado al generar)', 'retrospectiva': 'Reconstrucciones retrospectivas'}[t] }}</option>{% endfor %}</select></div>
+    <div class="col-12 col-md-2"><button class="btn btn-sm btn-primary w-100">Aplicar</button></div>
+</form>
+{% if not datos.lineas %}<p class="small text-muted">Todavía no hay carteras de este juego.</p>{% endif %}
+{% if datos.comparacion %}{% set cmp = datos.comparacion %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3"><h6>Comparación entre líneas ({{ cmp.tipo }})</h6>
+    <p class="small text-muted mb-1">{{ cmp.nota|capitalize }}.</p>
+    {% for gr in cmp.grupos %}<p class="small mb-1"><strong>{{ gr.combinaciones_por_cartera }} combinación(es) por cartera:</strong> {{ gr.lineas|join(', ') }} · objetivos comunes: {% if gr.objetivos_comunes %}{{ gr.objetivos_comunes|join(', ') }}{% else %}ninguno{% endif %}</p>
+        {% if gr.maximos %}<div class="tabla-desplazable"><table class="table table-sm small mb-2"><thead><tr><th>Línea</th>{% for o in gr.objetivos_comunes %}<th class="text-end">{{ o }}</th>{% endfor %}</tr></thead><tbody>
+        {% for l, valores in gr.maximos.items() %}<tr><td>{{ l }}</td>{% for v in valores %}<td class="text-end">{{ v }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endif %}
+    {% else %}<p class="small text-muted mb-0">Sin líneas con objetivos incluidos de este tipo.</p>{% endfor %}
+</div>
+{% endif %}
+{% for nombre, s in datos.lineas.items() %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3" id="linea-{{ nombre }}">
+    <h6>Línea <code>{{ nombre }}</code></h6>
+    <p class="small text-muted mb-2">{{ s.politica|capitalize }}. {{ s.aviso|capitalize }}.{% if s.ilegibles_sin_objetivo %} {{ s.ilegibles_sin_objetivo }} archivo(s) ilegible(s) sin objetivo: sus objetivos posibles quedan excluidos.{% endif %}</p>
+    {% for t, agg in s.por_tipo.items() %}
+    <p class="small mb-1"><strong>{{ {'seguimiento': 'Seguimiento', 'retrospectiva': 'Reconstrucciones retrospectivas'}[t] }}:</strong> {{ agg.objetivos }} objetivo(s) · incluidos {{ agg.incluidos }} · pendientes {{ agg.pendientes }} · excluidos {{ agg.excluidos }}{% if agg.motivos_de_exclusion %} ({% for m, n in agg.motivos_de_exclusion.items() %}{{ m|replace('_', ' ') }}: {{ n }}{% if not loop.last %}; {% endif %}{% endfor %}){% endif %}{% if agg.maximos_observados %} — máximo observado por cartera: {% for m, n in agg.maximos_observados.items() %}{{ m }} en {{ n }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</p>
+    {% endfor %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Objetivo</th><th>Tipo</th><th>Estado</th><th>Histórico hasta el corte</th><th>Generada (UTC)</th><th class="text-end">Máximo</th><th>Por línea</th><th>Versiones</th></tr></thead><tbody>
+        {% for f in s.filas %}<tr><td>{% if f.identificador %}<a href="/carteras/guardadas/{{ f.identificador }}">{{ f.objetivo }}</a>{% else %}{{ f.objetivo }}{% endif %}</td><td>{{ f.tipo or '—' }}</td>
+            <td>{{ {'incluido': 'incluido', 'pendiente': 'pendiente', 'excluido': 'excluida', 'no_corresponde': 'sin resultado (hueco)'}.get(f.estado, f.estado|replace('_', ' ')) }}{% if f.motivo and f.estado != 'incluido' %}<div class="text-muted">{{ f.motivo|replace('_', ' ') }}</div>{% endif %}</td>
+            <td>{{ historicos.get(f.historico_hasta_el_corte, f.historico_hasta_el_corte or '—') }}</td>
+            <td>{{ (f.generado_en or '—')[:19]|replace('T', ' ') }}</td>
+            <td class="text-end">{% if f.aciertos %}{{ f.aciertos.maximo }}{% if f.aciertos.superbalota_en_alguna_linea %} + SB{% endif %}{% else %}—{% endif %}</td>
+            <td>{% if f.aciertos %}{% for x in f.aciertos.por_linea %}{{ x.aciertos }}{% if x.superbalota %}+SB{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}{% else %}—{% endif %}</td>
+            <td>{{ 'primera de ' ~ f.versiones if f.versiones > 1 else '1' }}</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endfor %}
+{% endblock %}

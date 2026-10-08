@@ -1,0 +1,28 @@
+{# e: ejecucion de carteras (comparacion, cartera, simulacion o carteras_configuradas) #}
+<div id="estado-ejecucion" {% if e.estado == 'en_curso' %}hx-get="/carteras/ejecuciones/{{ e.id }}/estado" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+    {% set colores = {'exito': 'alert-success', 'parcial': 'alert-warning', 'fallo': 'alert-danger', 'en_curso': 'alert-info', 'interrumpida': 'alert-danger'} %}
+    {% set textos = {'exito': 'Terminado.', 'parcial': 'Terminado en parte: algún juego necesita atención.', 'fallo': 'Falló: ningún juego terminó.', 'en_curso': 'En curso. Esta página se actualiza sola; también puedes recargarla o abrirla en otra pestaña sin iniciar otro trabajo.', 'interrumpida': 'Interrumpido.'} %}
+    <div class="alert {{ colores.get(e.estado, 'alert-secondary') }} py-2">
+        <strong>{{ textos.get(e.estado, e.estado) }}</strong>{% if e.mensaje %}<div class="small">{{ e.mensaje }}</div>{% endif %}
+        <div class="small text-muted">{{ trabajos.get(e.tipo, e.tipo) }} · iniciado {{ (e.iniciada_en or '')[:19]|replace('T', ' ') }} UTC{% if e.finalizada_en %} · terminado {{ e.finalizada_en[:19]|replace('T', ' ') }} UTC{% endif %} · origen: {{ e.origen }}</div>
+    </div>
+    <div class="row g-3">
+    {% for codigo in (e.orden or e.juegos.keys()|list) %}{% set r = e.juegos[codigo] %}
+        <div class="col-lg-6"><div class="card stat-card p-3 h-100" id="progreso-{{ codigo|lower }}">
+            <div class="d-flex justify-content-between"><h6>{{ nombres.get(codigo, codigo) }}</h6>
+                {% set b = {'terminado': ('bg-success', 'terminado'), 'reutilizado': ('bg-success', 'resultado ya existente'), 'parcial': ('bg-warning text-dark', 'parcial'), 'muestra_insuficiente': ('bg-warning text-dark', 'muestra insuficiente'), 'sin_configuracion': ('bg-secondary', 'sin configuración'), 'tiempo_agotado': ('bg-danger', 'tiempo agotado'), 'fallo': ('bg-danger', 'error'), 'pendiente': ('bg-secondary', 'pendiente'), 'en_curso': ('bg-info text-dark', 'en curso'), 'interrumpido': ('bg-danger', 'interrumpido'), 'base_no_disponible': ('bg-danger', 'base no disponible')}.get(r.estado, ('bg-secondary', r.estado)) %}
+                <span class="badge {{ b[0] }}">{{ b[1] }}</span></div>
+            {% if r.estado == 'en_curso' %}<p class="small mb-1">{{ {'obteniendo_datos': 'Obteniendo el histórico (una lectura)…', 'componente': 'Ajustando componentes', 'modelo': 'Evaluando candidatos', 'pesos': 'Aprendiendo los pesos del modelo combinado', 'fuente': 'Calculando el vector fuente', 'construccion': 'Construyendo la cartera', 'cartera_uniforme': 'Preparando la cartera uniforme de referencia', 'lote': 'Simulando', 'inicio': 'Iniciando…'}.get(r.fase, r.fase) }}{% if r.candidato %}: <strong>{{ r.candidato }}</strong>{% endif %}{% if r.bloque %}, bloque {{ r.bloque }} de {{ r.bloques }}{% endif %}{% if r.escenario %}: {{ escenarios.get(r.escenario, r.escenario) }}, {{ r.simulaciones }} de {{ r.de }}{% endif %}</p>{% endif %}
+            {% if r.mensaje %}<div class="alert alert-warning py-1 px-2 small mb-2">{{ r.mensaje }}</div>{% endif %}
+            {% if r.configuracion %}<p class="small mb-1">Configuración v{{ r.configuracion.version }} · línea <code>{{ r.configuracion.linea }}</code></p>{% endif %}
+            {% if r.corte %}<p class="small mb-1">Corte {{ r.corte }}{% if r.objetivo %} · objetivo {{ r.objetivo }}{% endif %} · {{ r.sorteos }} sorteos</p>{% endif %}
+            {% if r.estado == 'parcial' and r.obtenidas is defined %}<p class="small mb-1">Se obtuvieron {{ r.obtenidas }} de {{ r.solicitadas }} combinaciones en {{ r.intentos }} intentos: la cartera parcial no se publicó.</p>{% endif %}
+            {% if r.resultado and r.estado in ('terminado', 'reutilizado', 'parcial') %}
+                {% if r.tipo == 'comparacion' %}<p class="small mb-0">{{ estados_resumen.get(r.resumen, r.resumen) }} · <a href="/carteras/comparaciones/{{ r.resultado }}">abrir la comparación</a></p>
+                {% elif r.tipo == 'cartera' and r.estado != 'parcial' %}<p class="small mb-0">Línea <code>{{ r.linea }}</code> · <a href="/carteras/guardadas/{{ r.resultado }}{% if r.estado == 'reutilizado' %}?reutilizado=1{% endif %}">abrir la cartera</a></p>
+                {% elif r.tipo == 'simulacion' %}<p class="small mb-0"><a href="/carteras/simulaciones/{{ r.resultado }}{% if r.estado == 'reutilizado' %}?reutilizado=1{% endif %}">abrir la simulación</a></p>{% endif %}
+            {% endif %}
+        </div></div>
+    {% endfor %}
+    </div>
+</div>

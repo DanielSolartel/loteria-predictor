@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set rutas = {'comparacion': 'comparaciones', 'cartera': 'guardadas', 'simulacion': 'simulaciones'} %}
+{% block title %}Verificación{% endblock %}
+{% block content %}
+<h3>Verificación de la {{ {'comparacion': 'comparación', 'cartera': 'cartera', 'simulacion': 'simulación'}[tipo] }}</h3>
+<p class="small"><code>{{ clave }}</code> · <a href="/carteras/{{ rutas[tipo] }}/{{ clave }}">volver</a></p>
+<div class="card stat-card p-3"><table class="table table-sm small mb-0"><tbody>
+    <tr><th>1. Integridad del archivo</th><td>{{ 'correcta (sello y huella coherentes)' if r.integridad == 'correcta' else 'alterado: ' ~ r.motivo }}</td></tr>
+    <tr><th>2. Reproducción</th><td>{% set x = r.reproduccion %}{% if x is none %}—{% elif x.estado == 'no_reproducible' %}<span class="text-danger">no reproducible: {{ x.motivo }}</span>{% else %}{{ 'huella exacta' if x.huella_exacta else 'huella distinta' }}{% if x.maxima_diferencia_de_probabilidad is defined %} · mismas combinaciones: {{ 'sí' if x.mismas_combinaciones else 'no' }} · máxima diferencia de probabilidad {{ x.maxima_diferencia_de_probabilidad }}{% elif x.maxima_diferencia_de_log_loss is defined %} · máxima diferencia de Log Loss {{ x.maxima_diferencia_de_log_loss }}{% elif x.mismos_conteos is defined %} · mismos conteos: {{ 'sí' if x.mismos_conteos else 'no' }}{% endif %}{% endif %}
+        {% if r.mismo_entorno is defined %}<div class="text-muted">{{ 'Mismo entorno que al generar.' if r.mismo_entorno else 'Entorno distinto del guardado: no se promete identidad bit a bit.' }}</div>{% endif %}</td></tr>
+    {% if tipo != 'simulacion' %}<tr><th>3. Histórico original frente a la base actual</th><td>{% set b = r.base_actual %}{% if b is none %}—{% else %}{{ {'coincide': 'coincide', 'cambio': 'cambió', 'no_disponible': 'no disponible', 'no_valido': 'no válido'}.get(b.historico_hasta_el_corte, b.historico_hasta_el_corte) }}{% if b.base_avanzo %} · la base avanzó {{ b.nuevos_desde_el_corte }} sorteo(s){% endif %}{% if b.estado in ('pendiente', 'observado', 'no_corresponde') %} · objetivo: {{ b.estado|replace('_', ' ') }}{% endif %}{% if b.motivo %} — {{ b.motivo }}{% endif %}{% endif %}
+        <div class="text-muted">Que la instantánea se reproduzca no significa que coincida con una corrección posterior de la base.</div></td></tr>{% endif %}
+</tbody></table></div>
+{% endblock %}

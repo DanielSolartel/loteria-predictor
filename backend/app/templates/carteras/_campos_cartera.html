@@ -1,0 +1,9 @@
+{# Campos comunes de «Generar una cartera» y «Guardar configuración». prefijo: id unico; m: modelo preseleccionado. #}
+<div><label class="form-label small mb-0" for="{{ prefijo }}-modelo">Modelo</label>
+    <select class="form-select form-select-sm" id="{{ prefijo }}-modelo" name="modelo">{% for x in d.modelos or [] %}<option value="{{ x.id }}" {% if x.id == m %}selected{% endif %} {% if not x.puede_generar %}disabled{% endif %}>{{ x.nombre }}{% if not x.puede_generar %} (necesita {{ x.requiere_sorteos }} sorteos){% endif %}</option>{% endfor %}</select></div>
+<div><label class="form-label small mb-0" for="{{ prefijo }}-cantidad">Combinaciones</label>
+    <input class="form-control form-control-sm" type="number" id="{{ prefijo }}-cantidad" name="cantidad" min="1" max="{{ cartera.cantidad[1] }}" value="{{ cantidad or cartera.cantidad_predeterminada }}" style="width: 6rem"></div>
+<div><label class="form-label small mb-0" for="{{ prefijo }}-diversidad">Diversidad</label>
+    <select class="form-select form-select-sm" id="{{ prefijo }}-diversidad" name="diversidad">{% for x in cartera.diversidades %}<option value="{{ x }}" {% if x == diversidad %}selected{% endif %}>{{ {'libre': 'libre (sin duplicados completos)', 'limitada': ('limitada (≤ ' ~ cartera.limite_coincidencias_colorloto ~ ' coincidencias)') if juego == 'COLORLOTO' else ('limitada (≤ ' ~ cartera.limite_numeros_compartidos ~ ' números compartidos)')}[x] }}</option>{% endfor %}</select></div>
+<div><label class="form-label small mb-0" for="{{ prefijo }}-semilla">Semilla</label>
+    <input class="form-control form-control-sm" type="number" id="{{ prefijo }}-semilla" name="semilla" min="0" max="4294967295" value="{{ semilla if semilla is not none else cartera.semilla_predeterminada }}" style="width: 8rem"></div>

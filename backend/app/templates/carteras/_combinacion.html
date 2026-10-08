@@ -1,0 +1,3 @@
+{# c: combinacion; colores: ColorLoto. Numeros repetidos de ColorLoto marcados (mismo numero con otro color). #}
+{% if colores %}{% set numeros = c.pares|map('first')|list %}{% for n, color in c.pares %}<span class="me-2 text-nowrap carteras-par{% if numeros.count(n) > 1 %} carteras-repetido{% endif %}"><span class="color-swatch color-{{ color|lower }}" title="{{ color }}"></span>{{ n }} <span class="small text-muted">{{ color|lower }}</span></span>{% endfor %}
+{% else %}{% for n in c.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}{% if c.superbalota is defined and c.superbalota is not none %}<span class="numero-bolita superbalota-bolita" title="superbalota">{{ c.superbalota }}</span>{% endif %}{% endif %}

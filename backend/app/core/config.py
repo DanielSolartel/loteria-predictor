@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     # almacenes de Productos 1-3.
     directorio_laboratorio_modelos: str = "storage/laboratorio"
 
+    # Producto 5: modelo combinado, carteras y simulacion (comparaciones,
+    # carteras, simulaciones, configuraciones, progreso y cerrojos), separado
+    # de los almacenes de Productos 1-4. Tiempo maximo, en segundos, de cada
+    # trabajo del proceso trabajador (por juego).
+    directorio_carteras_modelos: str = "storage/carteras"
+    tiempo_maximo_trabajador_carteras: int = 300
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set colores = a.juego == 'COLORLOTO' %}{% set ex = a.controles_exactos %}
+{% block title %}Simulación — {{ nombres[a.juego] }} objetivo {{ a.objetivo }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Simulación · {{ nombres[a.juego] }} · objetivo {{ a.objetivo }}</h3>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="/carteras/guardadas/{{ a.identidad.cartera }}">Cartera elegida</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras/simulaciones/{{ g.identificador }}/exportar.csv">Exportar CSV</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras/simulaciones/{{ g.identificador }}/exportar.json">Exportar JSON</a></div>
+</div>
+{% if reutilizado %}<div class="alert alert-info py-2 small">Resultado ya existente: la misma entrada ya se había simulado; se muestra lo guardado.</div>{% endif %}
+<div class="alert alert-warning py-2 small"><strong>Simulación, no resultados reales.</strong> {{ a.nota }}</div>
+<div class="row g-3 mb-3">
+{% for nombre in ('elegida', 'uniforme') %}{% set k = a.carteras[nombre] %}
+    <div class="col-lg-6"><div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 h-100">
+        <h6>{{ 'Cartera elegida' if nombre == 'elegida' else 'Cartera uniforme de referencia' }}</h6>
+        <p class="small mb-1">{{ k.nombre }} · línea <code>{{ k.linea }}</code> · <a href="/carteras/guardadas/{{ k.clave }}">abrir</a></p>
+        <table class="table table-sm mb-0"><tbody>{% for c in k.combinaciones %}<tr><td class="small">{{ c.linea }}</td><td>{% include "carteras/_combinacion.html" %}</td></tr>{% endfor %}</tbody></table>
+    </div></div>
+{% endfor %}
+</div>
+{% if identicas %}<div class="alert alert-secondary py-2 small"><strong>Las dos carteras tienen las mismas combinaciones</strong> (por ejemplo, porque el modelo combinado eligió peso 1 para la uniforme): la comparación emparejada empata en todos los sorteos.</div>{% endif %}
+<p class="small text-muted">Las dos carteras tienen el mismo juego, objetivo, tamaño ({{ a.carteras.elegida.parametros.cantidad }}), diversidad ({{ a.carteras.elegida.parametros.diversidad }}) y semilla, y se miden sobre los MISMOS {{ a.identidad.simulaciones }} sorteos sintéticos en cada escenario (semilla de simulación {{ a.identidad.semilla }}).</p>
+{% for escenario in escenarios if escenario in a.resultados %}{% set r = a.resultados[escenario] %}{% set e = r.carteras.elegida %}{% set u = r.carteras.uniforme %}{% set p = r.emparejado %}
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3" id="escenario-{{ escenario }}">
+    <div class="carteras-cabecera"><h6>{{ escenarios.get(escenario, escenario) }}</h6>
+    <p class="small mb-1">{{ r.supuestos.numeros_o_pares|capitalize }}.{% if r.supuestos.superbalota %} Superbalota: {{ r.supuestos.superbalota }}.{% endif %}</p>
+    {% if r.supuestos.advertencia %}<div class="alert alert-secondary py-1 px-2 small mb-2">{{ r.supuestos.advertencia|capitalize }}.</div>{% endif %}</div>
+    {% set gr = graficas[escenario] %}
+    <h6 class="small">Mejor resultado de la cartera en cada sorteo simulado ({{ 'coincidencias' if colores else 'números principales' }})</h6>
+    <svg viewBox="0 0 {{ gr.ancho }} {{ gr.alto }}" role="img" aria-labelledby="titulo-{{ escenario }}" style="width: 100%; max-width: {{ gr.ancho }}px; height: auto;">
+        <title id="titulo-{{ escenario }}">Distribución del máximo por sorteo: cartera elegida (oscuro) y uniforme (claro); la tabla siguiente tiene los mismos valores</title>
+        <line x1="{{ gr.margen }}" y1="{{ gr.alto - gr.margen }}" x2="{{ gr.ancho - gr.margen }}" y2="{{ gr.alto - gr.margen }}" stroke="#6c757d"/>
+        {% for b in gr.rects %}<rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.ancho }}" height="{{ b.alto }}" fill="{{ '#4b3f8f' if b.serie == 0 else '#adb5bd' }}"><title>{{ b.nombre }}, máximo {{ b.etiqueta }}: {{ '%.4f'|format(b.valor) }}</title></rect>{% endfor %}
+        {% for x in gr.ejes %}<text x="{{ x.x }}" y="{{ gr.alto - gr.margen + 14 }}" font-size="11" text-anchor="middle" fill="#495057">{{ x.etiqueta }}</text>{% endfor %}
+        <rect x="{{ gr.ancho - 190 }}" y="6" width="10" height="10" fill="#4b3f8f"/><text x="{{ gr.ancho - 176 }}" y="15" font-size="11" fill="#495057">elegida</text>
+        <rect x="{{ gr.ancho - 110 }}" y="6" width="10" height="10" fill="#adb5bd"/><text x="{{ gr.ancho - 96 }}" y="15" font-size="11" fill="#495057">uniforme</text>
+    </svg>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-2">
+        <caption class="small">{{ e.maximo_de_la_cartera.definicion|capitalize }} ({{ r.simulaciones_efectivas }} sorteos simulados). Cero apariciones no significa imposibilidad.</caption>
+        <thead><tr><th>Máximo</th><th class="text-end">Elegida</th><th class="text-end">Frecuencia</th><th class="text-end">Uniforme</th><th class="text-end">Frecuencia</th>{% if ex.disponible and escenario == ex.escenario %}<th class="text-end">Exacta elegida</th><th class="text-end">Exacta uniforme</th>{% endif %}</tr></thead><tbody>
+        {% for n in e.maximo_de_la_cartera.conteos %}{% set i = loop.index0 %}<tr><td>{{ i }}</td><td class="text-end">{{ n }}</td><td class="text-end">{{ '%.4f'|format(n / e.maximo_de_la_cartera.denominador) }}</td><td class="text-end">{{ u.maximo_de_la_cartera.conteos[i] }}</td><td class="text-end">{{ '%.4f'|format(u.maximo_de_la_cartera.conteos[i] / u.maximo_de_la_cartera.denominador) }}</td>
+            {% if ex.disponible and escenario == ex.escenario %}<td class="text-end">{{ '%.6f'|format(ex.maximo_exacto.elegida.probabilidades[i]) }}</td><td class="text-end">{{ '%.6f'|format(ex.maximo_exacto.uniforme.probabilidades[i]) }}</td>{% endif %}</tr>{% endfor %}
+    </tbody></table></div>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-2">
+        <thead><tr><th>Al menos</th><th class="text-end">Elegida</th><th class="text-end">Uniforme</th><th class="text-end">Diferencia emparejada</th></tr></thead><tbody>
+        {% for umbral, x in e.al_menos.items() %}<tr><td>≥ {{ umbral }}</td><td class="text-end">{{ x.conteo }} / {{ x.denominador }} ({{ '%.4f'|format(x.frecuencia_simulada) }})</td><td class="text-end">{{ u.al_menos[umbral].conteo }} / {{ u.al_menos[umbral].denominador }} ({{ '%.4f'|format(u.al_menos[umbral].frecuencia_simulada) }})</td><td class="text-end">{{ '%+d'|format(p.diferencia_en_al_menos[umbral]) }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <p class="small mb-1"><strong>Medias:</strong> máximo por sorteo {{ '%.4f'|format(e.media_del_maximo) }} (elegida) frente a {{ '%.4f'|format(u.media_del_maximo) }} (uniforme); aciertos por combinación {{ '%.4f'|format(e.media_de_aciertos_por_combinacion) }} frente a {{ '%.4f'|format(u.media_de_aciertos_por_combinacion) }}.</p>
+    <p class="small mb-1"><strong>Comparación emparejada</strong> ({{ p.definicion }}): elegida mayor en {{ p.elegida_mayor }}, iguales en {{ p.iguales }}, uniforme mayor en {{ p.uniforme_mayor }} de {{ p.denominador }} sorteos; diferencia media del máximo {{ '%+.4f'|format(p.diferencia_media_del_maximo) }}.</p>
+    {% if e.superbalota %}{% set se, su = e.superbalota, u.superbalota %}
+    <p class="small mb-1"><strong>Superbalota (aparte):</strong> al menos una línea con la superbalota del sorteo en {{ se.al_menos_una_linea.conteo }} / {{ se.al_menos_una_linea.denominador }} (elegida) y {{ su.al_menos_una_linea.conteo }} / {{ su.al_menos_una_linea.denominador }} (uniforme).</p>
+    {% set tabla %}<table class="table table-sm small mb-0"><caption class="small">{{ se.definicion|capitalize }}.</caption><thead><tr><th>Máximo de números entre las líneas con superbalota</th><th class="text-end">Elegida</th><th class="text-end">Uniforme</th></tr></thead><tbody>{% for n in se.maximo_principal_entre_lineas_con_superbalota.conteos %}<tr><td>{{ loop.index0 }}</td><td class="text-end">{{ n }}</td><td class="text-end">{{ su.maximo_principal_entre_lineas_con_superbalota.conteos[loop.index0] }}</td></tr>{% endfor %}<tr><td>sin superbalota en ninguna línea</td><td class="text-end">{{ se.maximo_principal_entre_lineas_con_superbalota.sin_superbalota }}</td><td class="text-end">{{ su.maximo_principal_entre_lineas_con_superbalota.sin_superbalota }}</td></tr></tbody></table>{% endset %}
+    <details class="small detalle-bloques"><summary>Superbalota y máximo de números</summary>{{ tabla }}</details>
+    <div class="solo-impresion-bloque">{{ tabla }}</div>
+    {% endif %}
+    {% set tabla %}<table class="table table-sm small mb-0"><caption class="small">Filas: máximo de la elegida; columnas: máximo de la uniforme en el mismo sorteo.</caption><thead><tr><th></th>{% for x in p.tabla[0] %}<th class="text-end">{{ loop.index0 }}</th>{% endfor %}</tr></thead><tbody>{% for fila in p.tabla %}<tr><th>{{ loop.index0 }}</th>{% for x in fila %}<td class="text-end">{{ x }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>{% endset %}
+    <details class="small detalle-bloques"><summary>Tabla emparejada completa</summary>{{ tabla }}</details>
+    <div class="solo-impresion-bloque">{{ tabla }}</div>
+</div>
+{% endfor %}
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3" id="controles-exactos">
+    <h6>Controles exactos</h6>
+    {% if ex.disponible %}
+    <p class="small mb-1">Escenario {{ escenarios.get(ex.escenario, ex.escenario)|lower }}: {{ ex.espacio_de_combinaciones }} combinaciones posibles de números{% if ex.espacio_con_superbalota %} ({{ ex.espacio_con_superbalota }} con la superbalota){% endif %}. La distribución exacta del máximo de cada cartera se obtuvo enumerando todo el espacio.</p>
+    <p class="small mb-1"><strong>Hipergeométrica</strong> ({{ ex.hipergeometrica_una_combinacion.definicion }}): {% for x in ex.hipergeometrica_una_combinacion.probabilidades %}{{ loop.index0 }}: {{ '%.6f'|format(x) }}{% if not loop.last %} · {% endif %}{% endfor %}.</p>
+    <p class="small mb-1"><strong>Al menos (exacto):</strong> {% for umbral, x in ex.maximo_exacto.elegida.al_menos.items() %}≥ {{ umbral }}: {{ '%.6g'|format(x) }} (elegida) / {{ '%.6g'|format(ex.maximo_exacto.uniforme.al_menos[umbral]) }} (uniforme){% if not loop.last %} · {% endif %}{% endfor %}.</p>
+    {% if ex.superbalota %}<p class="small mb-0"><strong>Superbalota:</strong> {{ ex.superbalota.definicion }}; por línea {{ ex.superbalota.probabilidad_por_linea }}; al menos una línea {{ ex.superbalota.al_menos_una_linea.elegida }} (elegida) y {{ ex.superbalota.al_menos_una_linea.uniforme }} (uniforme).</p>{% endif %}
+    {% else %}<p class="small text-muted mb-0">{{ ex.motivo|capitalize }}.</p>{% endif %}
+</div>
+{% set trazabilidad %}<dl class="row mb-2 mt-2">
+        <dt class="col-sm-4">Clave</dt><dd class="col-sm-8"><code>{{ g.identificador }}</code></dd>
+        <dt class="col-sm-4">Carteras</dt><dd class="col-sm-8">elegida <code>{{ a.identidad.cartera }}</code><br>uniforme <code>{{ a.identidad.cartera_uniforme }}</code></dd>
+        <dt class="col-sm-4">Vector fuente</dt><dd class="col-sm-8"><code>{{ a.identidad.fuente_sha256 }}</code></dd>
+        <dt class="col-sm-4">Simulación</dt><dd class="col-sm-8">{{ a.identidad.version }} · {{ a.identidad.simulaciones }} sorteos · semilla {{ a.identidad.semilla }} · {{ a.identidad.algoritmo_rng }} · lotes de {{ a.ejecucion.lote }} (no cambian el resultado)</dd>
+        <dt class="col-sm-4">Entorno</dt><dd class="col-sm-8">{% for kk, v in a.identidad.entorno.items() %}{{ kk }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>
+        <dt class="col-sm-4">Ejecución</dt><dd class="col-sm-8">{{ a.ejecucion.iniciado_en[:19]|replace('T', ' ') }} a {{ a.ejecucion.terminado_en[:19]|replace('T', ' ') }} UTC</dd>
+    </dl>{% endset %}
+<details class="card stat-card p-3 mb-3 small carteras-desplegable"><summary><strong>Trazabilidad</strong></summary>
+    {{ trazabilidad }}
+    <form method="post" action="/carteras/simulaciones/{{ g.identificador }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-outline-secondary">Verificar (vuelve a simular con las carteras guardadas)</button></form>
+</details>
+<div class="card stat-card p-3 mb-3 small carteras-solo-impresion"><strong>Trazabilidad</strong>
+    {{ trazabilidad }}
+</div>
+{% endblock %}

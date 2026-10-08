@@ -5,7 +5,8 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
     <h3 class="mb-0">Panel diario</h3>
     <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/rendimiento"><i class="bi bi-graph-up me-1"></i>Rendimiento</a>
-        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio"><i class="bi bi-diagram-3 me-1"></i>Laboratorio de modelos</a></div>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio"><i class="bi bi-diagram-3 me-1"></i>Laboratorio de modelos</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras"><i class="bi bi-grid-3x3-gap me-1"></i>Carteras y simulación</a></div>
 </div>
 <div class="alert alert-warning py-2 small">
     <strong>Pronósticos experimentales, no acreditados.</strong> Sirven para seguir su comportamiento en los sorteos
@@ -26,6 +27,15 @@
         {% endfor %}
     </div>
     {% if not db_conectada %}<div class="small text-danger mt-2">Sin conexión a la base de datos: el panel muestra lo guardado, pero no se puede generar ni actualizar.</div>{% endif %}
+</div>
+
+<div class="card stat-card p-3 mb-3" id="carteras-configuradas">
+    <h6 class="mb-1">Carteras configuradas</h6>
+    <p class="small text-muted mb-2">Genera, para cada juego con configuración guardada en <a href="/carteras">Carteras y simulación</a>, la cartera de su modelo, cantidad, diversidad y semilla con el histórico local (una lectura por juego). Corre en segundo plano con progreso por juego; los juegos sin configuración se indican, no se inventa una.</p>
+    <form method="post" action="/carteras/configuradas" class="m-0">
+        <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="todos">
+        <button class="btn btn-sm btn-outline-primary" {% if not db_conectada %}disabled{% endif %}><i class="bi bi-grid-3x3-gap me-1"></i>Generar carteras configuradas</button>
+    </form>
 </div>
 
 <div class="row g-3 mb-3">

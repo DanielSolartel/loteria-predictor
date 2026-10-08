@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set colores = i.juego == 'COLORLOTO' %}
+{% block title %}Modelo combinado — {{ nombres[i.juego] }} corte {{ i.datos.corte }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Modelo combinado · {{ nombres[i.juego] }} · corte {{ i.datos.corte }}</h3>
+    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/carteras/{{ slugs[i.juego] }}">{{ nombres[i.juego] }}</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras/comparaciones/{{ clave }}/exportar.json">Exportar JSON</a></div>
+</div>
+{% include "carteras/_aviso.html" %}
+{% if base.estado == 'base_no_disponible' %}<div class="alert alert-secondary py-2 small">Base de datos no disponible: la comparación se muestra tal como se guardó.</div>
+{% else %}
+    {% if base.historico_hasta_el_corte == 'cambio' %}<div class="alert alert-danger py-2 small">El histórico actual hasta el corte {{ i.datos.corte }} ya no coincide con la instantánea de esta comparación. La comparación no cambia; para usar el histórico corregido, compara de nuevo.</div>{% endif %}
+    {% if base.base_avanzo %}<div class="alert alert-info py-2 small">La base avanzó desde este corte ({{ base.nuevos_desde_el_corte }} sorteo(s) nuevo(s), último {{ base.ultimo_sorteo_actual }}). Esta comparación conserva su corte.</div>{% endif %}
+{% endif %}
+{% set r = i.resumen %}{% set m = i.muestra_comun %}{% set en = i.ensemble %}
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3">
+    {% set color_resumen = {'menor_perdida_en_esta_evaluacion': 'alert-success', 'la_uniforme_fue_mejor': 'alert-secondary', 'empate': 'alert-secondary', 'comparacion_incompleta': 'alert-warning'}[r.estado] %}
+    <div class="alert {{ color_resumen }} py-2 mb-2"><strong>{{ estados_resumen[r.estado] }}</strong>{% if r.estado == 'menor_perdida_en_esta_evaluacion' %}: {{ r.ranking[0].nombre }}{% endif %}.
+        <span class="small">{{ r.criterio }}. {{ r.nota }}</span></div>
+    <p class="small mb-1"><strong>Pesos del modelo combinado:</strong> en {{ en.bloques_que_eligieron_la_uniforme }} de {{ en.bloques_con_pesos }} bloque(s) el ajuste eligió <strong>peso 1 para la uniforme</strong>{% if en.bloques_que_eligieron_la_uniforme == en.bloques_con_pesos %}: en todos los bloques el modelo combinado coincide con la referencia uniforme{% endif %}. {{ en.nota }}</p>
+    <p class="small mb-1"><strong>Muestra común exterior:</strong> {{ m.total_objetivos }} objetivos en {{ m.bloques|length }} bloque(s) ({{ m.objetivos[0] }}–{{ m.objetivos[-1] }}){% if m.excluidos %}; {{ m.excluidos|length }} excluido(s) por regla de dominio{% endif %}. Los mismos objetivos y la misma referencia uniforme para todos.</p>
+    {% if m.muestra_pequena %}<div class="alert alert-secondary py-1 px-2 small mb-2">Muestra pequeña ({{ m.total_objetivos }} objetivos): las diferencias pueden cambiar mucho con pocos sorteos.</div>{% endif %}
+    <h6 class="mt-2">Ranking exterior (candidatos con evaluación completa)</h6>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>#</th><th>Modelo</th><th class="text-end">{{ 'Log Loss por balota' if colores else 'Log Loss' }}</th><th class="text-end">{{ 'Brier por balota' if colores else 'Brier' }}</th><th class="text-end">{{ 'Coincidencias (0–6)' if colores else 'Aciertos top-5' }}</th><th class="text-end">Dif. LL vs uniforme</th><th>Resultado</th></tr></thead><tbody>
+        {% for f in r.ranking %}{% set c = (i.candidatos|selectattr('id', 'equalto', f.id)|list)[0] %}{% set a = c.agregado %}
+        <tr><td>{{ f.posicion }}</td><td><strong>{{ c.nombre }}</strong> <span class="badge {% if c.tipo == 'referencia' %}bg-secondary{% elif c.tipo == 'modelo_combinado' %}bg-dark{% else %}bg-primary{% endif %}">{{ {'referencia': 'referencia', 'modelo_combinado': 'modelo combinado'}.get(c.tipo, 'modelo nuevo') }}</span><div class="text-muted">{{ c.id }} v{{ c.version }}</div></td>
+            <td class="text-end">{{ '%.5f'|format(a.log_loss) }}</td><td class="text-end">{{ '%.5f'|format(a.brier) }}</td>
+            <td class="text-end">{{ '%.2f'|format(a.aciertos) }} / sorteo</td>
+            <td class="text-end {% if a.diferencia_log_loss < 0 %}text-success{% elif a.diferencia_log_loss > 0 %}text-danger{% endif %}">{{ '%+.5f'|format(a.diferencia_log_loss) }}</td>
+            <td>{{ veredictos[c.veredicto] }}</td></tr>
+        {% endfor %}
+    </tbody></table></div>
+    <p class="small text-muted mt-2 mb-0">Diferencia negativa: menor pérdida que la uniforme en estos objetivos. Empate significa que no hay diferencia apreciable (por ejemplo, cuando el modelo combinado eligió la uniforme). No hay índice global entre juegos.</p>
+    {% if r.incompletos %}
+    <h6 class="mt-3">Fuera del ranking (evaluación incompleta)</h6>
+    <ul class="small mb-0">{% for x in r.incompletos %}{% set c = (i.candidatos|selectattr('id', 'equalto', x.id)|list)[0] %}<li><strong>{{ c.nombre }}</strong> ({{ x.estado|replace('_', ' ') }}, {{ c.objetivos_evaluados }} de {{ m.total_objetivos }} objetivos): {% for inc in x.incidencias %}bloque {{ inc.bloque }}: {{ inc.estado|replace('_', ' ') }} — {{ inc.motivo }}{% if not loop.last %}; {% endif %}{% endfor %}</li>{% endfor %}</ul>
+    {% endif %}
+</div>
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3" id="pesos">
+    <div class="carteras-cabecera"><h6>Pesos aprendidos por bloque</h6>
+    <p class="small text-muted mb-2">Para cada bloque exterior, los pesos se eligen entre {{ i.identidad.protocolo.malla.mezclas }} mezclas con los 10 objetivos inmediatamente anteriores (bloque interno), con componentes ajustados solo antes de ese bloque interno. Después se reajustan los componentes antes del bloque exterior con los pesos fijos.</p></div>
+    {% set tonos = ['#adb5bd', '#4b3f8f', '#2f9e44'] %}
+    <svg viewBox="0 0 640 {{ 26 * en.bloques_internos|length + 34 }}" role="img" aria-labelledby="titulo-pesos" style="width: 100%; max-width: 640px; height: auto;">
+        <title id="titulo-pesos">Pesos de {{ en.componentes|join(', ') }} en cada bloque; la tabla siguiente tiene los mismos valores</title>
+        {% for b in en.bloques_internos %}{% set y = 8 + 26 * loop.index0 %}{% set ns = namespace(x=90) %}
+        <text x="4" y="{{ y + 14 }}" font-size="11" fill="#495057">Bloque {{ b.indice }}</text>
+        {% if b.pesos %}{% for comp in en.componentes %}{% set w = 540 * b.pesos[comp] %}{% if w > 0 %}<rect x="{{ ns.x }}" y="{{ y }}" width="{{ w }}" height="18" fill="{{ tonos[loop.index0] }}"><title>{{ comp }}: {{ b.pesos[comp] }}</title></rect>{% endif %}{% set ns.x = ns.x + w %}{% endfor %}
+        {% else %}<text x="90" y="{{ y + 14 }}" font-size="11" fill="#dc3545">{{ b.estado|replace('_', ' ') }}</text>{% endif %}
+        {% endfor %}
+        {% for comp in en.componentes %}<rect x="{{ 90 + 180 * loop.index0 }}" y="{{ 26 * en.bloques_internos|length + 14 }}" width="12" height="12" fill="{{ tonos[loop.index0] }}"/><text x="{{ 106 + 180 * loop.index0 }}" y="{{ 26 * en.bloques_internos|length + 24 }}" font-size="11" fill="#495057">{{ comp }}</text>{% endfor %}
+    </svg>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <caption class="small">Evaluación INTERNA (solo para elegir los pesos; no es un resultado exterior).</caption>
+        <thead><tr><th>Bloque</th><th>Objetivos internos</th><th>Componentes ajustados hasta</th>{% for comp in en.componentes %}<th class="text-end">{{ comp }}</th>{% endfor %}<th class="text-end">LL interna mínima</th><th class="text-end">LL interna uniforme</th><th>Elección</th></tr></thead><tbody>
+        {% for b in en.bloques_internos %}<tr><td>{{ b.indice }}</td><td>{% if b.objetivos %}{{ b.objetivos[0] }}–{{ b.objetivos[-1] }} ({{ b.objetivos|length }}){% else %}—{% endif %}</td><td>posición {{ b.posicion_de_ajuste }}</td>
+            {% if b.pesos %}{% for comp in en.componentes %}<td class="text-end">{{ '%.1f'|format(b.pesos[comp]) }}</td>{% endfor %}
+            <td class="text-end">{{ '%.5f'|format(b.log_loss_minima) }}</td><td class="text-end">{{ '%.5f'|format(b.perdidas[0].log_loss) }}</td>
+            <td>{% if b.eligio_uniforme %}<strong>peso 1 para la uniforme</strong>{% else %}mezcla {{ b.numeradores|join('/') }} (décimos){% endif %}{% if b.mezclas_empatadas > 1 %}<div class="text-muted">{{ b.mezclas_empatadas }} mezclas empatadas; desempate: mayor peso de la uniforme y orden estable</div>{% endif %}</td>
+            {% else %}<td colspan="{{ en.componentes|length + 3 }}" class="text-danger">{{ b.estado|replace('_', ' ') }}{% if b.motivo %}: {{ b.motivo }}{% endif %}</td>{% endif %}</tr>{% endfor %}
+    </tbody></table></div>
+    {% set tabla %}{% for b in en.bloques_internos if b.perdidas %}<div class="carteras-receta"><p class="small mb-1 mt-2 carteras-cabecera"><strong>Bloque {{ b.indice }}:</strong> las 5 mezclas con menor Log Loss interna</p><table class="table table-sm small mb-0"><thead><tr><th>Mezcla (décimos {{ en.componentes|join('/') }})</th><th class="text-end">LL interna</th></tr></thead><tbody>{% for p in (b.perdidas|sort(attribute='log_loss'))[:5] %}<tr><td>{{ p.numeradores|join('/') }}</td><td class="text-end">{{ '%.6f'|format(p.log_loss) }}</td></tr>{% endfor %}</tbody></table></div>{% endfor %}{% endset %}
+    <details class="small detalle-bloques"><summary>Mezclas con menor pérdida interna</summary>{{ tabla }}</details>
+    <div class="solo-impresion-bloque">{{ tabla }}</div>
+</div>
+{% if i.superbalota %}{% set sb = i.superbalota %}
+<div class="card stat-card p-3 mb-3"><h6>Superbalota (aparte, estrategia de Producto 1)</h6>
+    <p class="small mb-0">Estrategia <code>{{ sb.estrategia }}</code> en los mismos {{ sb.sorteos }} objetivos: Log Loss {{ '%.4f'|format(sb.log_loss) }} frente a {{ '%.4f'|format(sb.log_loss_uniforme) }} (uniforme 1/16) · Brier {{ '%.4f'|format(sb.brier) }} frente a {{ '%.4f'|format(sb.brier_uniforme) }} · {{ sb.aciertos }} acierto(s) top-1. El modelo combinado no la aprende.</p></div>
+{% endif %}
+{% for c in i.candidatos if c.familia != 'uniforme' %}
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3" id="candidato-{{ c.id }}">
+    <div class="carteras-cabecera">
+    <h6>{{ c.nombre }} <span class="badge {% if c.tipo == 'referencia' %}bg-secondary{% elif c.tipo == 'modelo_combinado' %}bg-dark{% else %}bg-primary{% endif %}">{{ {'referencia': 'referencia', 'modelo_combinado': 'modelo combinado'}.get(c.tipo, 'modelo nuevo') }}</span> <span class="badge bg-light text-dark border">{{ c.estado|replace('_', ' ') }}</span></h6>
+    <p class="small text-muted mb-2">{{ c.explicacion }} Transformación: {{ c.transformacion }}.</p>
+    {% if c.agregado and c.estado != 'completo' %}<div class="alert alert-warning py-1 px-2 small">Cifras parciales sobre {{ c.objetivos_evaluados }} objetivos: no son comparables con el ranking.</div>{% endif %}
+    </div>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-2">
+        <caption class="small">Evaluación EXTERIOR por bloque.</caption>
+        <thead><tr><th>Bloque</th><th>Objetivos</th>{% if c.tipo == 'modelo_combinado' %}<th>Pesos</th>{% else %}<th>Ajuste</th>{% endif %}<th class="text-end">LL</th><th class="text-end">LL uniforme</th><th class="text-end">Diferencia</th><th class="text-end">{{ 'Coinc.' if colores else 'Aciertos' }}</th><th>Estado</th></tr></thead><tbody>
+        {% for b in c.bloques %}<tr><td>{{ b.indice }}</td><td>{% if b.objetivos %}{{ b.objetivos[0] }}–{{ b.objetivos[-1] }} ({{ b.objetivos|length }}){% else %}—{% endif %}</td>
+            <td>{% if c.tipo == 'modelo_combinado' %}{% if b.pesos %}{% for k in en.componentes %}{{ k }} {{ '%.1f'|format(b.pesos[k]) }}{% if not loop.last %} · {% endif %}{% endfor %}{% if b.eligio_uniforme %}<div class="text-muted">peso 1 para la uniforme</div>{% endif %}{% else %}—{% endif %}
+                {% elif b.ajuste and b.ajuste.objetivos_de_ajuste %}{{ b.ajuste.objetivos_de_ajuste[0] }}–{{ b.ajuste.objetivos_de_ajuste[1] }}{% elif b.ajuste and b.ajuste.sorteos_previos %}{{ b.ajuste.sorteos_previos }} sorteos previos{% else %}—{% endif %}</td>
+            {% if b.metricas %}<td class="text-end">{{ '%.5f'|format(b.metricas.log_loss) }}</td><td class="text-end">{{ '%.5f'|format(b.metricas.uniforme.log_loss) }}</td><td class="text-end">{{ '%+.5f'|format(b.metricas.diferencia_log_loss) }}</td><td class="text-end">{{ '%.2f'|format(b.metricas.aciertos) }}</td><td>evaluado</td>
+            {% else %}<td colspan="4"></td><td class="text-danger">{{ b.estado|replace('_', ' ') }}{% if b.motivo %}: {{ b.motivo }}{% endif %}</td>{% endif %}</tr>{% endfor %}
+    </tbody></table></div>
+    {% set g = graficas.get(c.id) %}
+    {% if g %}
+    <h6 class="small">Diferencia acumulada de Log Loss frente a la uniforme, objetivo a objetivo</h6>
+    <svg viewBox="0 0 {{ g.ancho }} {{ g.alto }}" role="img" aria-labelledby="titulo-{{ c.id }}" style="max-width: 100%; height: auto;">
+        <title id="titulo-{{ c.id }}">Diferencia acumulada de {{ c.nombre }}; valor final {{ '%+.4f'|format(g.final) }}</title>
+        <line x1="{{ g.margen }}" y1="{{ g.cero }}" x2="{{ g.ancho - g.margen }}" y2="{{ g.cero }}" stroke="#6c757d" stroke-dasharray="4 3"/>
+        <text x="4" y="{{ g.cero + 4 }}" font-size="11" fill="#6c757d">0</text>
+        <text x="4" y="{{ g.margen - 8 }}" font-size="11" fill="#6c757d">peor que la uniforme ↑</text>
+        <text x="4" y="{{ g.alto - 6 }}" font-size="11" fill="#6c757d">mejor que la uniforme ↓</text>
+        <polyline points="{{ g.polilinea }}" fill="none" stroke="#4b3f8f" stroke-width="2"/>
+        {% for p in g.puntos %}<circle cx="{{ p.x }}" cy="{{ p.y }}" r="2.5" fill="#4b3f8f"><title>Objetivo {{ p.objetivo }}: {{ '%+.4f'|format(p.acumulada) }}</title></circle>{% endfor %}
+    </svg>
+    <p class="small text-muted mb-1">Final: {{ '%+.5f'|format(g.final) }} (suma de las diferencias por objetivo).{% if g.final == 0 %} Una línea en cero indica que el modelo coincidió con la uniforme.{% endif %}</p>
+    {% set tabla %}<table class="table table-sm small mb-0"><caption class="small">Los mismos puntos de la gráfica.</caption><thead><tr><th>Objetivo</th><th class="text-end">LL modelo</th><th class="text-end">Diferencia</th><th class="text-end">{{ 'Coinc.' if colores else 'Aciertos' }}</th></tr></thead><tbody>
+        {% for f in c.por_objetivo %}<tr><td>{{ f.objetivo }}</td><td class="text-end">{{ '%.5f'|format(f.log_loss) }}</td><td class="text-end">{{ '%+.5f'|format(f.diferencia_log_loss) }}</td><td class="text-end">{{ f.aciertos }}</td></tr>{% endfor %}</tbody></table>{% endset %}
+    <details class="small detalle-bloques"><summary>Datos por objetivo ({{ c.por_objetivo|length }})</summary>{{ tabla }}</details>
+    <div class="solo-impresion-bloque">{{ tabla }}</div>
+    {% endif %}
+</div>
+{% endfor %}
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3">
+    <h6>Muestra común: bloques interno y exterior</h6>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>Bloque</th><th>Interno (pesos)</th><th>Exterior (evaluación)</th>{% if colores %}<th>Paleta</th>{% endif %}</tr></thead><tbody>
+        {% for b in m.bloques %}<tr><td>{{ b.indice }}</td><td>{{ b.interno.objetivos[0] }}–{{ b.interno.objetivos[-1] }}<div class="text-muted">ajuste hasta la posición {{ b.interno.posicion_de_ajuste }}</div></td><td>{{ b.objetivos|join(', ') }}<div class="text-muted">ajuste hasta la posición {{ b.posicion_de_ajuste }} · {{ b.fechas[0] if b.fechas else '' }} a {{ b.fechas[-1] if b.fechas else '' }}</div></td>{% if colores %}<td>{{ b.paleta|join(', ') }}</td>{% endif %}</tr>{% endfor %}
+    </tbody></table></div>
+    {% if m.excluidos %}<p class="small mt-2 mb-0"><strong>Excluidos:</strong> {% for x in m.excluidos %}{{ x.objetivo }} ({{ x.motivo|replace('_', ' ') }}: {{ x.detalle }}){% if not loop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+</div>
+{% set trazabilidad %}<dl class="row mb-2 mt-2">
+        <dt class="col-sm-4">Clave de la comparación</dt><dd class="col-sm-8"><code>{{ clave }}</code></dd>
+        <dt class="col-sm-4">Huella del histórico</dt><dd class="col-sm-8"><code>{{ i.datos.sha256_historico }}</code> ({{ i.datos.sorteos }} sorteos, {{ i.datos.primer_sorteo }}–{{ i.datos.ultimo_sorteo }})</dd>
+        <dt class="col-sm-4">Protocolo</dt><dd class="col-sm-8">{{ i.identidad.protocolo.version }} · {{ i.identidad.protocolo.bloques }} bloque(s) de {{ i.identidad.protocolo.tamano_bloque }} · calentamiento {{ i.identidad.protocolo.calentamiento }} · ajuste mínimo {{ i.identidad.protocolo.minimo_ajuste }} · bloque interno {{ i.identidad.protocolo.bloque_interno }} · perfil {{ i.identidad.protocolo.perfil }}</dd>
+        <dt class="col-sm-4">Entorno</dt><dd class="col-sm-8">{% for k, v in i.identidad.entorno.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>
+        <dt class="col-sm-4">Ejecución</dt><dd class="col-sm-8">{{ i.ejecucion.iniciado_en[:19]|replace('T', ' ') }} a {{ i.ejecucion.terminado_en[:19]|replace('T', ' ') }} UTC · ajustes realizados: {{ i.ajustes_realizados }}</dd>
+    </dl>{% endset %}
+<details class="card stat-card p-3 mb-3 small carteras-desplegable"><summary><strong>Trazabilidad</strong></summary>
+    {{ trazabilidad }}
+    <form method="post" action="/carteras/comparaciones/{{ clave }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-outline-secondary">Verificar (reentrena con la instantánea guardada)</button></form>
+</details>
+<div class="card stat-card p-3 mb-3 small carteras-solo-impresion"><strong>Trazabilidad</strong>
+    {{ trazabilidad }}
+</div>
+{% endblock %}

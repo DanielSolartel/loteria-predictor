@@ -37,6 +37,7 @@ from app.application.use_cases.pronostico_experimental import (
     GenerarPronosticoExperimental,
     VerificarPronosticoExperimental,
 )
+from app.application.use_cases.carteras import CarterasDeModelos
 from app.application.use_cases.laboratorio import LaboratorioDeModelos, Lectura
 from app.application.use_cases.operacion_diaria import DependenciasDeJuego, OperacionDiaria
 from app.application.use_cases.panel_diario import ConsultarPanelDiario
@@ -62,7 +63,9 @@ from app.infrastructure.repositories.sincronizacion_repository_sqlalchemy import
 )
 from app.infrastructure.repositories.sorteo_repository_sqlalchemy import SorteoRepositorySQLAlchemy
 from app.infrastructure.storage.html_file_storage import HtmlFileStorage
+from app.infrastructure.carteras_trabajador import EjecutorCarterasEnProceso
 from app.infrastructure.laboratorio_trabajador import EjecutorEnProceso
+from app.infrastructure.storage.carteras_file_store import CarterasFileStore
 from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore
 from app.infrastructure.storage.operacion_file_store import CerrojoPorJuego, RegistroEjecucionesArchivo
 from app.infrastructure.storage.pronostico_experimental_file_store import PronosticoExperimentalFileStore
@@ -442,3 +445,29 @@ def _lanzar_comparacion_en_hilo(funcion, inicio) -> None:
 
 def get_lanzador_de_laboratorio():
     return _lanzar_comparacion_en_hilo
+
+
+# ---------------------------------------------------------------------------
+# Producto 5: modelo combinado, carteras y simulacion
+# ---------------------------------------------------------------------------
+
+def get_carteras() -> CarterasDeModelos:
+    """Almacen, progreso y cerrojos propios (`DIRECTORIO_CARTERAS_MODELOS`).
+    Lee el historico con la misma lectura de solo lectura del laboratorio y
+    entrena o simula en un proceso trabajador con tiempo maximo."""
+    settings = get_settings()
+    directorio = settings.directorio_carteras_modelos
+    operacion = f"{directorio}/operacion"
+    return CarterasDeModelos(CarterasFileStore(directorio), RegistroEjecucionesArchivo(operacion),
+                             CerrojoPorJuego(operacion), abrir_lectura_del_laboratorio,
+                             ejecutor=EjecutorCarterasEnProceso(settings.tiempo_maximo_trabajador_carteras))
+
+
+def _lanzar_carteras_en_hilo(funcion, inicio) -> None:
+    """Los trabajos de carteras no se ejecutan en el hilo de la peticion web."""
+    threading.Thread(target=funcion, args=(inicio,), daemon=True,
+                     name=f"carteras-{inicio.ejecucion['id']}").start()
+
+
+def get_lanzador_de_carteras():
+    return _lanzar_carteras_en_hilo
