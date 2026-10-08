@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Laboratorio de modelos{% endblock %}
+{% block content %}
+<h3>Laboratorio de modelos</h3>
+<div class="alert alert-danger">{{ mensaje }}</div>
+{% if activas %}<ul class="small">{% for j, eid in activas.items() %}<li>{{ nombres.get(j, j) }}: {% if eid %}<a href="/laboratorio/experimentos/{{ eid }}">comparación en curso</a>{% else %}en curso{% endif %}</li>{% endfor %}</ul>{% endif %}
+<a class="btn btn-sm btn-outline-secondary" href="/laboratorio">Volver al laboratorio</a>
+{% endblock %}

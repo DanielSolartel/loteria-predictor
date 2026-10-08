@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set colores = a.juego == 'COLORLOTO' %}{% set p = a.pronostico %}
+{% block title %}Pronóstico del laboratorio — {{ nombres[a.juego] }} {{ p.objetivo }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">{{ nombres[a.juego] }} · objetivo {{ p.objetivo }}</h3>
+    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/laboratorio/experimentos/{{ a.experimento }}">Informe del experimento</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slugs[a.juego] }}/seguimiento?linea={{ a.linea.id }}">Seguimiento de la línea</a></div>
+</div>
+{% if reutilizado %}<div class="alert alert-info py-2 small">Resultado ya existente: la misma entrada ya se había generado; se muestra el pronóstico guardado sin reentrenar.</div>{% endif %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3 d-flex flex-column">
+    <div class="impresion-cabecera"><p class="small mb-1"><strong>{{ a.modelo.nombre }}</strong> <span class="badge {% if a.modelo.tipo == 'referencia' %}bg-secondary{% else %}bg-primary{% endif %}">{{ 'referencia' if a.modelo.tipo == 'referencia' else 'modelo nuevo' }}</span> · línea <code>{{ a.linea.id }}</code> · versión {{ g.version }} de {{ g.versiones }} en este objetivo</p>
+        <p class="small mb-2">Objetivo {{ p.objetivo }} · calculado con los sorteos hasta el {{ p.calculado_hasta_sorteo }} ({{ a.datos.sorteos }} sorteos, último del {{ a.datos.ultima_fecha }}).</p></div>
+    <div class="impresion-sugerencia mb-2">
+        <div class="small text-muted">Sugerencia</div>
+        {% if colores %}{% for x in p.pares %}<span class="badge bg-light text-dark border me-1 fs-6">{{ x.numero }} {{ x.color }}</span>{% endfor %}
+            <div class="small text-muted mt-1">Multiconjunto más probable de 6 pares (con repetición). {{ p.suposicion|capitalize }}.</div>
+        {% else %}{% for n in p.numeros_sugeridos %}<span class="numero-bolita">{{ n }}</span>{% endfor %}
+            {% if a.superbalota %}<span class="numero-bolita superbalota-bolita" title="superbalota">{{ a.superbalota.pronostico.sugerida }}</span>{% endif %}
+            <div class="small text-muted mt-1">Los 5 números con mayor probabilidad marginal (desempate por número). Las marginales suman {{ p.suma_de_marginales }}. {{ p.nota|capitalize }}.</div>
+            {% if a.superbalota %}<div class="small text-muted">Superbalota: estrategia separada <code>{{ a.superbalota.estrategia }}</code>; el modelo de los números no la aprende.</div>{% endif %}
+        {% endif %}
+    </div>
+    {% set c = a.generacion.clasificacion_temporal %}
+    <div class="alert alert-secondary py-2 small mb-2">{% if c %}{{ c.descripcion }}{% else %}La base no estaba disponible al generar: el objetivo quedó sin clasificar.{% endif %}
+        <div class="text-muted">Generado {{ a.generacion.generado_en[:19]|replace('T', ' ') }} UTC (reloj local; no prueba anterioridad).</div></div>
+    {% if observado %}
+    <p class="small mb-2"><strong>Resultado en la base actual:</strong> {{ observado.estado|replace('_', ' ') }} — {{ observado.motivo }}.
+        {% if observado.estado == 'observado' %}{% if colores %}Pares {{ observado.resultado.pares|map('join', ' ')|join(', ') }}: {{ observado.coincidencias.pares }} de 6 coincidencias.{% else %}Números {{ observado.resultado.numeros|join(', ') }}{% if observado.resultado.superbalota %} + {{ observado.resultado.superbalota }}{% endif %}: {{ observado.coincidencias.numeros }} acierto(s){% if observado.coincidencias.superbalota is defined %}, superbalota {{ 'sí' if observado.coincidencias.superbalota else 'no' }}{% endif %}.{% endif %}{% endif %}
+        Histórico hasta el corte: {{ observado.historico_hasta_el_corte.estado|replace('_', ' ') }}.</p>
+    {% else %}<p class="small text-muted mb-2">Sin acceso a la base: no se puede consultar el resultado.</p>{% endif %}
+    {% set ev = a.evaluacion_del_experimento %}
+    {% if ev and ev.agregado %}<p class="small mb-2"><strong>En la comparación del experimento</strong> ({{ ev.estado }}): Log Loss {{ '%.5f'|format(ev.agregado.log_loss) }} frente a {{ '%.5f'|format(ev.agregado.uniforme.log_loss) }} de la uniforme ({{ '%+.5f'|format(ev.agregado.diferencia_log_loss) }}) en {{ ev.agregado.sorteos }} objetivos{% if ev.veredicto %} — {{ veredictos.get(ev.veredicto, ev.veredicto) }}{% endif %}. {{ ev.nota|capitalize }}.</p>{% endif %}
+    <h6 class="small">Ranking completo</h6>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>#</th><th>{{ 'Par' if colores else 'Número' }}</th><th class="text-end">Probabilidad{{ ' del par' if colores else ' marginal' }}</th><th class="text-end">Uniforme</th></tr></thead><tbody>
+        {% for f in (p.ranking_de_pares if colores else p.ranking) %}<tr><td>{{ loop.index }}</td><td>{% if colores %}{{ f.numero }} {{ f.color }}{% else %}{{ f.numero }}{% endif %}</td><td class="text-end">{{ '%.5f'|format(f.probabilidad) }}</td><td class="text-end">{{ '%.5f'|format(f.probabilidad_uniforme) }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if a.superbalota %}<h6 class="small mt-2">Superbalota</h6><p class="small mb-0">{% for f in a.superbalota.pronostico.ranking[:5] %}{{ f.superbalota }} ({{ '%.4f'|format(f.probabilidad) }}){% if not loop.last %} · {% endif %}{% endfor %} … uniforme {{ '%.4f'|format(a.superbalota.pronostico.ranking[0].probabilidad_uniforme) }}.</p>{% endif %}
+</div>
+<div class="alert alert-warning py-2 small">Pronóstico experimental, no acreditado. No es una recomendación de apuesta ni la probabilidad del premio mayor.</div>
+{# Trazabilidad: en pantalla, desplegable; al imprimir, la misma lista en una copia abierta (laboratorio-solo-impresion). #}
+{% set trazabilidad %}<dl class="row mb-2 mt-2">
+        <dt class="col-sm-4">Clave</dt><dd class="col-sm-8"><code>{{ g.identificador }}</code></dd>
+        <dt class="col-sm-4">Experimento</dt><dd class="col-sm-8"><code>{{ a.experimento }}</code></dd>
+        <dt class="col-sm-4">Huella del histórico</dt><dd class="col-sm-8"><code>{{ a.datos.sha256_historico }}</code></dd>
+        <dt class="col-sm-4">Receta</dt><dd class="col-sm-8">{{ a.modelo.id }} v{{ a.modelo.version }}: {% for k, v in a.modelo.parametros.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}. {{ a.modelo.transformacion }}.</dd>
+        <dt class="col-sm-4">Ajuste final</dt><dd class="col-sm-8">{% for k, v in a.ajuste_final.items() %}{{ k|replace('_', ' ') }}: {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>
+        <dt class="col-sm-4">Orden de emisión</dt><dd class="col-sm-8">secuencia {{ a.generacion.secuencia_en_la_linea }} en la línea y el objetivo{% if a.generacion.version_anterior %} (anterior {{ a.generacion.version_anterior[:12] }}…){% endif %}</dd>
+        <dt class="col-sm-4">Entorno</dt><dd class="col-sm-8">{% for k, v in a.identidad.entorno.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>
+    </dl>{% endset %}
+<details class="card stat-card p-3 mb-3 small laboratorio-desplegable"><summary><strong>Trazabilidad</strong></summary>
+    {{ trazabilidad }}
+    <form method="post" action="/laboratorio/pronosticos/{{ g.identificador }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-outline-secondary">Verificar (reentrena con la instantánea del experimento)</button></form>
+</details>
+<div class="card stat-card p-3 mb-3 small laboratorio-solo-impresion"><strong>Trazabilidad</strong>
+    {{ trazabilidad }}
+</div>
+{% endblock %}

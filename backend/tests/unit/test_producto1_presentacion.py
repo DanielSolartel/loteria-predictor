@@ -141,8 +141,10 @@ def test_solo_las_paginas_de_producto1_marcan_el_body(cliente, tmp_path):
     for ruta in sorted((RAIZ_BACKEND / "app" / "templates").rglob("*.html")):
         texto = ruta.read_text(encoding="utf-8")
         marcada = "producto1-impresion" in texto
-        # Producto 3 anade sus paginas (panel diario y rendimiento) en `operacion/`.
-        es_pagina_producto1 = ruta.parent.name in ("producto", "operacion") and not ruta.name.startswith("_")
+        # Producto 3 anade sus paginas (panel diario y rendimiento) en `operacion/` y Producto 4 las del
+        # laboratorio de modelos en `laboratorio/`.
+        es_pagina_producto1 = ruta.parent.name in ("producto", "operacion", "laboratorio") and \
+            not ruta.name.startswith("_")
         assert marcada == es_pagina_producto1, ruta
     for url in ("/estadisticas", "/estadisticas/baloto/resumen", "/estadisticas/colorloto/resumen", "/pronosticos",
                 "/operacion", "/rendimiento"):

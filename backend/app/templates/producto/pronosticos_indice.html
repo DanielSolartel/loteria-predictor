@@ -2,7 +2,10 @@
 {% block clase_body %} class="producto1-impresion"{% endblock %}
 {% block title %}Pronósticos experimentales{% endblock %}
 {% block content %}
-<h3 class="mb-3">Pronósticos experimentales</h3>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h3 class="mb-0">Pronósticos experimentales</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/laboratorio"><i class="bi bi-diagram-3 me-1"></i>Laboratorio de modelos</a>
+</div>
 {% include "producto/_aviso_experimental.html" %}
 <div class="row g-3">
 {% for j in juegos %}

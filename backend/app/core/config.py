@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # por juego, separados de los artefactos de pronostico.
     directorio_operacion: str = "storage/operacion"
 
+    # Producto 4: laboratorio de modelos (informes de experimentos,
+    # pronosticos del laboratorio, progreso y cerrojos), separado de los
+    # almacenes de Productos 1-3.
+    directorio_laboratorio_modelos: str = "storage/laboratorio"
+
 
 @lru_cache
 def get_settings() -> Settings:

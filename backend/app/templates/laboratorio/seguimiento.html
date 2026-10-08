@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set colores = juego == 'COLORLOTO' %}
+{% block title %}Seguimiento del laboratorio — {{ nombres[juego] }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Seguimiento por modelo · {{ nombres[juego] }}</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slugs[juego] }}">{{ nombres[juego] }}</a>
+</div>
+<div class="alert alert-warning py-2 small">{{ datos.nota }} Una diferencia favorable en pocos objetivos no demuestra ventaja. {% if datos.base == 'no_disponible' %}<strong>Base no disponible:</strong> no se pueden consultar resultados.{% endif %}</div>
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-6 col-md-4"><label class="form-label small mb-0" for="f-linea">Línea</label><select class="form-select form-select-sm" id="f-linea" name="linea"><option value="">Todas</option>{% for l in todas_las_lineas %}<option value="{{ l }}" {% if l == linea %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-4"><label class="form-label small mb-0" for="f-tipo">Comparar entre líneas</label><select class="form-select form-select-sm" id="f-tipo" name="tipo">{% for t in ('seguimiento', 'retrospectiva') %}<option value="{{ t }}" {% if t == tipo %}selected{% endif %}>{{ {'seguimiento': 'Seguimiento (objetivo no cargado al generar)', 'retrospectiva': 'Reconstrucciones retrospectivas'}[t] }}</option>{% endfor %}</select></div>
+    <div class="col-12 col-md-2"><button class="btn btn-sm btn-primary w-100">Aplicar</button></div>
+</form>
+{% if not datos.lineas %}<p class="small text-muted">Todavía no hay pronósticos del laboratorio para este juego.</p>{% endif %}
+{% if datos.comparacion %}{% set cmp = datos.comparacion %}
+<div class="card stat-card p-3 mb-3"><h6>Comparación entre líneas ({{ cmp.tipo }})</h6>
+    <p class="small mb-1">Solo sobre los objetivos incluidos en todas las líneas con datos: {% if cmp.objetivos_comunes %}{{ cmp.objetivos_comunes|join(', ') }}{% else %}ninguno en común{% endif %}. Totales individuales: {% for k, v in cmp.totales.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}.</p>
+    {% if cmp.por_linea %}<div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>Línea</th><th class="text-end">LL</th><th class="text-end">LL uniforme</th><th class="text-end">Diferencia</th><th class="text-end">Objetivos</th></tr></thead><tbody>
+        {% for k, a in cmp.por_linea.items() %}<tr><td>{{ k }}</td><td class="text-end">{{ '%.5f'|format(a.log_loss) }}</td><td class="text-end">{{ '%.5f'|format(a.log_loss_uniforme) }}</td><td class="text-end">{{ '%+.5f'|format(a.diferencia_log_loss) }}</td><td class="text-end">{{ a.objetivos }}</td></tr>{% endfor %}
+    </tbody></table></div>{% endif %}</div>
+{% endif %}
+{% for nombre, s in datos.lineas.items() %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3" id="linea-{{ nombre }}">
+    <h6>Línea <code>{{ nombre }}</code></h6>
+    <p class="small text-muted mb-2">{{ s.politica|capitalize }}.{% if s.objetivos_ambiguos %} {{ s.objetivos_ambiguos }} objetivo(s) excluido(s) por un archivo ilegible que impide saber cuál fue la primera emisión.{% endif %}</p>
+    {% for t, agg in s.por_tipo.items() %}
+    <p class="small mb-1"><strong>{{ {'seguimiento': 'Seguimiento', 'retrospectiva': 'Reconstrucciones retrospectivas'}[t] }}:</strong> {{ agg.objetivos }} objetivo(s) · incluidos {{ agg.incluidos }} · pendientes {{ agg.pendientes }} · excluidos {{ agg.excluidos }}{% if agg.motivos_de_exclusion %} ({% for m, n in agg.motivos_de_exclusion.items() %}{{ m|replace('_', ' ') }}: {{ n }}{% if not loop.last %}; {% endif %}{% endfor %}){% endif %}
+        {% if agg.agregado %}— Log Loss {{ '%.5f'|format(agg.agregado.log_loss) }} frente a {{ '%.5f'|format(agg.agregado.log_loss_uniforme) }} ({{ '%+.5f'|format(agg.agregado.diferencia_log_loss) }}), {{ agg.agregado.aciertos }} {{ 'coincidencias' if colores else 'aciertos' }}{% if agg.agregado.muestra_pequena %} · <span class="text-warning">muestra pequeña</span>{% endif %}{% endif %}</p>
+    {% endfor %}
+    {% if s.evaluacion_retrospectiva_de_los_experimentos %}<p class="small text-muted mb-2">Evaluación retrospectiva de los experimentos (aparte): {% for k, ev in s.evaluacion_retrospectiva_de_los_experimentos.items() %}{% if ev and ev.agregado %}<a href="/laboratorio/experimentos/{{ k }}">{{ k[:8] }}…</a> {{ '%+.5f'|format(ev.agregado.diferencia_log_loss) }} en {{ ev.agregado.sorteos }} objetivos{% endif %}{% if not loop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Objetivo</th><th>Tipo</th><th>Estado</th><th>Generado (UTC)</th><th class="text-end">{{ 'Coinc.' if colores else 'Aciertos' }}</th><th class="text-end">LL</th><th class="text-end">LL uniforme</th><th>Versiones</th></tr></thead><tbody>
+        {% for f in s.filas %}<tr><td>{% if f.identificador %}<a href="/laboratorio/pronosticos/{{ f.identificador }}">{{ f.objetivo }}</a>{% else %}{{ f.objetivo }}{% endif %}</td><td>{{ f.tipo or '—' }}</td>
+            <td>{{ f.estado|replace('_', ' ') }}{% if f.motivo and f.estado != 'incluido' %}<div class="text-muted">{{ f.motivo|replace('_', ' ') }}</div>{% endif %}</td>
+            <td>{{ (f.generado_en or '—')[:19]|replace('T', ' ') }}</td>
+            <td class="text-end">{% if f.coincidencias %}{{ f.coincidencias.pares if colores else f.coincidencias.numeros }}{% else %}—{% endif %}</td>
+            <td class="text-end">{{ '%.5f'|format(f.metricas.log_loss) if f.metricas else '—' }}</td><td class="text-end">{{ '%.5f'|format(f.metricas.log_loss_uniforme) if f.metricas else '—' }}</td>
+            <td>{{ 'primera de ' ~ f.versiones if f.versiones > 1 else '1' }}</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endfor %}
+{% endblock %}
