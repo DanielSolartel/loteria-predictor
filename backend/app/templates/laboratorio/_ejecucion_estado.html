@@ -1,0 +1,22 @@
+{# e: ejecucion del laboratorio #}
+<div id="estado-ejecucion" {% if e.estado == 'en_curso' %}hx-get="/laboratorio/experimentos/{{ e.id }}/estado" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+    {% set colores = {'exito': 'alert-success', 'parcial': 'alert-warning', 'fallo': 'alert-danger', 'en_curso': 'alert-info', 'interrumpida': 'alert-danger'} %}
+    {% set textos = {'exito': 'Terminada.', 'parcial': 'Terminada en parte: algún juego o modelo necesita atención.', 'fallo': 'Falló: ningún juego terminó.', 'en_curso': 'En curso. Esta página se actualiza sola; también puedes recargarla o abrirla en otra pestaña sin iniciar otro trabajo.', 'interrumpida': 'Interrumpida.'} %}
+    <div class="alert {{ colores.get(e.estado, 'alert-secondary') }} py-2">
+        <strong>{{ textos.get(e.estado, e.estado) }}</strong>{% if e.mensaje %}<div class="small">{{ e.mensaje }}</div>{% endif %}
+        <div class="small text-muted">Iniciada {{ (e.iniciada_en or '')[:19]|replace('T', ' ') }} UTC{% if e.finalizada_en %} · terminada {{ e.finalizada_en[:19]|replace('T', ' ') }} UTC{% endif %} · origen: {{ e.origen }}{% if e.protocolo %} · {{ e.protocolo.bloques }} bloque(s){% endif %}</div>
+    </div>
+    <div class="row g-3">
+    {% for codigo in (e.orden or e.juegos.keys()|list) %}{% set r = e.juegos[codigo] %}
+        <div class="col-lg-6"><div class="card stat-card p-3 h-100">
+            <div class="d-flex justify-content-between"><h6>{{ nombres.get(codigo, codigo) }}</h6>
+                {% set b = {'terminado': ('bg-success', 'terminado'), 'reutilizado': ('bg-success', 'resultado ya existente'), 'parcial': ('bg-warning text-dark', 'parcial'), 'muestra_insuficiente': ('bg-warning text-dark', 'muestra insuficiente'), 'fallo': ('bg-danger', 'error'), 'pendiente': ('bg-secondary', 'pendiente'), 'en_curso': ('bg-info text-dark', 'en curso'), 'interrumpido': ('bg-danger', 'interrumpido'), 'base_no_disponible': ('bg-danger', 'base no disponible')}.get(r.estado, ('bg-secondary', r.estado)) %}
+                <span class="badge {{ b[0] }}">{{ b[1] }}</span></div>
+            {% if r.estado == 'en_curso' %}<p class="small mb-1">{{ {'obteniendo_datos': 'Obteniendo el histórico (una lectura)…', 'modelo': 'Entrenando y evaluando', 'inicio': 'Iniciando…'}.get(r.fase, r.fase) }}{% if r.candidato %}: <strong>{{ r.candidato }}</strong>, bloque {{ r.bloque }} de {{ r.bloques }}{% endif %}</p>{% endif %}
+            {% if r.mensaje %}<div class="alert alert-warning py-1 px-2 small mb-2">{{ r.mensaje }}</div>{% endif %}
+            {% if r.corte %}<p class="small mb-1">Corte {{ r.corte }} · {{ r.sorteos }} sorteos</p>{% endif %}
+            {% if r.experimento and r.estado in ('terminado', 'reutilizado', 'parcial') %}<p class="small mb-0">{{ estados_resumen.get(r.resumen, r.resumen) }} · <a href="/laboratorio/experimentos/{{ r.experimento }}">abrir el informe</a></p>{% endif %}
+        </div></div>
+    {% endfor %}
+    </div>
+</div>

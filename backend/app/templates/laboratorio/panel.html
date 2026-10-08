@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Laboratorio de modelos{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Laboratorio de modelos</h3>
+    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/operacion"><i class="bi bi-calendar-check me-1"></i>Panel diario</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/pronosticos"><i class="bi bi-cpu me-1"></i>Pronósticos</a></div>
+</div>
+{% include "laboratorio/_aviso.html" %}
+<div class="card stat-card p-3 mb-3">
+    <h6 class="mb-1">Comparar modelos</h6>
+    <p class="small text-muted mb-2">Entrena las dos familias nuevas y las referencias de cada juego con su histórico cargado y las compara sobre los mismos sorteos. Corre en segundo plano: la aplicación sigue respondiendo. Abrir esta página no entrena nada.</p>
+    <form method="post" action="/laboratorio/comparar" class="d-flex flex-wrap gap-2 align-items-end m-0">
+        <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="todos">
+        <div><label class="form-label small mb-0" for="bloques-todos">Bloques de 10 objetivos</label>
+            <select class="form-select form-select-sm" id="bloques-todos" name="bloques">{% for b in range(max_bloques, 0, -1) %}<option value="{{ b }}">{{ b }}</option>{% endfor %}</select></div>
+        <button class="btn btn-sm btn-primary" {% if not db_conectada %}disabled{% endif %}><i class="bi bi-play-fill me-1"></i>Comparar modelos (los cuatro juegos)</button>
+    </form>
+    {% if not db_conectada %}<div class="small text-danger mt-2">Sin conexión a la base de datos: se pueden consultar los experimentos guardados, pero no comparar.</div>{% endif %}
+</div>
+<div class="row g-3 mb-3">
+{% for d in juegos %}
+    <div class="col-lg-6"><div class="card stat-card p-3 h-100" id="juego-{{ slugs[d.juego] }}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0"><a href="/laboratorio/{{ slugs[d.juego] }}" class="text-decoration-none">{{ d.nombre }}</a></h5>
+            {% set badge = {'disponible': ('bg-success', 'Muestra suficiente'), 'muestra_insuficiente': ('bg-warning text-dark', 'Muestra insuficiente'), 'base_no_disponible': ('bg-danger', 'Base no disponible'), 'sin_datos': ('bg-secondary', 'Sin datos'), 'historico_no_valido': ('bg-danger', 'Histórico no válido')}[d.estado] %}
+            <span class="badge {{ badge[0] }}">{{ badge[1] }}</span>
+        </div>
+        {% if d.mensaje %}<div class="small text-muted mb-2">{{ d.mensaje }}</div>{% endif %}
+        {% if d.activa %}<div class="alert alert-info py-1 px-2 small mb-2">Comparación en curso: <a href="/laboratorio/experimentos/{{ d.activa }}">ver progreso</a>.</div>{% endif %}
+        {% if d.datos %}
+        <dl class="row small mb-2">
+            <dt class="col-5">Muestra</dt><dd class="col-7">{{ d.datos.sorteos }} sorteos · {{ d.datos.primer_sorteo }}–{{ d.datos.ultimo_sorteo }}{% if d.datos.huecos.cantidad %} · {{ d.datos.huecos.cantidad }} hueco(s){% endif %}</dd>
+            <dt class="col-5">Corte</dt><dd class="col-7">sorteo {{ d.datos.corte }} ({{ d.datos.ultima_fecha }})<br><span class="{% if d.frescura.estado == 'desactualizado' %}text-danger{% else %}text-muted{% endif %}">{{ d.frescura.mensaje }}</span></dd>
+            {% if d.muestra %}<dt class="col-5">Se evaluarían</dt><dd class="col-7">{{ d.muestra.objetivos|length }} objetivos en {{ d.muestra.bloques }} bloque(s){% if d.muestra.muestra_pequena %} · <span class="text-warning">muestra pequeña</span>{% endif %}</dd>{% endif %}
+        </dl>{% endif %}
+        {% set e = d.experimentos[0] if d.experimentos else none %}
+        <p class="small mb-2"><strong>Último experimento:</strong>
+            {% if e and e.estado != 'ilegible' %}<a href="/laboratorio/experimentos/{{ e.clave }}">corte {{ e.corte }}</a> · {{ estados_resumen.get(e.estado, e.estado) }}{% if e.mejor %} ({{ e.mejor }}){% endif %}
+            {% elif e %}<span class="text-danger">informe ilegible</span>{% else %}ninguno todavía{% endif %}</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="/laboratorio/{{ slugs[d.juego] }}">Abrir</a>
+            {% if d.lineas %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slugs[d.juego] }}/seguimiento">Seguimiento</a>{% endif %}
+        </div>
+    </div></div>
+{% endfor %}
+</div>
+<div class="card stat-card impresion-fragmentable p-3">
+    <h6>Comparaciones recientes</h6>
+    {% if ejecuciones %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Inicio (UTC)</th><th>Juegos</th><th>Estado</th><th>Origen</th></tr></thead><tbody>
+        {% for x in ejecuciones %}{% if x %}<tr><td><a href="/laboratorio/experimentos/{{ x.id }}">{{ (x.iniciada_en or '')[:19]|replace('T', ' ') }}</a></td>
+            <td>{{ (x.orden or [])|map('replace', '_', ' ')|join(', ') }}</td><td>{{ x.estado|replace('_', ' ') }}</td><td>{{ x.origen }}</td></tr>{% endif %}{% endfor %}
+    </tbody></table></div>{% else %}<p class="small text-muted mb-0">Todavía no hay comparaciones.</p>{% endif %}
+</div>
+{% endblock %}

@@ -9,3 +9,5 @@ storage/logs/*.log
 storage/pronosticos/*
 !storage/pronosticos/.gitkeep
 storage/operacion/*
+storage/laboratorio/*
+!storage/laboratorio/.gitkeep

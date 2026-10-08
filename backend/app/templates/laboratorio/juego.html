@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Laboratorio — {{ nombres[juego] }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Laboratorio · {{ nombres[juego] }}</h3>
+    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/laboratorio">Laboratorio</a>
+        {% if d.lineas %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slugs[juego] }}/seguimiento">Seguimiento</a>{% endif %}</div>
+</div>
+{% include "laboratorio/_aviso.html" %}
+{% if d.estado != 'disponible' %}<div class="alert {% if d.estado == 'muestra_insuficiente' %}alert-warning{% else %}alert-danger{% endif %} py-2">{{ {'muestra_insuficiente': 'Muestra insuficiente', 'base_no_disponible': 'Base de datos no disponible', 'sin_datos': 'Sin datos', 'historico_no_valido': 'Histórico no válido'}[d.estado] }}: {{ d.mensaje }}</div>{% endif %}
+{% if d.activa %}<div class="alert alert-info py-2 small">Hay una comparación en curso: <a href="/laboratorio/experimentos/{{ d.activa }}">ver progreso</a>.</div>{% endif %}
+<div class="row g-3 mb-3">
+    <div class="col-lg-5"><div class="card stat-card p-3 h-100">
+        <h6>Muestra y corte</h6>
+        {% if d.datos %}<dl class="row small mb-2">
+            <dt class="col-5">Sorteos</dt><dd class="col-7">{{ d.datos.sorteos }} ({{ d.datos.primer_sorteo }}–{{ d.datos.ultimo_sorteo }}, {{ d.datos.primera_fecha }} a {{ d.datos.ultima_fecha }})</dd>
+            <dt class="col-5">Huecos de numeración</dt><dd class="col-7">{{ d.datos.huecos.cantidad }}{% if d.datos.huecos.primeros %} ({{ d.datos.huecos.primeros|join(', ') }}){% endif %}</dd>
+            <dt class="col-5">Corte</dt><dd class="col-7">sorteo {{ d.datos.corte }}; objetivo siguiente {{ d.datos.corte + 1 }}</dd>
+            <dt class="col-5">Frescura</dt><dd class="col-7">{{ d.frescura.mensaje }}</dd>
+            {% if d.paleta %}<dt class="col-5">Paleta del corte</dt><dd class="col-7">{{ d.paleta|join(', ') }}</dd>{% endif %}
+            {% if d.muestra %}<dt class="col-5">Evaluación</dt><dd class="col-7">{{ d.muestra.objetivos|length }} objetivos ({{ d.muestra.objetivos[0] }}–{{ d.muestra.objetivos[-1] }}) en {{ d.muestra.bloques }} bloque(s){% if d.muestra.excluidos %}; {{ d.muestra.excluidos|length }} excluido(s) por color nuevo{% endif %}</dd>{% endif %}
+        </dl>{% else %}<p class="small text-muted">No disponible.</p>{% endif %}
+        {% if d.muestra and d.muestra.muestra_pequena %}<div class="alert alert-secondary py-1 px-2 small">Muestra pequeña: las diferencias pueden cambiar mucho con pocos sorteos.</div>{% endif %}
+        <form method="post" action="/laboratorio/comparar" class="d-flex flex-wrap gap-2 align-items-end mt-2 m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="{{ slugs[juego] }}">
+            <div><label class="form-label small mb-0" for="bloques">Bloques de 10</label>
+                <select class="form-select form-select-sm" id="bloques" name="bloques">{% for b in range(max_bloques, 0, -1) %}<option value="{{ b }}">{{ b }}</option>{% endfor %}</select></div>
+            <button class="btn btn-sm btn-primary" {% if d.estado != 'disponible' or not db_conectada %}disabled{% endif %}><i class="bi bi-play-fill me-1"></i>Comparar modelos</button>
+        </form>
+    </div></div>
+    <div class="col-lg-7"><div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3 h-100">
+        <h6>Modelos disponibles</h6>
+        <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+            <thead><tr><th>Modelo</th><th>Tipo</th><th>Requisitos</th><th>Con esta muestra</th></tr></thead><tbody>
+            {% for c in d.candidatos or [] %}<tr><td><strong>{{ c.nombre }}</strong><div class="text-muted">{{ c.explicacion }}</div></td>
+                <td>{{ 'referencia' if c.tipo == 'referencia' else 'modelo nuevo' }}</td>
+                <td>{% for k, v in c.requisitos.items() %}{{ k|replace('_', ' ') }}: {{ v }}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</td>
+                <td>{{ {'disponible': 'disponible', 'parcial': 'parcial (muestra corta para algún bloque)', 'no_disponible': 'no disponible'}[c.disponibilidad] }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        {# Parametros de las recetas: en pantalla, desplegable; al imprimir, la misma lista abierta (laboratorio-solo-impresion). #}
+        {% set parametros %}{% for c in d.candidatos or [] %}<div class="mt-1 laboratorio-receta"><strong>{{ c.id }} v{{ c.version }}</strong>: {% for k, v in c.parametros.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}<br><span class="text-muted">Variables: {{ c.variables }}. Transformación: {{ c.transformacion }}.</span></div>{% endfor %}{% endset %}
+        <details class="small mt-2 laboratorio-desplegable"><summary class="text-muted">Parámetros de las recetas</summary>
+            {{ parametros }}
+        </details>
+        <div class="small mt-2 laboratorio-solo-impresion"><div class="text-muted laboratorio-cabecera">Parámetros de las recetas</div>
+            {{ parametros }}
+        </div>
+    </div></div>
+</div>
+<div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3">
+    <h6>Experimentos de {{ nombres[juego] }}</h6>
+    {% if d.experimentos %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Terminado (UTC)</th><th>Corte</th><th>Sorteos</th><th>Objetivos</th><th>Resultado</th><th>Perfil</th></tr></thead><tbody>
+        {% for e in d.experimentos %}{% if e.estado == 'ilegible' %}<tr><td colspan="6" class="text-danger">Informe ilegible {{ e.clave[:12] }}… ({{ e.motivo }})</td></tr>{% else %}
+        <tr><td><a href="/laboratorio/experimentos/{{ e.clave }}">{{ (e.terminado_en or '')[:19]|replace('T', ' ') }}</a></td><td>{{ e.corte }}</td><td>{{ e.sorteos }}</td><td>{{ e.objetivos }}</td>
+            <td>{{ estados_resumen.get(e.estado, e.estado) }}{% if e.mejor %} · {{ e.mejor }}{% endif %}</td><td>{{ e.perfil }}</td></tr>{% endif %}{% endfor %}
+    </tbody></table></div>{% else %}<p class="small text-muted mb-0">Todavía no hay experimentos de este juego.</p>{% endif %}
+</div>
+{% endblock %}

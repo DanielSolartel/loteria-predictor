@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Verificación{% endblock %}
+{% block content %}
+<h3>Verificación del {{ 'experimento' if tipo == 'experimento' else 'pronóstico' }}</h3>
+<p class="small"><code>{{ clave }}</code> · <a href="/laboratorio/{{ 'experimentos' if tipo == 'experimento' else 'pronosticos' }}/{{ clave }}">volver</a></p>
+<div class="card stat-card p-3"><table class="table table-sm small mb-0"><tbody>
+    <tr><th>1. Integridad del archivo</th><td>{{ 'correcta (sello y huella coherentes)' if r.integridad == 'correcta' else 'alterado: ' ~ r.motivo }}</td></tr>
+    <tr><th>2. Reproducción con la instantánea guardada</th><td>{% if r.reproduccion is none %}—{% elif r.reproduccion.estado == 'no_reproducible' %}<span class="text-danger">no reproducible: {{ r.reproduccion.motivo }}</span>{% else %}{{ 'huella exacta' if r.reproduccion.huella_exacta else 'huella distinta' }}{% if r.reproduccion.maxima_diferencia_de_probabilidad is defined %} · máxima diferencia de probabilidad {{ r.reproduccion.maxima_diferencia_de_probabilidad }}{% else %} · máxima diferencia de Log Loss {{ r.reproduccion.maxima_diferencia_de_log_loss }}{% endif %}{% endif %}
+        <div class="text-muted">{{ 'Mismo entorno que al generar.' if r.mismo_entorno else 'Entorno distinto del guardado: no se promete identidad bit a bit.' }}</div></td></tr>
+    <tr><th>3. Histórico original frente a la base actual</th><td>{% set b = r.base_actual %}{% if b is none %}base no disponible{% elif b.historico_hasta_el_corte is defined %}{{ b.historico_hasta_el_corte|replace('_', ' ') }}{% if b.base_avanzo %} · la base avanzó {{ b.nuevos_desde_el_corte }} sorteo(s){% endif %}{% elif b.estado is defined and b.motivo is defined %}{{ b.estado|replace('_', ' ') }} — {{ b.motivo }}{% else %}{{ b.estado|replace('_', ' ') }}{% endif %}
+        <div class="text-muted">Que la instantánea se reproduzca no significa que coincida con una corrección posterior de la base.</div></td></tr>
+</tbody></table></div>
+{% endblock %}

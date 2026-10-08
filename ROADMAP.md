@@ -3349,6 +3349,103 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
     - Las métricas de distintos juegos no se fusionan en una precisión global.
 
 
+**Producto 4 -laboratorio de modelos y pronósticos comparables:** entrena modelos nuevos con el histórico de cada juego, los compara en una pantalla y genera un pronóstico con el modelo elegido (`/laboratorio`). Estado: **validado localmente en Windows con el histórico real**; la impresión ajustada en Carta vertical también quedó validada; GitHub Actions todavía no lo ha ejecutado. La impresión horizontal no se ha revalidado en Windows. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`; nada de esto acredita ventaja predictiva.
+- **Modelos nuevos** (catálogo explícito con identidad, versión, parámetros y requisitos; las referencias están rotuladas como tales):
+  - Baloto, Revancha y MiLoto: regresión logística regularizada (C=1) y `HistGradientBoostingClassifier` (80 iteraciones, profundidad 3, 7 hojas, L2=1, sin parada temprana), con calibración sigmoide sobre un bloque cronológico posterior al ajuste. Aprenden la aparición de cada número. Después, un ajuste de cardinalidad (desplazamiento común de logits por bisección, épsilon 1e-6) hace que las marginales sumen 5 sin superar 1. El producto de cinco marginales no es la probabilidad del premio mayor.
+  - ColorLoto: `PoissonRegressor` (alpha=1) y `HistGradientBoostingRegressor` con pérdida Poisson. Aprenden cuántas veces aparece cada par número-color (0 a 6) y sus intensidades se normalizan a una distribución de pares (protección fija 1e-6). La combinación se mide y se genera con la suposición multinomial de Producto 2 (6 balotas independientes e idénticamente distribuidas dada la distribución estimada); el modelo no la demuestra y no es una predictiva Dirichlet-multinomial. Sin calibración sigmoide.
+  - Superbalota: sigue con la estrategia suavizada de Producto 1, evaluada aparte; los modelos nuevos no la aprenden. MiLoto y ColorLoto no tienen superbalota.
+  - Referencias: la uniforme del juego y la estrategia actual (logística calibrada de AE-36, frecuencia contraída de MiLoto, multinomial suavizada de ColorLoto), con sus probabilidades originales.
+- **Variables** (`producto4-variables-1`), calculadas solo con los sorteos anteriores a cada objetivo: frecuencias (o conteos medios) en ventanas de 5, 10 y 20, acumulada, aparición en el sorteo anterior, atraso con indicador explícito de «nunca apareció» e identidad categórica del candidato o del par. Escalado y codificación se ajustan solo con el entrenamiento.
+- **Evaluación temporal común:** la unidad es el sorteo. Ventana creciente: 20 sorteos de calentamiento y al menos 30 objetivos de ajuste (20 base + 10 de calibración); hasta 6 bloques recientes de 10 objetivos (el último puede ser parcial) y al menos 10 evaluables.
+  - Se reentrena al inicio de cada bloque y los parámetros quedan fijos durante el bloque. Las variables de un objetivo usan los resultados anteriores ya observados, también dentro del bloque.
+  - Todos los candidatos se miden sobre la misma muestra (objetivos exactos registrados) y frente a la misma uniforme. Un candidato que no completa la muestra (p. ej. AE-36 con su mínimo de 100 objetivos) queda «parcial» y fuera del resumen principal.
+  - Métricas: Log Loss y Brier, aciertos top-5 o coincidencias con multiplicidad, y diferencia emparejada frente a la uniforme, agregadas desde las observaciones. Además, gráfica local, tablas por bloque y diagnóstico de calibración descriptivo. El resumen dice «menor pérdida en esta evaluación», «la uniforme fue mejor», «empate» o «comparación incompleta». Es exploratorio: elegir un modelo después de verlo no acredita ventaja futura.
+- **Experimentos y pronósticos:** cada comparación congela el histórico en una sola lectura de solo lectura. El informe guarda una copia canónica del histórico y su huella; los esquemas son nuevos (`laboratorio-experimento/1`, `laboratorio-pronostico/1`).
+  - La identidad determinista cubre juego, reglas, paleta, corte, huella, variables, candidatos y parámetros, protocolo, transformaciones, implementación y entorno numérico. Repetir la misma entrada devuelve lo guardado; otro corte, histórico, receta o entorno da otra identidad.
+  - Verificar distingue integridad del archivo, reproducción con la instantánea guardada y coincidencia con la base actual. No se promete identidad bit a bit entre Linux y Windows.
+  - Almacenamiento propio (`DIRECTORIO_LABORATORIO_MODELOS`, por defecto `storage/laboratorio`, ignorado por Git), con la publicación atómica de Producto 3 (temporal, `fsync`, `os.link`, sin sobrescritura). El orden de emisión va por línea de modelo y objetivo, con secuencia sellada. No toca los almacenes de Productos 1-3 ni cambia la primera emisión que usa `/rendimiento`. No se promueve ningún modelo al panel diario.
+- **Seguimiento por línea de modelo:** la primera emisión sellada de cada objetivo; si no es evaluable, se excluye sin avanzar a otra. Reconstrucciones retrospectivas, seguimiento (objetivo no cargado al generar, que no acredita anterioridad), pendientes y excluidos van por separado. Entre líneas solo se compara la intersección de objetivos.
+- **Rutas y comando:**
+  - Web: `/laboratorio`, `/laboratorio/{juego}`, `/laboratorio/experimentos/{ejecución o clave}`, `/laboratorio/pronosticos/{clave}` y `/laboratorio/{juego}/seguimiento`. Comparar, generar y verificar son POST locales protegidos; la comparación corre en otro hilo, con progreso persistente, cerrojo por juego y recuperación de ejecuciones interrumpidas.
+  - API de solo lectura en `/api/laboratorio/...`.
+  - Comando `python -m scripts.laboratorio_modelos {catalogo|diagnostico|comparar|consultar|experimentos|generar|verificar|seguimiento|ejecuciones|recuperar|rutas}`. Códigos de salida: 0, 2, 3, 4 (muestra insuficiente o modelo no ajustable), 5, 6, 7 y 8 (archivo alterado).
+- **Proceso trabajador:** cada comparación, generación o verificación entrena en un proceso dedicado creado con `spawn` (igual en Windows). El proceso de la web y de la operación diaria nunca cambia sus hilos numéricos; solo el trabajador se limita a 2.
+  - El trabajador recibe la instantánea ya congelada (ninguna sesión SQL) e informa el progreso.
+  - Devuelve el resultado; la publicación inmutable la hace el proceso principal.
+  - Si el trabajador muere, el juego queda en `fallo` sin publicar nada y los cerrojos se liberan.
+  - Una probabilidad cruda no finita se rechaza antes del ajuste de cardinalidad.
+  - Implementación `producto4-2`.
+- **Coste medido** (Linux, Python 3.11, históricos sintéticos de tamaño real): unos 17 s para comparar los cuatro juegos con las recetas predeterminadas, incluido el arranque de los trabajadores (sin él, unos 13 s; Baloto unos 5 s, de ellos AE-36 unos 2,6 s). Un informe ocupa 40-90 KB y un pronóstico unos 10 KB. Requiere disco local NTFS o POSIX.
+- **Impresión** (ajuste revalidado en Windows en Carta vertical):
+  - Trazabilidad (informe y pronóstico) y Parámetros de las recetas (catálogo de cada juego) siguen plegados en pantalla. Al imprimir sale una copia abierta con el mismo contenido: la plantilla lo genera una vez y lo muestra dos veces. Imprimir no entrena, no recalcula y no escribe artefactos.
+  - El comienzo de una tarjeta ya no queda al pie de una página separado de su título o de su primera tabla. Las tarjetas de candidato, de muestra común y del catálogo se imprimen como bloque y su cabecera (título, explicación y aviso) sigue a su tabla. Cada receta se imprime sin partirse.
+  - Las tablas largas se siguen fragmentando, con la cabecera repetida y todas sus filas. La sugerencia del pronóstico sigue en la primera página.
+  - Las reglas nuevas usan solo clases `laboratorio-*`, que solo aparecen en `templates/laboratorio/`, dentro del bloque de impresión existente. La pantalla y las demás páginas no cambian, y se conservan las protecciones de impresión de Productos 1 a 3.
+- **Validación: validado localmente en Windows con el histórico real.** Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`. Ningún modelo se promueve automáticamente a la operación diaria. Validar el funcionamiento no acredita ninguna ventaja predictiva.
+  - **Pruebas en Windows** (operador; Python 3.14.6, OpenSSL 3.5.6):
+    - se aplicó el parche completo (359997 bytes, 49 archivos). Sus 49 archivos coincidieron con el manifiesto: 1 byte a byte y 48 al normalizar CRLF a LF en memoria, sin reescribirlos;
+    - el primer intento dio `75 passed` y `1 failed` en `test_almacen_propio_por_defecto`. `Settings(_env_file=None)` sigue leyendo las variables del proceso, y el script había fijado `DIRECTORIO_LABORATORIO_MODELOS` para aislar Producto 4. No era un defecto del producto: se corrigió solo la prueba, que quita esa variable con `monkeypatch` antes de comprobar el valor por defecto, y se añadió una prueba de que la variable se respeta. No se cambió `Settings` ni se borra la variable de forma global;
+    - con esa corrección: Producto 4 `77 passed`, Productos 1 a 3 `225 passed` y selección filtrada (66 archivos) `1850 passed`, sin omisiones ni fallos;
+    - OpenSSL `SUPERADOS 7/7` (`exigir`), `pip check` limpio y comprobación de espacios con archivos nuevos limpia;
+    - un aviso conocido de Starlette por usar `httpx` en `TestClient`, que es un aviso, no un fallo.
+
+    La suite completa no se ejecutó en Windows.
+  - **Demostración sintética en Windows:** 8/8 pasos, incluidos el aislamiento de los hilos del proceso principal y la interrupción y recuperación del trabajador. Usa fixtures sintéticas: sus cifras no son sorteos reales.
+  - **Histórico real** (script de aceptación: `ACEPTADO`):
+    - la configuración y los tres almacenes efectivos apuntan al worktree de Producto 4 (`backend/storage/pronosticos`, `backend/storage/operacion` y `backend/storage/laboratorio`). Las credenciales no se imprimieron;
+    - se copiaron 28 archivos anteriores de Producto 3; el origen y la copia se conservaron byte a byte al terminar;
+    - datos usados (los últimos sorteos cargados tienen fecha 2026-10-05):
+
+      | Juego | Sorteos | Último cargado | Objetivo | Objetivos de evaluación |
+      |---|---:|---:|---:|---:|
+      | Baloto | 638 | 2718 | 2719 | 60 |
+      | Revancha | 638 | 2718 | 2719 | 60 |
+      | MiLoto | 87 | 618 | 619 | 37 |
+      | ColorLoto | 224 | 224 | 225 | 60 |
+
+    - comparar los cuatro juegos tardó 22.8 s; repetir la comparación tardó 3.6 s y reutilizó los mismos cuatro informes. Todos los candidatos quedaron completos;
+    - se generaron ocho pronósticos, dos modelos nuevos por juego, y repetir las entradas los reutilizó;
+    - los cuatro experimentos y los ocho pronósticos dieron integridad correcta, reproducción exacta y coincidencia del histórico hasta el corte.
+  - **Resultados de la evaluación real** (Log Loss agregado sobre la muestra común de cada juego; menor es mejor; ColorLoto, por balota):
+
+    | Juego | Uniforme | Estrategia actual | Modelo lineal nuevo | Modelo de árboles nuevo |
+    |---|---:|---:|---:|---:|
+    | Baloto | 0.359445147513 | 0.359304564307 (AE-36) | 0.359424073003 (logística regularizada) | 0.359613609266 (HGB clasificador) |
+    | Revancha | 0.359445147513 | 0.359652186736 (AE-36) | 0.359386252343 (logística regularizada) | 0.359548260626 (HGB clasificador) |
+    | MiLoto | 0.382960430768 | 0.387894755517 (frecuencias) | 0.385416160425 (logística regularizada) | 0.385691469946 (HGB clasificador) |
+    | ColorLoto | 3.737669618283 | 3.755328569885 (multinomial suavizada) | 3.738047884145 (Poisson regularizado) | 3.784794532888 (HGB Poisson) |
+
+    - Baloto: AE-36 tuvo la menor pérdida en esta evaluación. No implica más aciertos: el informe muestra 0.45 aciertos top-5 por sorteo para AE-36 frente a 0.53 de la uniforme. La clasificación sigue el criterio declarado de Log Loss.
+    - Revancha: la nueva logística regularizada tuvo la menor pérdida.
+    - MiLoto y ColorLoto: la uniforme fue mejor.
+    - No hay ventaja predictiva demostrada: los objetivos ya eran histórico y la comparación es exploratoria. Las pérdidas de juegos distintos usan métricas distintas y no se comparan entre sí.
+    - Retrospectiva de MiLoto: corte 617 y objetivo existente 618, incluida como retrospectiva, 0 aciertos, Log Loss 0.38856 frente a 0.38296 de la uniforme. El panel muestra ese corte 617 como último experimento de MiLoto porque se ejecutó después del de corte 618; es coherente.
+    - Seguimiento: el objetivo 619 está pendiente en las dos líneas. Que sea el siguiente al último cargado no acredita que el pronóstico se emitiera antes del sorteo real.
+  - **PDF reales, primera revisión** (Chrome 154, Carta vertical):
+    - revisados: el panel del laboratorio, Baloto y ColorLoto (2 páginas cada uno), el seguimiento de MiLoto (1), el informe de Baloto con corte 2718 (12), el de ColorLoto con corte 224 (11) y el pronóstico de MiLoto 619 (2);
+    - sin solapamientos visibles, con gráficas y tablas legibles. Cada candidato no uniforme tiene sus 60 objetivos exactos en los dos informes, sin filas faltantes ni duplicadas, y las medias y los finales de las gráficas coinciden con sus tablas dentro del redondeo de cinco decimales;
+    - el pronóstico de MiLoto lista los 39 números de mayor a menor probabilidad, con la sugerencia 9, 10, 23, 24, 33 en la primera página. Las marginales impresas suman 5.00003 por redondeo, coherente con el total 5 del artefacto;
+    - motivaron el ajuste de impresión: Trazabilidad y Parámetros de las recetas no se imprimían (solo el título del desplegable), los catálogos de Baloto y ColorLoto dejaban una segunda página casi vacía con la tabla de experimentos, y algunos comienzos de tarjeta quedaban separados de su tabla, como el primer candidato de ColorLoto;
+    - no cubren la vista móvil, la Carta horizontal ni los botones.
+  - **Revalidación final en Windows** (operador, 2026-10-07; Python 3.14.6 y OpenSSL 3.5.6):
+    - `aplicar-producto4-presentacion-cierre.ps1` comprobó los 49 archivos previos y, tras aplicar el incremental, los 51 archivos finales frente al manifiesto; CRLF/LF se comparó solo en memoria. El índice real quedó vacío y los espacios, incluidos los archivos nuevos, limpios;
+    - Producto 4 `94 passed`, Productos 1 a 3 `225 passed` y selección filtrada de 67 archivos `1867 passed`, sin fallos ni omisiones. Demostración sintética 8/8, OpenSSL `SUPERADOS 7/7` en modo `exigir` y `pip check` limpio. Se conserva el aviso conocido de Starlette. La suite completa no se ejecutó en Windows;
+    - se revisaron las 16 páginas de tres PDF nuevos, generados en Chrome 154, Carta vertical: catálogo de Baloto (2), pronóstico de MiLoto 619 (3) e informe de ColorLoto con corte 224 (11);
+    - las cuatro recetas del catálogo se imprimen completas, sin partir una receta entre páginas. MiLoto conserva las 39 filas y la sugerencia 9, 10, 23, 24, 33 en la primera página; Trazabilidad se imprime completa en la tercera;
+    - ColorLoto conserva los 60 objetivos de cada candidato no uniforme, sus gráficas y la trazabilidad. Los títulos acompañan sus tablas; no se observaron solapamientos ni contenido cortado;
+    - esta revalidación cubre Carta vertical con esos tres documentos reales. No acredita la impresión horizontal, la vista móvil ni pruebas nuevas de los botones en Windows. Los resultados Linux se mantienen como evidencia separada;
+    - esta actualización final solo cambia documentación: no repite importaciones, comparaciones, generaciones ni la suite, y no cambia modelos, artefactos o autorización.
+  - **Linux** (Cloud, solo fixtures sintéticas):
+    - la entrega del parche completo dio `6094 passed` en la suite completa, antes de añadir la prueba de la variable de entorno;
+    - con la corrección de la prueba y el ajuste de impresión, sobre el código final:
+      - suite completa, una vez: `6112 passed`, sin omisiones ni fallos, con cinco avisos conocidos de Alembic;
+      - Producto 4 `94 passed`, con 17 pruebas nuevas de impresión (14 de ellas fallan sobre el estado anterior al ajuste) y Productos 1 a 3 `225 passed`;
+      - selección filtrada (67 entradas) `1867 passed`, sin omisiones; OpenSSL `SUPERADOS 7/7` (`exigir`) en la selección y en la suite; demostración 8/8; `pip check` y espacios limpios;
+      - impresión comprobada en Chromium 141 con Bootstrap 5.3.3 y fixtures de tamaño real, en Carta vertical y horizontal: Trazabilidad y Parámetros impresos, ninguna tarjeta separada de su tabla ni título al pie, las mismas filas que antes, y la pantalla y las páginas ajenas al laboratorio idénticas píxel a píxel. No sustituye la revisión en Windows con los informes reales.
+  - **GitHub Actions:** todavía no ha ejecutado Producto 4.
+- **Pendiente:** la ejecución de GitHub Actions. La impresión horizontal no se ha revalidado en Windows; la evidencia real de impresión cubre Carta vertical. Ver `backend/docs/producto4_windows.md`.
+
+
 ---
 
 ## 🟡 Fase 5 — Estadísticas descriptivas (parcial)

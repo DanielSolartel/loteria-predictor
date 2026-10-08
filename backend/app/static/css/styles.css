@@ -135,6 +135,13 @@ body {
     display: none;
 }
 
+/* Laboratorio de modelos (templates/laboratorio/): copia abierta de los
+   desplegables Trazabilidad y Parametros de las recetas, que solo se muestra
+   al imprimir. En pantalla el desplegable sigue igual. */
+.laboratorio-solo-impresion {
+    display: none;
+}
+
 /* Impresion y PDF de las paginas de Producto 1 (plantillas en
    templates/producto/, que marcan <body class="producto1-impresion">).
    Ninguna regla afecta a otras paginas ni cambia nada en pantalla. */
@@ -235,5 +242,41 @@ body {
 
     body.producto1-impresion thead {
         display: table-header-group;
+    }
+
+    /* Laboratorio de modelos: solo clases `laboratorio-*`, que solo usan las
+       plantillas de templates/laboratorio/. Los desplegables cerrados no se
+       imprimen por si solos: se imprime su copia abierta con el mismo
+       contenido (la plantilla lo genera una vez y lo muestra dos veces). */
+    body.producto1-impresion details.laboratorio-desplegable {
+        display: none !important;
+    }
+
+    body.producto1-impresion .laboratorio-solo-impresion {
+        display: block;
+    }
+
+    /* Una `.card` de Bootstrap es flex: al pasar de pagina, Chromium podia
+       dejar al pie solo el borde superior de la tarjeta y llevarse el titulo
+       a la pagina siguiente, o cortar entre el titulo y su tabla. Como
+       bloque, la tarjeta pasa entera a la pagina siguiente si su titulo y el
+       comienzo de su tabla no caben, y despues se fragmenta igual que antes. */
+    body.producto1-impresion .laboratorio-tarjeta {
+        display: block;
+    }
+
+    /* Titulo, explicacion y aviso de cada candidato: juntos y pegados al
+       comienzo de su tabla de bloques. */
+    body.producto1-impresion .laboratorio-cabecera {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* Cada receta de Parametros de las recetas se imprime sin partirse. */
+    body.producto1-impresion .laboratorio-receta {
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 }

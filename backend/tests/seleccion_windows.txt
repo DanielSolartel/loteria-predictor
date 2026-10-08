@@ -54,3 +54,14 @@ tests/unit/test_producto3_rendimiento.py
 tests/unit/test_producto3_web.py
 tests/unit/test_producto3_cli.py
 tests/unit/test_producto3_recuperacion.py
+tests/unit/test_producto4_modelos.py
+tests/unit/test_producto4_temporal.py
+tests/unit/test_producto4_evaluacion.py
+tests/unit/test_producto4_almacen.py
+tests/unit/test_producto4_seguimiento.py
+tests/unit/test_producto4_web.py
+tests/unit/test_producto4_cli.py
+tests/unit/test_producto4_compatibilidad.py
+tests/unit/test_producto4_correcciones.py
+tests/unit/test_producto4_aislamiento.py
+tests/unit/test_producto4_impresion.py

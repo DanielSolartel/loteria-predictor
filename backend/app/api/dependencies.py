@@ -37,6 +37,7 @@ from app.application.use_cases.pronostico_experimental import (
     GenerarPronosticoExperimental,
     VerificarPronosticoExperimental,
 )
+from app.application.use_cases.laboratorio import LaboratorioDeModelos, Lectura
 from app.application.use_cases.operacion_diaria import DependenciasDeJuego, OperacionDiaria
 from app.application.use_cases.panel_diario import ConsultarPanelDiario
 from app.application.use_cases.registrar_sorteo import RegistrarSorteo
@@ -61,6 +62,8 @@ from app.infrastructure.repositories.sincronizacion_repository_sqlalchemy import
 )
 from app.infrastructure.repositories.sorteo_repository_sqlalchemy import SorteoRepositorySQLAlchemy
 from app.infrastructure.storage.html_file_storage import HtmlFileStorage
+from app.infrastructure.laboratorio_trabajador import EjecutorEnProceso
+from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore
 from app.infrastructure.storage.operacion_file_store import CerrojoPorJuego, RegistroEjecucionesArchivo
 from app.infrastructure.storage.pronostico_experimental_file_store import PronosticoExperimentalFileStore
 
@@ -400,3 +403,42 @@ def _lanzar_en_hilo(funcion, inicio) -> None:
 
 def get_lanzador_de_operacion():
     return _lanzar_en_hilo
+
+
+# ---------------------------------------------------------------------------
+# Producto 4: laboratorio de modelos
+# ---------------------------------------------------------------------------
+
+@contextmanager
+def abrir_lectura_del_laboratorio():
+    """Una lectura consistente del historico en su PROPIA sesion, con una
+    transaccion de solo lectura que termina en ROLLBACK. Se cierra antes de
+    entrenar: ninguna sesion SQL queda abierta durante una comparacion."""
+    session = db_session.SessionLocal()
+    try:
+        session.execute(text("SET TRANSACTION READ ONLY"))
+        yield Lectura(JuegoRepositorySQLAlchemy(session), ResultadosHistoricosRepositorySQLAlchemy(session))
+        session.rollback()
+    except BaseException:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def get_laboratorio() -> LaboratorioDeModelos:
+    directorio = get_settings().directorio_laboratorio_modelos
+    operacion = f"{directorio}/operacion"
+    return LaboratorioDeModelos(LaboratorioFileStore(directorio), RegistroEjecucionesArchivo(operacion),
+                                CerrojoPorJuego(operacion), abrir_lectura_del_laboratorio,
+                                ejecutor=EjecutorEnProceso())
+
+
+def _lanzar_comparacion_en_hilo(funcion, inicio) -> None:
+    """La comparacion no se ejecuta en el hilo de la peticion web."""
+    threading.Thread(target=funcion, args=(inicio,), daemon=True,
+                     name=f"laboratorio-{inicio.ejecucion['id']}").start()
+
+
+def get_lanzador_de_laboratorio():
+    return _lanzar_comparacion_en_hilo

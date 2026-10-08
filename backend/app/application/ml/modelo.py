@@ -390,3 +390,72 @@ def entrenar_modelo_calibrado_familia(
         hiperparametros=hiperparametros_registrados,
         frontera_base_calibracion=frontera_base_calibracion,
     )
+
+
+# =====================================================================
+# Producto 4 -laboratorio de modelos. Construccion de los estimadores de
+# scikit-learn de las familias nuevas (este sigue siendo el unico modulo de
+# `application/ml` que importa scikit-learn). Las recetas, la evaluacion y
+# las transformaciones de probabilidad viven en `laboratorio_modelos.py`.
+# Las funciones anteriores de este archivo no cambian.
+# =====================================================================
+
+def transformador_laboratorio(familia: str) -> ColumnTransformer:
+    """Columna 0 = identidad categorica (candidato o par); 1..7 numericas.
+    Lineal: OneHot (ignora categorias no vistas) + StandardScaler ajustado
+    solo con las filas de ajuste. Arboles: OrdinalEncoder (no vista = ausente)
+    y categoria nativa del boosting."""
+    from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+
+    if familia == "lineal":
+        return ColumnTransformer([("identidad", OneHotEncoder(handle_unknown="ignore"), [0]),
+                                  ("numericas", StandardScaler(), list(range(1, 8)))])
+    return ColumnTransformer([("identidad", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=float("nan"),
+                                                           encoded_missing_value=float("nan")), [0])],
+                             remainder="passthrough")
+
+
+def estimador_laboratorio(modelo: str, parametros: dict):
+    from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
+    from sklearn.linear_model import PoissonRegressor
+
+    if modelo == "logistica_regularizada":
+        return LogisticRegression(C=parametros["C"], solver=parametros["solver"], max_iter=parametros["max_iter"],
+                                  random_state=parametros["semilla"])
+    if modelo == "poisson_regularizado":
+        return PoissonRegressor(alpha=parametros["alpha"], max_iter=parametros["max_iter"])
+    arbol = {k: parametros[k] for k in ("max_iter", "max_depth", "max_leaf_nodes", "min_samples_leaf",
+                                        "learning_rate", "l2_regularization", "early_stopping", "random_state")}
+    if modelo == "hgb_clasificador":
+        return HistGradientBoostingClassifier(categorical_features=[0], **arbol)
+    if modelo == "hgb_poisson":
+        return HistGradientBoostingRegressor(loss="poisson", categorical_features=[0], **arbol)
+    raise ValueError(f"modelo del laboratorio desconocido: {modelo!r}")
+
+
+def pipeline_laboratorio(familia: str, modelo: str, parametros: dict) -> Pipeline:
+    return Pipeline([("variables", transformador_laboratorio(familia)),
+                     ("estimador", estimador_laboratorio(modelo, parametros))])
+
+
+def calibrador_cronologico(pipeline: Pipeline, en_calibracion: Sequence[bool]) -> CalibratedClassifierCV:
+    """Sigmoide con `PredefinedSplit`: ajuste base con las filas marcadas
+    False y calibracion con las marcadas True (bloque posterior)."""
+    return CalibratedClassifierCV(pipeline, method="sigmoid",
+                                  cv=PredefinedSplit([0 if c else -1 for c in en_calibracion]))
+
+
+def ajustar_registrando_convergencia(estimador, X, y) -> list[str]:
+    """Ajusta y devuelve los avisos de convergencia registrados (localmente,
+    sin silenciarlos de forma global); los demas avisos se vuelven a emitir."""
+    import warnings
+
+    from sklearn.exceptions import ConvergenceWarning
+
+    with warnings.catch_warnings(record=True) as avisos:
+        warnings.simplefilter("always", ConvergenceWarning)
+        estimador.fit(X, y)
+    for aviso in avisos:
+        if not issubclass(aviso.category, ConvergenceWarning):
+            warnings.warn_explicit(aviso.message, aviso.category, aviso.filename, aviso.lineno)
+    return [str(a.message)[:200] for a in avisos if issubclass(a.category, ConvergenceWarning)]

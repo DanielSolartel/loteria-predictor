@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.rest.routers import colores as rest_colores
 from app.api.rest.routers import juegos as rest_juegos
+from app.api.rest.routers import laboratorio as rest_laboratorio
 from app.api.rest.routers import operacion as rest_operacion
 from app.api.rest.routers import producto as rest_producto
 from app.api.rest.routers import sorteos as rest_sorteos
@@ -26,6 +27,7 @@ from app.api.web.routers import dashboard as web_dashboard
 from app.api.web.routers import estadisticas as web_estadisticas
 from app.api.web.routers import importacion as web_importacion
 from app.api.web.routers import juegos as web_juegos
+from app.api.web.routers import laboratorio as web_laboratorio
 from app.api.web.routers import operacion as web_operacion
 from app.api.web.routers import producto as web_producto
 from app.api.web.routers import sorteos as web_sorteos
@@ -55,6 +57,7 @@ app.include_router(web_importacion.router)
 app.include_router(web_producto.router)
 app.include_router(web_estadisticas.router)
 app.include_router(web_operacion.router)
+app.include_router(web_laboratorio.router)
 
 # Adaptador REST (JSON, puente hacia una futura UI en React/Next.js)
 app.include_router(rest_juegos.router)
@@ -62,6 +65,7 @@ app.include_router(rest_sorteos.router)
 app.include_router(rest_colores.router)
 app.include_router(rest_producto.router)
 app.include_router(rest_operacion.router)
+app.include_router(rest_laboratorio.router)
 
 
 _STATUS_POR_EXCEPCION = {
