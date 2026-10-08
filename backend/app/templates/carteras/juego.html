@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Carteras — {{ nombres[juego] }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Carteras · {{ nombres[juego] }}</h3>
+    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/carteras">Carteras</a>
+        {% if d.lineas %}<a class="btn btn-sm btn-outline-secondary" href="/carteras/{{ slugs[juego] }}/seguimiento">Seguimiento</a>{% endif %}</div>
+</div>
+{% include "carteras/_aviso.html" %}
+{% if d.estado != 'disponible' %}<div class="alert alert-danger py-2">{{ {'base_no_disponible': 'Base de datos no disponible', 'sin_datos': 'Sin datos', 'historico_no_valido': 'Histórico no válido'}[d.estado] }}: {{ d.mensaje }}</div>{% endif %}
+{% if d.activa %}<div class="alert alert-info py-2 small">Hay un trabajo en curso para este juego: <a href="/carteras/ejecuciones/{{ d.activa }}">ver progreso</a>.</div>{% endif %}
+<div class="row g-3 mb-3">
+    <div class="col-lg-5"><div class="card stat-card p-3 h-100">
+        <h6>Muestra, corte y objetivo</h6>
+        {% if d.datos %}<dl class="row small mb-2">
+            <dt class="col-5">Sorteos</dt><dd class="col-7">{{ d.datos.sorteos }} ({{ d.datos.primer_sorteo }}–{{ d.datos.ultimo_sorteo }}, {{ d.datos.primera_fecha }} a {{ d.datos.ultima_fecha }})</dd>
+            <dt class="col-5">Corte</dt><dd class="col-7">sorteo {{ d.datos.corte }}; objetivo {{ d.objetivo }}</dd>
+            <dt class="col-5">Frescura</dt><dd class="col-7">{{ d.frescura.mensaje }}</dd>
+            {% if d.paleta %}<dt class="col-5">Paleta del corte</dt><dd class="col-7">{{ d.paleta|join(', ') }}</dd>{% endif %}
+            <dt class="col-5">Comparación</dt><dd class="col-7">{% if d.comparacion.disponible %}{{ d.comparacion.objetivos_exteriores }} objetivos exteriores posibles{% else %}<span class="text-warning">muestra insuficiente</span>: se necesitan {{ d.comparacion.requeridos }}{% endif %}</dd>
+        </dl>{% else %}<p class="small text-muted">No disponible.</p>{% endif %}
+        <form method="post" action="/carteras/comparar" class="d-flex flex-wrap gap-2 align-items-end mt-2 m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="{{ slugs[juego] }}">
+            <div><label class="form-label small mb-0" for="bloques">Bloques exteriores de 10</label>
+                <select class="form-select form-select-sm" id="bloques" name="bloques">{% for b in range(max_bloques, 0, -1) %}<option value="{{ b }}">{{ b }}</option>{% endfor %}</select></div>
+            <button class="btn btn-sm btn-primary" {% if d.estado != 'disponible' or not d.comparacion.disponible or not db_conectada %}disabled{% endif %}><i class="bi bi-play-fill me-1"></i>Comparar el modelo combinado</button>
+        </form>
+    </div></div>
+    <div class="col-lg-7"><div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 h-100">
+        <h6>Modelos para carteras</h6>
+        <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+            <thead><tr><th>Modelo</th><th>Tipo</th><th class="text-end">Sorteos necesarios</th><th>Con esta muestra</th></tr></thead><tbody>
+            {% for c in d.modelos or [] %}<tr><td><strong>{{ c.nombre }}</strong> <span class="text-muted">{{ c.id }} v{{ c.version }}</span><div class="text-muted">{{ c.explicacion }}</div></td>
+                <td>{{ {'referencia': 'referencia', 'modelo_combinado': 'modelo combinado'}.get(c.tipo, 'modelo nuevo') }}</td>
+                <td class="text-end">{{ c.requiere_sorteos }}</td><td>{{ 'puede generar' if c.puede_generar else 'muestra insuficiente' }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        <p class="small text-muted mt-2 mb-0">{{ cartera.uniforme }} El modelo combinado necesita {{ ((d.modelos or [])|selectattr('id', 'equalto', 'ensemble_temporal')|first or {}).get('requiere_sorteos', 60) }} sorteos para generar (20 de calentamiento, 30 de ajuste y 10 internos para los pesos).</p>
+    </div></div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6"><div class="card stat-card p-3 h-100">
+        <h6>Generar una cartera</h6>
+        <p class="small text-muted mb-2">La primera combinación es la sugerencia del modelo (salvo la uniforme o un vector fuente constante); las demás salen del muestreo ponderado con un generador local y la semilla indicada. Misma entrada → la misma cartera, sin recalcular.</p>
+        <form method="post" action="/carteras/generar" class="d-flex flex-wrap gap-2 align-items-end m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="{{ slugs[juego] }}">
+            {% with prefijo='gen', m='ensemble_temporal', cantidad=none, diversidad='libre', semilla=none %}{% include "carteras/_campos_cartera.html" %}{% endwith %}
+            <button class="btn btn-sm btn-primary" {% if d.estado != 'disponible' or not db_conectada %}disabled{% endif %}><i class="bi bi-grid-3x3-gap me-1"></i>Generar cartera</button>
+        </form>
+        <p class="small text-muted mt-2 mb-0">{{ cartera.nota }}</p>
+    </div></div>
+    <div class="col-lg-6"><div class="card stat-card p-3 h-100" id="configuracion">
+        <h6>Configuración del juego</h6>
+        {% set c = d.configuracion %}
+        {% if c and c.estado == 'vigente' %}<p class="small mb-2">Vigente: <strong>versión {{ c.version }}</strong> · {{ c.modelo.id }} v{{ c.modelo.version }} · {{ c.cantidad }} combinaciones · diversidad {{ c.diversidad }} · semilla {{ c.semilla }} · línea <code>{{ c.linea }}</code>. Guardada {{ c.registro.guardada_en[:19]|replace('T', ' ') }} UTC ({{ c.registro.origen }}).</p>
+        {% elif c %}<div class="alert alert-danger py-1 px-2 small">{{ c.mensaje }}</div>
+        {% else %}<p class="small text-muted mb-2">Sin configuración: «Generar carteras configuradas» marca este juego como «sin configuración».</p>{% endif %}
+        <form method="post" action="/carteras/{{ slugs[juego] }}/configurar" class="d-flex flex-wrap gap-2 align-items-end m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}">
+            {% if c and c.estado == 'vigente' %}{% set m_, n_, v_, s_ = c.modelo.id, c.cantidad, c.diversidad, c.semilla %}{% else %}{% set m_, n_, v_, s_ = 'ensemble_temporal', none, 'libre', none %}{% endif %}
+            {% with prefijo='cfg', m=m_, cantidad=n_, diversidad=v_, semilla=s_ %}{% include "carteras/_campos_cartera.html" %}{% endwith %}
+            <button class="btn btn-sm btn-outline-primary">Guardar como versión nueva</button>
+        </form>
+        <p class="small text-muted mt-2 mb-1">Cada cambio crea una versión nueva e inmutable; no elige el modelo con menor pérdida ni cambia los modelos de Producto 3.</p>
+        {% if configuraciones %}<details class="small carteras-desplegable"><summary class="text-muted">Versiones ({{ configuraciones|length }})</summary>
+            <ul class="mb-0">{% for v in configuraciones %}{% if v.artefacto is defined %}<li>v{{ v.artefacto.version }}: <code>{{ v.artefacto.linea }}</code> · {{ v.artefacto.registro.guardada_en[:19]|replace('T', ' ') }} UTC</li>{% else %}<li class="text-danger">{{ v.identificador }}: ilegible ({{ v.motivo }})</li>{% endif %}{% endfor %}</ul></details>{% endif %}
+    </div></div>
+</div>
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3">
+    <h6>Carteras guardadas por línea</h6>
+    {% if lineas %}{% for l in lineas %}<p class="small mb-1 mt-2"><strong><code>{{ l.id }}</code></strong> · {{ l.total }} cartera(s) · <a href="/carteras/{{ slugs[juego] }}/seguimiento?linea={{ l.id }}">seguimiento</a></p>
+        <div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>Objetivo</th><th>Versión</th><th>Generada (UTC)</th><th>Combinaciones</th></tr></thead><tbody>
+        {% for g in l.elementos %}{% if g.artefacto is defined %}<tr><td><a href="/carteras/guardadas/{{ g.identificador }}">{{ g.objetivo }}</a></td><td>{{ g.version }} de {{ g.versiones }}</td><td>{{ g.artefacto.generacion.generado_en[:19]|replace('T', ' ') }}</td><td>{{ g.artefacto.cartera.obtenidas }}</td></tr>
+        {% else %}<tr><td colspan="4" class="text-danger">Cartera ilegible {{ g.identificador[:12] }}… ({{ g.motivo }})</td></tr>{% endif %}{% endfor %}
+        </tbody></table></div>{% endfor %}
+    {% else %}<p class="small text-muted mb-0">Todavía no hay carteras de este juego.</p>{% endif %}
+</div>
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3">
+    <h6>Comparaciones del modelo combinado</h6>
+    {% if d.comparaciones %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Terminada (UTC)</th><th>Corte</th><th>Sorteos</th><th>Objetivos</th><th>Resultado</th><th>Bloques con la uniforme</th></tr></thead><tbody>
+        {% for e in d.comparaciones %}{% if e.estado == 'ilegible' %}<tr><td colspan="6" class="text-danger">Comparación ilegible {{ e.clave[:12] }}… ({{ e.motivo }})</td></tr>{% else %}
+        <tr><td><a href="/carteras/comparaciones/{{ e.clave }}">{{ (e.terminado_en or '')[:19]|replace('T', ' ') }}</a></td><td>{{ e.corte }}</td><td>{{ e.sorteos }}</td><td>{{ e.objetivos }}</td>
+            <td>{{ estados_resumen.get(e.estado, e.estado) }}{% if e.mejor %} · {{ e.mejor }}{% endif %}</td><td>{{ e.bloques_que_eligieron_la_uniforme }} de {{ e.bloques }}</td></tr>{% endif %}{% endfor %}
+    </tbody></table></div>{% else %}<p class="small text-muted mb-0">Todavía no hay comparaciones de este juego.</p>{% endif %}
+</div>
+{% endblock %}

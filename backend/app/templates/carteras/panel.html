@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Carteras y simulación{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Carteras y simulación</h3>
+    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/operacion"><i class="bi bi-calendar-check me-1"></i>Panel diario</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio"><i class="bi bi-diagram-3 me-1"></i>Laboratorio de modelos</a></div>
+</div>
+{% include "carteras/_aviso.html" %}
+<div class="card stat-card p-3 mb-3">
+    <h6 class="mb-1">Los cuatro juegos</h6>
+    <p class="small text-muted mb-2">«Comparar el modelo combinado» aprende sus pesos solo con sorteos anteriores a cada bloque y lo compara con las familias del laboratorio, la estrategia actual y la uniforme. «Generar carteras configuradas» usa la configuración guardada de cada juego. Ambos corren en segundo plano; abrir esta página no entrena ni simula nada.</p>
+    <div class="d-flex flex-wrap gap-2 align-items-end">
+        <form method="post" action="/carteras/comparar" class="d-flex flex-wrap gap-2 align-items-end m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="todos">
+            <div><label class="form-label small mb-0" for="bloques-todos">Bloques exteriores de 10</label>
+                <select class="form-select form-select-sm" id="bloques-todos" name="bloques">{% for b in range(max_bloques, 0, -1) %}<option value="{{ b }}">{{ b }}</option>{% endfor %}</select></div>
+            <button class="btn btn-sm btn-primary" {% if not db_conectada %}disabled{% endif %}><i class="bi bi-play-fill me-1"></i>Comparar el modelo combinado (los cuatro)</button>
+        </form>
+        <form method="post" action="/carteras/configuradas" class="m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="todos">
+            <button class="btn btn-sm btn-outline-primary" {% if not db_conectada %}disabled{% endif %}><i class="bi bi-grid-3x3-gap me-1"></i>Generar carteras configuradas</button>
+        </form>
+    </div>
+    {% if not db_conectada %}<div class="small text-danger mt-2">Sin conexión a la base de datos: se pueden consultar las carteras guardadas, pero no comparar ni generar.</div>{% endif %}
+</div>
+<div class="row g-3 mb-3">
+{% for d in juegos %}
+    <div class="col-lg-6"><div class="card stat-card p-3 h-100" id="juego-{{ slugs[d.juego] }}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0"><a href="/carteras/{{ slugs[d.juego] }}" class="text-decoration-none">{{ d.nombre }}</a></h5>
+            {% set badge = {'disponible': ('bg-success', 'Datos disponibles'), 'base_no_disponible': ('bg-danger', 'Base no disponible'), 'sin_datos': ('bg-secondary', 'Sin datos'), 'historico_no_valido': ('bg-danger', 'Histórico no válido')}[d.estado] %}
+            <span class="badge {{ badge[0] }}">{{ badge[1] }}</span>
+        </div>
+        {% if d.mensaje %}<div class="small text-muted mb-2">{{ d.mensaje }}</div>{% endif %}
+        {% if d.activa %}<div class="alert alert-info py-1 px-2 small mb-2">Trabajo en curso: <a href="/carteras/ejecuciones/{{ d.activa }}">ver progreso</a>.</div>{% endif %}
+        <dl class="row small mb-2">
+            {% if d.datos %}<dt class="col-5">Corte y objetivo</dt><dd class="col-7">sorteo {{ d.datos.corte }} ({{ d.datos.ultima_fecha }}) → objetivo {{ d.objetivo }}<br><span class="{% if d.frescura.estado == 'desactualizado' %}text-danger{% else %}text-muted{% endif %}">{{ d.frescura.mensaje }}</span></dd>
+            <dt class="col-5">Comparación</dt><dd class="col-7">{% if d.comparacion.disponible %}{{ d.comparacion.objetivos_exteriores }} objetivos exteriores posibles{% else %}<span class="text-warning">muestra insuficiente</span> ({{ d.comparacion.requeridos }}){% endif %}</dd>{% endif %}
+            <dt class="col-5">Configuración</dt><dd class="col-7">{% set c = d.configuracion %}{% if c and c.estado == 'vigente' %}v{{ c.version }}: <code>{{ c.linea }}</code>{% elif c %}<span class="text-danger">{{ c.mensaje }}</span>{% else %}<span class="text-muted">sin configuración (no se genera en «Generar carteras configuradas»)</span>{% endif %}</dd>
+        </dl>
+        {% set e = d.comparaciones[0] if d.comparaciones else none %}
+        <p class="small mb-2"><strong>Última comparación:</strong>
+            {% if e and e.estado != 'ilegible' %}<a href="/carteras/comparaciones/{{ e.clave }}">corte {{ e.corte }}</a> · {{ estados_resumen.get(e.estado, e.estado) }}{% if e.mejor %} ({{ e.mejor }}){% endif %} · el modelo combinado eligió la uniforme en {{ e.bloques_que_eligieron_la_uniforme }} de {{ e.bloques }} bloque(s)
+            {% elif e %}<span class="text-danger">comparación ilegible</span>{% else %}ninguna todavía{% endif %}</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="/carteras/{{ slugs[d.juego] }}">Abrir</a>
+            {% if d.lineas %}<a class="btn btn-sm btn-outline-secondary" href="/carteras/{{ slugs[d.juego] }}/seguimiento">Seguimiento</a>{% endif %}
+        </div>
+    </div></div>
+{% endfor %}
+</div>
+<div class="card stat-card impresion-fragmentable p-3">
+    <h6>Trabajos recientes</h6>
+    {% if ejecuciones %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Inicio (UTC)</th><th>Trabajo</th><th>Juegos</th><th>Estado</th><th>Origen</th></tr></thead><tbody>
+        {% for x in ejecuciones %}{% if x %}<tr><td><a href="/carteras/ejecuciones/{{ x.id }}">{{ (x.iniciada_en or '')[:19]|replace('T', ' ') }}</a></td>
+            <td>{{ trabajos.get(x.tipo, x.tipo) }}</td><td>{{ (x.orden or [])|map('replace', '_', ' ')|join(', ') }}</td><td>{{ x.estado|replace('_', ' ') }}</td><td>{{ x.origen }}</td></tr>{% endif %}{% endfor %}
+    </tbody></table></div>{% else %}<p class="small text-muted mb-0">Todavía no hay trabajos.</p>{% endif %}
+</div>
+{% endblock %}

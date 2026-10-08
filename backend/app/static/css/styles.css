@@ -142,6 +142,20 @@ body {
     display: none;
 }
 
+/* Carteras y simulacion (templates/carteras/): igual que el laboratorio, la
+   copia abierta de Trazabilidad solo se muestra al imprimir. En ColorLoto,
+   un numero repetido dentro de una combinacion (otro color o el mismo par)
+   se marca con un contorno discontinuo. */
+.carteras-solo-impresion {
+    display: none;
+}
+
+.carteras-repetido {
+    outline: 1px dashed #b02a37;
+    outline-offset: 1px;
+    border-radius: 4px;
+}
+
 /* Impresion y PDF de las paginas de Producto 1 (plantillas en
    templates/producto/, que marcan <body class="producto1-impresion">).
    Ninguna regla afecta a otras paginas ni cambia nada en pantalla. */
@@ -278,5 +292,41 @@ body {
     body.producto1-impresion .laboratorio-receta {
         break-inside: avoid;
         page-break-inside: avoid;
+    }
+
+    /* Carteras y simulacion: solo clases `carteras-*`, que solo usan las
+       plantillas de templates/carteras/. Mismas reglas que el laboratorio:
+       el desplegable se imprime por su copia abierta, la tarjeta pasa entera
+       si su titulo y el comienzo de su tabla no caben, y la cabecera queda
+       pegada a su tabla. Los pares de ColorLoto conservan su color. */
+    body.producto1-impresion details.carteras-desplegable {
+        display: none !important;
+    }
+
+    body.producto1-impresion .carteras-solo-impresion {
+        display: block;
+    }
+
+    body.producto1-impresion .carteras-tarjeta {
+        display: block;
+    }
+
+    body.producto1-impresion .carteras-cabecera {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* Cada tabla corta de mezclas internas (6 filas) se imprime entera con su
+       titulo: sin titulos huerfanos al pie de pagina. */
+    body.producto1-impresion .carteras-receta {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    body.producto1-impresion .carteras-par .color-swatch {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 }

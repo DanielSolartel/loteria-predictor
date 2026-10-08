@@ -65,3 +65,12 @@ tests/unit/test_producto4_compatibilidad.py
 tests/unit/test_producto4_correcciones.py
 tests/unit/test_producto4_aislamiento.py
 tests/unit/test_producto4_impresion.py
+tests/unit/test_producto5_ensemble.py
+tests/unit/test_producto5_carteras.py
+tests/unit/test_producto5_simulacion.py
+tests/unit/test_producto5_almacen.py
+tests/unit/test_producto5_seguimiento.py
+tests/unit/test_producto5_web.py
+tests/unit/test_producto5_compatibilidad.py
+tests/unit/test_producto5_aislamiento.py
+tests/unit/test_producto5_rutas.py

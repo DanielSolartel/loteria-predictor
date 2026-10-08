@@ -11,3 +11,5 @@ storage/pronosticos/*
 storage/operacion/*
 storage/laboratorio/*
 !storage/laboratorio/.gitkeep
+storage/carteras/*
+!storage/carteras/.gitkeep

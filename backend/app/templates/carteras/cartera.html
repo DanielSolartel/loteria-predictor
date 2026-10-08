@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set colores = a.juego == 'COLORLOTO' %}{% set k = a.cartera %}{% set met = k.metricas %}
+{% block title %}Cartera — {{ nombres[a.juego] }} objetivo {{ k.objetivo }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">{{ nombres[a.juego] }} · objetivo {{ k.objetivo }} · {{ k.obtenidas }} combinación(es)</h3>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="/carteras/{{ slugs[a.juego] }}">{{ nombres[a.juego] }}</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras/{{ slugs[a.juego] }}/seguimiento?linea={{ a.linea.id }}">Seguimiento de la línea</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras/guardadas/{{ g.identificador }}/exportar.csv">Exportar CSV</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras/guardadas/{{ g.identificador }}/exportar.json">Exportar JSON</a></div>
+</div>
+{% if reutilizado %}<div class="alert alert-info py-2 small">Resultado ya existente: la misma entrada ya se había generado; se muestra la cartera guardada sin recalcular.</div>{% endif %}
+<div class="alert alert-warning py-1 px-2 small mb-2"><strong>Experimental, no acreditado.</strong> Combinaciones construidas con una regla a partir del modelo: no garantizan aciertos ni son una recomendación de apuesta.</div>
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3" id="combinaciones">
+    <div class="carteras-cabecera"><p class="small mb-1"><strong>{{ a.modelo.nombre }}</strong> <span class="badge {% if a.modelo.tipo == 'referencia' %}bg-secondary{% elif a.modelo.tipo == 'modelo_combinado' %}bg-dark{% else %}bg-primary{% endif %}">{{ {'referencia': 'referencia', 'modelo_combinado': 'modelo combinado'}.get(a.modelo.tipo, 'modelo nuevo') }}</span> · línea <code>{{ a.linea.id }}</code> · versión {{ g.version }} de {{ g.versiones }} en este objetivo</p>
+        <p class="small mb-2">Objetivo {{ k.objetivo }} · calculada con los sorteos hasta el {{ a.datos.corte }} ({{ a.datos.sorteos }} sorteos, último del {{ a.datos.ultima_fecha }}) · {{ k.parametros.cantidad }} combinaciones · diversidad {{ k.parametros.diversidad }}{% if k.parametros.diversidad == 'limitada' %} (≤ {{ k.parametros.limite_de_diversidad }} {{ 'coincidencias con multiplicidad' if colores else 'números principales compartidos' }} entre líneas){% endif %} · semilla {{ k.parametros.semilla }}</p></div>
+    <div class="tabla-desplazable"><table class="table table-sm mb-2">
+        <thead><tr><th class="small">Línea</th><th class="small">{{ 'Pares (número y color)' if colores else 'Números' ~ (' y superbalota' if a.fuente.superbalota else '') }}</th><th class="small">Origen</th></tr></thead><tbody>
+        {% for c in k.combinaciones %}<tr><td class="small">{{ c.linea }}</td><td>{% include "carteras/_combinacion.html" %}</td><td class="small">{% if c.origen == 'muestreo_ponderado' and k.primera_combinacion == 'sin_sugerencia_modelo_uniforme' %}muestreo uniforme{% else %}{{ {'sugerencia_del_modelo': 'sugerencia del modelo', 'muestreo_ponderado': 'muestreo ponderado'}.get(c.origen, c.origen|replace('_', ' ')) }}{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if colores %}<p class="small text-muted mb-1">Cada combinación son 6 pares con repetición posible: un número puede aparecer con colores distintos o el mismo par dos veces (<span class="carteras-par carteras-repetido px-1">número repetido</span>).{% if met.repeticiones_dentro_de_lineas %} Pares repetidos: {% for x in met.repeticiones_dentro_de_lineas %}línea {{ x.linea }}: {{ x.pares_repetidos|map('join', ' ')|join(', ') }}{% if not loop.last %}; {% endif %}{% endfor %}.{% endif %}</p>{% endif %}
+    {% if k.primera_combinacion == 'sin_sugerencia_vector_fuente_constante' %}<p class="small mb-1"><strong>Sin sugerencia del modelo:</strong> su vector fuente es constante (el modelo combinado eligió peso 1 para la uniforme), así que todas las líneas se muestrean; un desempate por número no se presenta como sugerencia.</p>{% elif k.primera_combinacion == 'sin_sugerencia_modelo_uniforme' %}<p class="small text-muted mb-1">La referencia uniforme no tiene sugerencia: todas las líneas se muestrean.</p>{% endif %}
+    {% if met.lineas_que_repiten_los_cinco_principales %}<p class="small mb-1"><strong>Mismos 5 números con otra superbalota:</strong> {% for x in met.lineas_que_repiten_los_cinco_principales %}líneas {{ x|join(', ') }}{% if not loop.last %}; {% endif %}{% endfor %}. No son duplicados completos porque la superbalota forma parte de la combinación.</p>{% endif %}
+    <p class="small text-muted mb-0">{{ k.nota }} {{ k.aviso }}</p>
+</div>
+{% set c = a.generacion.clasificacion_temporal %}
+<div class="alert alert-secondary py-2 small">{% if c %}{{ c.descripcion }}{% else %}La base no estaba disponible al generar: el objetivo quedó sin clasificar.{% endif %}
+    <div class="text-muted">Generada {{ a.generacion.generado_en[:19]|replace('T', ' ') }} UTC (reloj local; no prueba anterioridad){% if a.generacion.configuracion %} · configuración v{{ a.generacion.configuracion.version }}{% endif %}.</div></div>
+<div class="card stat-card p-3 mb-3" id="observado">
+    <h6>Resultado observado (base actual)</h6>
+    {% set o = observado %}
+    {% if o.estado == 'observado' %}
+        <p class="small mb-1">Sorteo {{ k.objetivo }} ({{ o.fecha }}): {% if colores %}{{ o.resultado.pares|map('join', ' ')|join(', ') }}{% else %}{{ o.resultado.numeros|join(', ') }}{% if o.resultado.superbalota %} + superbalota {{ o.resultado.superbalota }}{% endif %}{% endif %}. Histórico hasta el corte: {{ o.historico_hasta_el_corte|replace('_', ' ') }}.</p>
+        <p class="small mb-1"><strong>Máximo de la cartera: {{ o.aciertos.maximo }}</strong> ({{ o.aciertos.definicion }}){% if o.aciertos.superbalota_en_alguna_linea is defined %} · superbalota en alguna línea: {{ 'sí' if o.aciertos.superbalota_en_alguna_linea else 'no' }}{% endif %}.</p>
+        <p class="small mb-0">Por línea: {% for f in o.aciertos.por_linea %}{{ f.linea }}: {{ f.aciertos }}{% if f.superbalota is defined %}{{ ' + SB' if f.superbalota else '' }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}. Son aciertos observados en un sorteo, no frecuencias simuladas.</p>
+    {% else %}<p class="small text-muted mb-0">{{ {'pendiente': 'Pendiente', 'no_corresponde': 'Sin resultado comparable', 'sin_base': 'Base no disponible'}.get(o.estado, o.estado) }}: {{ o.motivo }}.</p>{% endif %}
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6"><div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 h-100">
+        <h6>Cobertura y coincidencias</h6>
+        <p class="small mb-1"><strong>Cobertura:</strong> {{ met.cobertura.cubiertos }} de {{ met.cobertura.dominio }} {{ met.cobertura.unidad }} ({{ '%.1f'|format(100 * met.cobertura.fraccion) }} %).</p>
+        {% set ci = met.coincidencias_entre_lineas %}
+        {% if ci.pares_de_lineas %}<p class="small mb-1"><strong>Coincidencias entre líneas</strong> ({{ ci.definicion }}): mínimo {{ ci.minimo }}, media {{ '%.2f'|format(ci.media) }}, máximo {{ ci.maximo }}.</p>
+        {% set tabla %}<table class="table table-sm small mb-0"><thead><tr><th>Líneas</th><th class="text-end">{{ 'Coincidencias' if colores else 'Compartidos' }}</th></tr></thead><tbody>{% for p in ci.pares_de_lineas %}<tr><td>{{ p.lineas|join(' y ') }}</td><td class="text-end">{{ p.compartidos if p.compartidos is defined else p.coincidencias }}</td></tr>{% endfor %}</tbody></table>{% endset %}
+        <details class="small detalle-bloques"><summary>Por pares de líneas ({{ ci.pares_de_lineas|length }})</summary>{{ tabla }}</details>
+        <div class="solo-impresion-bloque">{{ tabla }}</div>
+        {% else %}<p class="small text-muted mb-1">Una sola línea: sin coincidencias entre líneas.</p>{% endif %}
+        {% if met.frecuencia_de_superbalota %}<p class="small mb-0 mt-2"><strong>Superbalotas:</strong> {% for f in met.frecuencia_de_superbalota %}{{ f.superbalota }} ({{ f.lineas }}){% if not loop.last %} · {% endif %}{% endfor %}.</p>{% endif %}
+    </div></div>
+    <div class="col-lg-6"><div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 h-100">
+        <h6>Frecuencia de uso en la cartera</h6>
+        <div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>{{ 'Par' if colores else 'Número' }}</th><th class="text-end">Líneas</th>{% if colores %}<th class="text-end">Apariciones</th>{% endif %}</tr></thead><tbody>
+            {% for f in met.frecuencia_de_uso|sort(attribute='lineas', reverse=true) %}<tr><td>{% if colores %}{{ f.par|join(' ') }}{% else %}{{ f.numero }}{% endif %}</td><td class="text-end">{{ f.lineas }}</td>{% if colores %}<td class="text-end">{{ f.apariciones }}</td>{% endif %}</tr>{% endfor %}
+        </tbody></table></div>
+    </div></div>
+</div>
+<div class="card stat-card p-3 mb-3" id="simular">
+    <h6>Simulación Monte Carlo</h6>
+    <p class="small text-muted mb-2">Compara esta cartera con la cartera uniforme guardada del mismo juego, objetivo, tamaño, diversidad y semilla, sobre los MISMOS sorteos sintéticos en cada escenario (sorteos uniformes e hipótesis de muestreo ponderado). Son frecuencias simuladas, no probabilidades reales; no hay dinero ni premios.</p>
+    <form method="post" action="/carteras/guardadas/{{ g.identificador }}/simular" class="d-flex flex-wrap gap-2 align-items-end m-0">
+        <input type="hidden" name="token_local" value="{{ token_local }}">
+        <div><label class="form-label small mb-0" for="sim-n">Sorteos simulados</label><input class="form-control form-control-sm" type="number" id="sim-n" name="simulaciones" min="{{ sim.minimas }}" max="{{ sim.maximas }}" step="1000" value="{{ sim.predeterminadas }}" style="width: 8rem"></div>
+        <div><label class="form-label small mb-0" for="sim-s">Semilla</label><input class="form-control form-control-sm" type="number" id="sim-s" name="semilla" min="0" max="4294967295" value="{{ k.parametros.semilla }}" style="width: 8rem"></div>
+        <button class="btn btn-sm btn-primary"><i class="bi bi-shuffle me-1"></i>Simular</button>
+    </form>
+    {% if simulaciones %}<ul class="small mt-2 mb-0">{% for s in simulaciones %}<li><a href="/carteras/simulaciones/{{ s.identificador }}">{{ s.artefacto.identidad.simulaciones }} sorteos · semilla {{ s.artefacto.identidad.semilla }}</a> · {{ s.artefacto.ejecucion.terminado_en[:19]|replace('T', ' ') }} UTC</li>{% endfor %}</ul>{% endif %}
+</div>
+{% set f = a.fuente %}
+<div class="card stat-card impresion-fragmentable carteras-tarjeta p-3 mb-3">
+    <h6>Vector fuente ({{ 'distribución de pares' if colores else 'marginales de aparición' }})</h6>
+    {% if f.detalle and f.detalle.bloque_interno %}{% set bi = f.detalle.bloque_interno %}<p class="small mb-1"><strong>Pesos del modelo combinado</strong> (bloque interno {{ bi.objetivos[0] }}–{{ bi.objetivos[-1] }}): {% for comp in a.modelo.componentes %}{{ comp.id }} {{ '%.1f'|format(bi.pesos[comp.id]) }}{% if not loop.last %} · {% endif %}{% endfor %}{% if bi.eligio_uniforme %} — <strong>peso 1 para la uniforme</strong>: la cartera se construye con la uniforme{% endif %}.</p>{% endif %}
+    <p class="small mb-1">Suma de probabilidades: {{ f.masa }} ({{ 'una distribución de pares' if colores else 'cantidad de números por sorteo' }}).{% if f.superbalota %} Superbalota: estrategia separada <code>{{ f.superbalota.estrategia }}</code>.{% endif %}</p>
+    {% set tabla %}<table class="table table-sm small mb-0"><thead><tr><th>#</th><th>{{ 'Par' if colores else 'Número' }}</th><th class="text-end">Probabilidad</th></tr></thead><tbody>{% for x in ranking_fuente %}<tr><td>{{ loop.index }}</td><td>{{ x.candidato|join(' ') if colores else x.candidato }}</td><td class="text-end">{{ '%.5f'|format(x.probabilidad) }}</td></tr>{% endfor %}</tbody></table>{% endset %}
+    <details class="small detalle-bloques"><summary>Probabilidades del vector fuente</summary>{{ tabla }}</details>
+    <div class="solo-impresion-bloque">{{ tabla }}</div>
+</div>
+{% set trazabilidad %}<dl class="row mb-2 mt-2">
+        <dt class="col-sm-4">Clave</dt><dd class="col-sm-8"><code>{{ g.identificador }}</code></dd>
+        <dt class="col-sm-4">Huella del histórico</dt><dd class="col-sm-8"><code>{{ a.datos.sha256_historico }}</code></dd>
+        <dt class="col-sm-4">Receta</dt><dd class="col-sm-8">{{ a.identidad.modelo.id }} v{{ a.identidad.modelo.version }} · perfil {{ a.identidad.perfil }}</dd>
+        <dt class="col-sm-4">Construcción</dt><dd class="col-sm-8">{{ k.parametros.version }} · {{ k.parametros.algoritmo_rng }} · {{ k.intentos }} intento(s) de {{ k.parametros.presupuesto_de_intentos }}{% if k.rechazos %} · rechazos: {% for kk, v in k.rechazos.items() %}{{ kk|replace('_', ' ') }} {{ v }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</dd>
+        <dt class="col-sm-4">Orden de emisión</dt><dd class="col-sm-8">secuencia {{ a.generacion.secuencia_en_la_linea }} en la línea y el objetivo{% if a.generacion.version_anterior %} (anterior {{ a.generacion.version_anterior[:12] }}…){% endif %}</dd>
+        <dt class="col-sm-4">Entorno</dt><dd class="col-sm-8">{% for kk, v in a.identidad.entorno.items() %}{{ kk }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>
+    </dl>{% endset %}
+<details class="card stat-card p-3 mb-3 small carteras-desplegable"><summary><strong>Trazabilidad</strong></summary>
+    {{ trazabilidad }}
+    <form method="post" action="/carteras/guardadas/{{ g.identificador }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-outline-secondary">Verificar (recalcula con la instantánea guardada)</button></form>
+</details>
+<div class="card stat-card p-3 mb-3 small carteras-solo-impresion"><strong>Trazabilidad</strong>
+    {{ trazabilidad }}
+</div>
+{% endblock %}
