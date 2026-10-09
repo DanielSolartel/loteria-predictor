@@ -1,0 +1,27 @@
+{# Comparacion directa. Requiere: comparacion, nombres_de_linea, veredictos. #}
+{% import "resultados/_macros.html" as m %}
+{% set c = comparacion %}
+{% if c.estado != 'con_muestra_comun' %}
+{% set ns = namespace(vacias=[]) %}{% for clave, n in c.totales_individuales.items() %}{% if n == 0 %}{% set ns.vacias = ns.vacias + [nombres_de_linea.get(clave, clave)] %}{% endif %}{% endfor %}
+<div class="alert alert-secondary py-2 small mb-2"><strong>Sin muestra común.</strong>
+    {% if c.lineas|length < 2 %}Elige al menos dos líneas para una comparación directa.{% elif ns.vacias %}Líneas elegidas sin objetivos incluidos de este tipo: {{ ns.vacias|join('; ') }}.{% else %}Las líneas elegidas no comparten objetivos incluidos y compatibles.{% endif %}
+    No se clasifica: ninguna línea se retira en silencio para conseguir una muestra.</div>
+{% else %}
+<p class="small mb-1">{{ c.objetivos_comunes|length }} objetivo(s) común(es) de tipo «{{ c.tipo }}»: {{ c.objetivos_comunes|join(', ') }}.{% if c.muestra_pequena %} <span class="badge text-bg-warning">muestra pequeña</span>{% endif %}</p>
+<div class="tabla-desplazable"><table class="table table-sm small mb-2">
+    <caption class="small">{{ c.signo }}</caption>
+    <thead><tr><th>#</th><th>Línea</th><th class="text-end">Log Loss medio</th><th class="text-end">Uniforme</th><th class="text-end">Diferencia</th><th>Lectura</th></tr></thead><tbody>
+    {% for f in c.clasificacion %}<tr{% if f.linea == 'uniforme' %} class="table-light"{% endif %}><td>{{ loop.index }}</td>
+        <td>{% if f.linea == 'uniforme' %}<strong>Uniforme (referencia)</strong>{% else %}{{ nombres_de_linea.get(f.linea, f.linea) }}{% endif %}</td>
+        <td class="text-end">{{ m.num(f.log_loss) }}</td><td class="text-end">{{ m.num(f.uniforme) }}</td><td class="text-end">{{ m.num(f.diferencia, '%+.5f') }}</td><td>{{ m.veredicto(f.veredicto, veredictos) }}</td></tr>{% endfor %}
+    </tbody></table></div>
+{% endif %}
+<p class="small mb-1"><strong>Objetivos incluidos por línea</strong> (antes de la intersección):
+    {% for clave, n in c.totales_individuales.items() %}{{ nombres_de_linea.get(clave, clave) }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+{% if c.fuera_de_la_muestra_comun %}
+<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+    <caption class="small">Objetivos fuera de la muestra común y por qué (línea que falta o universos incompatibles).</caption>
+    <thead><tr><th>Objetivo</th><th>Línea</th><th>Motivo</th></tr></thead><tbody>
+    {% for f in c.fuera_de_la_muestra_comun %}<tr><td>{{ f.objetivo }}</td><td>{{ nombres_de_linea.get(f.linea, f.linea) if f.linea else 'todas' }}</td><td>{{ f.motivo|replace('_', ' ') }}</td></tr>{% endfor %}
+    </tbody></table></div>
+{% endif %}

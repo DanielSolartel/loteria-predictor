@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Usar esta configuración — {{ nombres[juego] }}{% endblock %}
+{% set slug = slugs[juego] %}
+{% set p = d.propuesta %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Usar esta configuración · {{ nombres[juego] }}</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/resultados/{{ slug }}#carteras">Volver a resultados</a>
+</div>
+{% if resultado %}
+<div class="alert {% if resultado.estado == 'guardada' %}alert-success{% else %}alert-info{% endif %} py-2 small">
+    {% if resultado.estado == 'guardada' %}Configuración guardada como versión {{ resultado.version }} (<code>{{ resultado.linea }}</code>). Las versiones anteriores siguen intactas. No se entrenó ni se generó ninguna cartera: la próxima «Carteras configuradas» la usará.
+    {% else %}Esta configuración ya es la vigente (versión {{ resultado.version }}): no se creó otra versión.{% endif %}
+    <a href="/carteras/{{ slug }}#configuracion">Ver la configuración en Carteras</a>.
+</div>
+{% endif %}
+<div class="alert alert-warning py-2 small">Elegir una configuración es una decisión tuya, no una recomendación: que una cartera haya acertado más en pocos objetivos no demuestra ventaja. Se guarda como una versión nueva con el caso de uso de Producto 5; no cambia los modelos predeterminados de Producto 3.</div>
+<div class="card stat-card p-3 mb-3 resultados-tarjeta">
+    <h6>Vista previa</h6>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-2">
+        <thead><tr><th></th><th>Propuesta (de la cartera <code>{{ linea }}</code>)</th><th>Vigente ahora{% if d.vigente %} (versión {{ d.vigente.version_de_configuracion }} de la configuración){% endif %}</th></tr></thead><tbody>
+        {% for k, etiqueta in (('modelo', 'Modelo'), ('version_del_modelo', 'Versión del modelo'), ('perfil', 'Perfil'), ('cantidad', 'Combinaciones'), ('diversidad', 'Diversidad'), ('semilla', 'Semilla'), ('linea', 'Línea resultante')) %}
+        <tr><th class="fw-normal">{{ etiqueta }}</th><td>{{ p[k] }}{% if k == 'modelo' %} <span class="text-muted">({{ p.nombre }})</span>{% endif %}</td>
+            <td>{% if d.vigente %}{{ d.vigente[k] }}{% else %}— (sin configuración guardada){% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>
+    {% if not d.compatible %}<div class="alert alert-danger py-2 small mb-0">No se puede usar: {{ d.motivo }}.</div>
+    {% elif d.ya_vigente %}<p class="small mb-0">Ya es la configuración vigente: guardarla otra vez no crearía otra versión.</p>
+    {% elif not resultado %}
+    <form method="post" action="/resultados/{{ slug }}/configuracion" class="m-0">
+        <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="linea" value="{{ linea }}">
+        <button class="btn btn-sm btn-primary">Guardar como configuración vigente</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

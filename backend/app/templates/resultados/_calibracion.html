@@ -1,0 +1,39 @@
+{# Diagnostico de calibracion por linea elegida. Requiere: seleccion, calibracion, graficas_calibracion, nombres_de_linea. #}
+{% import "resultados/_macros.html" as m %}
+{% set nombres_diagnostico = {'numeros': 'Números', 'superbalota': 'Superbalota (aparte)', 'pares': 'Pares número-color'} %}
+{% set primera = calibracion[seleccion[0]] if seleccion else none %}
+{% if primera %}<p class="small text-muted mb-2">Diagnóstico descriptivo de probabilidades YA emitidas: no recalibra, no reentrena y no es una prueba de significación. {{ primera.definicion }} {{ primera.aviso }} Un intervalo vacío se muestra «—» (no disponible), nunca 0.</p>{% endif %}
+{% for clave in seleccion %}{% set cal = calibracion[clave] %}
+<div class="resultados-bloque mb-3">
+    <h6 class="resultados-cabecera">{{ nombres_de_linea.get(clave, clave) }}</h6>
+    {% if not cal.diagnosticos %}<p class="small text-muted mb-0">Sin emisiones incluidas: no hay diagnóstico.</p>{% endif %}
+    {% for nombre, d in cal.diagnosticos.items() %}{% set g = graficas_calibracion[clave][nombre] %}
+    <div class="row g-2 align-items-start resultados-diagnostico">
+        <div class="col-12 col-sm-5 col-lg-4">
+            <p class="small mb-1"><strong>{{ nombres_diagnostico.get(nombre, nombre) }}</strong> · {{ d.objetivos }} sorteo(s) · {{ d.predicciones }} predicciones{% if d.muestra_pequena %} <span class="badge text-bg-warning">muestra pequeña</span>{% endif %}</p>
+            <p class="small text-muted mb-1">Valor observado: {{ d.etiqueta_observado }}.</p>
+            {% if g %}
+            <svg class="resultados-grafica" viewBox="0 0 {{ g.ancho }} {{ g.alto }}" role="img" aria-labelledby="cal-{{ loop.index }}-{{ clave|replace(':', '-') }}" style="max-width: 100%; height: auto;">
+                <title id="cal-{{ loop.index }}-{{ clave|replace(':', '-') }}">Curva de calibración: probabilidad media frente a valor observado medio por intervalo no vacío; la diagonal es la calibración perfecta. La tabla lista los mismos valores.</title>
+                <rect x="{{ g.margen }}" y="{{ g.margen }}" width="{{ g.ancho - 2 * g.margen }}" height="{{ g.alto - 2 * g.margen }}" fill="none" stroke="#dee2e6"/>
+                <line x1="{{ g.diagonal.x1 }}" y1="{{ g.diagonal.y1 }}" x2="{{ g.diagonal.x2 }}" y2="{{ g.diagonal.y2 }}" stroke="#6c757d" stroke-dasharray="4 3"/>
+                {% for k in g.marcas %}<text x="{{ k.x }}" y="{{ g.alto - g.margen + 14 }}" font-size="10" fill="#6c757d" text-anchor="middle">{{ '%.3g'|format(k.valor) }}</text><text x="{{ g.margen - 4 }}" y="{{ k.y + 3 }}" font-size="10" fill="#6c757d" text-anchor="end">{{ '%.3g'|format(k.valor) }}</text>{% endfor %}
+                <text x="{{ g.ancho / 2 }}" y="{{ g.alto - 4 }}" font-size="10" fill="#6c757d" text-anchor="middle">probabilidad media emitida</text>
+                <polyline points="{{ g.polilinea }}" fill="none" stroke="#4b3f8f" stroke-width="1.5"/>
+                {% for p in g.puntos %}<circle cx="{{ p.x }}" cy="{{ p.y }}" r="{{ p.r }}" fill="#4b3f8f" fill-opacity="0.75"><title>[{{ p.desde }}, {{ p.hasta }}): probabilidad media {{ '%.4f'|format(p.p) }}, observado {{ '%.4f'|format(p.o) }}, {{ p.n }} predicciones en {{ p.objetivos }} sorteo(s)</title></circle>{% endfor %}
+            </svg>
+            {% endif %}
+        </div>
+        <div class="col-12 col-sm-7 col-lg-8">
+            <div class="tabla-desplazable"><table class="table table-sm small mb-1">
+                <caption class="small">Intervalos fijos; los dos denominadores: predicciones y sorteos distintos.</caption>
+                <thead><tr><th>Intervalo</th><th class="text-end">Predicciones</th><th class="text-end">Sorteos</th><th class="text-end">Probabilidad media</th><th class="text-end">Observado medio</th></tr></thead><tbody>
+                {% for i in d.intervalos %}<tr{% if not i.predicciones %} class="text-muted"{% endif %}><td>[{{ i.desde }}, {{ i.hasta }}{{ ']' if i.incluye_hasta else ')' }}</td><td class="text-end">{{ i.predicciones }}</td><td class="text-end">{{ i.objetivos }}</td>
+                    <td class="text-end">{{ m.num(i.probabilidad_media, '%.4f') }}</td><td class="text-end">{{ m.num(i.valor_observado_medio, '%.4f') }}</td></tr>{% endfor %}
+                <tr class="fw-semibold"><td>Total</td><td class="text-end">{{ d.predicciones }}</td><td class="text-end">{{ d.objetivos }}</td><td class="text-end">{{ m.num(d.probabilidad_media, '%.4f') }}</td><td class="text-end">{{ m.num(d.valor_observado_medio, '%.4f') }}</td></tr>
+                </tbody></table></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}<p class="small text-muted mb-0">No hay líneas elegidas.</p>{% endfor %}

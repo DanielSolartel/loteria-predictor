@@ -1,0 +1,23 @@
+{# Resumen por linea elegida. Requiere: seleccion, resumenes, nombres_de_linea, juego, veredictos; opcional lineas_por_clave. #}
+{% import "resultados/_macros.html" as m %}
+{% set colores = juego == 'COLORLOTO' %}
+<div class="tabla-desplazable"><table class="table table-sm small mb-1">
+    <caption class="small">Pérdidas medias por objetivo incluido de cada línea (su propia muestra: no comparables entre líneas si los objetivos difieren; para eso está la comparación directa). Diferencia = modelo − uniforme; negativa = menor pérdida en esta muestra.</caption>
+    <thead><tr><th>Línea</th><th class="text-end">Objetivos</th><th class="text-end">Incluidos</th><th class="text-end">Pendientes</th><th>Excluidos</th>
+        <th class="text-end">Aciertos medios</th><th class="text-end">Log Loss</th><th class="text-end">Uniforme</th><th class="text-end">Diferencia y lectura</th><th class="text-end">Δ Brier</th>
+        {% if colores %}<th class="text-end">Δ Log Loss multiconjunto</th>{% endif %}{% if juego == 'BALOTO' or juego == 'BALOTO_REVANCHA' %}<th>Superbalota (aparte)</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for clave in seleccion %}{% set r = resumenes[clave] %}{% set p = r.perdidas %}
+    {% set meta = (lineas_por_clave or {}).get(clave) %}
+    <tr><td title="{{ clave }}">{{ nombres_de_linea.get(clave, clave) }}{% if r.muestra_pequena %} <span class="badge text-bg-warning">muestra pequeña</span>{% endif %}
+        {% if meta and meta.enlace_flujo %}<div><a href="{{ meta.enlace_flujo }}">{% if meta.procedencia == 'carteras' %}flujo de carteras (configuración en la sección Carteras){% else %}flujo actual de esta procedencia{% endif %}</a></div>{% endif %}</td>
+        <td class="text-end">{{ r.objetivos }}</td><td class="text-end">{{ r.incluidos }}</td><td class="text-end">{{ r.pendientes }}{% if r.sin_base %}<div class="text-muted">+{{ r.sin_base }} sin base</div>{% endif %}</td>
+        <td>{{ r.excluidos }}{% for motivo, n in r.excluidos_por_motivo.items() %}<div class="text-muted">{{ motivo|replace('_', ' ') }}: {{ n }}</div>{% endfor %}</td>
+        <td class="text-end">{% if r.aciertos %}{{ '%.2f'|format(r.aciertos.promedio) }} de {{ r.aciertos.de }}<div class="text-muted">{{ r.aciertos.objetivos }} obj.</div>{% else %}—{% endif %}</td>
+        <td class="text-end">{{ m.num(p.log_loss.modelo if p else none) }}</td><td class="text-end">{{ m.num(p.log_loss.uniforme if p else none) }}</td>
+        <td class="text-end">{{ m.num(p.log_loss.diferencia if p else none, '%+.5f') }}{% if p %}<div class="resultados-lectura">{{ m.veredicto(p.log_loss.veredicto, veredictos) }}</div>{% endif %}</td>
+        <td class="text-end">{{ m.num(p.brier.diferencia if p else none, '%+.6f') }}</td>
+        {% if colores %}<td class="text-end">{{ m.num(p.log_loss_multiconjunto.diferencia if p else none, '%+.5f') }}</td>{% endif %}
+        {% if juego == 'BALOTO' or juego == 'BALOTO_REVANCHA' %}<td class="text-nowrap">{% if r.superbalota %}{{ r.superbalota.aciertos }} de {{ r.superbalota.objetivos }}<div class="text-muted">Δ LL {{ m.num(r.superbalota.log_loss.diferencia, '%+.5f') }}</div>{% else %}—{% endif %}</td>{% endif %}</tr>
+    {% else %}<tr><td colspan="13" class="text-muted">No hay líneas elegidas.</td></tr>{% endfor %}
+    </tbody></table></div>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Verificación del informe{% endblock %}
+{% set etiquetas_base = {'coincide': 'coincide con la consulta actual', 'cambio': 'la consulta actual cambió', 'no_disponible': 'no disponible', 'no_comparable': 'no comparable', 'no_evaluado': 'no evaluado'} %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Verificación del informe</h3>
+    {% if r.integridad == 'correcta' %}<a class="btn btn-sm btn-outline-secondary" href="/resultados/informes/{{ clave }}">Volver al informe</a>{% else %}<a class="btn btn-sm btn-outline-secondary" href="/resultados">Resultados</a>{% endif %}
+</div>
+<p class="small"><code class="text-break">{{ clave }}</code></p>
+<div class="card stat-card p-3 mb-3 resultados-tarjeta">
+    <h6>1. Integridad del archivo</h6>
+    {% if r.integridad == 'correcta' %}<p class="small text-success mb-0">Correcta: bytes canónicos, sello y clave coinciden con el contenido.</p>
+    {% else %}<p class="small text-danger mb-0">Alterado o ilegible: {{ (r.motivo or '')|replace('_', ' ') }}. No se usa ni se evalúa su contenido.</p>{% endif %}
+</div>
+<div class="card stat-card p-3 mb-3 resultados-tarjeta">
+    <h6>2. Reproducción del cálculo congelado</h6>
+    {% set rep = r.reproduccion %}
+    {% set partes_nombres = {'emisiones': 'métricas por emisión', 'resumenes': 'resúmenes por línea', 'comparacion': 'comparación de modelos', 'calibracion': 'calibración', 'carteras': 'aciertos, resúmenes y comparación de carteras'} %}
+    {% set partes_estados = {'exacta': 'exacta', 'distinta': 'NO coincide', 'no_verificable': 'no verificable (el informe no congela lo necesario)', 'sin_carteras': 'sin carteras en el informe'} %}
+    {% if rep.exacta is none %}<p class="small text-muted mb-0">{{ rep.motivo }}.</p>
+    {% else %}
+    {% if rep.estado == 'exacta' %}<p class="small text-success mb-1">Exacta: con las probabilidades, las combinaciones y los resultados congelados, las funciones actuales dan los mismos cálculos ({{ rep.emisiones_recalculadas }} emisión(es) y {{ rep.carteras_recalculadas }} par(es) cartera-objetivo). Sin reentrenar ni consultar la base.</p>
+    {% elif rep.estado == 'parcial' %}<p class="small text-warning-emphasis mb-1">Parcial: todo lo verificable coincide, pero alguna parte no se puede recalcular con lo que guarda el informe.</p>
+    {% else %}<p class="small text-danger mb-1">No reproducida: algún cálculo guardado no coincide con el recálculo.</p>{% endif %}
+    <ul class="small mb-1">{% for parte, estado in rep.partes.items() %}<li>{{ partes_nombres.get(parte, parte) }}: {{ partes_estados.get(estado, estado) }}</li>{% endfor %}</ul>
+    {% if rep.diferencias %}<ul class="small mb-0 text-danger">{% for d in rep.diferencias %}<li>{% if d.objetivo %}objetivo {{ d.objetivo }} · {% endif %}{% if d.linea %}{{ d.linea }}: {% endif %}{{ d.motivo|replace('_', ' ') }}</li>{% endfor %}</ul>{% endif %}
+    {% endif %}
+</div>
+<div class="card stat-card p-3 mb-3 resultados-tarjeta">
+    <h6>3. Coincidencia con la consulta actual de la base</h6>
+    {% set b = r.base_actual %}
+    <p class="small mb-1">{{ etiquetas_base.get(b.estado, b.estado) }}{% if b.motivo %}: {{ b.motivo }}{% endif %}.</p>
+    {% if b.diferencias %}<div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>Línea</th><th>Objetivo</th><th>Tipo</th><th>Cambio</th></tr></thead><tbody>
+        {% for d in b.diferencias %}<tr><td>{{ {'emisiones': 'emisión', 'carteras': 'cartera'}.get(d.seccion, d.seccion) }} <code>{{ d.linea }}</code></td><td>{{ d.objetivo }}</td><td>{{ d.tipo or '—' }}</td><td>{{ d.motivo|replace('_', ' ') }}{% if d.en_el_informe is defined %}<div class="text-muted">informe: {{ d.en_el_informe }} · ahora: {{ d.ahora }}</div>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>{% endif %}
+    {% if b.no_comparables %}<ul class="small mb-1">{% for n in b.no_comparables %}<li>No comparable ({{ n.seccion }}{% if n.procedencia %}, {{ n.procedencia }}{% endif %}): {{ n.motivo }}</li>{% endfor %}</ul>{% endif %}
+    <p class="small text-muted mb-0 mt-1">Un cambio aquí (por ejemplo, un resultado nuevo o un sorteo corregido) no altera la integridad del informe: es la fotografía de otro momento.</p>
+</div>
+{% if r.nota %}<p class="small text-muted">{{ r.nota }}</p>{% endif %}
+{% endblock %}

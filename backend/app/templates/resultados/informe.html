@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% import "resultados/_macros.html" as m %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Informe de resultados — {{ nombres[juego] }}{% endblock %}
+{% set slug = slugs[juego] %}
+{% set f = a.filtros %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Informe guardado · {{ nombres[juego] }}</h3>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="/resultados/{{ slug }}?{{ consulta }}">Consulta actual con estos filtros</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/resultados/informes/{{ clave }}/exportar.json">Exportar JSON</a>
+        <form method="post" action="/resultados/informes/{{ clave }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-primary">Verificar</button></form></div>
+</div>
+{{ m.aviso_experimental() }}
+{% if reutilizado %}<div class="alert alert-info py-2 small">Ya existía un informe con exactamente este contenido: se reutiliza (no se crea otro ni se sobrescribe).</div>{% endif %}
+<div class="card stat-card p-3 mb-3 resultados-tarjeta">
+    <p class="small mb-1"><strong>Clave (SHA-256 del contenido):</strong> <code class="text-break">{{ clave }}</code></p>
+    <p class="small mb-1"><strong>Guardado:</strong> {{ a.guardado.guardado_en[:19]|replace('T', ' ') }} UTC desde {{ a.guardado.origen }} ({{ a.guardado.nota }}). <strong>Estado:</strong> {{ a.estado }}{% for l in a.limitaciones %}<span class="text-muted"> · {{ l }}</span>{% endfor %}</p>
+    <p class="small mb-1"><strong>Filtros:</strong> tipo «{{ f.tipo }}»{% if f.objetivo %}, objetivo {{ f.objetivo }}{% elif f.desde or f.hasta %}, objetivos {{ f.desde or '…' }}–{{ f.hasta or '…' }}{% endif %}; procedencias: {% for p in f.procedencias %}{{ procedencias_nombres[p] }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+    <p class="small mb-1"><strong>Base al guardar:</strong> {% if a.base.estado == 'consultada' and a.base.ultimo_sorteo %}último sorteo {{ a.base.ultimo_sorteo }} del {{ a.base.fecha }}{% elif a.base.estado == 'consultada' %}sin sorteos{% else %}no disponible ({{ a.base.motivo }}){% endif %}. {{ a.emisiones|length }} emisión(es) y {{ a.artefactos_de_origen|length }} artefacto(s) de origen congelados.</p>
+    <p class="small text-muted mb-0">{{ a.nota }} {{ a.politica }}</p>
+</div>
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta">
+    <h6 class="resultados-cabecera">Resumen por línea</h6>
+    {% set seleccion = a.seleccion %}{% set resumenes = a.calculos.resumenes %}
+    {% include "resultados/_resumen.html" %}
+</div>
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta">
+    <h6 class="resultados-cabecera">Comparación directa sobre la muestra común</h6>
+    {% set comparacion = a.calculos.comparacion %}
+    {% include "resultados/_comparacion.html" %}
+</div>
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta">
+    <h6 class="resultados-cabecera">Evolución sobre la muestra común</h6>
+    {% include "resultados/_evolucion.html" %}
+</div>
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta">
+    <h6 class="resultados-cabecera">Diagnóstico de calibración</h6>
+    {% set calibracion = a.calculos.calibracion %}
+    {% include "resultados/_calibracion.html" %}
+</div>
+{% if a.calculos.carteras %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta">
+    <h6 class="resultados-cabecera">Carteras</h6>
+    {% set carteras = a.calculos.carteras %}{% set acciones = false %}
+    {% include "resultados/_carteras.html" %}
+</div>
+{% endif %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta">
+    <h6 class="resultados-cabecera">Artefactos de origen</h6>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Procedencia</th><th>Línea</th><th>Objetivo</th><th>Identificador</th></tr></thead><tbody>
+        {% for o in a.artefactos_de_origen %}<tr><td>{{ procedencias_nombres.get(o.procedencia, o.procedencia) }}</td><td><code>{{ o.linea }}</code></td><td>{{ o.objetivo }}</td><td><code class="text-break">{{ o.identificador }}</code></td></tr>
+        {% else %}<tr><td colspan="4" class="text-muted">Sin artefactos de origen.</td></tr>{% endfor %}
+        </tbody></table></div>
+</div>
+{% endblock %}

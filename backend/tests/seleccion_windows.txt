@@ -74,3 +74,8 @@ tests/unit/test_producto5_web.py
 tests/unit/test_producto5_compatibilidad.py
 tests/unit/test_producto5_aislamiento.py
 tests/unit/test_producto5_rutas.py
+tests/unit/test_producto6_procedencias.py
+tests/unit/test_producto6_evaluacion.py
+tests/unit/test_producto6_informes.py
+tests/unit/test_producto6_web.py
+tests/unit/test_producto6_verificacion.py
