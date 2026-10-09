@@ -1,0 +1,8 @@
+{# Producto 6: piezas comunes de las paginas de resultados. #}
+{% macro num(v, f='%.5f') %}{% if v is none %}—{% else %}{{ f|format(v) }}{% endif %}{% endmacro %}
+
+{% macro resultado(r) %}{% if not r %}—{% elif r.pares is defined %}{% for n, color in r.pares %}<span class="me-1 text-nowrap resultados-par"><span class="color-swatch color-{{ color|lower }}" title="{{ color }}"></span>{{ n }}<span class="solo-impresion"> {{ color|lower }}</span></span>{% endfor %}{% else %}{{ r.numeros|join(' · ') }}{% if r.superbalota is not none %} <span class="text-muted">+ SB {{ r.superbalota }}</span>{% endif %}{% endif %}{% endmacro %}
+
+{% macro veredicto(v, veredictos) %}{% if v == 'la_uniforme_fue_mejor' %}<span class="text-danger">{{ veredictos[v] }}</span>{% elif v == 'menor_perdida_que_la_uniforme_en_esta_muestra' %}<span class="text-success">{{ veredictos[v] }}</span>{% elif v %}{{ veredictos.get(v, v) }}{% else %}—{% endif %}{% endmacro %}
+
+{% macro aviso_experimental() %}<div class="alert alert-warning py-2 small"><strong>Experimental, no acreditado.</strong> Cifras descriptivas de pronósticos ya emitidos frente a los sorteos reales cargados: no son una recomendación de apuesta ni demuestran ventaja futura. <code>AUTORIZA_EVALUACION = False</code>; el NO-GO sigue vigente. Una diferencia favorable en pocos objetivos puede ser azar.</div>{% endmacro %}

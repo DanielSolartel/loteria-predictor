@@ -129,6 +129,22 @@ body {
     }
 }
 
+/* Resultados de los modelos (templates/resultados/): sus tablas anchas (historial
+   de 13 columnas) se desplazan dentro de su tarjeta en lugar de ensanchar el area
+   de contenido, tambien en escritorio. Solo en las paginas con tarjetas
+   `resultados-tarjeta`; las demas paginas no cambian. */
+@media screen {
+    body.producto1-impresion .content-area:has(.resultados-tarjeta) {
+        min-width: 0;
+    }
+}
+
+/* La lectura de la diferencia, bajo la cifra y sin partir cada palabra. */
+body.producto1-impresion .resultados-lectura {
+    min-width: 9rem;
+    font-size: 0.8em;
+}
+
 /* Texto que solo aparece al imprimir (p. ej. el nombre de cada color de ColorLoto). */
 .solo-impresion,
 .solo-impresion-bloque {
@@ -326,6 +342,32 @@ body {
     }
 
     body.producto1-impresion .carteras-par .color-swatch {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Resultados de los modelos: solo clases `resultados-*`, que solo usan las
+       plantillas de templates/resultados/. El titulo de cada tarjeta queda
+       pegado a su contenido, cada diagnostico de calibracion (grafica y tabla
+       de 12 intervalos) se imprime entero, las graficas no ocupan mas de
+       media pagina y los pares de ColorLoto conservan su color. */
+    body.producto1-impresion .resultados-cabecera {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    body.producto1-impresion .resultados-diagnostico {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    body.producto1-impresion svg.resultados-grafica {
+        max-height: 9cm;
+    }
+
+    body.producto1-impresion .resultados-par .color-swatch {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }

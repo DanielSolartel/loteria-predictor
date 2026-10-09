@@ -51,6 +51,9 @@ jobs:
 
       - name: Demostracion AE-81 de extremo a extremo
         run: python -m tests.demostracion_publicacion_constancias
+      # Producto 6: centro de resultados en los cuatro juegos (datos sinteticos, sin red ni base).
+      - name: Demostracion de Producto 6 (resultados de los modelos)
+        run: python -m tests.demostracion_producto6
 
   windows:
     name: Windows - seleccion de tests/seleccion_windows.txt
@@ -94,4 +97,8 @@ jobs:
       - name: Demostracion AE-81 de extremo a extremo
         run: |
           python -m tests.demostracion_publicacion_constancias
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Demostracion de Producto 6 (resultados de los modelos)
+        run: |
+          python -m tests.demostracion_producto6
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

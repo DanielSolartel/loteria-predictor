@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% import "resultados/_macros.html" as m %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Resultados — {{ nombres[juego] }}{% endblock %}
+{% set slug = slugs[juego] %}
+{% set f = v.filtros %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Resultados · {{ nombres[juego] }}</h3>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="/resultados">Los cuatro juegos</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/pronosticos/{{ slug }}">Pronóstico diario</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slug }}">Laboratorio</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras/{{ slug }}">Carteras</a></div>
+</div>
+{{ m.aviso_experimental() }}
+<p class="small text-muted mb-2 impresion-cabecera">{{ v.politica }} {{ v.nota_seguimiento }} Consulta: tipo «{{ f.tipo }}»{% if f.objetivo %}, objetivo {{ f.objetivo }}{% elif f.desde or f.hasta %}, objetivos {{ f.desde or '…' }}–{{ f.hasta or '…' }}{% endif %}; procedencias: {% for p in f.procedencias %}{{ procedencias_nombres[p] }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+
+<div class="card stat-card p-3 mb-3 resultados-tarjeta" id="base">
+    <p class="small mb-0"><strong>Último resultado cargado:</strong>
+    {% if v.base.estado == 'consultada' and v.base.ultimo_sorteo %}sorteo {{ v.base.ultimo_sorteo }} del {{ v.base.fecha }} ({{ v.base.sorteos }} sorteos en la base).
+    {% elif v.base.estado == 'consultada' %}no hay sorteos cargados.
+    {% else %}<span class="text-danger">la base no responde ({{ v.base.motivo }}). Las emisiones guardadas se muestran como «sin base»: no son ceros ni pendientes confirmados.</span>{% endif %}</p>
+</div>
+
+<form method="get" action="/resultados/{{ slug }}" class="card stat-card p-3 mb-3" id="filtros">
+    <h6 class="mb-2">Filtros</h6>
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <div class="small fw-semibold mb-1">Procedencias</div>
+            {% for p, info in v.procedencias.items() %}<div class="form-check form-check-sm small"><input class="form-check-input" type="checkbox" name="procedencia" value="{{ p }}" id="p-{{ p }}" {% if p in f.procedencias %}checked{% endif %}><label class="form-check-label" for="p-{{ p }}">{{ info.nombre }}</label></div>{% endfor %}
+            <label class="form-label small mb-0 mt-2" for="f-tipo">Tipo de emisión</label>
+            <select class="form-select form-select-sm" id="f-tipo" name="tipo">{% for t, etiqueta in tipos.items() %}<option value="{{ t }}" {% if t == f.tipo %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}</select>
+            <div class="row g-2 mt-1">
+                <div class="col-4"><label class="form-label small mb-0" for="f-desde">Desde</label><input class="form-control form-control-sm" id="f-desde" name="desde" inputmode="numeric" value="{{ f.desde or '' }}"></div>
+                <div class="col-4"><label class="form-label small mb-0" for="f-hasta">Hasta</label><input class="form-control form-control-sm" id="f-hasta" name="hasta" inputmode="numeric" value="{{ f.hasta or '' }}"></div>
+                <div class="col-4"><label class="form-label small mb-0" for="f-objetivo">Objetivo</label><input class="form-control form-control-sm" id="f-objetivo" name="objetivo" inputmode="numeric" value="{{ f.objetivo or '' }}"></div>
+            </div>
+            <div class="small text-muted mt-1">«Objetivo» tiene prioridad sobre el intervalo.</div>
+        </div>
+        <div class="col-12 col-md-8">
+            <div class="small fw-semibold mb-1">Líneas (versión y configuración)</div>
+            {% if not v.lineas %}<p class="small text-muted mb-1">No hay líneas en las procedencias elegidas.</p>{% endif %}
+            {% for l in v.lineas %}{% set r = v.resumenes[l.clave] %}<div class="form-check small"><input class="form-check-input" type="checkbox" name="linea" value="{{ l.clave }}" id="l-{{ loop.index }}" {% if l.clave in v.seleccion %}checked{% endif %}><label class="form-check-label" for="l-{{ loop.index }}">{{ l.nombre }} <span class="text-muted">· {{ procedencias_nombres[l.procedencia] }} · {{ r.incluidos }} incluido(s), {{ r.pendientes }} pendiente(s), {{ r.excluidos }} excluido(s)</span></label></div>{% endfor %}
+            <div class="small text-muted">Sin marcar ninguna: una línea por procedencia (la de más objetivos incluidos de este tipo). La comparación directa usa la intersección de TODAS las líneas marcadas.</div>
+            {% if v.carteras and v.carteras.disponibles %}
+            <div class="small fw-semibold mt-2 mb-1">Carteras (sección aparte)</div>
+            {% for nombre in v.carteras.disponibles %}<div class="form-check form-check-inline small"><input class="form-check-input" type="checkbox" name="cartera" value="{{ nombre }}" id="c-{{ loop.index }}" {% if nombre in v.carteras.lineas %}checked{% endif %}><label class="form-check-label" for="c-{{ loop.index }}"><code>{{ nombre }}</code></label></div>{% endfor %}
+            <div class="small text-muted">Sin marcar ninguna: todas las carteras del juego.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2 mt-2"><button class="btn btn-sm btn-primary">Aplicar</button><a class="btn btn-sm btn-outline-secondary" href="/resultados/{{ slug }}">Restablecer</a></div>
+</form>
+
+{% if v.sin_resultados_de_seguimiento %}
+<div class="alert alert-info py-2 small" id="sin-seguimiento">No hay emisiones de <strong>seguimiento</strong> con resultado observado incluido para estos filtros. El tipo no se cambia solo: si quieres ver las reconstrucciones retrospectivas (artefactos emitidos con el resultado ya cargado), <a href="/resultados/{{ slug }}?{{ consulta_retrospectiva }}">elige «retrospectiva»</a>. Seguimiento y retrospectiva nunca se mezclan.</div>
+{% endif %}
+
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="procedencias">
+    <h6 class="resultados-cabecera">Procedencias</h6>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Procedencia</th><th>Estado</th><th class="text-end">Líneas</th><th class="text-end">Emisiones</th><th class="text-end">Ilegibles</th></tr></thead><tbody>
+        {% for p, i in v.procedencias.items() %}<tr><td>{{ i.nombre }}</td><td>{% if i.error %}<span class="text-danger">{{ i.error }}</span>{% else %}{{ {'con_lineas': 'con líneas', 'sin_artefactos': 'sin artefactos', 'no_elegida': 'no elegida'}.get(i.estado, i.estado) }}{% endif %}</td>
+            <td class="text-end">{{ i.lineas }}</td><td class="text-end">{{ i.emisiones }}</td><td class="text-end">{{ i.ilegibles }}</td></tr>{% endfor %}
+        </tbody></table></div>
+</div>
+
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="resumen">
+    <h6 class="resultados-cabecera">Resumen por línea ({{ f.tipo }})</h6>
+    {% set seleccion = v.seleccion %}{% set resumenes = v.resumenes %}
+    {% include "resultados/_resumen.html" %}
+</div>
+
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="comparacion">
+    <h6 class="resultados-cabecera">Comparación directa sobre la muestra común</h6>
+    {% set comparacion = v.comparacion %}
+    {% include "resultados/_comparacion.html" %}
+</div>
+
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="evolucion">
+    <h6 class="resultados-cabecera">Evolución: diferencia frente a la uniforme por objetivo y acumulada</h6>
+    <p class="small text-muted mb-1">{{ v.signo }} Mismos objetivos para todas las líneas (la muestra común).</p>
+    {% set evolucion = graficas.evolucion %}{% set tabla_evolucion = graficas.tabla_evolucion %}
+    {% include "resultados/_evolucion.html" %}
+</div>
+
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="calibracion">
+    <h6 class="resultados-cabecera">Diagnóstico de calibración</h6>
+    {% set calibracion = v.calibracion %}{% set graficas_calibracion = graficas.calibracion %}
+    {% include "resultados/_calibracion.html" %}
+</div>
+
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="historial">
+    {% set h = v.historial %}
+    <h6 class="resultados-cabecera">Historial de emisiones <span class="small text-muted fw-normal">· {{ h.total }} fila(s) · página {{ h.pagina }} de {{ h.paginas }}</span></h6>
+    <p class="small text-muted mb-1">Una fila por procedencia, línea y objetivo (la primera emisión sellada). Integridad, histórico hasta el corte, resultado observado y admisión son comprobaciones separadas.</p>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-1">
+        <thead><tr><th>Objetivo</th><th>Línea</th><th>Tipo</th><th>Estado</th><th>Integridad</th><th>Histórico hasta el corte</th><th>Resultado observado</th><th>Fecha</th><th class="text-end">Aciertos</th><th class="text-end">Log Loss</th><th class="text-end">Δ uniforme</th><th>Superbalota</th><th>Original</th></tr></thead><tbody>
+        {% for e in h.filas %}<tr>
+            <td>{{ e.objetivo }}</td><td>{{ nombres_de_linea.get(e.clave_linea, e.clave_linea) }}{% if e.carteras %}<div class="text-muted">usado por {{ e.carteras|length }} cartera(s)</div>{% endif %}</td>
+            <td>{{ e.tipo or '—' }}</td>
+            <td>{{ estados.get(e.estado, e.estado) }}{% if e.motivo %}<div class="text-muted">{{ e.motivo|replace('_', ' ') }}</div>{% endif %}</td>
+            <td>{{ e.integridad|replace('_', ' ') }}</td><td>{{ (e.historico or '—')|replace('_', ' ') }}</td>
+            <td>{{ m.resultado(e.resultado) }}</td><td>{{ e.fecha_sorteo or '—' }}</td>
+            <td class="text-end">{% if e.aciertos is not none %}{{ e.aciertos }} de {{ e.de }}{% else %}—{% endif %}</td>
+            <td class="text-end">{{ m.num(e.metricas.log_loss if e.metricas else none) }}</td>
+            <td class="text-end">{{ m.num(e.metricas.log_loss - e.metricas.log_loss_uniforme if e.metricas else none, '%+.5f') }}</td>
+            <td>{% if e.superbalota %}{{ 'acierto' if e.superbalota.acierto else 'no' }} · {{ m.num(e.superbalota.log_loss, '%.4f') }}{% else %}—{% endif %}</td>
+            <td>{% if e.enlace %}<a href="{{ e.enlace }}">abrir</a>{% if e.versiones and e.versiones > 1 %}<div class="text-muted">primera de {{ e.versiones }}</div>{% endif %}{% else %}—{% endif %}</td></tr>
+        {% else %}<tr><td colspan="13" class="text-muted">Sin emisiones para estos filtros.</td></tr>{% endfor %}
+        </tbody></table></div>
+    {% if h.paginas > 1 %}<nav aria-label="Páginas del historial"><ul class="pagination pagination-sm mb-0">
+        {% for n, q in paginas.items() %}<li class="page-item {% if n == h.pagina %}active{% endif %}"><a class="page-link" href="/resultados/{{ slug }}?{{ q }}#historial">{{ n }}</a></li>{% endfor %}
+    </ul></nav>{% endif %}
+</div>
+
+{% if v.carteras %}
+<div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="carteras">
+    <h6 class="resultados-cabecera">Carteras: aciertos observados de las combinaciones</h6>
+    {% set carteras = v.carteras %}{% set acciones = true %}
+    {% include "resultados/_carteras.html" %}
+</div>
+{% endif %}
+
+<div class="card stat-card p-3 mb-3 resultados-tarjeta" id="exportar">
+    <h6 class="resultados-cabecera">Exportar y guardar</h6>
+    <p class="small text-muted mb-2">Las exportaciones contienen TODAS las emisiones de las líneas elegidas con estos filtros (no solo la página visible). CSV en UTF-8 sin fórmulas; JSON canónico.</p>
+    <div class="d-flex flex-wrap gap-2 mb-2">
+        <a class="btn btn-sm btn-outline-secondary" href="/resultados/{{ slug }}/exportar.csv?{{ consulta_fijada }}">Exportar CSV</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/resultados/{{ slug }}/exportar.json?{{ consulta_fijada }}">Exportar JSON</a>
+        <form method="post" action="/resultados/{{ slug }}/informes" class="m-0">
+            <input type="hidden" name="token_local" value="{{ token_local }}">
+            {% for p in f.procedencias %}<input type="hidden" name="procedencia" value="{{ p }}">{% endfor %}
+            {% for l in v.seleccion %}<input type="hidden" name="linea" value="{{ l }}">{% endfor %}
+            <input type="hidden" name="tipo" value="{{ f.tipo }}">
+            <input type="hidden" name="desde" value="{{ f.desde or '' }}"><input type="hidden" name="hasta" value="{{ f.hasta or '' }}"><input type="hidden" name="objetivo" value="{{ f.objetivo or '' }}">
+            {% if v.carteras %}{% for c in v.carteras.lineas %}<input type="hidden" name="cartera" value="{{ c }}">{% endfor %}{% endif %}
+            <button class="btn btn-sm btn-primary">Guardar informe</button>
+        </form>
+    </div>
+    <p class="small text-muted mb-1">«Guardar informe» conserva una fotografía verificable (filtros, líneas, artefactos de origen, resultados usados, probabilidades congeladas y cálculos). Repetir la misma fotografía reutiliza el informe; nunca se sobrescribe.</p>
+    {% if informes %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Informe</th><th>Guardado (UTC)</th><th>Tipo</th><th class="text-end">Líneas</th><th>Estado</th><th>Integridad</th></tr></thead><tbody>
+        {% for i in informes %}<tr><td>{% if i.integridad == 'correcta' %}<a href="/resultados/informes/{{ i.clave }}"><code>{{ i.clave[:12] }}</code></a>{% else %}<code>{{ i.clave[:12] }}</code>{% endif %}</td>
+            <td>{{ (i.guardado_en or '—')[:19]|replace('T', ' ') }}</td><td>{{ i.tipo or '—' }}</td><td class="text-end">{{ i.lineas if i.lineas is defined else '—' }}</td><td>{{ i.estado }}</td>
+            <td>{% if i.integridad == 'correcta' %}correcta{% else %}<span class="text-danger">{{ i.integridad|replace('_', ' ') }}</span>{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>{% endif %}
+</div>
+{% endblock %}

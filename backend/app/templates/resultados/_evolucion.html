@@ -1,0 +1,25 @@
+{# Evolucion sobre la muestra comun. Requiere: evolucion (grafica o None), tabla_evolucion, nombres_de_linea. #}
+{% import "resultados/_macros.html" as m %}
+{% set g = evolucion %}
+{% if not g %}
+<p class="small text-muted mb-0">Sin evolución que mostrar: hace falta una muestra común con al menos un objetivo incluido.</p>
+{% else %}
+<svg class="grafica-rendimiento resultados-grafica" viewBox="0 0 {{ g.ancho }} {{ g.alto }}" role="img" aria-labelledby="titulo-evolucion" style="max-width: 100%; height: auto;">
+    <title id="titulo-evolucion">Diferencia acumulada de Log Loss frente a la uniforme por objetivo común, una línea por modelo; la tabla siguiente lista los mismos puntos.</title>
+    <line x1="{{ g.margen }}" y1="{{ g.cero }}" x2="{{ g.ancho - g.margen }}" y2="{{ g.cero }}" stroke="#6c757d" stroke-dasharray="4 3"/>
+    <text x="4" y="{{ g.cero + 4 }}" font-size="11" fill="#6c757d">0</text>
+    <text x="4" y="{{ g.margen - 12 }}" font-size="11" fill="#6c757d">peor que la uniforme ↑</text>
+    <text x="4" y="{{ g.alto - 4 }}" font-size="11" fill="#6c757d">mejor que la uniforme ↓</text>
+    {% for e in g.ejes %}<text x="{{ e.x }}" y="{{ g.alto - g.margen + 14 }}" font-size="10" fill="#6c757d" text-anchor="middle">{{ e.objetivo }}</text>{% endfor %}
+    {% for t in g.trazos %}
+    <polyline points="{{ t.polilinea }}" fill="none" stroke="{{ t.color }}" stroke-width="{{ t.ancho }}"{% if t.guiones %} stroke-dasharray="{{ t.guiones }}"{% endif %}/>
+    {% for p in t.puntos %}<circle cx="{{ p.x }}" cy="{{ p.y }}" r="3" fill="{{ t.color }}"><title>{{ t.nombre }} · objetivo {{ p.objetivo }}: {{ '%+.5f'|format(p.acumulada) }}</title></circle>{% endfor %}
+    {% endfor %}
+</svg>
+<ul class="list-unstyled small mb-2">{% for t in g.trazos %}<li><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="{{ t.color }}" stroke-width="3"{% if t.guiones %} stroke-dasharray="{{ t.guiones }}"{% endif %}/></svg> {{ t.nombre }} — acumulada final {{ '%+.5f'|format(t.final) }}</li>{% endfor %}</ul>
+<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+    <caption class="small">Diferencia de Log Loss (modelo − uniforme) por objetivo y acumulada: los mismos puntos de la gráfica.</caption>
+    <thead><tr><th>Objetivo</th>{% for t in g.trazos %}<th class="text-end">{{ t.nombre }}<div class="text-muted fw-normal">objetivo · acumulada</div></th>{% endfor %}</tr></thead><tbody>
+    {% for fila in tabla_evolucion %}<tr><td>{{ fila.objetivo }}</td>{% for t in g.trazos %}{% set p = fila.valores[t.clave] %}<td class="text-end">{% if p %}{{ '%+.5f'|format(p.diferencia) }} · {{ '%+.5f'|format(p.acumulada) }}{% else %}—{% endif %}</td>{% endfor %}</tr>{% endfor %}
+    </tbody></table></div>
+{% endif %}

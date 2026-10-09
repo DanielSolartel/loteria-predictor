@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     directorio_carteras_modelos: str = "storage/carteras"
     tiempo_maximo_trabajador_carteras: int = 300
 
+    # Producto 6: informes guardados del centro de resultados (fotografias
+    # inmutables de una consulta), separados de los almacenes de Productos 1-5.
+    directorio_resultados_modelos: str = "storage/resultados"
+
 
 @lru_cache
 def get_settings() -> Settings:

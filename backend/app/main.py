@@ -22,6 +22,7 @@ from app.api.rest.routers import juegos as rest_juegos
 from app.api.rest.routers import laboratorio as rest_laboratorio
 from app.api.rest.routers import operacion as rest_operacion
 from app.api.rest.routers import producto as rest_producto
+from app.api.rest.routers import resultados as rest_resultados
 from app.api.rest.routers import sorteos as rest_sorteos
 from app.api.web.routers import carteras as web_carteras
 from app.api.web.routers import colores as web_colores
@@ -32,6 +33,7 @@ from app.api.web.routers import juegos as web_juegos
 from app.api.web.routers import laboratorio as web_laboratorio
 from app.api.web.routers import operacion as web_operacion
 from app.api.web.routers import producto as web_producto
+from app.api.web.routers import resultados as web_resultados
 from app.api.web.routers import sorteos as web_sorteos
 from app.application.exceptions import (
     ColorNoVigenteError,
@@ -61,6 +63,7 @@ app.include_router(web_estadisticas.router)
 app.include_router(web_operacion.router)
 app.include_router(web_laboratorio.router)
 app.include_router(web_carteras.router)
+app.include_router(web_resultados.router)
 
 # Adaptador REST (JSON, puente hacia una futura UI en React/Next.js)
 app.include_router(rest_juegos.router)
@@ -70,6 +73,7 @@ app.include_router(rest_producto.router)
 app.include_router(rest_operacion.router)
 app.include_router(rest_laboratorio.router)
 app.include_router(rest_carteras.router)
+app.include_router(rest_resultados.router)
 
 
 _STATUS_POR_EXCEPCION = {

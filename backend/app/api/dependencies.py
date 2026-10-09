@@ -42,6 +42,7 @@ from app.application.use_cases.laboratorio import LaboratorioDeModelos, Lectura
 from app.application.use_cases.operacion_diaria import DependenciasDeJuego, OperacionDiaria
 from app.application.use_cases.panel_diario import ConsultarPanelDiario
 from app.application.use_cases.registrar_sorteo import RegistrarSorteo
+from app.application.use_cases.resultados import CentroDeResultados
 from app.application.use_cases.rendimiento import ConsultarRendimiento
 from app.application.use_cases.reimportar_sorteo import ReimportarSorteo
 from app.application.use_cases.reprocesar_sorteos_desde_html import ReprocesarSorteosDesdeHtml
@@ -69,6 +70,7 @@ from app.infrastructure.storage.carteras_file_store import CarterasFileStore
 from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore
 from app.infrastructure.storage.operacion_file_store import CerrojoPorJuego, RegistroEjecucionesArchivo
 from app.infrastructure.storage.pronostico_experimental_file_store import PronosticoExperimentalFileStore
+from app.infrastructure.storage.resultados_file_store import ResultadosFileStore
 
 # Un único HtmlStorage y un único ConnectorRegistry para todo el
 # proceso: los conectores mantienen su propia sesión HTTP (con
@@ -471,3 +473,20 @@ def _lanzar_carteras_en_hilo(funcion, inicio) -> None:
 
 def get_lanzador_de_carteras():
     return _lanzar_carteras_en_hilo
+
+
+# ---------------------------------------------------------------------------
+# Producto 6: centro de resultados y evaluacion continua de modelos
+# ---------------------------------------------------------------------------
+
+def get_resultados(carteras: CarterasDeModelos = Depends(get_carteras)) -> CentroDeResultados:
+    """Lee los almacenes de Productos 1-5 (sin escribirlos) y el historico con
+    la lectura de solo lectura del laboratorio. Su unico almacen propio es el
+    de informes (`DIRECTORIO_RESULTADOS_MODELOS`). El caso de uso de carteras
+    solo se usa para «usar esta configuracion» (POST explicito)."""
+    settings = get_settings()
+    return CentroDeResultados(PronosticoExperimentalFileStore(settings.directorio_pronosticos_experimentales),
+                              LaboratorioFileStore(settings.directorio_laboratorio_modelos),
+                              CarterasFileStore(settings.directorio_carteras_modelos),
+                              ResultadosFileStore(settings.directorio_resultados_modelos),
+                              abrir_lectura_del_laboratorio, carteras_servicio=lambda: carteras)

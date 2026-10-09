@@ -1,0 +1,26 @@
+{# Carteras (aciertos de las combinaciones), aparte del vector. Requiere: carteras, juego, slugs; acciones (bool). #}
+{% set ca = carteras %}
+<p class="small text-muted mb-2">{{ ca.nota }} {{ ca.comparacion.nota }}</p>
+{% if not ca.lineas %}<p class="small text-muted mb-0">Todavía no hay carteras de este juego (o ninguna elegida).</p>{% endif %}
+{% if ca.lineas %}
+<div class="tabla-desplazable"><table class="table table-sm small mb-2">
+    <caption class="small">Una fila por línea de cartera: modelo, versión, perfil, combinaciones, diversidad y semilla visibles.</caption>
+    <thead><tr><th>Línea de cartera</th><th>Modelo</th><th class="text-end">Comb.</th><th>Diversidad</th><th class="text-end">Semilla</th><th class="text-end">Incluidos</th><th class="text-end">Pendientes</th><th>Excluidos</th><th>Máximo por cartera (veces)</th><th class="text-end">Máximo medio</th>{% if acciones %}<th></th>{% endif %}</tr></thead><tbody>
+    {% for nombre, c in ca.lineas.items() %}{% set meta = c.metadatos or {} %}{% set r = c.resumen %}
+    <tr><td><code>{{ nombre }}</code>{% if r.muestra_pequena %} <span class="badge text-bg-warning">muestra pequeña</span>{% endif %}</td>
+        <td>{{ meta.nombre or '—' }}<div class="text-muted">v{{ meta.version }} · {{ meta.perfil }}</div></td>
+        <td class="text-end">{{ meta.cantidad }}</td><td>{{ meta.diversidad }}</td><td class="text-end">{{ meta.semilla }}</td>
+        <td class="text-end">{{ r.incluidos }}</td><td class="text-end">{{ r.pendientes }}{% if r.sin_base %}<div class="text-muted">+{{ r.sin_base }} sin base</div>{% endif %}</td>
+        <td>{{ r.excluidos }}{% for motivo, n in r.excluidos_por_motivo.items() %}<div class="text-muted">{{ motivo|replace('_', ' ') }}: {{ n }}</div>{% endfor %}</td>
+        <td>{% for k, n in r.maximos.items() %}{{ k }} aciertos: {{ n }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}{% if r.superbalota_en_alguna_linea %}<div class="text-muted">superbalota en alguna combinación: {{ r.superbalota_en_alguna_linea }}</div>{% endif %}</td>
+        <td class="text-end">{% if r.maximo_medio is not none %}{{ '%.2f'|format(r.maximo_medio) }}{% else %}—{% endif %}</td>
+        {% if acciones %}<td>{% if meta %}<a class="btn btn-sm btn-outline-primary text-nowrap" href="/resultados/{{ slugs[juego] }}/configuracion?linea={{ nombre|urlencode }}">Usar esta configuración…</a>{% endif %}</td>{% endif %}</tr>
+    {% endfor %}
+    </tbody></table></div>
+{% for gr in ca.comparacion.grupos %}
+<p class="small mb-1"><strong>{{ gr.combinaciones_por_cartera }} combinación(es) por cartera</strong> · {{ gr.lineas|join(', ') }} · {% if gr.estado == 'con_muestra_comun' %}objetivos comunes: {{ gr.objetivos_comunes|join(', ') }}{% elif gr.estado == 'una_sola_cartera' %}una sola cartera con este número de combinaciones: no se compara con otras{% else %}sin muestra común{% endif %}</p>
+{% if gr.maximos %}<div class="tabla-desplazable"><table class="table table-sm small mb-2"><caption class="small">Máximo de aciertos por cartera en cada objetivo común.</caption><thead><tr><th>Línea</th>{% for o in gr.objetivos_comunes %}<th class="text-end">{{ o }}</th>{% endfor %}</tr></thead><tbody>
+{% for l, valores in gr.maximos.items() %}<tr><td><code>{{ l }}</code></td>{% for v in valores %}<td class="text-end">{{ v }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endif %}
+{% endfor %}
+{% if ca.relacion_modelo_carteras %}<p class="small mb-0"><strong>Vector fuente compartido:</strong> {% for modelo, lineas in ca.relacion_modelo_carteras.items() %}<code>carteras:{{ modelo }}</code> → {{ lineas|length }} cartera(s){% if not loop.last %}; {% endif %}{% endfor %}. El vector se evalúa una vez por objetivo, no una vez por cartera.</p>{% endif %}
+{% endif %}

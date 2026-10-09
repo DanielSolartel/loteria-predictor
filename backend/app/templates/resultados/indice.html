@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% import "resultados/_macros.html" as m %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Resultados de los modelos{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Resultados de los modelos</h3>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="/operacion"><i class="bi bi-calendar-check me-1"></i>Panel diario</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio"><i class="bi bi-diagram-3 me-1"></i>Laboratorio</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras"><i class="bi bi-grid-3x3-gap me-1"></i>Carteras</a></div>
+</div>
+{{ m.aviso_experimental() }}
+<p class="small text-muted">Cada fila de la evaluación es una emisión por procedencia, línea y objetivo: la PRIMERA según el orden sellado de su procedencia. {{ datos.nota_seguimiento }} {{ datos.nota }}</p>
+<div class="row g-3">
+{% for j in datos.juegos %}
+<div class="col-12 col-xl-6">
+    <div class="card stat-card resultados-tarjeta p-3 h-100">
+        <div class="resultados-cabecera">
+        <h5 class="mb-1">{{ j.nombre }}</h5>
+        <p class="small mb-2">Último resultado cargado:
+            {% if j.base.estado == 'consultada' and j.base.ultimo_sorteo %}<strong>sorteo {{ j.base.ultimo_sorteo }}</strong> del {{ j.base.fecha }} ({{ j.base.sorteos }} sorteos)
+            {% elif j.base.estado == 'consultada' %}no hay sorteos cargados
+            {% else %}<span class="text-danger">no disponible: la base no responde ({{ j.base.motivo }}). Lo guardado se sigue mostrando; no se inventa un último resultado.</span>{% endif %}</p>
+        <p class="small mb-2"><strong>Emisiones de seguimiento</strong> ({{ j.objetivos_de_seguimiento }} objetivo(s) distinto(s)):
+            incluidas {{ j.seguimiento.incluido }} · pendientes {{ j.seguimiento.pendiente }} · excluidas {{ j.seguimiento.excluido }}{% if j.seguimiento.sin_base %} · sin base {{ j.seguimiento.sin_base }}{% endif %}</p>
+        </div>
+        <div class="tabla-desplazable"><table class="table table-sm small mb-2">
+            <caption class="small">Disponibilidad por procedencia.</caption>
+            <thead><tr><th>Procedencia</th><th>Estado</th><th class="text-end">Líneas</th><th class="text-end">Emisiones</th><th class="text-end">Ilegibles</th></tr></thead><tbody>
+            {% for p, i in j.procedencias.items() %}<tr><td>{{ i.nombre }}</td>
+                <td>{% if i.error %}<span class="text-danger">{{ i.error }}</span>{% else %}{{ {'con_lineas': 'con líneas', 'sin_artefactos': 'sin artefactos', 'no_elegida': 'no consultada'}.get(i.estado, i.estado) }}{% endif %}</td>
+                <td class="text-end">{{ i.lineas }}</td><td class="text-end">{{ i.emisiones }}</td><td class="text-end">{{ i.ilegibles }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        <div><a class="btn btn-sm btn-primary" href="/resultados/{{ j.slug }}">Ver resultados de {{ j.nombre }}</a></div>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

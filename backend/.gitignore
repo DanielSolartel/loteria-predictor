@@ -13,3 +13,5 @@ storage/laboratorio/*
 !storage/laboratorio/.gitkeep
 storage/carteras/*
 !storage/carteras/.gitkeep
+storage/resultados/*
+!storage/resultados/.gitkeep
