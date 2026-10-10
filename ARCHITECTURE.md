@@ -6013,6 +6013,7 @@ Prueba de ausencia de fuga: alterar todos los sorteos desde el primer objetivo d
   - Se conservan los bytes de los artefactos existentes, la idempotencia, la secuencia y `version_anterior`.
   - Ante un corte de energía solo se promete lo que da el sistema: `fsync` del contenido antes de publicar y, en POSIX, del directorio.
   - Requiere enlaces duros: disco local NTFS o POSIX.
+  - Cobertura (`backend/tests/unit/test_producto3_almacen.py`, 14 pruebas con sincronización determinista): lector en el mismo proceso y en otro proceso mientras el escritor está detenido a mitad de escritura; proceso escritor terminado de golpe a mitad de escritura; temporal de un escritor activo que otro escritor no toca; escritores simultáneos (hilos y procesos, misma clave y claves distintas); dos generaciones simultáneas de la misma entrada en el caso de uso, que devuelven el mismo pronóstico; y conservación de bytes, huellas y orden de versiones. Sobre el almacén anterior a Producto 3, que escribía el JSON final directamente, las pruebas de lectura a mitad de escritura, proceso terminado y temporal activo fallan.
 - **Operación diaria (`OperacionDiaria`):** un caso de uso común a la web y al comando. Por cada juego:
   1. estado inicial;
   2. con «Actualizar datos y generar», la importación incremental existente (`SincronizarSorteos`);
