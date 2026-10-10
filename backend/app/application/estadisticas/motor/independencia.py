@@ -126,17 +126,23 @@ def _testear_universo(
 ) -> list[ResultadoTestEstadistico]:
     conteo_observado = _contar_coocurrencias_crudo(listas_de_numeros, tamano_combinacion)
 
+    # Fase 5: el p-value solo depende de (soporte, total_sorteos, probabilidad), iguales para todo el universo
+    # salvo el soporte, que toma pocos valores distintos. Se calcula una vez por soporte: mismos p-values
+    # exactos, y los 12341 tríos de Baloto pasan de ~6 s a menos de 1 s.
+    p_value_por_soporte: dict[int, float] = {}
     resultados = []
     for combinacion in combinations(range(rango_min, rango_max + 1), tamano_combinacion):
         soporte = conteo_observado.get(combinacion, 0)
-        resultado_test = binomtest(soporte, total_sorteos, probabilidad_teorica, alternative="two-sided")
+        if soporte not in p_value_por_soporte:
+            p_value_por_soporte[soporte] = float(
+                binomtest(soporte, total_sorteos, probabilidad_teorica, alternative="two-sided").pvalue)
         resultados.append(
             ResultadoTestEstadistico(
                 nombre_test=nombre_test,
                 elementos=tuple(str(n) for n in combinacion),
                 estadistico=float(soporte),
                 grados_libertad=None,
-                p_value=float(resultado_test.pvalue),
+                p_value=p_value_por_soporte[soporte],
                 p_value_ajustado=None,
                 metodo_correccion=None,
                 alpha=None,

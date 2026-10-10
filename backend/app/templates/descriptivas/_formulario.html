@@ -1,0 +1,18 @@
+{# Un solo formulario GET: parámetro de la métrica (si tiene) y corte. Sin JavaScript. #}
+<form method="get" action="{{ request.url.path }}" class="d-flex flex-wrap align-items-end gap-2 mb-2">
+    {% if selector %}
+    <div>
+        <label for="parametro-{{ selector.parametro }}" class="form-label small mb-1">{{ {'anio': 'Año', 'mes': 'Mes', 'dia_semana': 'Día de la semana', 'ventana': 'Ventana reciente'}[selector.parametro] }}</label>
+        <select id="parametro-{{ selector.parametro }}" name="{{ selector.parametro }}" class="form-select form-select-sm">
+            {% for o in selector.opciones %}<option value="{{ o.valor }}"{% if o.valor == selector.valor %} selected{% endif %}>{{ o.etiqueta }} ({{ o.sorteos }} sorteos)</option>{% endfor %}
+        </select>
+    </div>
+    {% endif %}
+    <div>
+        <label for="hasta_numero_sorteo" class="form-label small mb-1">Corte por número de sorteo</label>
+        <input type="number" id="hasta_numero_sorteo" name="hasta_numero_sorteo" step="1" min="1" value="{{ hasta_numero_sorteo if hasta_numero_sorteo is not none else '' }}" class="form-control form-control-sm" style="width: 10rem;">
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
+    <a href="{{ request.url.path }}" class="btn btn-sm btn-outline-secondary">Histórico completo</a>
+</form>
+<p class="small text-muted mb-3">El corte incluye los sorteos con número menor o igual y se aplica antes de calcular; pertenece a {{ nombre }}: al cambiar de juego se vuelve al histórico completo.</p>

@@ -76,7 +76,7 @@
         <table class="table table-sm mb-0"><thead><tr><th>Pares</th><th class="text-end">Sorteos</th><th class="text-end">%</th></tr></thead><tbody>
         {% for d in e.pares_impares %}<tr><td>{{ d.valor }}</td><td class="text-end">{{ d.sorteos }}</td><td class="text-end">{{ '%.1f'|format(100 * d.frecuencia_relativa) }}</td></tr>{% endfor %}</tbody></table></div></div>
 </div>
-<p class="mt-3 small"><a href="/estadisticas/colorloto/frecuencia-numeros">Más análisis de ColorLoto →</a></p>
+<p class="mt-3 small"><a href="/estadisticas/colorloto/frecuencia-numeros">Más análisis de ColorLoto →</a> · <a href="/estadisticas/colorloto/panel{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">Panel completo de estadísticas</a></p>
 {% else %}
 <div class="row g-3">
     <div class="col-md-8"><div class="card stat-card p-3 h-100"><h6>Frecuencia de números ({{ r.reglas.rango[0] }}–{{ r.reglas.rango[1] }})</h6>
@@ -117,6 +117,7 @@
     <a href="/estadisticas/{{ slug }}/frecuencia-observada-esperada">Observada vs. esperada</a> ·
     <a href="/estadisticas/{{ slug }}/atrasos-numeros">Atrasos</a> ·
     <a href="/estadisticas/{{ slug }}/coocurrencia-pares">Coocurrencia</a>
+    · <a href="/estadisticas/{{ slug }}/panel{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">Panel completo de estadísticas</a>
     {% if tiene_pronostico %} · <a href="/pronosticos/{{ slug }}">Pronóstico experimental</a>{% endif %}
 </p>
 {% endif %}

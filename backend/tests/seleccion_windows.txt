@@ -79,3 +79,7 @@ tests/unit/test_producto6_evaluacion.py
 tests/unit/test_producto6_informes.py
 tests/unit/test_producto6_web.py
 tests/unit/test_producto6_verificacion.py
+tests/unit/test_fase5_motor.py
+tests/unit/test_fase5_descriptivas.py
+tests/unit/test_fase5_web.py
+tests/unit/test_fase5_pvalores.py

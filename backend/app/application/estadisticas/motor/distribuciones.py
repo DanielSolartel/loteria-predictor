@@ -128,6 +128,36 @@ def calcular_distribucion_sumas(
     return _construir_distribucion_sumas(sumas)
 
 
+def calcular_histograma_sumas(
+    resultados: Sequence[ResultadoNumerico], rango_min: int, rango_max: int, cantidad_numeros: int,
+    ancho_intervalo: int = 10, hasta_numero_sorteo: int | None = None,
+) -> list[FrecuenciaObservada]:
+    """Fase 5: cuántos sorteos tuvieron la suma de sus números principales en cada intervalo
+    [a, a+ancho-1]. Los intervalos cubren la suma mínima y máxima POSIBLES del juego (K números
+    distintos: 1+..+K hasta (N-K+1)+..+N), alineados en múltiplos de `ancho_intervalo`; un intervalo
+    sin sorteos aparece con 0 (no se omite). valor = "a-b"; frecuencia_relativa = sorteos / total.
+    Nunca la superbalota (ver docstring del módulo)."""
+    if ancho_intervalo <= 0:
+        raise ValueError(f"ancho_intervalo debe ser positivo, se recibió {ancho_intervalo}")
+    historico = filtrar_por_corte_temporal(resultados, hasta_numero_sorteo)
+    suma_minima = sum(range(rango_min, rango_min + cantidad_numeros))
+    suma_maxima = sum(range(rango_max - cantidad_numeros + 1, rango_max + 1))
+    sumas = [sum(r.numeros) for r in historico]
+    fuera = [s for s in sumas if not (suma_minima <= s <= suma_maxima)]
+    if fuera:
+        raise ValueError(f"calcular_histograma_sumas: sumas fuera de [{suma_minima},{suma_maxima}]: {sorted(set(fuera))}")
+    inicio = (suma_minima // ancho_intervalo) * ancho_intervalo
+    total = len(sumas)
+    filas = []
+    while inicio <= suma_maxima:
+        fin = inicio + ancho_intervalo - 1
+        sorteos = sum(1 for s in sumas if inicio <= s <= fin)
+        filas.append(FrecuenciaObservada(valor=f"{inicio}-{fin}", apariciones=sorteos, total_sorteos=total,
+                                         frecuencia_relativa=(sorteos / total) if total else 0.0))
+        inicio += ancho_intervalo
+    return filas
+
+
 def calcular_distribucion_decenas(
     resultados: Sequence[ResultadoNumerico], rango_min: int, rango_max: int,
     hasta_numero_sorteo: int | None = None,

@@ -9996,10 +9996,16 @@ class TestColorLotoComparacionFrecuenciaNumerosPorVentanaHTTPReal:
             assert r.status_code == 422, f"{v}: {r.status_code}"
 
     def test_aislamiento_404_baloto_revancha_miloto(self):
+        """Fase 5: la comparación por ventana de NÚMEROS se completó para Baloto, Revancha y MiLoto con
+        su propia página (`descriptivas/metrica.html`, router de la Fase 5); la ruta literal de ColorLoto
+        sigue aislada: esas URL nunca sirven la plantilla de ColorLoto, y un juego desconocido sigue
+        respondiendo 404."""
         client = self._client()
         for juego in ("baloto", "baloto-revancha", "miloto"):
             r = client.get(f"/estadisticas/{juego}/comparacion-frecuencia-numeros-por-ventana")
-            assert r.status_code == 404, f"{juego}: {r.status_code}"
+            assert r.status_code == 200, f"{juego}: {r.status_code}"
+            assert "Números: ventana reciente" in r.text and "ColorLoto" not in r.text.split("<h3", 1)[1][:200]
+        assert client.get("/estadisticas/quini/comparacion-frecuencia-numeros-por-ventana").status_code == 404
 
 
 class TestColorLotoComparacionFrecuenciaNumerosPorVentanaPreservacionYRegresiones:

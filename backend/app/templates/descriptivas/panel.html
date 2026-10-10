@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Panel de estadísticas — {{ nombre }}{% endblock %}
+{% block content %}
+<ul class="nav nav-pills mb-2 descriptivas-nav">
+    {% for j in juegos_nav %}<li class="nav-item"><a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a></li>{% endfor %}
+</ul>
+<h3 class="mb-1">Panel de estadísticas — {{ nombre }}</h3>
+<p class="small text-muted mb-2">Todas las estadísticas descriptivas del juego en una sola vista, sobre la misma muestra. Describen sorteos ya ocurridos: no son probabilidades del próximo sorteo ni evidencia de ventaja predictiva.
+    <a href="/estadisticas/{{ slug }}/resumen{% if hasta_numero_sorteo %}?hasta_numero_sorteo={{ hasta_numero_sorteo }}{% endif %}">Resumen del juego</a>.</p>
+
+{% if not db_conectada %}
+<div class="alert alert-danger">Sin conexión a la base de datos: no se pueden calcular estadísticas. Revisa <code>DATABASE_URL</code> y que PostgreSQL esté en marcha.</div>
+{% else %}
+{% set selector = none %}
+{% include "descriptivas/_formulario.html" %}
+{% include "descriptivas/_muestra.html" %}
+{% if not datos.muestra.total_sorteos %}
+<div class="alert alert-info">No hay sorteos {% if hasta_numero_sorteo %}hasta el corte indicado{% else %}cargados para este juego{% endif %}: el panel no muestra cifras (nunca ceros inventados). Sincroniza desde <a href="/importacion">Importación</a>.</div>
+{% endif %}
+
+{% for grupo in datos.grupos if grupo.metricas %}
+<div class="card stat-card p-3 mb-3 descriptivas-tarjeta impresion-fragmentable">
+    <h6 class="descriptivas-cabecera">{{ grupo.titulo }}</h6>
+    <div class="tabla-desplazable">
+    <table class="table table-sm mb-0">
+        <thead><tr><th scope="col">Estadística</th><th scope="col">Cifras clave (misma muestra)</th><th scope="col" class="text-end">Página</th></tr></thead>
+        <tbody>
+        {% for e in grupo.metricas %}
+        <tr{% if not e.aplica %} class="text-muted"{% endif %}>
+            <td>{{ e.titulo }}{% if e.nueva %} <span class="badge text-bg-light border">Fase 5</span>{% endif %}</td>
+            <td class="small">
+                {% if not e.aplica %}No aplica: {{ e.motivo }}
+                {% elif e.estado == 'sin_datos' %}Sin sorteos en la muestra.
+                {% else %}
+                    {% if e.estado not in ('ok',) %}<span class="text-warning-emphasis">{{ {'insuficiente': 'Muestra insuficiente.', 'sin_sorteos_en_el_periodo': 'Sin sorteos en el período por defecto.'}.get(e.estado, e.estado) }}</span>{% endif %}
+                    {% for i in e.indicadores %}<div>{{ i.etiqueta }}: <strong>{{ i.valor|formatear(i.formato) }}</strong>{% if i.unidad %} <span class="text-muted">{{ i.unidad }}</span>{% endif %}</div>{% else %}<span class="text-muted">Ver detalle.</span>{% endfor %}
+                {% endif %}
+            </td>
+            <td class="text-end">{% if e.aplica %}<a href="{{ url_estadistica(slug, e.slug, hasta_numero_sorteo) }}">Abrir</a>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endfor %}
+<p class="small text-muted">Calculado en el momento sobre la muestra indicada, sin guardar nada en la base. Datos en JSON: <code>/api/estadisticas/{{ codigo }}/panel</code>. Las páginas marcadas «Fase 5» son nuevas; las demás son las visualizaciones anteriores, que conservan sus rutas.</p>
+{% endif %}
+{% endblock %}

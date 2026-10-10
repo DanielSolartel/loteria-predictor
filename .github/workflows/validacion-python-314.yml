@@ -54,6 +54,9 @@ jobs:
       # Producto 6: centro de resultados en los cuatro juegos (datos sinteticos, sin red ni base).
       - name: Demostracion de Producto 6 (resultados de los modelos)
         run: python -m tests.demostracion_producto6
+      # Fase 5: estadisticas descriptivas completas en los cuatro juegos (datos sinteticos, sin red ni base).
+      - name: Demostracion de la Fase 5 (estadisticas descriptivas)
+        run: python -m tests.demostracion_fase5
 
   windows:
     name: Windows - seleccion de tests/seleccion_windows.txt
@@ -101,4 +104,10 @@ jobs:
       - name: Demostracion de Producto 6 (resultados de los modelos)
         run: |
           python -m tests.demostracion_producto6
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Demostracion de la Fase 5 (estadisticas descriptivas)
+        env:
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          python -m tests.demostracion_fase5
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

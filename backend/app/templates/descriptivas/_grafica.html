@@ -1,0 +1,43 @@
+{# Gráfica de barras SVG con los valores de UNA columna de una tabla de la misma página (`g.tabla`,
+   `g.valor`, `g.etiqueta`): la tabla es la versión accesible de la gráfica. Admite valores negativos y
+   una línea de referencia (`g.referencia`). Sin JavaScript. #}
+{% set filas = tabla.filas %}
+{% set valores = [] %}{% for f in filas %}{% if f[g.valor] is not none %}{% set _ = valores.append(f[g.valor]) %}{% endif %}{% endfor %}
+{% set extremos = [0] + valores + ([g.referencia] if g.referencia is not none else []) %}
+{% set vmax = extremos|max %}{% set vmin = extremos|min %}
+{% set rango = (vmax - vmin) if vmax > vmin else 1 %}
+{% set W = 800 %}{% set H = 280 %}{% set izq = 56 %}{% set der = 12 %}{% set arr = 14 %}{% set aba = 54 %}
+{% set alto = H - arr - aba %}
+{% set n = filas|length %}
+{% set ancho = (W - izq - der) / (n if n else 1) %}
+{% set y0 = arr + (vmax - 0) / rango * alto %}
+{% set girar = n > 16 %}
+<figure class="mb-1">
+<svg class="descriptivas-grafica w-100" viewBox="0 0 {{ W }} {{ H }}" role="img" aria-labelledby="titulo-{{ g.tabla }}">
+    <title id="titulo-{{ g.tabla }}">{{ g.titulo }} ({{ g.unidad }}); los valores están en la tabla «{{ tabla.titulo }}».</title>
+    <line x1="{{ izq }}" y1="{{ arr }}" x2="{{ izq }}" y2="{{ arr + alto }}" stroke="#adb5bd"/>
+    <line x1="{{ izq }}" y1="{{ y0 }}" x2="{{ W - der }}" y2="{{ y0 }}" stroke="#6c757d"/>
+    {% for v in ([vmax, vmin] if vmin < 0 else [vmax]) %}
+    <text x="{{ izq - 4 }}" y="{{ arr + (vmax - v) / rango * alto + 4 }}" text-anchor="end" font-size="11" fill="#495057">{{ v|formatear('dec1') }}</text>
+    {% endfor %}
+    <text x="{{ izq - 4 }}" y="{{ y0 + 4 }}" text-anchor="end" font-size="11" fill="#495057">0</text>
+    {% for f in filas %}
+    {% set v = f[g.valor] %}
+    {% set x = izq + loop.index0 * ancho %}
+    {% if v is not none %}
+    {% set yv = arr + (vmax - v) / rango * alto %}
+    <rect x="{{ x + ancho * 0.15 }}" y="{{ [yv, y0]|min }}" width="{{ ancho * 0.7 }}" height="{{ ([yv - y0, y0 - yv]|max) or 0.5 }}" fill="{% if v < 0 %}#d9822b{% else %}#3b6fb6{% endif %}"><title>{{ f[g.etiqueta] }}: {{ v|formatear('dec2') }} {{ g.unidad }}</title></rect>
+    {% endif %}
+    {% if girar %}
+    <text x="{{ x + ancho / 2 }}" y="{{ arr + alto + 10 }}" font-size="10" fill="#495057" text-anchor="end" transform="rotate(-60 {{ x + ancho / 2 }} {{ arr + alto + 10 }})">{{ f[g.etiqueta] }}</text>
+    {% else %}
+    <text x="{{ x + ancho / 2 }}" y="{{ arr + alto + 16 }}" font-size="11" fill="#495057" text-anchor="middle">{{ f[g.etiqueta] }}</text>
+    {% endif %}
+    {% endfor %}
+    {% if g.referencia is not none %}
+    {% set yr = arr + (vmax - g.referencia) / rango * alto %}
+    <line x1="{{ izq }}" y1="{{ yr }}" x2="{{ W - der }}" y2="{{ yr }}" stroke="#198754" stroke-dasharray="5 4"/>
+    {% endif %}
+</svg>
+<figcaption class="small text-muted">{{ g.titulo }}, en {{ g.unidad }}.{% if g.referencia is not none %} Línea discontinua: {{ g.etiqueta_referencia or 'referencia' }} = {{ g.referencia|formatear('dec2') }}.{% endif %} Mismos valores en la tabla «{{ tabla.titulo }}».</figcaption>
+</figure>

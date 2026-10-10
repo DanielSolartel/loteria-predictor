@@ -43,6 +43,7 @@
             {% endif %}
             <div class="mt-auto">
                 <a class="btn btn-sm btn-primary" href="/estadisticas/{{ t.slug }}/resumen">Ver resumen</a>
+                <a class="btn btn-sm btn-outline-primary" href="/estadisticas/{{ t.slug }}/panel">Panel completo</a>
                 {% if t.codigo in ('BALOTO', 'BALOTO_REVANCHA') %}
                 <a class="btn btn-sm btn-outline-secondary" href="/pronosticos/{{ t.slug }}">Pronóstico experimental</a>
                 {% endif %}

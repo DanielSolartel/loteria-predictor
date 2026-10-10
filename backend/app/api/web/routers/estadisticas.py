@@ -39,6 +39,7 @@ from app.api.dependencies import (
     get_juego_repository,
     get_resultados_historicos_repository,
 )
+from app.api.web.navegacion_descriptivas import navegacion_fase5
 from app.api.web.estadisticas_slugs import CAPACIDAD_SUPERBALOTA_POR_SLUG, resolver_codigo
 from app.api.web.view_models import (
     atrasos_numeros_a_vm,
@@ -102,6 +103,8 @@ from app.infrastructure.db.session import get_db
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+# Fase 5: fila «Más estadísticas» (panel y métricas nuevas) en las páginas de este router.
+templates.env.globals["navegacion_fase5"] = navegacion_fase5
 
 
 def _resolver_codigo(juego_slug: str) -> str:
