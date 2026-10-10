@@ -43,6 +43,7 @@ from collections.abc import Sequence
 
 from scipy import stats
 
+from app.application.estadisticas.motor.frecuencia import frecuencia_relativa_esperada
 from app.application.estadisticas.tipos import (
     FrecuenciaObservada,
     ProbabilidadTeorica,
@@ -124,6 +125,46 @@ def chi_cuadrado_bondad_ajuste(
         alpha=None,
         significativo=None,
     )
+
+
+def chi_cuadrado_uniformidad(
+    observados: Sequence[FrecuenciaObservada], extraidos_por_sorteo: int, *, sin_reemplazo: bool,
+) -> ResultadoTestEstadistico:
+    """Fase 5: ¿son las apariciones de las N categorías compatibles con un sorteo uniforme?
+    Reutiliza `chi_cuadrado_bondad_ajuste` con la probabilidad por sorteo K/N
+    (`frecuencia_relativa_esperada`) y, si el sorteo extrae K valores DISTINTOS (sin reemplazo),
+    corrige el estadístico.
+
+    Con K de N sin reemplazo, cada sorteo aporta exactamente K apariciones correlacionadas
+    negativamente entre sí: bajo H0 y cuando crece el número de sorteos, X = sum((O_i - E_i)^2 / E_i)
+    tiende a (N-K)/(N-1) * chi2(N-1), no a chi2(N-1) (covarianza de la hipergeométrica multivariante).
+    El estadístico corregido X * (N-1)/(N-K) tiene como distribución límite chi2(N-1); sin la
+    corrección el test es conservador (Baloto, K=5 de N=43: X se infla por 42/38). Con K=1
+    (superbalota) el factor es 1. Con reemplazo (balotas independientes de ColorLoto, multinomial), no
+    hay corrección.
+
+    El p-value es ASINTÓTICO en los dos casos: sale de esa chi2(N-1) límite. El factor corrige la
+    escala del estadístico, pero no convierte el contraste en una prueba exacta para una muestra
+    finita; con frecuencias esperadas pequeñas (< 5) la aproximación es poco fiable y quien presenta
+    el resultado debe avisarlo.
+
+    `estadistico` es el corregido; `grados_libertad` = N-1. Descriptivo: un p-value bajo no indica
+    qué valores saldrán, y uno alto no prueba que el sorteo sea uniforme."""
+    n = len(observados)
+    if extraidos_por_sorteo <= 0:
+        raise ValueError(f"chi_cuadrado_uniformidad: extraidos_por_sorteo debe ser positivo ({extraidos_por_sorteo})")
+    if sin_reemplazo and extraidos_por_sorteo >= n:
+        raise ValueError(
+            f"chi_cuadrado_uniformidad: sin reemplazo se requieren mas categorias ({n}) que extraidos ({extraidos_por_sorteo})")
+    probabilidad = frecuencia_relativa_esperada(extraidos_por_sorteo, n)
+    base = chi_cuadrado_bondad_ajuste(
+        observados, ProbabilidadTeorica(valor="*", probabilidad=probabilidad,
+                                        metodo=f"K/N = {extraidos_por_sorteo}/{n}"))
+    if not sin_reemplazo:
+        return base
+    estadistico = base.estadistico * (n - 1) / (n - extraidos_por_sorteo)
+    return dataclasses.replace(base, nombre_test="chi2_uniformidad_sin_reemplazo", estadistico=estadistico,
+                               p_value=float(stats.chi2.sf(estadistico, base.grados_libertad)))
 
 
 def intervalo_confianza_proporcion(

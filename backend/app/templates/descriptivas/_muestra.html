@@ -1,0 +1,14 @@
+{# Muestra común de la página: sorteos tras el corte, período, frescura y huecos (cabecera de Producto 1). #}
+{% set r = datos.muestra %}
+<div class="row g-3 mb-3 descriptivas-cabecera">
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Sorteos de la muestra</div><div class="fw-bold fs-5">{{ r.total_sorteos }}</div><div class="small text-muted">de {{ r.total_sorteos_sin_corte }} cargados</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Período</div>
+        {% if r.periodo %}<div class="fw-bold">{{ r.periodo.primera_fecha }} → {{ r.periodo.ultima_fecha }}</div><div class="small text-muted">sorteos {{ r.periodo.primer_sorteo }}–{{ r.periodo.ultimo_sorteo }}</div>{% else %}<div class="fw-bold">—</div>{% endif %}</div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Corte</div><div class="fw-bold">{{ r.corte.descripcion }}</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">Último sorteo cargado</div>
+        {% if r.ultimo_sorteo_disponible %}<div class="fw-bold">#{{ r.ultimo_sorteo_disponible.numero_sorteo }} · {{ r.ultimo_sorteo_disponible.fecha }}</div>{% else %}<div class="fw-bold">—</div>{% endif %}
+        <div>{% include "producto/_frescura.html" %}</div></div></div>
+</div>
+<div class="alert {% if r.frescura.estado == 'al_dia' %}alert-light{% else %}alert-warning{% endif %} py-2 small">{{ r.frescura.mensaje }}
+    {% if r.huecos.cantidad %} La muestra tiene {{ r.huecos.cantidad }} número(s) de sorteo sin cargar (p. ej. {{ r.huecos.primeros[:5]|join(', ') }}).{% endif %}
+</div>

@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.rest.routers import carteras as rest_carteras
 from app.api.rest.routers import colores as rest_colores
+from app.api.rest.routers import estadisticas_descriptivas as rest_estadisticas_descriptivas
 from app.api.rest.routers import juegos as rest_juegos
 from app.api.rest.routers import laboratorio as rest_laboratorio
 from app.api.rest.routers import operacion as rest_operacion
@@ -28,6 +29,7 @@ from app.api.web.routers import carteras as web_carteras
 from app.api.web.routers import colores as web_colores
 from app.api.web.routers import dashboard as web_dashboard
 from app.api.web.routers import estadisticas as web_estadisticas
+from app.api.web.routers import estadisticas_descriptivas as web_estadisticas_descriptivas
 from app.api.web.routers import importacion as web_importacion
 from app.api.web.routers import juegos as web_juegos
 from app.api.web.routers import laboratorio as web_laboratorio
@@ -60,6 +62,8 @@ app.include_router(web_colores.router)
 app.include_router(web_importacion.router)
 app.include_router(web_producto.router)
 app.include_router(web_estadisticas.router)
+# Fase 5: despues del router anterior, para que sus rutas literales de ColorLoto conserven la prioridad.
+app.include_router(web_estadisticas_descriptivas.router)
 app.include_router(web_operacion.router)
 app.include_router(web_laboratorio.router)
 app.include_router(web_carteras.router)
@@ -74,6 +78,7 @@ app.include_router(rest_operacion.router)
 app.include_router(rest_laboratorio.router)
 app.include_router(rest_carteras.router)
 app.include_router(rest_resultados.router)
+app.include_router(rest_estadisticas_descriptivas.router)
 
 
 _STATUS_POR_EXCEPCION = {

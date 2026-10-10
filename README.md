@@ -12,7 +12,7 @@ Plataforma de análisis estadístico y adquisición de datos para MiLoto, Baloto
 |---|---|---|
 | 1 | Dominio + MVP HTML/HTMX | ✅ Completa |
 | 2 | Adquisición automática de datos (scraping, sincronización, reprocesamiento) | ✅ Completa |
-| 5 | Estadísticas descriptivas | 🟡 Parcial — ver [detalle abajo](#estadísticas) y [ROADMAP.md](./ROADMAP.md) |
+| 5 | Estadísticas descriptivas | ✅ Completa; validada localmente en Windows con histórico real; GitHub Actions pendiente — ver [Fase 5](#fase-5--estadísticas-descriptivas-completas), `backend/docs/fase5_windows.md` y [ROADMAP.md](./ROADMAP.md) |
 | Producto 1 | Estadísticas por juego (`/estadisticas`) y pronóstico experimental de Baloto y Revancha (`/pronosticos`) | 🧪 Experimental, no acreditado — NO-GO de AE-39 vigente; ver `backend/docs/producto1_windows.md` |
 | Producto 2 | Pronóstico experimental de MiLoto y ColorLoto y comparación con resultados observados de los cuatro juegos (`/pronosticos`) | 🧪 Experimental, no acreditado — ver `backend/docs/producto2_windows.md` |
 | Producto 3 | Panel diario (`/operacion`), actualización y generación por juego, y seguimiento del rendimiento (`/rendimiento`) | 🧪 Experimental, no acreditado; validado localmente en Windows con histórico real — ver `backend/docs/producto3_windows.md` |
@@ -27,7 +27,7 @@ Para el diseño técnico completo (capas, diagramas de flujo, decisiones de arqu
 
 ## Estadísticas
 
-Nueve visualizaciones disponibles para **Baloto**, **Baloto Revancha** y **MiLoto** (ocho para MiLoto en la superbalota, ver más abajo):
+Visualizaciones anteriores a la Fase 5: doce para **Baloto** y **Baloto Revancha**, once para **MiLoto** (sin superbalota) y treinta y una para **ColorLoto** (`/estadisticas/colorloto/...`, Etapas AE-1 a AE-31). Las de los juegos numéricos:
 
 - Frecuencia de números principales.
 - Frecuencia de superbalota (Baloto y Baloto Revancha — MiLoto no tiene superbalota, esa página lo indica explícitamente en vez de fallar).
@@ -38,6 +38,8 @@ Nueve visualizaciones disponibles para **Baloto**, **Baloto Revancha** y **MiLot
 - Distribución de pares consecutivos (cuántos pares de números adyacentes, con diferencia exactamente 1, aparecen en cada sorteo, tabulado 0..K-1. Los pares pueden solaparse: 1,2,3 contiene dos pares consecutivos. Descriptiva, no predictiva: no sugiere que los consecutivos sean menos probables o "menos aleatorios").
 - Racha máxima de números consecutivos (la longitud del bloque más largo de números consecutivos dentro de cada sorteo, tabulado 1..K — nunca incluye la categoría 0, ya que todo sorteo válido tiene al menos una racha de longitud 1. **Distinta de "pares consecutivos"**: 1,2,3 tiene 2 pares consecutivos, pero su racha máxima es 3. Descriptiva, no predictiva: una racha larga o corta no hace que un sorteo sea anómalo ni permite predecir resultados futuros).
 - Repeticiones entre sorteos consecutivos (cuántos números principales coinciden entre un sorteo y el número de sorteo inmediatamente siguiente — una "transición" solo es válida cuando `numero_sorteo_actual == numero_sorteo_anterior + 1`; un hueco en la numeración no genera ninguna transición, nunca se fabrica una comparación entre sorteos que no son consecutivos reales. El denominador de esta métrica **no** es la cantidad de sorteos, sino la cantidad de transiciones válidas — la página lo presenta explícitamente como "Transiciones analizadas", nunca "Sorteos analizados". Descriptiva, no predictiva: una repetición pasada no aumenta ni reduce la probabilidad de repetición futura).
+- Coocurrencia de pares y de tríos de números (Etapas AE-32 y AE-33: sorteos en que aparecen juntos, solo lo observado; los tríos, paginados).
+- Distribución de tríos consecutivos (Etapa AE-34).
 
 ```
 /estadisticas/{juego_slug}/frecuencia-numeros
@@ -49,14 +51,83 @@ Nueve visualizaciones disponibles para **Baloto**, **Baloto Revancha** y **MiLot
 /estadisticas/{juego_slug}/distribucion-pares-consecutivos
 /estadisticas/{juego_slug}/distribucion-racha-maxima
 /estadisticas/{juego_slug}/repeticiones-entre-sorteos
+/estadisticas/{juego_slug}/coocurrencia-pares
+/estadisticas/{juego_slug}/coocurrencia-trios
+/estadisticas/{juego_slug}/distribucion-trios-consecutivos
 ```
 donde `{juego_slug}` es `baloto`, `baloto-revancha` o `miloto`.
 
-**ColorLoto todavía no está incluido** en estas visualizaciones numéricas (estructura de datos distinta) — Fase 5 sigue parcial (ver [ROADMAP.md](./ROADMAP.md)). El caché de resultados se invalida automáticamente al registrar, editar o eliminar un sorteo del juego correspondiente, sin afectar a los demás juegos. Antes de calcular una distribución que depende de la cantidad exacta de números por sorteo (pares/impares, inferior/superior), el sistema valida que el histórico persistido sea consistente (cantidad correcta, sin duplicados, dentro de rango) — si encuentra una inconsistencia, responde con un error controlado (500, sin exponer detalles internos) en vez de calcular sobre datos corruptos. Detalle técnico completo (motor, caché persistido, invalidación, upsert, validación de integridad) en [ARCHITECTURE.md](./ARCHITECTURE.md#motor-estadístico-y-caché-persistido).
+**ColorLoto** tiene sus propias treinta y una visualizaciones (números, colores y pares número-color, con multiplicidades) en `/estadisticas/colorloto/...`, y la Fase 5 completa el resto (ver abajo). El caché de resultados se invalida automáticamente al registrar, editar o eliminar un sorteo del juego correspondiente, sin afectar a los demás juegos. Antes de calcular una distribución que depende de la cantidad exacta de números por sorteo (pares/impares, inferior/superior), el sistema valida que el histórico persistido sea consistente (cantidad correcta, sin duplicados, dentro de rango) — si encuentra una inconsistencia, responde con un error controlado (500, sin exponer detalles internos) en vez de calcular sobre datos corruptos. Detalle técnico completo (motor, caché persistido, invalidación, upsert, validación de integridad) en [ARCHITECTURE.md](./ARCHITECTURE.md#motor-estadístico-y-caché-persistido).
 
 Chart.js se sirve localmente (`app/static/vendor/chartjs/chart.umd.min.js`, versión 4.4.4, licencia MIT), no desde un CDN externo.
 
 **Corte por número de sorteo (Etapa X):** las 4 visualizaciones incluyen un control `GET` (`?hasta_numero_sorteo=N`) para acotar el análisis hasta un sorteo específico. **El corte es específico del juego actual**: cambiar de métrica dentro del mismo juego lo conserva; cambiar de juego siempre vuelve al histórico completo, porque la numeración de sorteos de Baloto/Baloto Revancha no es comparable con la de MiLoto (series independientes, con rangos de numeración completamente distintos) — no es una limitación accidental, es la semántica correcta. `0` y valores negativos devuelven `422` (JSON, mecanismo de validación nativo de FastAPI); ningún valor inválido llega a calcularse ni a persistirse en caché.
+
+
+### Fase 5 — estadísticas descriptivas completas
+
+**Estado: completa; validada localmente en Windows con histórico real** (entrega v2; evidencia de cada entorno en «Validación», abajo, y en `backend/docs/fase5_windows.md`). GitHub Actions todavía no ha ejecutado esta entrega. Completar la fase descriptiva no cambia `experimental_no_acreditado`, el NO-GO ni `AUTORIZA_EVALUACION = False`, y no implica que las fases de ML, predicción o evaluación estén completas: frecuencias, atrasos, intervalos y pruebas describen sorteos ya ocurridos, no la probabilidad del próximo.
+
+La auditoría sobre `9fab331` encontró terminadas las 43 visualizaciones anteriores (con esta sección del README atrasada) y, como huecos reales, las 17 funciones del motor sin conectar (7 familias: distribuciones adicionales, atrasos e intervalos, repetición de la superbalota, frecuencia temporal de números y de superbalota, comparación por ventana, e independencia y bondad de ajuste), el panel unificado y las correlaciones de Pearson y Spearman, que no existían. Todo queda conectado:
+
+- **Panel unificado** `/estadisticas/{juego}/panel` (`baloto`, `baloto-revancha`, `miloto`, `colorloto`): todas las estadísticas del juego en una sola vista, sobre la misma muestra (corte opcional), con su cifra clave, la marca «Fase 5» en las páginas nuevas y el motivo de lo que no aplica. JSON: `/api/estadisticas/{codigo}/panel`.
+- **Páginas nuevas** `/estadisticas/{juego}/{metrica}`: 18 en Baloto y Revancha, 11 en MiLoto y 5 en ColorLoto, con gráfica SVG y una tabla con los mismos valores (la gráfica se dibuja desde una columna de la tabla). JSON: `/api/estadisticas/{codigo}/descriptivas/{metrica}`.
+- **Navegación:** fila «Más estadísticas» en las 43 páginas anteriores (sus pestañas no cambian), botón «Panel completo» en `/estadisticas`, enlace en el resumen de cada juego y en el menú lateral.
+
+| Requisito (ROADMAP) | Juegos | Implementación | Acceso | Evidencia (Linux) |
+|---|---|---|---|---|
+| Frecuencias de números, superbalota, colores y pares; observada frente a esperada | 4 (superbalota: Baloto y Revancha; colores y pares: ColorLoto) | recetas anteriores | páginas anteriores y panel | pruebas anteriores; validación Windows de cada etapa AE |
+| Patrones temporales: números por año, mes y día de la semana | 4 | `frecuencia_temporal` (con 3 funciones nuevas para los números de ColorLoto) | `frecuencia-numeros-por-anio`, `-por-mes`, `-por-dia-semana` | `test_fase5_motor`, `test_fase5_descriptivas`, `test_fase5_web` |
+| Patrones temporales de la superbalota | Baloto, Revancha | `frecuencia_temporal` | `frecuencia-superbalota-por-anio`, `-por-mes`, `-por-dia-semana` | ídem |
+| Atraso de la superbalota | Baloto, Revancha | `calcular_atrasos_superbalota` | `atrasos-superbalota` | ídem |
+| Intervalos entre apariciones (números y superbalota) | Baloto, Revancha, MiLoto (ColorLoto: página anterior) | `calcular_intervalos_historicos_numeros` / `_superbalota` | `intervalos-historicos-numeros`, `intervalos-historicos-superbalota` | ídem |
+| Repetición de la superbalota entre sorteos consecutivos | Baloto, Revancha | `calcular_repeticion_superbalota_entre_sorteos` | `repeticion-superbalota` | ídem |
+| Suma total | Baloto, Revancha, MiLoto (ColorLoto: página anterior) | `calcular_distribucion_sumas` y `calcular_histograma_sumas` (nueva) | `distribucion-sumas` | ídem |
+| Decenas | Baloto, Revancha, MiLoto; en ColorLoto (1 a 7) no aplica | `calcular_distribucion_decenas` | `distribucion-decenas` | ídem |
+| Comparación con una ventana reciente (5, 10, 20 o 50 sorteos) | 4 (ColorLoto: páginas anteriores; superbalota: Baloto y Revancha) | `comparar_frecuencia_numeros_por_ventana` / `_superbalota_` | `comparacion-frecuencia-numeros-por-ventana`, `comparacion-frecuencia-superbalota-por-ventana` | ídem |
+| Chi cuadrado de uniformidad | 4 | `chi_cuadrado_uniformidad` (nueva; corrección (N−1)/(N−K) sin reemplazo; p-value asintótico) | `pruebas-uniformidad` | ídem, con verificación Monte Carlo de la corrección y `test_fase5_pvalores` |
+| Independencia de pares y tríos | Baloto, Revancha, MiLoto; en ColorLoto no aplica (motivo en `motor/independencia.py`) | `calcular_independencia_pares` / `_trios` y Benjamini-Hochberg | `independencia-pares`, `independencia-trios` | ídem |
+| Correlaciones de Pearson y Spearman; chi cuadrado número × color | 4 (número × color: ColorLoto) | `motor/correlaciones.py` (nuevo; coeficientes descriptivos, p-value por permutación entre mitades, sin p-value en la serie de sumas; número × color asintótico) | `correlaciones` | ídem y `test_fase5_pvalores` |
+| Consecutivos, coocurrencia, repeticiones, pares/impares, bajos/altos, máximo color, conteo por color | 4 | recetas anteriores | páginas anteriores y panel | pruebas anteriores |
+| Panel unificado (todas las métricas en una sola vista) | 4 | `descriptivas.construir_panel` | `panel` | ídem y demostración `python -m tests.demostracion_fase5` |
+
+- **Unidades:** «% de sorteos» (sorteos que contienen el valor / sorteos), «% de números extraídos» (apariciones / (sorteos × números por sorteo)), «balotas por sorteo» (ColorLoto, con repetición), «sorteos de distancia» (numeración) y «puntos porcentuales» (diferencia de porcentajes); nunca se intercambian.
+- **Corte y filtros:** el corte se aplica antes de calcular; la cabecera de cada página (sorteos, período, frescura, huecos) describe exactamente la muestra de las cifras, tablas y gráficas. El año, mes o día elegido se aplica después del corte.
+- **Estados:** sin base de datos la página lo dice (la API responde 503); sin sorteos o sin sorteos en el período elegido, se dice así, sin ceros inventados; con datos insuficientes (intervalos, correlaciones), «insuficiente»; un histórico inconsistente rechaza el cálculo completo, con los validadores de las recetas.
+- **Solo lectura:** las estadísticas nuevas se calculan en memoria con el motor existente; no escriben la caché `estadisticas` ni nada en la base. Lo que no aplica a un juego responde 404 con su motivo.
+- **Contrato que cambia a propósito:** `/estadisticas/{baloto|baloto-revancha|miloto}/comparacion-frecuencia-numeros-por-ventana` respondía 404 (la página era solo de ColorLoto) y ahora sirve la comparación de la Fase 5; la ruta de ColorLoto no cambia.
+- **Reutilización:** ver ARCHITECTURE, «Fase 5». Las pruebas y correlaciones son descriptivas; un p-value bajo no indica qué saldrá.
+- **p-values (cada página y cada fila de la API dicen cómo se obtienen):**
+  - **Correlaciones:** los coeficientes de Pearson y Spearman (SciPy) son descriptivos y se publican siempre que se puedan calcular; un coeficiente que no se puede calcular no marca la página entera como insuficiente. El p-value no es el de SciPy (en `spearmanr` es una aproximación para muestras grandes y en `pearsonr` supone pares independientes y normales).
+  - **Entre mitades:** contraste de permutación bilateral sobre los números (7, 39 o 43 categorías, no los sorteos). Con hasta 8 categorías se enumeran todas las ordenaciones (ColorLoto: 5040, permutación exacta); con más, Monte Carlo con 9999 ordenaciones y semilla fija 5, p = (1 + k)/(1 + B), reproducible en cualquier versión de Python. Se apoya en que, bajo H0 (sorteos independientes y simétricos respecto de los números), las apariciones de la segunda mitad son independientes de la primera e intercambiables.
+  - **Suma frente al sorteo anterior:** sin p-value. Las transiciones comparten sorteos y los pares no son independientes; ni el p-value de SciPy ni una permutación de pares están justificados.
+  - **Chi-cuadrado** (uniformidad y número × color): p-value asintótico. El factor (N−1)/(N−K) sin reemplazo corrige la escala, pero no convierte el contraste en una prueba exacta para muestras finitas; con frecuencias esperadas menores que 5 la página avisa.
+  - **API:** cada fila de correlación lleva `contraste` (`permutacion_exacta`, `permutacion_monte_carlo` o `null`), `permutaciones`, `como_p_value`, `motivo` (sin coeficiente) y `motivo_p_value` (límites o motivo); cada fila de uniformidad, `tipo_p_value: "asintotico"`.
+- **Validación** (cada entorno por separado; validar el funcionamiento no acredita ventaja predictiva, y un p-value alto no demuestra que el sorteo sea aleatorio):
+  - **Windows** (operador, sobre la v2, Python 3.14.6): Fase 5 `94 passed`; Producto 6 `73 passed`, Producto 5 `96 passed`, Producto 4 `94 passed`, Productos 1 a 3 `225 passed`; selección filtrada `2130 passed`; demostraciones con datos sintéticos 8/8 (Fase 5) y 9/9 (Producto 6), que no son evidencia del histórico real; OpenSSL `SUPERADOS 7/7` en modo `exigir`; `pip check` y comprobación de espacios limpios. Aparece el aviso conocido `StarletteDeprecationWarning` (`httpx` en `TestClient`): es un aviso, no un fallo. La suite completa NO se ejecutó en Windows: los `6375 passed` son de Linux.
+  - **Histórico real** (operador, en Windows; solo lectura): la comprobación de `backend/docs/fase5_windows.md` terminó correctamente sobre estas muestras, sin huecos de numeración dentro de ellas:
+
+    | Juego | Sorteos | Numeración | Fechas |
+    |---|---:|---|---|
+    | Baloto y Baloto Revancha | 639 | 2081–2719 | 2021-05-01 a 2026-10-07 |
+    | MiLoto | 89 | 532–620 | 2026-05-07 a 2026-10-08 |
+    | ColorLoto | 225 | 1–225 | 2024-08-15 a 2026-10-08 |
+
+    Se comprobaron los cortes reales, que los histogramas de sumas suman la muestra cortada, los denominadores de las decenas, los esperados de uniformidad (con la superbalota aparte), las transiciones y que las frecuencias coinciden con las del resumen de Producto 1. Interpretación: el chi-cuadrado da un p-value asintótico; la correlación de la suma con la del sorteo anterior es descriptiva y no tiene p-value; la comparación entre mitades usa permutación exacta en ColorLoto y Monte Carlo reproducible en los demás juegos. Ninguna de estas cifras es una probabilidad del próximo sorteo ni una ventaja predictiva.
+  - **Impresión** (PDF generados por el operador en Windows, en A4 y Legal; ninguno en Carta): 14 PDF, cuyas 51 páginas se renderizaron y revisaron con ChatGPT sin encontrar recortes, filas ausentes ni solapamientos visibles.
+
+    | Página | Formatos (páginas) |
+    |---|---|
+    | Panel de Baloto | A4 vertical (4), A4 horizontal (5), Legal vertical (3) |
+    | Panel de ColorLoto | A4 vertical (4), Legal vertical (4), Legal horizontal (5) |
+    | Uniformidad de Baloto | A4 vertical (4), A4 horizontal (6), Legal vertical (4) |
+    | Decenas de Baloto | A4 vertical (2), A4 horizontal (3), Legal vertical (2) |
+    | Correlaciones de ColorLoto | A4 horizontal (3) |
+    | Correlaciones de MiLoto | A4 horizontal (2) |
+
+    Las tablas de uniformidad conservan las 43 filas de números y las 16 de superbalota en los tres formatos, y las cinco franjas de decenas tienen valores idénticos en los tres y suman 3195 apariciones y 100 %. Cinco de esos PDF (las tres decenas y las dos correlaciones, 12 páginas) se cotejaron además con Claude: mismos formatos y páginas, las cifras de decenas (la tabla en Legal se parte con la cabecera repetida) y las columnas de la v2 («Cómo se obtiene el p-value»: permutación exacta en ColorLoto, Monte Carlo en MiLoto, «No se calcula» en la suma). La revisión se limita a esas páginas y formatos: no cubre Carta ni el resto de páginas de la aplicación.
+  - **Linux** (Cloud, Python 3.11.15, NumPy 2.4.6 y SciPy 1.17.1, solo fixtures sintéticas; no es Windows ni el histórico real): pruebas de la Fase 5 `94 passed` (16 del motor, 27 del catálogo y el caso de uso, 30 de web y API y 21 de p-values); Producto 6 `73 passed`, Producto 5 `96 passed`, Producto 4 `94 passed`, Productos 1 a 3 `225 passed`; estadísticas anteriores (generalización, corte, recetas, visualizaciones) `3200 passed`; selección de Windows (85 entradas) `2130 passed`, sin omisiones; suite completa una vez sobre el código final `6375 passed`, sin fallos ni omisiones; OpenSSL `SUPERADOS 7/7` (`exigir`) en la selección y en la suite; demostraciones `tests.demostracion_fase5` 8/8 y `tests.demostracion_producto6` 9/9; `pip check` y espacios limpios. Antes de corregir los p-values, `test_fase5_pvalores.py` se ejecutó sobre la entrega anterior: 14 de 15 fallaron (9 reproducen el defecto, como Spearman p = 0 con 3 pares ordenados frente a 1/3 exacto o la suma con p-value, y 5 por la API nueva) y 1 guarda ya pasaba. Una simulación bajo H0 (2000 historias de 40 sorteos de Baloto) dio, con Monte Carlo, tasas de rechazo de 0,092 (Pearson) y 0,090 (Spearman) para α = 0,10 y de 0,047 y 0,046 para α = 0,05. En la entrega anterior, sobre la base, las tres primeras pruebas de la Fase 5 fallaban solo al importar los módulos que faltaban y la prueba de aislamiento de la ventana, con 404. Revisión visual en Chromium 141 con Bootstrap 5.3.3 local: 21 páginas a 1366 y 390 px y PDF en Carta vertical, Carta horizontal y A4 vertical; en esta revisión, además, las 7 páginas afectadas por los p-values, sin desbordes a 390 px. Las páginas estadísticas anteriores ya desbordaban a 390 px, sin relación con esta entrega.
+  - **GitHub Actions:** todavía no ha ejecutado esta entrega.
 
 
 ---

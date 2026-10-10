@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}{{ definicion.titulo }} — {{ nombre }}{% endblock %}
+{% block content %}
+<ul class="nav nav-pills mb-2 descriptivas-nav">
+    {% for j in juegos_nav %}<li class="nav-item"><a class="nav-link {% if j.activo %}active{% endif %}" href="{{ j.url }}">{{ j.nombre }}</a></li>{% endfor %}
+</ul>
+{% set juego_fase5 = slug %}{% set metrica_fase5 = activa %}
+{% include "descriptivas/_navegacion.html" %}
+
+<h3 class="mb-1">{{ definicion.titulo }} — {{ nombre }}</h3>
+<p class="small text-muted mb-2">{{ grupos_nombres[definicion.grupo] }} · estadística descriptiva de sorteos ya ocurridos: no es una probabilidad del próximo sorteo ni una recomendación.</p>
+
+{% if not db_conectada %}
+<div class="alert alert-danger">Sin conexión a la base de datos: no se puede calcular esta estadística. Revisa <code>DATABASE_URL</code> y que PostgreSQL esté en marcha.</div>
+{% else %}
+{% set m = datos.metrica %}
+{% set selector = m.selector %}
+{% include "descriptivas/_formulario.html" %}
+{% include "descriptivas/_muestra.html" %}
+
+{% if m.estado != 'ok' %}
+<div class="alert {% if m.estado == 'sin_datos' %}alert-info{% else %}alert-warning{% endif %}">{{ m.motivo }}{% if m.estado == 'sin_datos' %} Sincroniza desde <a href="/importacion">Importación</a> o quita el corte.{% endif %}</div>
+{% endif %}
+
+{% if m.indicadores %}
+<div class="row g-3 mb-3">
+    {% for i in m.indicadores %}
+    <div class="col-6 col-md-3"><div class="card stat-card p-3 h-100"><div class="text-muted small">{{ i.etiqueta }}</div><div class="fw-bold">{{ i.valor|formatear(i.formato) }}</div>{% if i.unidad %}<div class="small text-muted">{{ i.unidad }}</div>{% endif %}</div></div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for t in m.tablas if t.filas %}
+{% if m.grafica and m.grafica.tabla == t.id %}{# la gráfica, justo antes de la tabla con sus mismos valores #}
+{% set g = m.grafica %}{% set tabla = t %}
+<div class="card stat-card p-3 mb-3 descriptivas-tarjeta">{% include "descriptivas/_grafica.html" %}</div>
+{% endif %}
+<div class="card stat-card p-3 mb-3 descriptivas-tarjeta impresion-fragmentable">
+    <h6 class="descriptivas-cabecera">{{ t.titulo }}</h6>
+    <div class="tabla-desplazable">
+    <table class="table table-sm mb-0" id="tabla-{{ t.id }}">
+        <thead><tr>{% for c in t.columnas %}<th{% if c.formato not in ('texto', 'tipo_p') %} class="text-end"{% endif %} scope="col">{{ c.etiqueta }}{% if c.unidad and c.formato not in ('texto',) %}<div class="fw-normal small text-muted">{{ c.unidad }}</div>{% endif %}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for f in t.filas %}<tr>{% for c in t.columnas %}<td{% if c.formato not in ('texto', 'tipo_p') %} class="text-end"{% endif %}>{{ f[c.clave]|formatear(c.formato) }}</td>{% endfor %}</tr>{% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% if t.nota %}<p class="small text-muted mb-0 mt-1">{{ t.nota }}</p>{% endif %}
+</div>
+{% endfor %}
+
+{% if m.notas %}
+<div class="alert alert-secondary small">
+    <ul class="mb-0">{% for n in m.notas %}<li>{{ n }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+<p class="small text-muted">Calculado en el momento sobre la muestra indicada, sin guardar nada en la base. Datos en JSON: <code>/api/estadisticas/{{ codigo }}/descriptivas/{{ activa }}</code>.</p>
+{% endif %}
+{% endblock %}

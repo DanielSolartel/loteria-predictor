@@ -139,6 +139,15 @@ body {
     }
 }
 
+/* Estadisticas descriptivas de la Fase 5 (templates/descriptivas/): igual que los resultados, sus
+   tablas anchas (pares de ColorLoto, intervalos) se desplazan dentro de su tarjeta. Solo en las
+   paginas con tarjetas `descriptivas-tarjeta`. */
+@media screen {
+    body.producto1-impresion .content-area:has(.descriptivas-tarjeta) {
+        min-width: 0;
+    }
+}
+
 /* La lectura de la diferencia, bajo la cifra y sin partir cada palabra. */
 body.producto1-impresion .resultados-lectura {
     min-width: 9rem;
@@ -370,5 +379,24 @@ body.producto1-impresion .resultados-lectura {
     body.producto1-impresion .resultados-par .color-swatch {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+
+    /* Estadisticas descriptivas de la Fase 5: solo clases `descriptivas-*`, que solo usan las plantillas
+       de templates/descriptivas/ (y la fila de navegacion que incluyen las paginas anteriores de
+       estadisticas, que no se imprime). El titulo de cada tarjeta queda pegado a su tabla y las
+       graficas no ocupan mas de media pagina. */
+    body.producto1-impresion .descriptivas-nav {
+        display: none;
+    }
+
+    body.producto1-impresion .descriptivas-cabecera {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    body.producto1-impresion svg.descriptivas-grafica {
+        max-height: 9cm;
     }
 }

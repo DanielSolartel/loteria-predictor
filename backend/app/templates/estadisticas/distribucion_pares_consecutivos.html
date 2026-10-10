@@ -21,6 +21,10 @@
     {% endfor %}
 </ul>
 
+{# Fase 5: panel del juego y métricas nuevas, conservando el corte. #}
+{% set juego_fase5 = (juegos_nav|selectattr("activo")|first).slug %}
+{% include "descriptivas/_navegacion.html" %}
+
 {% include "estadisticas/partials/control_corte_temporal.html" %}
 
 {% if not db_conectada %}

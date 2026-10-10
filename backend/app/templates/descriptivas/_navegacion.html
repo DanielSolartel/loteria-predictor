@@ -1,0 +1,14 @@
+{# Fila «Más estadísticas» de la Fase 5: panel del juego y métricas nuevas, con el corte del juego actual.
+   Requiere `juego_fase5` (slug del juego). Opcionales: `hasta_numero_sorteo`, `metrica_fase5` (activa).
+   Si el entorno de Jinja no registra `navegacion_fase5` (plantillas renderizadas fuera de la aplicacion),
+   la fila no se muestra. #}
+{% if navegacion_fase5 is defined %}
+{% set nav5 = navegacion_fase5(juego_fase5, hasta_numero_sorteo if hasta_numero_sorteo is defined else none, metrica_fase5 if metrica_fase5 is defined else none) %}
+{% if nav5.panel %}
+<div class="descriptivas-nav small mb-3">
+    <span class="text-muted me-1">Más estadísticas:</span>
+    <a href="{{ nav5.panel }}"{% if nav5.panel_activo %} class="fw-bold" aria-current="page"{% endif %}>Panel completo del juego</a>
+    {% for m in nav5.metricas %} · <a href="{{ m.url }}"{% if m.activa %} class="fw-bold" aria-current="page"{% endif %}>{{ m.titulo }}</a>{% endfor %}
+</div>
+{% endif %}
+{% endif %}

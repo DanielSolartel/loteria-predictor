@@ -22,6 +22,7 @@ from app.application.use_cases.editar_sorteo import EditarSorteo
 from app.application.use_cases.eliminar_sorteo import EliminarSorteo
 from app.application.use_cases.calcular_y_persistir_estadistica import CalcularYPersistirEstadistica
 from app.application.use_cases.consultar_juegos import ListarJuegos, ObtenerJuego
+from app.application.use_cases.consultar_estadisticas_descriptivas import ConsultarEstadisticasDescriptivas
 from app.application.use_cases.consultar_resumen_juego import ConsultarResumenJuego
 from app.application.use_cases.game_factory import GameFactory
 from app.application.use_cases.generar_reporte_calidad_datos import GenerarReporteCalidadDatos
@@ -298,6 +299,15 @@ def get_consultar_resumen_juego(
     color_repo: ColorRepositorySQLAlchemy = Depends(get_color_repository),
 ) -> ConsultarResumenJuego:
     return ConsultarResumenJuego(juego_repo, historico_repo, color_repo)
+
+
+def get_consultar_estadisticas_descriptivas(
+    juego_repo: JuegoRepositorySQLAlchemy = Depends(get_juego_repository),
+    historico_repo: ResultadosHistoricosRepositorySQLAlchemy = Depends(get_resultados_historicos_repository),
+    color_repo: ColorRepositorySQLAlchemy = Depends(get_color_repository),
+) -> ConsultarEstadisticasDescriptivas:
+    """Fase 5: métricas descriptivas nuevas y panel unificado (solo lectura)."""
+    return ConsultarEstadisticasDescriptivas(juego_repo, historico_repo, color_repo)
 
 
 def get_almacen_pronosticos() -> PronosticoExperimentalFileStore:

@@ -41,6 +41,7 @@ from app.application.estadisticas.motor.corte_temporal import filtrar_por_corte_
 from app.application.estadisticas.motor.frecuencia import (
     calcular_frecuencia_colores,
     calcular_frecuencia_numeros,
+    calcular_frecuencia_numeros_colorloto,
     calcular_frecuencia_pares_numero_color,
     calcular_frecuencia_superbalota,
 )
@@ -110,6 +111,35 @@ def calcular_frecuencia_numeros_por_dia_semana(
     historico = filtrar_por_corte_temporal(resultados, hasta_numero_sorteo)
     subconjunto = _filtrar_por_dia_semana(historico, dia_semana)
     return calcular_frecuencia_numeros(subconjunto, rango_min, rango_max)
+
+
+# --- Números de ColorLoto (Fase 5) ---
+
+def calcular_frecuencia_numeros_colorloto_por_anio(
+    resultados: Sequence[ResultadoColorLoto], rango_min: int, rango_max: int, anio: int,
+    hasta_numero_sorteo: int | None = None,
+) -> list[FrecuenciaObservada]:
+    """Número de la balota ignorando su color, restringido a un año. Reutiliza
+    calcular_frecuencia_numeros_colorloto: cada balota cuenta (multiplicidad), así que
+    frecuencia_relativa es un promedio de balotas por sorteo, no una proporción de sorteos."""
+    historico = filtrar_por_corte_temporal(resultados, hasta_numero_sorteo)
+    return calcular_frecuencia_numeros_colorloto(_filtrar_por_anio(historico, anio), rango_min, rango_max)
+
+
+def calcular_frecuencia_numeros_colorloto_por_mes(
+    resultados: Sequence[ResultadoColorLoto], rango_min: int, rango_max: int, mes: int,
+    hasta_numero_sorteo: int | None = None,
+) -> list[FrecuenciaObservada]:
+    historico = filtrar_por_corte_temporal(resultados, hasta_numero_sorteo)
+    return calcular_frecuencia_numeros_colorloto(_filtrar_por_mes(historico, mes), rango_min, rango_max)
+
+
+def calcular_frecuencia_numeros_colorloto_por_dia_semana(
+    resultados: Sequence[ResultadoColorLoto], rango_min: int, rango_max: int, dia_semana: str,
+    hasta_numero_sorteo: int | None = None,
+) -> list[FrecuenciaObservada]:
+    historico = filtrar_por_corte_temporal(resultados, hasta_numero_sorteo)
+    return calcular_frecuencia_numeros_colorloto(_filtrar_por_dia_semana(historico, dia_semana), rango_min, rango_max)
 
 
 # --- Superbalota ---

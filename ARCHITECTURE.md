@@ -16,10 +16,11 @@ Este documento explica cómo está construido el sistema, con suficiente detalle
 10. [Data Quality Report](#data-quality-report)
 11. [Motor estadístico y caché persistido](#motor-estadístico-y-caché-persistido)
 12. [Visualizaciones web de estadísticas](#visualizaciones-web-de-estadísticas)
-13. [Flujo de una petición web (HTMX)](#flujo-de-una-petición-web-htmx)
-14. [API REST](#api-rest)
-15. [Base de datos](#base-de-datos)
-16. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
+13. [Fase 5: estadísticas descriptivas completas](#fase-5-estadísticas-descriptivas-completas)
+14. [Flujo de una petición web (HTMX)](#flujo-de-una-petición-web-htmx)
+15. [API REST](#api-rest)
+16. [Base de datos](#base-de-datos)
+17. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
 
 ---
 
@@ -6445,6 +6446,52 @@ Slugs válidos: `baloto`, `baloto-revancha`, `miloto` — un conjunto cerrado de
 
 ---
 
+## Fase 5: estadísticas descriptivas completas
+
+**Estado: completa; validada localmente en Windows con histórico real** (v2; GitHub Actions pendiente; en Linux, fixtures sintéticas). Completa la Fase 5 sin tocar las 43 visualizaciones anteriores, que siguen con sus recetas, su caché persistida y sus rutas. No cambia `experimental_no_acreditado`, el NO-GO ni `AUTORIZA_EVALUACION = False`.
+
+```
+motor/ (funciones puras, sin cambios de contrato)
+  + correlaciones.py            Pearson/Spearman (suma serial N→N+1, apariciones entre mitades), chi² número × color;
+                                p-value por permutación (exacta hasta 8 categorías, Monte Carlo B=9999, semilla 5)
+  + tests_estadisticos.chi_cuadrado_uniformidad   chi² con la corrección sin reemplazo (p-value asintótico)
+  + distribuciones.calcular_histograma_sumas      sorteos por intervalo de suma (sin superbalota)
+  + frecuencia_temporal.calcular_frecuencia_numeros_colorloto_por_{anio,mes,dia_semana}
+  ~ independencia._testear_universo               p-value calculado una vez por soporte (mismos valores)
+        │
+estadisticas/descriptivas.py    catálogo único: título, grupo, juegos, parámetro, construcción, cifra clave del panel
+        │
+use_cases/consultar_estadisticas_descriptivas.py   una lectura del histórico, corte en memoria, validadores de las recetas
+        │
+api/web/routers/estadisticas_descriptivas.py  ─ /estadisticas/{juego}/panel y /estadisticas/{juego}/{metrica}
+api/rest/routers/estadisticas_descriptivas.py ─ /api/estadisticas/{codigo}/panel y /descriptivas/{metrica}
+api/web/navegacion_descriptivas.py            ─ qué métrica aplica a cada juego, desde las clases del dominio
+templates/descriptivas/                       ─ metrica.html, panel.html y parciales (gráfica SVG, muestra, formulario)
+```
+
+- **Catálogo único.** `descriptivas.CATALOGO` describe todas las métricas del juego, anteriores y nuevas: `aplica(reglas)` decide con las reglas del dominio (superbalota, ColorLoto), `es_nueva(reglas)` si la página la sirve la Fase 5 o una ruta anterior (sumas, intervalos de números y ventana de números ya existían para ColorLoto), y `motivo_no_aplica` explica lo que no corresponde (superbalota en MiLoto y ColorLoto; decenas e independencia en ColorLoto). El panel recorre el mismo catálogo: ninguna métrica queda fuera ni duplicada (una prueba compara el catálogo con las rutas del router anterior).
+- **Contenido serializable.** Cada métrica devuelve `estado` (`ok`, `sin_datos`, `insuficiente`, `sin_sorteos_en_el_periodo`), `indicadores`, `tablas` (columnas con formato y unidad), `grafica` (referencia a UNA columna de una tabla: la gráfica y la tabla muestran los mismos valores por construcción), `notas` y `selector`. La web y la API devuelven el mismo diccionario.
+- **Solo lectura, en memoria.** El caso de uso lee el histórico una vez por juego, aplica el corte en memoria (`filtrar_por_corte_temporal`) y valida la muestra con los mismos validadores de las recetas (cantidad, duplicados, rango, superbalota, color vigente en la fecha). No escribe la caché `estadisticas`: el cálculo cuesta milisegundos (los 12341 tríos de independencia de Baloto, ~0,1 s tras calcular el p-value una vez por soporte) y así ningún GET escribe en la base.
+- **Paleta de ColorLoto.** La de la muestra si fue la misma en todos sus sorteos; si cambió dentro de la muestra, las pruebas de colores y pares no se calculan (no hay un único conjunto con el que comparar) y lo dicen.
+- **Chi-cuadrado sin reemplazo.** Con K números distintos de N, cada sorteo aporta K apariciones correlacionadas negativamente; bajo H0 y cuando crece el número de sorteos, Σ(O−E)²/E tiende a (N−K)/(N−1)·χ²(N−1) (covarianza hipergeométrica multivariante), así que se multiplica por (N−1)/(N−K). Una prueba Monte Carlo con semilla fija comprueba que el estadístico corregido promedia N−1 y el crudo N−K. Con K=1 (superbalota) o con reemplazo (ColorLoto, multinomial) el factor es 1. El p-value sale de la χ²(N−1) límite: es **asintótico** (`tipo_p_value: "asintotico"`). El factor corrige la escala, no convierte el contraste en una prueba exacta para muestras finitas; con frecuencias esperadas menores que 5 la fila dice «aproximación poco fiable». El chi-cuadrado número × color (`chi2_contingency`) también es asintótico.
+- **p-values de las correlaciones.** Los coeficientes (SciPy) son descriptivos; el p-value se decide por pregunta, según sus supuestos:
+  - *Entre mitades:* bajo H0 (sorteos independientes y simétricos respecto de los números), el vector de apariciones de la segunda mitad es independiente del de la primera (sorteos distintos) e intercambiable (su distribución no cambia al reordenar los números). Condicionado a la primera mitad, todas las ordenaciones de la segunda son igual de probables, y la distribución de permutación del coeficiente es su distribución nula. Con hasta `MAXIMO_PERMUTACION_EXACTA` = 8 categorías se enumeran las n! ordenaciones (ColorLoto: 7! = 5040); con más (MiLoto 39, Baloto 43), Monte Carlo con B = 9999 ordenaciones: p = (1 + k)/(1 + B), nunca 0, con desviación típica de Monte Carlo ≤ 0,005. Las ordenaciones salen de un Fisher-Yates sobre `random.Random(5).random()`, cuya secuencia Python garantiza entre versiones (el flujo del generador de NumPy no se garantiza): el mismo p en Linux y en Windows. Con ordenaciones aleatorias el p-value es válido; la semilla fija usa siempre la misma realización a cambio de reproducibilidad. Una simulación bajo H0 en las pruebas comprueba que no rechaza de más (7 categorías exacta; 43 categorías Monte Carlo).
+  - *Suma frente al sorteo anterior:* las transiciones N → N+1 comparten sorteos (el N+1 de un par es el N del siguiente), así que los pares no son independientes. No se publica p-value (`contraste: null`, con el motivo); un contraste que permute la serie completa necesitaría su propia demostración y queda fuera.
+  - *Muestras pequeñas:* menos de 3 pares o una serie constante dan coeficiente y p-value `null` con su motivo; la página solo se marca «insuficiente» si no se puede calcular ningún coeficiente.
+  - *Benjamini-Hochberg* (independencia de pares y tríos) controla la tasa de falsos descubrimientos con pruebas independientes o con dependencia positiva; entre pares y tríos que comparten números no se ha verificado, y la página lo dice.
+- **Rutas sin colisiones.** El router de la Fase 5 se registra DESPUÉS del anterior, con una ruta explícita por métrica (nunca un `/{metrica}` genérico que taparía `/estadisticas/{juego}/resumen` u otras): las rutas literales de ColorLoto (`/estadisticas/colorloto/distribucion-sumas`, ...) conservan la prioridad. La única ruta que cambia de comportamiento es la ventana de números en los juegos numéricos (404 → página nueva).
+- **Navegación sin tocar contratos.** Las 43 páginas anteriores incluyen `descriptivas/_navegacion.html` (fila «Más estadísticas») mediante una función global de Jinja; sus listas de pestañas (12/12/11 y 31) no cambian. Si una plantilla se renderiza fuera de la aplicación, la fila no aparece.
+- **Impresión.** Las páginas nuevas marcan `producto1-impresion` y usan solo clases `descriptivas-*` (navegación oculta al imprimir, título pegado a su tabla, gráfica de media página como máximo).
+- **Validación.** En Windows, con histórico real (Baloto y Revancha 639 sorteos, MiLoto 89, ColorLoto 225, sin huecos de numeración), la comprobación de `backend/docs/fase5_windows.md` confirmó las invariantes de este diseño: los histogramas suman la muestra cortada, las decenas usan sorteos × 5 como denominador, la uniformidad separa la superbalota, las transiciones cuadran y las frecuencias coinciden con las del resumen de Producto 1, que es un cálculo independiente. La impresión se revisó en 51 páginas de PDF A4 y Legal (no Carta). Las pruebas en Windows no incluyeron la suite completa; la suite completa solo se ejecutó en Linux con fixtures sintéticas, y GitHub Actions está pendiente (detalle en el README).
+
+**Reutilizar los cálculos (aplicación y ML), sin duplicar fórmulas:**
+
+- Para una cifra concreta, llamar a la función del motor con el histórico YA cortado (`filtrar_por_corte_temporal(historico, corte)`); todas aceptan `hasta_numero_sorteo` y nunca miran sorteos posteriores.
+- Para el contenido completo de una métrica (con unidades, estado y notas), `descriptivas.construir_metrica(slug, reglas, historico, parametros)`; para todas, `construir_panel(reglas, historico)`. Desde la infraestructura, el caso de uso `ConsultarEstadisticasDescriptivas`.
+- Para variables de ML, los envoltorios existentes `frecuencia_a_feature` y `distribucion_sumas_a_features` producen `FeatureCandidata` con `calculado_hasta_sorteo` explícito (anti-fuga): calcular siempre con el corte del objetivo, nunca con el histórico completo. Que una estadística descriptiva se use como variable no la convierte en evidencia de ventaja predictiva.
+
+---
+
 ## Flujo de una petición web (HTMX)
 
 ```mermaid
@@ -6488,6 +6535,8 @@ sequenceDiagram
 ```
 
 `api/web` y `api/rest` comparten exactamente los mismos casos de uso — reemplazar el frontend HTML por React en el futuro no requiere tocar `application/` ni `domain/`.
+
+Fase 5: `GET /api/estadisticas/{codigo}/panel` y `GET /api/estadisticas/{codigo}/descriptivas/{metrica}` (solo lectura) devuelven el mismo contenido que `/estadisticas/{juego}/panel` y las páginas de cada métrica; `/api/estadisticas/{codigo}/resumen` (Producto 1) no cambia. 404: juego, métrica o combinación que no aplica (con su motivo); 422: parámetro inválido o ajeno a la métrica; 503: base no disponible.
 
 ---
 
