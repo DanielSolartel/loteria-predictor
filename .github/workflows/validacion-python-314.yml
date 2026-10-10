@@ -106,6 +106,8 @@ jobs:
           python -m tests.demostracion_producto6
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Demostracion de la Fase 5 (estadisticas descriptivas)
+        env:
+          PYTHONIOENCODING: "utf-8"
         run: |
           python -m tests.demostracion_fase5
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
