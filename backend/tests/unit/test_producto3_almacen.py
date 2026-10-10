@@ -8,7 +8,14 @@ contenido se escribe en un temporal de la misma carpeta y se publica con
 `os.link` (crea el nombre final solo si no existe; nunca sobrescribe).
 
 Coordinacion determinista con eventos y barreras (sin azar ni esperas
-largas); hilos y procesos independientes."""
+largas); hilos y procesos independientes.
+
+Ampliacion para cerrar el issue #83 (al final del archivo): un lector en otro
+proceso mientras el escritor esta detenido a mitad de escritura; un proceso
+escritor terminado de golpe a mitad de escritura (sin limpieza de Python); el
+temporal de un escritor activo, que otro escritor no borra ni modifica; y dos
+generaciones simultaneas de la misma entrada en el caso de uso, que devuelven
+el mismo pronostico."""
 from __future__ import annotations
 
 import builtins
@@ -16,6 +23,7 @@ import hashlib
 import multiprocessing
 import os
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -292,3 +300,204 @@ def test_artefactos_antiguos_conservan_bytes_y_se_reproducen(tmp_path):
         assert ruta.read_bytes() == antes
     almacen.guardar("MILOTO", artefacto(clave(3), objetivo=62))
     assert all(ruta.read_bytes() == antes for ruta, antes, _ in rutas)
+
+
+# ---------------------------------------------------------------------------
+# Ampliacion para cerrar el issue #83
+# ---------------------------------------------------------------------------
+
+def _proceso_escritor_pausado(directorio, numero, a_medias, continuar, cola):
+    """Escritor en otro proceso: escribe la mitad del archivo que el almacen crea
+    en modo exclusivo (`xb`), avisa y espera. Solo cambia `open` en este proceso."""
+    original = builtins.open
+
+    def abrir(ruta, modo="r", *args, **kwargs):
+        flujo = original(ruta, modo, *args, **kwargs)
+        return _EscrituraPausada(flujo, a_medias, continuar) if "x" in modo and "b" in modo else flujo
+
+    modulo.open = abrir
+    try:
+        cola.put(("ok", PronosticoExperimentalFileStore(directorio).guardar("MILOTO", artefacto(clave(numero))).identificador))
+    except BaseException as error:  # noqa: BLE001 - se informa al proceso principal
+        cola.put(("error", repr(error)))
+
+
+def _escritor_pausado(directorio, numero):
+    contexto = multiprocessing.get_context("spawn")
+    a_medias, continuar, cola = contexto.Event(), contexto.Event(), contexto.Queue()
+    proceso = contexto.Process(target=_proceso_escritor_pausado, args=(str(directorio), numero, a_medias, continuar, cola))
+    proceso.start()
+    return proceso, a_medias, continuar, cola
+
+
+def _temporales_en_disco(carpeta: Path) -> list[str]:
+    """Temporales vistos en el disco, sin pasar por la API del almacen."""
+    return sorted(p.name for p in carpeta.iterdir() if p.name.endswith(".tmp")) if carpeta.is_dir() else []
+
+
+def _terminar_si_sigue(proceso):
+    proceso.join(60)
+    if proceso.is_alive():
+        proceso.kill()
+        proceso.join(60)
+
+
+def test_lector_en_otro_proceso_no_ve_el_json_a_medio_escribir(tmp_path):
+    """El escritor es otro proceso (como el comando frente al servidor) y se
+    detiene a mitad de la escritura: este proceso lista y busca sin ver nada."""
+    escritor, a_medias, continuar, cola = _escritor_pausado(tmp_path, 1)
+    almacen = PronosticoExperimentalFileStore(tmp_path)
+    try:
+        assert a_medias.wait(60), "el escritor no llego a la escritura"
+        vistos = almacen.listar("MILOTO")
+        obtenido = almacen.obtener("MILOTO", clave(1))
+        finales = sorted(p.name for p in (tmp_path / "MILOTO").glob("*.json"))
+        en_curso = _temporales_en_disco(tmp_path / "MILOTO")
+    finally:
+        continuar.set()
+        salida = cola.get(timeout=60)
+        _terminar_si_sigue(escritor)
+    assert vistos == [] and obtenido is None and finales == []  # ni JSON final parcial ni ilegible
+    assert len(en_curso) == 1  # lo unico en el disco es el temporal del escritor
+    assert salida == ("ok", clave(1)) and escritor.exitcode == 0
+    final = almacen.listar("MILOTO")
+    assert len(final) == 1 and isinstance(final[0], PronosticoGuardado) and pe.artefacto_integro(final[0].artefacto)
+    assert (tmp_path / "MILOTO" / f"85-{clave(1)}.json").read_bytes() == serializar_entrada(final[0].artefacto)
+    _sin_temporales(tmp_path)
+
+
+def test_proceso_terminado_a_mitad_de_escritura_no_deja_un_artefacto_final(tmp_path):
+    """Muerte abrupta del escritor (SIGKILL en POSIX, TerminateProcess en
+    Windows) a mitad de la escritura: ningun JSON final, ningun ilegible, el
+    artefacto previo intacto y el temporal parcial conservado; volver a guardar
+    la misma entrada publica normalmente y sigue sin borrar ese temporal."""
+    almacen = PronosticoExperimentalFileStore(tmp_path)
+    previo = almacen.guardar("MILOTO", artefacto(clave(5)))
+    carpeta = tmp_path / "MILOTO"
+    ruta_previa = carpeta / f"85-{clave(5)}.json"
+    bytes_previos = ruta_previa.read_bytes()
+    escritor, a_medias, _continuar, _cola = _escritor_pausado(tmp_path, 1)
+    try:
+        assert a_medias.wait(60), "el escritor no llego a la escritura"
+        escritor.kill()  # nunca se le deja continuar
+        escritor.join(60)
+    finally:
+        _terminar_si_sigue(escritor)
+    assert escritor.exitcode != 0
+    assert sorted(p.name for p in carpeta.glob("*.json")) == [ruta_previa.name]
+    elementos = almacen.listar("MILOTO")
+    assert [e.identificador for e in elementos] == [previo.identificador]
+    assert isinstance(elementos[0], PronosticoGuardado)  # ni el interrumpido ni un ilegible
+    temporales = almacen.temporales("MILOTO")
+    assert len(temporales) == 1
+    parcial = (carpeta / temporales[0]).read_bytes()
+    assert parcial and ruta_previa.read_bytes() == bytes_previos
+    guardado = almacen.guardar("MILOTO", artefacto(clave(1)))
+    assert (guardado.version, guardado.versiones) == (2, 2)
+    assert guardado.artefacto["generacion"]["version_anterior"] == previo.identificador
+    assert (carpeta / f"85-{clave(1)}.json").read_bytes() == serializar_entrada(guardado.artefacto)
+    assert almacen.temporales("MILOTO") == temporales and (carpeta / temporales[0]).read_bytes() == parcial
+    assert ruta_previa.read_bytes() == bytes_previos
+
+
+def test_otro_escritor_no_toca_el_temporal_de_un_escritor_activo(tmp_path, monkeypatch):
+    """Mientras un escritor esta a mitad de su temporal, otro publica una clave
+    distinta: el temporal activo no se borra ni cambia, y despues el primero
+    publica. Las versiones siguen el orden de las secuencias reservadas."""
+    almacen = PronosticoExperimentalFileStore(tmp_path)
+    a_medias, continuar = threading.Event(), threading.Event()
+    original = builtins.open
+
+    def abrir(ruta, modo="r", *args, **kwargs):
+        flujo = original(ruta, modo, *args, **kwargs)
+        pausar = "x" in modo and "b" in modo and clave(1) in str(ruta)
+        return _EscrituraPausada(flujo, a_medias, continuar) if pausar else flujo
+
+    monkeypatch.setattr(modulo, "open", abrir, raising=False)
+    errores = []
+    escritor = threading.Thread(target=lambda: _capturar(errores, almacen.guardar, "MILOTO", artefacto(clave(1))))
+    escritor.start()
+    try:
+        assert a_medias.wait(ESPERA), "el escritor no llego a la escritura"
+        en_curso = _temporales_en_disco(tmp_path / "MILOTO")
+        parcial = (tmp_path / "MILOTO" / en_curso[0]).read_bytes() if en_curso else None
+        almacen.guardar("MILOTO", artefacto(clave(2)))
+        despues = _temporales_en_disco(tmp_path / "MILOTO")
+        bytes_despues = (tmp_path / "MILOTO" / en_curso[0]).read_bytes() if en_curso else None
+        visibles = [e.identificador for e in almacen.listar("MILOTO")]
+    finally:
+        continuar.set()
+        escritor.join(ESPERA)
+    assert not errores, errores
+    assert visibles == [clave(2)]  # el escritor a medias no aparece, ni como ilegible
+    assert len(en_curso) == 1 and despues == en_curso and bytes_despues == parcial
+    guardados = almacen.listar("MILOTO")
+    assert all(isinstance(g, PronosticoGuardado) for g in guardados)
+    secuencia = {g.identificador: g.artefacto["generacion"]["secuencia_en_el_objetivo"] for g in guardados}
+    assert secuencia == {clave(1): 1, clave(2): 2}
+    assert [(g.identificador, g.version) for g in guardados] == [(clave(2), 2), (clave(1), 1)]
+    _sin_temporales(tmp_path)
+
+
+class _AlmacenConPausa:
+    """Delegado del almacen real que, si se indica, avisa al llegar a `guardar`
+    y espera permiso antes de publicar."""
+
+    def __init__(self, base, llego=None, permiso=None):
+        self._base, self._llego, self._permiso = base, llego, permiso
+
+    def guardar(self, codigo_juego, artefacto_a_guardar):
+        if self._permiso is not None:
+            self._llego.set()
+            assert self._permiso.wait(ESPERA)
+        return self._base.guardar(codigo_juego, artefacto_a_guardar)
+
+    def __getattr__(self, nombre):
+        return getattr(self._base, nombre)
+
+
+def test_dos_generaciones_simultaneas_de_la_misma_entrada_devuelven_el_mismo_pronostico(tmp_path):
+    """Idempotencia con una carrera real en el caso de uso: la primera peticion
+    ya entreno y va a publicar cuando la segunda publica la misma clave; la
+    primera recibe `FileExistsError` del almacen y devuelve el ya guardado, sin
+    reescribir sus bytes."""
+    from app.application.ml import pronostico_miloto as pm
+    from app.application.use_cases import pronostico_experimental as uc
+    from tests.unit import fixtures_producto1 as fx
+
+    juegos, resultados, _ = fx.repositorios({"MILOTO": fx.historico_numerico("MILOTO", 84, primero=1)})
+    almacen = PronosticoExperimentalFileStore(tmp_path)
+    llego, permiso = threading.Event(), threading.Event()
+    configuraciones = {"MILOTO": pm.ConfiguracionMiLoto()}
+    primera = uc.GenerarPronosticoExperimental(
+        juegos, resultados, _AlmacenConPausa(almacen, llego, permiso),
+        reloj=lambda: datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc), configuraciones=configuraciones)
+    segunda = uc.GenerarPronosticoExperimental(
+        juegos, resultados, almacen, reloj=lambda: datetime(2026, 10, 1, 12, 5, tzinfo=timezone.utc),
+        configuraciones=configuraciones)
+    salida = {}
+
+    def correr():
+        try:
+            salida["primera"] = primera.ejecutar("MILOTO")
+        except BaseException as error:  # noqa: BLE001 - se informa en el hilo principal
+            salida["primera"] = error
+
+    hilo = threading.Thread(target=correr)
+    hilo.start()
+    try:
+        assert llego.wait(60), "la primera peticion no llego a publicar"
+        salida["segunda"] = segunda.ejecutar("MILOTO")
+    finally:
+        permiso.set()
+        hilo.join(60)
+    uno, dos = salida["primera"], salida["segunda"]
+    assert isinstance(uno, PronosticoGuardado) and isinstance(dos, PronosticoGuardado), salida
+    assert uno.identificador == dos.identificador and uno.artefacto == dos.artefacto
+    assert (dos.reutilizado, uno.reutilizado) == (False, True)
+    ruta = tmp_path / "MILOTO" / f"85-{dos.identificador}.json"
+    assert [p.name for p in (tmp_path / "MILOTO").glob("*.json")] == [ruta.name]
+    assert ruta.read_bytes() == serializar_entrada(dos.artefacto)
+    tercera = segunda.ejecutar("MILOTO")
+    assert tercera.reutilizado and tercera.artefacto == dos.artefacto and ruta.read_bytes() == serializar_entrada(dos.artefacto)
+    _sin_temporales(tmp_path)
