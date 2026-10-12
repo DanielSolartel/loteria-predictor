@@ -6,6 +6,12 @@ el comando (salen de los mismos informes guardados). Comparar y generar no
 se exponen aqui: se hacen desde la web (POST protegido) o con
 `python -m scripts.laboratorio_modelos`.
 
+Fase 3: `GET /modelos[?juego=]` (versiones registradas, compatibilidad e
+incidencias) y `GET /modelos/{clave}` (ficha: manifiesto, compatibilidad,
+proyeccion a las tablas de la Fase 1 y pronosticos de su linea). Ninguno
+deserializa el estimador; entrenar, verificar y generar con un modelo
+registrado se hacen desde la web (POST protegido) o el comando.
+
 404: juego, ejecucion, experimento, pronostico o linea inexistentes;
 409: archivo alterado; 422: parametro no valido.
 """
@@ -17,7 +23,7 @@ from app.api.dependencies import get_laboratorio
 from app.application.use_cases.laboratorio import JUEGOS, LaboratorioDeModelos, LaboratorioError
 
 router = APIRouter(prefix="/api/laboratorio")
-_CODIGO_HTTP = {"no_encontrado": 404, "no_valido": 422, "alterado": 409, "no_disponible": 409}
+_CODIGO_HTTP = {"no_encontrado": 404, "no_valido": 422, "alterado": 409, "no_disponible": 409, "incompatible": 409}
 
 
 def _http(error: LaboratorioError) -> HTTPException:
@@ -60,6 +66,20 @@ def pronostico(clave: str, lab: LaboratorioDeModelos = Depends(get_laboratorio))
         raise _http(error) from error
     return {"pronostico": guardado.artefacto, "version": guardado.version, "versiones": guardado.versiones,
             "resultado_observado": lab.estado_del_pronostico(guardado.artefacto)}
+
+
+@router.get("/modelos")
+def modelos(juego: str | None = Query(default=None), lab: LaboratorioDeModelos = Depends(get_laboratorio)) -> dict:
+    codigos = [_juego(juego)] if juego else list(JUEGOS)
+    return {"juegos": {c: lab.modelos(c) for c in codigos}, "familias_futuras": lab.catalogo()["familias_futuras"]}
+
+
+@router.get("/modelos/{clave}")
+def modelo(clave: str, lab: LaboratorioDeModelos = Depends(get_laboratorio)) -> dict:
+    try:
+        return lab.ficha_del_modelo(clave)
+    except LaboratorioError as error:
+        raise _http(error) from error
 
 
 def _juego(codigo: str) -> str:

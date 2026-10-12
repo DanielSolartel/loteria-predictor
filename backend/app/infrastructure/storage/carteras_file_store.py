@@ -14,9 +14,11 @@ misma carpeta, `flush` + `fsync`, `os.link` al nombre final, que falla si ya
 existe) y reserva exclusiva (`O_EXCL`) de la secuencia de emision de Producto
 4, sellada dentro del artefacto (`generacion.secuencia_en_la_linea`). El
 temporal tiene un nombre corto de longitud constante,
-`.publicacion.<16 hex>.tmp`: el de Producto 4 (`.<nombre final>.<16
-hex>.tmp`) anade 23 caracteres al nombre final y, en Windows sin rutas
-largas, no se podia crear aunque el destino cupiera. Un lector ve la
+`.publicacion.<16 hex>.tmp`: el anterior (`.<nombre final>.<16 hex>.tmp`)
+anade 22 caracteres al nombre final y, en Windows sin rutas largas, no se
+podia crear aunque el destino cupiera. Desde la correccion de rutas de la
+Fase 3, este publicador vive en `laboratorio_file_store` y lo comparten
+Productos 4 a 6. Un lector ve la
 ausencia o el JSON completo. Al leer se comprueban bytes canonicos, sello,
 huella, clave y ubicacion; si no coinciden, el elemento es `Ilegible` con su
 motivo. Temporales (con el nombre anterior o el nuevo) y reservas huerfanas
@@ -30,9 +32,7 @@ Requiere disco local NTFS o POSIX (enlaces duros y creacion exclusiva).
 """
 from __future__ import annotations
 
-import os
 import re
-import secrets
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -45,11 +45,7 @@ from app.application.ml.registro_prospectivo import (
     leer_entrada,
     serializar_entrada,
 )
-from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore, _retirar
-from app.infrastructure.storage.pronostico_experimental_file_store import (
-    PublicacionNoAdmitidaError,
-    _sincronizar_directorio,
-)
+from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore, _publicar
 
 _JUEGO = re.compile(r"^[A-Z][A-Z_]{1,29}$")
 _CLAVE = re.compile(r"^[0-9a-f]{64}$")
@@ -61,30 +57,6 @@ _TEMPORAL = re.compile(r"^\..+\.[0-9a-f]{16}\.tmp$")  # `.publicacion.<16 hex>.t
 
 Guardado = GuardadoCarteras
 Ilegible = IlegibleCarteras
-
-
-def _publicar(carpeta: Path, ruta: Path, contenido: bytes, reserva: Path | None = None) -> None:
-    """La publicacion de Producto 4 con un temporal de nombre corto e
-    independiente del destino (33 caracteres, nunca mas largo que el de
-    Producto 4): creacion exclusiva, `fsync` y enlace duro sin sobrescritura."""
-    carpeta.mkdir(parents=True, exist_ok=True)
-    temporal = carpeta / f".publicacion.{secrets.token_hex(8)}.tmp"
-    with open(temporal, "xb") as flujo:
-        flujo.write(contenido)
-        flujo.flush()
-        os.fsync(flujo.fileno())
-    try:
-        os.link(temporal, ruta)
-    except FileExistsError:
-        _retirar(temporal, reserva)
-        raise
-    except OSError as error:
-        _retirar(temporal, reserva)
-        raise PublicacionNoAdmitidaError(
-            f"no se pudo publicar con un enlace duro en {carpeta} ({error}); use un disco local NTFS o POSIX"
-        ) from error
-    temporal.unlink()
-    _sincronizar_directorio(carpeta)
 
 
 _ESQUEMAS = {"comparacion": ca.ESQUEMA_COMPARACION, "simulacion": ca.ESQUEMA_SIMULACION}

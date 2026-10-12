@@ -100,6 +100,21 @@ COMPONENTES = {
     "COLORLOTO": ("uniforme_paleta", "poisson_regularizado", "hgb_poisson"),
 }
 """Orden estable de los componentes: (uniforme, lineal, arboles)."""
+CANDIDATOS_DE_COMPARACION = {
+    "BALOTO": ("uniforme", "actual_logistica_ae36", "logistica_regularizada", "hgb_clasificador"),
+    "BALOTO_REVANCHA": ("uniforme", "actual_logistica_ae36", "logistica_regularizada", "hgb_clasificador"),
+    "MILOTO": ("uniforme", "actual_frecuencia_contraida", "logistica_regularizada", "hgb_clasificador"),
+    "COLORLOTO": ("uniforme_paleta", "actual_multinomial_suavizada", "poisson_regularizado", "hgb_poisson"),
+}
+"""Candidatos de Producto 4 que reevalua la comparacion de Producto 5, en su
+orden. Es el catalogo de Producto 4 cuando se creo Producto 5, congelado: los
+bosques de la Fase 3 se comparan en el laboratorio (Producto 4) y se pueden
+usar para generar carteras, pero no cambian la identidad ni la reproduccion de
+las comparaciones de Producto 5 ya guardadas."""
+
+
+def candidatos_de_comparacion(codigo: str) -> list:
+    return [lm.CATALOGO[i] for i in CANDIDATOS_DE_COMPARACION[codigo]]
 
 
 class MuestraInsuficienteCarteras(ValueError):
@@ -399,7 +414,7 @@ def evaluar(instantanea: lv.Instantanea, protocolo: ProtocoloCarteras,
     muestra = muestra_comun(instantanea, protocolo)
     variables = lv.Variables(instantanea)
     ajustes = Ajustes(instantanea, variables, protocolo.perfil, avance)
-    entradas = lm.candidatos_del_juego(codigo)
+    entradas = candidatos_de_comparacion(codigo)
     componentes = [lm.CATALOGO[c] for c in COMPONENTES[codigo]]
     filas_ext = [variables.filas(b["posiciones"], paleta=tuple(b["paleta"]) if colores else None)
                  if b["posiciones"] else None for b in muestra["bloques"]]

@@ -23,6 +23,8 @@
         {% for k, etiqueta in (('modelo', 'Modelo'), ('version_del_modelo', 'Versión del modelo'), ('perfil', 'Perfil'), ('cantidad', 'Combinaciones'), ('diversidad', 'Diversidad'), ('semilla', 'Semilla'), ('linea', 'Línea resultante')) %}
         <tr><th class="fw-normal">{{ etiqueta }}</th><td>{{ p[k] }}{% if k == 'modelo' %} <span class="text-muted">({{ p.nombre }})</span>{% endif %}</td>
             <td>{% if d.vigente %}{{ d.vigente[k] }}{% else %}— (sin configuración guardada){% endif %}</td></tr>{% endfor %}
+        {% if p.registrado or (d.vigente and d.vigente.registrado) %}<tr><th class="fw-normal">Versión registrada</th><td>{% if p.registrado %}v{{ p.registrado.numero }} (congelada; no se reentrena){% else %}ninguna (se reentrena){% endif %}</td>
+            <td>{% if d.vigente and d.vigente.registrado %}v{{ d.vigente.registrado.numero }}{% elif d.vigente %}ninguna{% else %}—{% endif %}</td></tr>{% endif %}
         </tbody></table></div>
     {% if not d.compatible %}<div class="alert alert-danger py-2 small mb-0">No se puede usar: {{ d.motivo }}.</div>
     {% elif d.ya_vigente %}<p class="small mb-0">Ya es la configuración vigente: guardarla otra vez no crearía otra versión.</p>

@@ -1,5 +1,6 @@
-# AE-76 (validada localmente como trabajo preparatorio; este workflow aun no se ha
-# ejecutado en GitHub Actions): validacion automatica con Python 3.14 en Linux y Windows.
+# AE-76: validacion automatica con Python 3.14 en Linux y Windows. Ya se ejecuta en
+# GitHub Actions en cada push a main/develop y en cada PR (p. ej. la ejecucion 45 sobre
+# c7644c4: Linux suite completa y Windows seleccion, ambos verdes, OpenSSL 7/7).
 # Sin secretos, sin despliegue y sin descargar ejecutables: usa el OpenSSL que ya
 # trae cada imagen del runner. Los siete contrastes con `openssl ts -verify` se
 # cuentan desde el informe JUnit real; una omision nunca se presenta como exito.
@@ -57,6 +58,10 @@ jobs:
       # Fase 5: estadisticas descriptivas completas en los cuatro juegos (datos sinteticos, sin red ni base).
       - name: Demostracion de la Fase 5 (estadisticas descriptivas)
         run: python -m tests.demostracion_fase5
+      # Fase 3: comparar, entrenar, guardar, recargar y generar sin reentrenar en los cuatro
+      # juegos, con procesos trabajadores reales (datos sinteticos, sin red ni base).
+      - name: Demostracion de la Fase 3 (modelos registrados)
+        run: python -m tests.demostracion_fase3
 
   windows:
     name: Windows - seleccion de tests/seleccion_windows.txt
@@ -110,4 +115,10 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: |
           python -m tests.demostracion_fase5
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Demostracion de la Fase 3 (modelos registrados)
+        env:
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          python -m tests.demostracion_fase3
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

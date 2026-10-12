@@ -45,12 +45,14 @@ from app.application.exceptions import JuegoNoEncontradoError
 from app.application.interfaces.carteras_store import GuardadoCarteras
 from app.application.interfaces.ejecutor_carteras import EjecutorDeCarteras, TiempoAgotadoError
 from app.application.interfaces.ejecutor_laboratorio import TrabajadorFallidoError
+from app.application.interfaces.laboratorio_store import GuardadoModelo
 from app.application.ml import carteras_artefactos as ca
 from app.application.ml import carteras_construccion as cc
 from app.application.ml import carteras_ensemble as ce
 from app.application.ml import carteras_simulacion as cs
 from app.application.ml import laboratorio_modelos as lm
 from app.application.ml import laboratorio_variables as lv
+from app.application.ml import modelos_registrados as mr
 from app.application.use_cases.laboratorio import JUEGOS, NOMBRES, SLUGS, Lectura, leer_historico
 from app.application.use_cases.operacion_diaria import EjecucionActivaError, mensaje_legible, nuevo_identificador
 
@@ -96,6 +98,11 @@ class EjecutorCarterasEnEsteProceso(EjecutorDeCarteras):
     def simular(self, identidad, elegida, uniforme, avance=None):
         return ca.cuerpo_de_simulacion(identidad, elegida, uniforme, avance=avance)
 
+    def fuente_registrada(self, artefacto, estimador, instantanea, avance=None):
+        recargado = mr.deserializar_estimador(estimador, artefacto["estimador"]["sha256"],
+                                              artefacto["estimador"]["bytes"])
+        return mr.fuente_registrada(artefacto, recargado, instantanea)
+
 
 def _validar_juego(juego: str) -> None:
     if juego not in JUEGOS:
@@ -117,7 +124,10 @@ def _requisito_de_generacion(juego: str, modelo: str) -> int:
 class CarterasDeModelos:
     def __init__(self, almacen, registro, cerrojo, abrir_lectura: Callable[[], AbstractContextManager[Lectura]],
                  *, ejecutor: EjecutorDeCarteras, reloj: Callable[[], datetime] = _ahora,
-                 generador_de_identificador: Callable[[datetime], str] = nuevo_identificador):
+                 generador_de_identificador: Callable[[datetime], str] = nuevo_identificador, modelos=None):
+        """`modelos` (Fase 3, opcional): almacen del laboratorio con los modelos
+        registrados; solo se lee, para usar una version congelada."""
+        self._modelos = modelos
         self._almacen = almacen
         self._registro = registro
         self._cerrojo = cerrojo
@@ -231,6 +241,9 @@ class CarterasDeModelos:
                                         if len(juegos) == 1 else "una cartera se genera para un solo juego")
                 if parametros.get("perfil", "predeterminado") not in lm.PERFILES:
                     raise CarterasError("no_valido", f"perfil admitido: {', '.join(lm.PERFILES)}")
+                if parametros.get("registrado"):
+                    self._registrado(juegos[0], parametros["modelo"], parametros["registrado"],
+                                     parametros.get("perfil", "predeterminado"))
             if tipo == "simulacion":
                 cs.validar(parametros.get("simulaciones"), parametros.get("semilla"))
                 if len(juegos) != 1 or not parametros.get("cartera"):
@@ -306,12 +319,16 @@ class CarterasDeModelos:
                 parametros = {"modelo": c["modelo"]["id"], "perfil": c["perfil"], "cantidad": c["cantidad"],
                               "diversidad": c["diversidad"], "semilla": c["semilla"],
                               "configuracion": {"version": c["version"], "linea": c["linea"]}}
+                if c["modelo"].get("registrado"):
+                    parametros["registrado"] = c["modelo"]["registrado"]["clave"]
                 r["configuracion"] = parametros["configuracion"]
             return self._generar_juego(ejecucion, r, juego, parametros, avance)
         except ce.MuestraInsuficienteCarteras as error:
             return self._cerrar(r, "muestra_insuficiente", str(error))
         except TiempoAgotadoError as error:
             return self._cerrar(r, "tiempo_agotado", f"Tiempo agotado: {mensaje_legible(error)}")
+        except mr.ModeloRegistradoError as error:  # Fase 3: version registrada no utilizable
+            return self._cerrar(r, error.estado, f"Modelo registrado: {error.motivo}")
         except TrabajadorFallidoError as error:  # el proceso trabajador murio: nada se publico
             return self._cerrar(r, "fallo", f"Fallo del proceso de trabajo: {mensaje_legible(error)}")
         except (lm.CandidatoNoDisponible, ce.ComponenteNoDisponible) as error:
@@ -383,8 +400,10 @@ class CarterasDeModelos:
         juego = instantanea.codigo
         modelo = parametros["modelo"]
         perfil = parametros.get("perfil", "predeterminado")
+        guardado_modelo, registrado = (self._registrado(juego, modelo, parametros["registrado"], perfil)
+                                       if parametros.get("registrado") else (None, None))
         identidad = ca.identidad_de_cartera(instantanea, modelo, perfil, parametros["cantidad"], parametros["semilla"],
-                                            parametros["diversidad"])
+                                            parametros["diversidad"], registrado)
         clave = ca.huella(identidad)
         r.update({"corte": instantanea.corte, "objetivo": instantanea.corte + 1, "sorteos": len(instantanea),
                   "resultado": clave, "tipo": "cartera", "modelo": modelo})
@@ -393,12 +412,11 @@ class CarterasDeModelos:
             return self._cerrar_con(r, existente, "cartera", reutilizado=True)
         n = len(instantanea)
         requerido = _requisito_de_generacion(juego, modelo)
-        if n < requerido and modelo != ce.ID_ENSEMBLE:
+        if n < requerido and modelo != ce.ID_ENSEMBLE and registrado is None:
             return self._cerrar(r, "muestra_insuficiente",
                                 f"Muestra insuficiente para {juego}: hay {n} sorteos y {modelo} necesita {requerido}")
         avance("fuente", modelo=modelo)
-        fuente = (ce.fuente(instantanea, modelo, perfil) if ca.es_uniforme(modelo)
-                  else self._ejecutor.fuente(instantanea, modelo, perfil, avance=avance))
+        fuente = self._fuente(instantanea, modelo, perfil, guardado_modelo, avance)
         avance("construccion", modelo=modelo)
         cuerpo = ca.cuerpo_de_cartera(instantanea, identidad, fuente)
         construccion = cuerpo["cartera"]
@@ -424,6 +442,53 @@ class CarterasDeModelos:
         except FileExistsError:
             return self._cerrar_con(r, self._almacen.obtener_cartera(clave), "cartera", reutilizado=True)
         return self._cerrar_con(r, guardado, "cartera", reutilizado=False)
+
+    def _fuente(self, instantanea, modelo: str, perfil: str, guardado_modelo, avance=None) -> dict:
+        if guardado_modelo is not None:  # Fase 3: version registrada congelada, sin reentrenar
+            mr.validar_corte_de_entrada(guardado_modelo.artefacto, instantanea)
+            return self._ejecutor.fuente_registrada(guardado_modelo.artefacto,
+                                                    self._modelos.leer_estimador(guardado_modelo), instantanea,
+                                                    avance=avance)
+        if ca.es_uniforme(modelo):
+            return ce.fuente(instantanea, modelo, perfil)
+        return self._ejecutor.fuente(instantanea, modelo, perfil, avance=avance)
+
+    def _registrado(self, juego: str, modelo: str, clave: str, perfil: str | None = None):
+        """(guardado, referencia) de una version registrada utilizable para el
+        juego y el modelo; si no, `CarterasError` con su motivo."""
+        if self._modelos is None:
+            raise CarterasError("no_disponible", "el registro de modelos no esta disponible en este servicio")
+        guardado = self._modelos.obtener_modelo(clave or "")
+        if guardado is None:
+            raise CarterasError("no_encontrado", f"No existe el modelo registrado {clave}")
+        if not isinstance(guardado, GuardadoModelo):
+            raise CarterasError("alterado", f"El modelo registrado {clave} esta alterado o incompleto "
+                                            f"({guardado.motivo}); no se usa")
+        a = guardado.artefacto
+        if guardado.juego != juego or guardado.modelo != modelo:
+            raise CarterasError("no_valido", f"el modelo registrado {clave[:12]} es {guardado.modelo} de "
+                                             f"{guardado.juego}, no {modelo} de {juego}")
+        if perfil is not None and a["identidad"]["perfil"] != perfil:
+            raise CarterasError("no_valido", f"el modelo registrado se entreno con el perfil {a['identidad']['perfil']}")
+        compat = mr.compatibilidad(a)
+        if not compat["compatible"]:
+            raise CarterasError("incompatible", "el modelo registrado no se puede cargar en este entorno: "
+                                + "; ".join(compat["motivos"]))
+        return guardado, {"clave": guardado.identificador, "numero": guardado.numero,
+                          "sha256_estimador": a["estimador"]["sha256"], "corte_de_entrenamiento": a["identidad"]["corte"]}
+
+    def modelos_registrados(self, juego: str) -> list[dict]:
+        """Versiones registradas del juego que se pueden elegir (lectura)."""
+        _validar_juego(juego)
+        if self._modelos is None:
+            return []
+        salida = []
+        for e in self._modelos.modelos(juego):
+            if isinstance(e, GuardadoModelo) and e.modelo in ce.modelos_de_cartera(juego):
+                compat = mr.compatibilidad(e.artefacto)
+                salida.append({**mr.resumen(e.artefacto), "compatible": compat["compatible"],
+                               "motivos": compat["motivos"]})
+        return salida
 
     def _cartera_uniforme(self, elegida: dict, avance) -> GuardadoCarteras:
         """La cartera uniforme de referencia (mismo juego, corte, objetivo,
@@ -582,8 +647,18 @@ class CarterasDeModelos:
     # ------------------------------------------------------------------
 
     def configurar(self, juego: str, modelo: str, cantidad: int, diversidad: str, semilla: int,
-                   perfil: str = "predeterminado", origen: str = "web") -> GuardadoCarteras:
+                   perfil: str | None = None, origen: str = "web", registrado: str | None = None) -> GuardadoCarteras:
+        """Guarda una version NUEVA de la configuracion. Fase 3: `registrado`
+        (clave de una version registrada del mismo juego y modelo) hace que la
+        operacion diaria use ese modelo congelado sin reentrenarlo. Es la unica
+        forma de elegir un modelo para la operacion: comparar o entrenar no la
+        cambia. Sin `perfil`, el de la version registrada o `predeterminado`."""
         _validar_juego(juego)
+        if perfil is None:
+            guardado = (self._modelos.obtener_modelo(registrado) if registrado and self._modelos is not None
+                        else None)
+            perfil = (guardado.artefacto["identidad"]["perfil"] if isinstance(guardado, GuardadoModelo)
+                      else "predeterminado")
         if modelo not in ce.modelos_de_cartera(juego):
             raise CarterasError("no_valido", f"modelo no admitido para {juego}: {modelo!r}")
         if perfil not in lm.PERFILES:
@@ -592,10 +667,12 @@ class CarterasDeModelos:
             cc.validar_parametros(cantidad, semilla, diversidad)
         except cc.ParametrosNoValidos as error:
             raise CarterasError("no_valido", str(error)) from error
+        referencia = self._registrado(juego, modelo, registrado, perfil)[1] if registrado else None
         ahora = self._reloj().isoformat()
 
         def crear(version: int) -> dict:
-            return ca.componer(ca.cuerpo_de_configuracion(juego, version, modelo, perfil, cantidad, diversidad, semilla),
+            return ca.componer(ca.cuerpo_de_configuracion(juego, version, modelo, perfil, cantidad, diversidad, semilla,
+                                                          referencia),
                                "registro", {"guardada_en": ahora, "origen": origen,
                                             "nota": "configuracion explicita; versiones anteriores inmutables"})
         return self._almacen.guardar_configuracion(juego, crear)
@@ -663,11 +740,14 @@ class CarterasDeModelos:
             ca.comprobar_recetas(a)
             instantanea = ca.instantanea_de(a)
             modelo, perfil = a["identidad"]["modelo"]["id"], a["identidad"]["perfil"]
-            fuente = (ce.fuente(instantanea, modelo, perfil) if ca.es_uniforme(modelo)
-                      else self._ejecutor.fuente(instantanea, modelo, perfil))
+            registrado = a["identidad"]["modelo"].get("registrado")
+            guardado_modelo = (self._registrado(a["juego"], modelo, registrado["clave"], perfil)[0]
+                               if registrado else None)
+            fuente = self._fuente(instantanea, modelo, perfil, guardado_modelo)
             salida["reproduccion"] = ca.comparar_cartera(a, ca.cuerpo_de_cartera(instantanea, a["identidad"], fuente))
         except (ca.ArtefactoCarterasError, lv.HistoricoNoValidoError, ce.MuestraInsuficienteCarteras,
-                lm.CandidatoNoDisponible, ce.ComponenteNoDisponible, TrabajadorFallidoError) as error:
+                lm.CandidatoNoDisponible, ce.ComponenteNoDisponible, TrabajadorFallidoError, CarterasError,
+                mr.ModeloRegistradoError) as error:
             salida["reproduccion"] = {"estado": "no_reproducible", "motivo": str(error)}
         completo = self._historico_o_none(a["juego"])
         salida["base_actual"] = ca.estado_frente_a_la_base(a, completo)

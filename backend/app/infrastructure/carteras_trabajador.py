@@ -42,6 +42,7 @@ def _trabajador(cola, tarea: dict) -> None:
     from app.application.ml import carteras_simulacion as cs
     from app.application.ml import laboratorio_modelos as lm
     from app.application.ml import laboratorio_variables as lv
+    from app.application.ml import modelos_registrados as mr
 
     limite = threadpool_limits(limits=lm.HILOS)  # solo este proceso dedicado
     avance = (lambda fase, **datos: cola.put(("avance", fase, datos)))
@@ -52,6 +53,12 @@ def _trabajador(cola, tarea: dict) -> None:
         elif tarea["tipo"] == "fuente":
             instantanea = lv.instantanea_desde_canonicos(tarea["juego"], tarea["sorteos"])
             resultado = ce.fuente(instantanea, tarea["modelo"], tarea["perfil"], avance=avance)
+        elif tarea["tipo"] == "fuente_registrada":  # Fase 3: modelo congelado, sin reentrenar
+            artefacto = tarea["artefacto"]
+            estimador = mr.deserializar_estimador(tarea["estimador"], artefacto["estimador"]["sha256"],
+                                                  artefacto["estimador"]["bytes"])
+            instantanea = lv.instantanea_desde_canonicos(tarea["juego"], tarea["sorteos"])
+            resultado = mr.fuente_registrada(artefacto, estimador, instantanea)
         elif tarea["tipo"] == "simular":
             resultado = ca.cuerpo_de_simulacion(tarea["identidad"], tarea["elegida"], tarea["uniforme"], avance=avance)
         elif tarea["tipo"] == "dormir":  # solo pruebas del tiempo maximo
@@ -60,6 +67,8 @@ def _trabajador(cola, tarea: dict) -> None:
         else:
             raise ValueError(f"tarea no admitida: {tarea['tipo']!r}")
         cola.put(("resultado", resultado))
+    except mr.ModeloRegistradoError as error:
+        cola.put(("modelo_registrado", error.estado, error.motivo))
     except lm.CandidatoNoDisponible as error:
         cola.put(("candidato_no_disponible", error.estado, error.motivo))
     except ce.ComponenteNoDisponible as error:
@@ -103,6 +112,12 @@ class EjecutorCarterasEnProceso(EjecutorDeCarteras):
         return self._ejecutar({"tipo": "fuente", "juego": instantanea.codigo, "modelo": modelo, "perfil": perfil,
                                "sorteos": lv.sorteos_canonicos(instantanea)}, avance)
 
+    def fuente_registrada(self, artefacto, estimador, instantanea, avance=None):
+        from app.application.ml import laboratorio_variables as lv
+
+        return self._ejecutar({"tipo": "fuente_registrada", "juego": instantanea.codigo, "artefacto": artefacto,
+                               "estimador": estimador, "sorteos": lv.sorteos_canonicos(instantanea)}, avance)
+
     def simular(self, identidad, elegida, uniforme, avance=None):
         return self._ejecutar({"tipo": "simular", "identidad": identidad, "elegida": elegida, "uniforme": uniforme},
                               avance)
@@ -116,6 +131,7 @@ class EjecutorCarterasEnProceso(EjecutorDeCarteras):
         from app.application.ml import carteras_ensemble as ce
         from app.application.ml import laboratorio_modelos as lm
         from app.application.ml import laboratorio_variables as lv
+        from app.application.ml import modelos_registrados as mr
 
         cola = self._contexto.Queue()
         proceso = self._contexto.Process(target=_trabajador, args=(cola, tarea), daemon=True,
@@ -154,6 +170,8 @@ class EjecutorCarterasEnProceso(EjecutorDeCarteras):
                     continue
                 if tipo == "resultado":
                     return mensaje[1]
+                if tipo == "modelo_registrado":
+                    raise mr.ModeloRegistradoError(mensaje[1], mensaje[2])
                 if tipo == "candidato_no_disponible":
                     raise lm.CandidatoNoDisponible(mensaje[1], mensaje[2])
                 if tipo == "componente_no_disponible":

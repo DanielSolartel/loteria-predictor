@@ -17,6 +17,11 @@ Uso (desde `backend`, con `DATABASE_URL` apuntando a la base):
   python -m scripts.laboratorio_modelos ejecuciones --limite 10
   python -m scripts.laboratorio_modelos recuperar
   python -m scripts.laboratorio_modelos rutas
+  python -m scripts.laboratorio_modelos entrenar --experimento <clave> --modelo random_forest_clasificador
+  python -m scripts.laboratorio_modelos modelos [--juego BALOTO]
+  python -m scripts.laboratorio_modelos modelo --clave <clave del modelo registrado>
+  python -m scripts.laboratorio_modelos verificar --modelo <clave del modelo registrado>
+  python -m scripts.laboratorio_modelos generar-con-modelo --clave <clave> [--corte 2719]
 
 Ordenes:
 - `catalogo`: modelos, juegos, recetas, requisitos y protocolo.
@@ -32,9 +37,19 @@ Ordenes:
   coincidencia con la base actual, por separado (reentrena; no guarda).
 - `seguimiento`: resultados observados por linea de modelo.
 - `rutas`: rutas de almacenamiento efectivas; nunca `DATABASE_URL` ni `.env`.
+- Fase 3: `entrenar` entrena un candidato registrable de un informe con su
+  instantanea y guarda la version (manifiesto + estimador); misma entrada ->
+  la misma version. `modelos` y `modelo` consultan las versiones (sin cargar
+  el estimador). `verificar --modelo` comprueba integridad, compatibilidad,
+  carga restringida y el pronostico de control. `generar-con-modelo` recarga
+  la version y pronostica el sorteo siguiente al corte de entrada (por
+  defecto, el ultimo cargado; nunca anterior al de entrenamiento) sin
+  reentrenar. Elegir una version para la operacion diaria se hace con
+  `python -m scripts.carteras_modelos configurar ... --registrado <clave>`.
 
 `catalogo`, `consultar`, `experimentos`, `verificar`, `seguimiento`,
-`ejecuciones` y `rutas` no escriben en ningun almacen ni en PostgreSQL.
+`ejecuciones`, `modelos`, `modelo` y `rutas` no escriben en ningun almacen ni
+en PostgreSQL.
 Ninguna orden importa desde el origen oficial (eso sigue en Producto 3).
 
 Salida: JSON UTF-8 por la salida estandar; avisos y errores por la de
@@ -50,7 +65,8 @@ Codigos de salida:
     verificacion sin reproduccion exacta o con el historico cambiado
   6 ya hay una comparacion activa para alguno de los juegos
   7 fallo (ningun juego termino, o ejecucion interrumpida)
-  8 archivo alterado o ilegible
+  8 archivo alterado o ilegible (tambien un estimador alterado o no admitido)
+  9 modelo registrado incompatible con este entorno (no se carga)
 """
 from __future__ import annotations
 
@@ -67,10 +83,14 @@ from app.application.use_cases.operacion_diaria import EjecucionActivaError, ide
 
 EXIT_OK, EXIT_USO, EXIT_CONEXION, EXIT_MUESTRA, EXIT_PARCIAL, EXIT_ACTIVA, EXIT_FALLO, EXIT_ALTERADO = (
     0, 2, 3, 4, 5, 6, 7, 8)
+EXIT_INCOMPATIBLE = 9
 CODIGO_POR_ERROR = {"no_encontrado": EXIT_USO, "no_valido": EXIT_USO, "alterado": EXIT_ALTERADO,
                     "no_disponible": EXIT_FALLO, "muestra_insuficiente": EXIT_MUESTRA, "no_converge": EXIT_MUESTRA,
                     "clase_insuficiente": EXIT_MUESTRA, "salida_invalida": EXIT_MUESTRA,
-                    "fallo_de_ajuste": EXIT_MUESTRA, "base_no_disponible": EXIT_CONEXION}
+                    "fallo_de_ajuste": EXIT_MUESTRA, "base_no_disponible": EXIT_CONEXION,
+                    "incompatible": EXIT_INCOMPATIBLE, "corte_no_valido": EXIT_USO, "no_registrable": EXIT_USO,
+                    "estimador_no_admitido": EXIT_ALTERADO, "no_reproduce": EXIT_FALLO, "tiempo_agotado": EXIT_FALLO,
+                    "fallo_del_trabajador": EXIT_FALLO, "fallo": EXIT_FALLO}
 CODIGO_POR_ESTADO = {"exito": EXIT_OK, "parcial": EXIT_PARCIAL, "fallo": EXIT_FALLO, "interrumpida": EXIT_FALLO}
 
 
@@ -87,7 +107,8 @@ def rutas_resueltas() -> dict:
     return {"directorio_de_trabajo": str(Path.cwd().resolve()),
             "directorio_pronosticos_experimentales": str(Path(ajustes.directorio_pronosticos_experimentales).resolve()),
             "directorio_operacion": str(Path(ajustes.directorio_operacion).resolve()),
-            "directorio_laboratorio_modelos": str(Path(ajustes.directorio_laboratorio_modelos).resolve())}
+            "directorio_laboratorio_modelos": str(Path(ajustes.directorio_laboratorio_modelos).resolve()),
+            "directorio_modelos_registrados": str((Path(ajustes.directorio_laboratorio_modelos) / "modelos").resolve())}
 
 
 def _imprimir(objeto, salida) -> None:
@@ -127,6 +148,7 @@ def _parser() -> argparse.ArgumentParser:
     grupo = p.add_mutually_exclusive_group(required=True)
     grupo.add_argument("--experimento")
     grupo.add_argument("--pronostico")
+    grupo.add_argument("--modelo", help="clave de un modelo registrado (Fase 3)")
     p = sub.add_parser("seguimiento", help="resultados observados por linea de modelo")
     p.add_argument("--juego", required=True, choices=list(JUEGOS))
     p.add_argument("--linea")
@@ -135,6 +157,16 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--limite", type=int, default=10)
     sub.add_parser("recuperar", help="marca como interrumpidas las comparaciones cuyo proceso murio")
     sub.add_parser("rutas", help="rutas de almacenamiento resueltas (sin credenciales)")
+    p = sub.add_parser("entrenar", help="entrena y guarda una version de un modelo de un experimento")
+    p.add_argument("--experimento", required=True)
+    p.add_argument("--modelo", required=True)
+    p = sub.add_parser("modelos", help="versiones registradas (sin cargar estimadores)")
+    p.add_argument("--juego", choices=list(JUEGOS))
+    p = sub.add_parser("modelo", help="ficha de una version registrada")
+    p.add_argument("--clave", required=True)
+    p = sub.add_parser("generar-con-modelo", help="pronostico con una version registrada, sin reentrenar")
+    p.add_argument("--clave", required=True)
+    p.add_argument("--corte", type=int)
     return parser
 
 
@@ -210,6 +242,21 @@ def _orden(args, lab, salida, errores) -> int:
         _imprimir({"identificador": g.identificador, "reutilizado": g.reutilizado, "linea": g.linea,
                    "version": g.version, "versiones": g.versiones, "pronostico": g.artefacto}, salida)
         return EXIT_OK
+    if args.orden == "verificar" and args.modelo:
+        r = lab.verificar_modelo(args.modelo)
+        _imprimir(r, salida)
+        if r["integridad"] != "correcta":
+            return _error(errores, EXIT_ALTERADO, "alterado", r.get("motivo", "modelo alterado"))
+        if not r["compatibilidad"]["compatible"]:
+            return _error(errores, EXIT_INCOMPATIBLE, "incompatible", "; ".join(r["compatibilidad"]["motivos"]))
+        if (r.get("carga") or {}).get("estado") != "correcta":
+            carga = r.get("carga") or {}
+            return _error(errores, CODIGO_POR_ERROR.get(carga.get("estado"), EXIT_FALLO), carga.get("estado", "fallo"),
+                          carga.get("motivo", "no se pudo cargar"))
+        if not (r.get("reproduccion") or {}).get("exacta"):
+            errores.write("AVISO [codigo 5]: el estimador recargado no reproduce el pronostico de control\n")
+            return EXIT_PARCIAL
+        return EXIT_OK
     if args.orden == "verificar":
         r = lab.verificar_experimento(args.experimento) if args.experimento else lab.verificar_pronostico(args.pronostico)
         _imprimir(r, salida)
@@ -230,6 +277,26 @@ def _orden(args, lab, salida, errores) -> int:
         return EXIT_OK
     if args.orden == "recuperar":
         _imprimir({"interrumpidas_marcadas": lab.recuperar()}, salida)
+        return EXIT_OK
+    if args.orden == "entrenar":
+        errores.write(f"Entrenando {args.modelo} con el experimento {args.experimento[:12]}... (puede tardar)\n")
+        final = lab.entrenar_ahora(args.experimento, args.modelo, "comando")
+        _imprimir(final, salida)
+        r = next(iter(final["juegos"].values()))
+        if r["estado"] in ("terminado", "reutilizado"):
+            return EXIT_OK
+        return _error(errores, CODIGO_POR_ERROR.get(r["estado"], EXIT_FALLO), r["estado"], r.get("mensaje") or "")
+    if args.orden == "modelos":
+        _imprimir({"juegos": {j: lab.modelos(j) for j in ([args.juego] if args.juego else JUEGOS)}}, salida)
+        return EXIT_OK
+    if args.orden == "modelo":
+        _imprimir(lab.ficha_del_modelo(args.clave), salida)
+        return EXIT_OK
+    if args.orden == "generar-con-modelo":
+        g = lab.generar_con_modelo(args.clave, args.corte, "comando")
+        _imprimir({"identificador": g.identificador, "reutilizado": g.reutilizado, "linea": g.linea,
+                   "objetivo": g.objetivo, "version": g.version, "versiones": g.versiones, "pronostico": g.artefacto},
+                  salida)
         return EXIT_OK
     return _error(errores, EXIT_USO, "no_valido", f"orden desconocida: {args.orden}")
 

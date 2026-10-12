@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Verificación del modelo registrado{% endblock %}
+{% block content %}
+<h3>Verificación del modelo registrado{% if r.numero %} · versión {{ r.numero }}{% endif %}</h3>
+<p class="small"><code>{{ clave }}</code>{% if r.integridad == 'correcta' %} · <a href="/laboratorio/modelo/{{ clave }}">volver a la ficha</a>{% else %} · <a href="/laboratorio/modelos">modelos registrados</a>{% endif %}</p>
+<div class="card stat-card p-3"><table class="table table-sm small mb-0"><tbody>
+    <tr><th>1. Integridad (manifiesto y estimador)</th><td>{% if r.integridad == 'correcta' %}correcta: sello, huella, clave, número reservado y SHA-256 y tamaño del estimador coinciden ({{ r.estimador.bytes }} bytes, <code>{{ r.estimador.sha256[:16] }}…</code>){% else %}<span class="text-danger">alterada o incompleta: {{ r.motivo|replace('_', ' ') }}. No se carga ni se borra.</span>{% endif %}</td></tr>
+    <tr><th>2. Compatibilidad con este entorno</th><td>{% set c = r.compatibilidad %}{% if c is none %}—{% elif c.compatible %}compatible{% if not c.mismo_entorno %} (entorno distinto pero admitido: {{ c.politica }}){% endif %}{% else %}<span class="text-danger">incompatible: {{ c.motivos|join('; ') }}</span>{% endif %}</td></tr>
+    <tr><th>3. Carga restringida del estimador</th><td>{% set g = r.carga %}{% if g is none %}—{% elif g.estado == 'correcta' %}correcta ({{ g.clase }}; solo clases admitidas de scikit-learn, NumPy y la biblioteca estándar){% else %}<span class="text-danger">{{ g.estado|replace('_', ' ') }}: {{ g.motivo }}</span>{% endif %}</td></tr>
+    <tr><th>4. Pronóstico de control</th><td>{% set p = r.reproduccion %}{% if p is none %}—{% elif p.exacta %}reproduce exactamente el control del objetivo {{ p.objetivo }} (sin reentrenar; {{ p.segundos }} s){% else %}<span class="text-danger">no coincide con el control guardado</span> (<code>{{ p.control_guardado[:12] }}</code> frente a <code>{{ p.control_actual[:12] }}</code>){% endif %}</td></tr>
+    <tr><th>5. Histórico de entrenamiento frente a la base actual</th><td>{% set b = r.base_actual %}{% if b is none %}—{% elif b.estado == 'base_no_disponible' %}base no disponible{% else %}{{ b.historico_hasta_el_corte|replace('_', ' ') }}{% if b.base_avanzo %} · la base avanzó {{ b.nuevos_desde_el_corte }} sorteo(s){% endif %}{% endif %}</td></tr>
+</tbody></table></div>
+<p class="small text-muted mt-2">La verificación no escribe nada. Que el modelo se recargue y reproduzca su control es una comprobación técnica; no acredita ninguna ventaja predictiva.</p>
+{% endblock %}

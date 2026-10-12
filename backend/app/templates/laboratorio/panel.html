@@ -4,7 +4,8 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
     <h3 class="mb-0">Laboratorio de modelos</h3>
-    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/operacion"><i class="bi bi-calendar-check me-1"></i>Panel diario</a>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-primary" href="/laboratorio/modelos"><i class="bi bi-box-seam me-1"></i>Modelos registrados</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/operacion"><i class="bi bi-calendar-check me-1"></i>Panel diario</a>
         <a class="btn btn-sm btn-outline-secondary" href="/pronosticos"><i class="bi bi-cpu me-1"></i>Pronósticos</a></div>
 </div>
 {% include "laboratorio/_aviso.html" %}
@@ -47,11 +48,11 @@
 {% endfor %}
 </div>
 <div class="card stat-card impresion-fragmentable p-3">
-    <h6>Comparaciones recientes</h6>
+    <h6>Comparaciones y entrenamientos recientes</h6>
     {% if ejecuciones %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
-        <thead><tr><th>Inicio (UTC)</th><th>Juegos</th><th>Estado</th><th>Origen</th></tr></thead><tbody>
+        <thead><tr><th>Inicio (UTC)</th><th>Trabajo</th><th>Juegos</th><th>Estado</th><th>Origen</th></tr></thead><tbody>
         {% for x in ejecuciones %}{% if x %}<tr><td><a href="/laboratorio/experimentos/{{ x.id }}">{{ (x.iniciada_en or '')[:19]|replace('T', ' ') }}</a></td>
-            <td>{{ (x.orden or [])|map('replace', '_', ' ')|join(', ') }}</td><td>{{ x.estado|replace('_', ' ') }}</td><td>{{ x.origen }}</td></tr>{% endif %}{% endfor %}
+            <td>{{ 'entrenamiento (' ~ x.modelo ~ ')' if x.tipo == 'entrenamiento' else 'comparación' }}</td><td>{{ (x.orden or [])|map('replace', '_', ' ')|join(', ') }}</td><td>{{ x.estado|replace('_', ' ') }}</td><td>{{ x.origen }}</td></tr>{% endif %}{% endfor %}
     </tbody></table></div>{% else %}<p class="small text-muted mb-0">Todavía no hay comparaciones.</p>{% endif %}
 </div>
 {% endblock %}

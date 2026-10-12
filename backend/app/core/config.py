@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # pronosticos del laboratorio, progreso y cerrojos), separado de los
     # almacenes de Productos 1-3.
     directorio_laboratorio_modelos: str = "storage/laboratorio"
+    # Fase 3: tiempo maximo, en segundos, de cada trabajo del proceso trabajador
+    # del laboratorio (comparacion de un juego, entrenamiento de un modelo
+    # registrado o pronostico con un modelo cargado).
+    tiempo_maximo_trabajador_laboratorio: int = 1800
 
     # Producto 5: modelo combinado, carteras y simulacion (comparaciones,
     # carteras, simulaciones, configuraciones, progreso y cerrojos), separado

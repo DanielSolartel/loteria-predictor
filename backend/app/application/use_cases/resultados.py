@@ -412,7 +412,8 @@ class CentroDeResultados:
         propuesta = {"juego": juego, "modelo": l["modelo"], "version_del_modelo": str(l["version"]),
                      "perfil": l.get("perfil", "predeterminado"), "cantidad": l["cantidad"],
                      "diversidad": l["diversidad"], "semilla": l["semilla"], "linea": l["id"],
-                     "nombre": (artefacto.get("modelo") or {}).get("nombre", l["modelo"])}
+                     "nombre": (artefacto.get("modelo") or {}).get("nombre", l["modelo"]),
+                     "registrado": l.get("registrado")}
         try:
             receta = ca.receta_del_modelo(juego, l["modelo"], propuesta["perfil"])
         except (KeyError, ValueError) as error:
@@ -429,7 +430,8 @@ class CentroDeResultados:
             vigente = None if g is None else {
                 "version_de_configuracion": g.artefacto["version"], "modelo": g.artefacto["modelo"]["id"],
                 "version_del_modelo": str(g.artefacto["modelo"]["version"]),
-                **{k: g.artefacto[k] for k in ("perfil", "cantidad", "diversidad", "semilla", "linea")}}
+                **{k: g.artefacto[k] for k in ("perfil", "cantidad", "diversidad", "semilla", "linea")},
+                "registrado": g.artefacto["modelo"].get("registrado")}
         ya_vigente = vigente is not None and vigente["linea"] == propuesta["linea"]
         return {"propuesta": propuesta, "compatible": compatible, "vigente": vigente, "ya_vigente": ya_vigente,
                 "motivo": None if compatible else
@@ -448,7 +450,7 @@ class CentroDeResultados:
         p = datos["propuesta"]
         try:
             g = servicio.configurar(juego, p["modelo"], p["cantidad"], p["diversidad"], p["semilla"], p["perfil"],
-                                    origen)
+                                    origen, **({"registrado": p["registrado"]["clave"]} if p.get("registrado") else {}))
         except CarterasError as error:
             raise ResultadosError(error.codigo, str(error)) from error
         return {"estado": "guardada", "version": g.artefacto["version"], "linea": g.artefacto["linea"]}

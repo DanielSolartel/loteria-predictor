@@ -14,12 +14,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 
-from app.application.interfaces.ejecutor_laboratorio import TrabajadorFallidoError
+from app.application.interfaces.ejecutor_laboratorio import TiempoAgotadoError, TrabajadorFallidoError
 
-
-class TiempoAgotadoError(TrabajadorFallidoError):
-    """El trabajador supero su tiempo maximo y se detuvo (estado
-    `tiempo_agotado`). Nada se publico."""
+__all__ = ["EjecutorDeCarteras", "TiempoAgotadoError", "TrabajadorFallidoError"]
 
 
 class EjecutorDeCarteras(ABC):
@@ -35,3 +32,9 @@ class EjecutorDeCarteras(ABC):
     def simular(self, identidad: dict, elegida: dict, uniforme: dict,
                 avance: Callable[..., None] | None = None) -> dict:
         """Cuerpo de `carteras_artefactos.cuerpo_de_simulacion`."""
+
+    def fuente_registrada(self, artefacto: dict, estimador: bytes, instantanea,
+                          avance: Callable[..., None] | None = None) -> dict:
+        """Fase 3: vector fuente con un modelo registrado congelado
+        (`modelos_registrados.fuente_registrada`), sin reentrenar."""
+        raise NotImplementedError

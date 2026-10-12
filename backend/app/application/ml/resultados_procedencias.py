@@ -285,9 +285,11 @@ def linea_de_laboratorio(artefacto: dict) -> dict:
     linea = artefacto["linea"]
     modelo = artefacto.get("modelo") or {}
     perfil = linea.get("perfil", "predeterminado")
+    registrado = linea.get("registrado")
     return {"id": linea["id"], "modelo": linea["modelo"], "version": str(linea["version"]), "perfil": perfil,
             "nombre": f"{modelo.get('nombre', linea['modelo'])} v{linea['version']}"
-                      + ("" if perfil == "predeterminado" else f" ({perfil})")}
+                      + ("" if perfil == "predeterminado" else f" ({perfil})")
+                      + ("" if not registrado else f" · versión registrada {registrado['numero']}")}
 
 
 def emisiones_laboratorio(juego: str, lineas_y_elementos: dict, completo) -> tuple[dict, list[dict]]:
@@ -358,10 +360,13 @@ def linea_de_modelo_de_cartera(artefacto: dict) -> dict:
     perfil = linea.get("perfil", "predeterminado")
     modelo = artefacto.get("modelo") or {}
     sufijo = "" if perfil == "predeterminado" else f"-{perfil}"
-    return {"id": f"{linea['modelo']}-v{linea['version']}{sufijo}", "modelo": linea["modelo"],
+    registrado = linea.get("registrado")
+    reg = "" if not registrado else f"-reg{registrado['numero']}"
+    return {"id": f"{linea['modelo']}-v{linea['version']}{reg}{sufijo}", "modelo": linea["modelo"],
             "version": str(linea["version"]), "perfil": perfil,
             "nombre": f"{modelo.get('nombre', linea['modelo'])} v{linea['version']}"
-                      + ("" if perfil == "predeterminado" else f" ({perfil})") + " · vector fuente"}
+                      + ("" if perfil == "predeterminado" else f" ({perfil})")
+                      + ("" if not registrado else f" · versión registrada {registrado['numero']}") + " · vector fuente"}
 
 
 def seguimientos_de_carteras(lineas_y_elementos: dict, completo) -> dict:

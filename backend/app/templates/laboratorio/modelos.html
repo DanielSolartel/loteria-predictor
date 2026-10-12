@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Modelos registrados{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Modelos registrados{% if filtro and datos|length == 1 %} · {{ datos[0].nombre }}{% endif %}</h3>
+    <div class="d-flex gap-2">{% if filtro %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/modelos">Todos los juegos</a>{% endif %}
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio">Laboratorio</a></div>
+</div>
+{% include "laboratorio/_aviso.html" %}
+<div class="card stat-card laboratorio-tarjeta p-3 mb-3 small">
+    <p class="mb-1"><strong>Informe frente a modelo registrado.</strong> Un informe del laboratorio guarda la receta, el histórico y las métricas de una comparación, y se reproduce reentrenando. Un modelo registrado guarda además el estimador ya ajustado (preparación de variables, estimador y, en los clasificadores, calibración) y se recarga para pronosticar <strong>sin volver a entrenar</strong>.</p>
+    <p class="mb-1">Flujo: compara en el laboratorio → en el informe, «Entrenar y guardar versión» → abre su ficha → verifícala → genera con el modelo cargado → consulta sus resultados observados. Para usar una versión en la operación diaria, elígela de forma explícita en la configuración de carteras: comparar o entrenar nunca cambia esa elección.</p>
+    <p class="mb-0 text-muted">Finalización técnica no es evidencia de ventaja predictiva: cada versión sigue siendo experimental y no acreditada.</p>
+</div>
+{% for d in datos %}
+<div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3 mb-3" id="juego-{{ slugs[d.juego] }}">
+    <div class="laboratorio-cabecera">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2"><h5 class="mb-1">{{ d.nombre }}</h5>
+        <a class="btn btn-sm btn-outline-secondary py-0" href="/laboratorio/{{ slugs[d.juego] }}">Comparar en el laboratorio</a></div>
+    <p class="small mb-2"><strong>Registrables:</strong> {% for e in d.registrables %}{{ e.nombre }}{% if not loop.last %} · {% endif %}{% endfor %}.
+        <span class="text-muted">No se registran la uniforme ni las fórmulas de conteo: se recalculan en cada pronóstico.</span></p>
+    {% if d.activa %}<div class="alert alert-info py-1 px-2 small">Hay un trabajo del laboratorio en curso para este juego: <a href="/laboratorio/experimentos/{{ d.activa }}">ver progreso</a>.</div>{% endif %}
+    </div>
+    {% if d.versiones %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Versión</th><th>Modelo</th><th>Entrenamiento</th><th class="text-end">LL receta</th><th class="text-end">LL uniforme</th><th>Evaluación asociada</th><th>Este entorno</th></tr></thead><tbody>
+        {% for v in d.versiones %}<tr>
+            <td><a href="/laboratorio/modelo/{{ v.clave }}"><strong>v{{ v.numero }}</strong></a><div class="text-muted"><code>{{ v.clave[:12] }}</code></div></td>
+            <td>{{ v.nombre }}<div class="text-muted">{{ v.modelo }} v{{ v.version_de_la_receta }}{% if v.perfil != 'predeterminado' %} · {{ v.perfil }}{% endif %}</div></td>
+            <td>corte {{ v.corte }} · {{ v.sorteos }} sorteos<div class="text-muted">{{ (v.entrenado_en or '')[:16]|replace('T', ' ') }} UTC · {{ v.sistema }}</div></td>
+            <td class="text-end">{{ '%.5f'|format(v.log_loss) if v.log_loss is not none else '—' }}</td>
+            <td class="text-end">{{ '%.5f'|format(v.log_loss_uniforme) if v.log_loss_uniforme is not none else '—' }}</td>
+            <td>{{ (v.evaluacion or 'sin evaluación')|replace('_', ' ') }}{% if v.veredicto %}<div class="text-muted">{{ veredictos.get(v.veredicto, v.veredicto) }}</div>{% endif %}</td>
+            <td>{% if v.compatible %}<span class="badge bg-success">compatible</span>{% else %}<span class="badge bg-danger">incompatible</span><div class="text-muted">{{ v.motivos|join('; ') }}</div>{% endif %}</td>
+        </tr>{% endfor %}
+    </tbody></table></div>
+    <p class="small text-muted mt-2 mb-0">«LL receta»: Log Loss de la receta en el informe de procedencia (reajustes por bloque antes del corte), frente a la uniforme en los mismos objetivos. El estimador guardado se ajustó después con todo el histórico hasta el corte.</p>
+    {% else %}<p class="small text-muted mb-0">Sin versiones registradas. Abre un informe del laboratorio y pulsa «Entrenar y guardar versión» en un modelo registrable.</p>{% endif %}
+    {% if d.ilegibles %}<div class="alert alert-danger py-2 px-2 small mt-2 mb-0"><strong>Versiones alteradas o incompletas (no se cargan ni se borran):</strong>
+        {% for x in d.ilegibles %}<code>{{ x.clave[:12] }}</code>{% if x.modelo %} ({{ x.modelo }}{% if x.numero %} v{{ x.numero }}{% endif %}){% endif %}: {{ x.motivo|replace('_', ' ') }}{% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
+    {% if d.reservas_sin_modelo %}<div class="alert alert-secondary py-2 px-2 small mt-2 mb-0"><strong>Números reservados sin modelo publicado:</strong>
+        {% for x in d.reservas_sin_modelo %}{{ x.modelo }} v{{ x.numero }} ({{ 'publicación interrumpida o en curso' if x.estado == 'sin_publicar' else 'la misma entrada se publicó con otro número' }}){% if not loop.last %}; {% endif %}{% endfor %}. No son modelos válidos.</div>{% endif %}
+</div>
+{% endfor %}
+<details class="card stat-card p-3 mb-3 small laboratorio-desplegable"><summary><strong>Familias del roadmap que aún no existen</strong></summary>
+    <ul class="mb-0 mt-2">{% for k, v in catalogo.familias_futuras.items() %}<li>{{ v }}</li>{% endfor %}</ul>
+</details>
+<div class="card stat-card p-3 mb-3 small laboratorio-solo-impresion"><strong>Familias del roadmap que aún no existen</strong>
+    <ul class="mb-0 mt-2">{% for k, v in catalogo.familias_futuras.items() %}<li>{{ v }}</li>{% endfor %}</ul>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% set colores = a.juego == 'COLORLOTO' %}{% set ident = a.identidad %}{% set ev = a.procedencia.evaluacion %}{% set comp = f.compatibilidad %}
+{% block title %}Modelo registrado — {{ a.modelo.nombre }} v{{ f.resumen.numero }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">{{ a.modelo.nombre }} · versión {{ f.resumen.numero }} · {{ nombres[a.juego] }}</h3>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="/laboratorio/modelos?juego={{ slugs[a.juego] }}">Versiones de {{ nombres[a.juego] }}</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio/experimentos/{{ a.procedencia.experimento }}">Informe de procedencia</a>
+        {% if f.pronosticos %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slugs[a.juego] }}/seguimiento?linea={{ f.linea }}">Resultados observados</a>{% endif %}</div>
+</div>
+{% include "laboratorio/_aviso.html" %}
+<div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3 mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-2">
+        <span class="badge bg-success">Finalización técnica: versión guardada, íntegra y recargable</span>
+        {% if comp.compatible %}<span class="badge bg-success">Compatible con este entorno</span>{% else %}<span class="badge bg-danger">Incompatible con este entorno</span>{% endif %}
+        <span class="badge bg-secondary">Ventaja predictiva: no acreditada</span>
+    </div>
+    {% if not comp.compatible %}<div class="alert alert-danger py-2 small mb-2"><strong>No se cargará en este entorno.</strong> {{ comp.motivos|join('; ') }}. La versión se conserva; para usarla aquí, entrena una versión nueva con este entorno (será otra versión).</div>{% endif %}
+    {% set b = f.base_actual %}
+    {% if b.estado == 'base_no_disponible' %}<div class="alert alert-secondary py-2 small mb-2">Base de datos no disponible: la ficha se muestra tal como se guardó.</div>
+    {% else %}
+        {% if b.historico_hasta_el_corte == 'cambio' %}<div class="alert alert-danger py-2 small mb-2">El histórico actual hasta el corte {{ ident.corte }} ya no coincide con el usado para entrenar. La versión no cambia, pero no se generará con ella sobre la base actual: entrena una versión nueva.</div>{% endif %}
+        {% if b.base_avanzo %}<div class="alert alert-info py-2 small mb-2">La base avanzó {{ b.nuevos_desde_el_corte }} sorteo(s) desde el corte de entrenamiento (último {{ b.ultimo_sorteo_actual }}). Generar usa esos sorteos solo como variables del objetivo siguiente: el estimador no se reajusta.</div>{% endif %}
+    {% endif %}
+    <p class="small mb-1"><strong>Objetivo estadístico:</strong> {{ a.objetivo_estadistico }}.</p>
+    <p class="small mb-2"><strong>Entrenado</strong> con los {{ ident.periodo.sorteos }} sorteos {{ ident.periodo.primer_sorteo }}–{{ ident.periodo.ultimo_sorteo }} ({{ ident.periodo.primera_fecha }} a {{ ident.periodo.ultima_fecha }}); corte {{ ident.corte }}. Publicado {{ (a.publicacion.terminado_en or '')[:19]|replace('T', ' ') }} UTC en {{ a.publicacion.segundos }} s.</p>
+    <div class="d-flex flex-wrap gap-2 align-items-end">
+        <form method="post" action="/laboratorio/modelo/{{ clave }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-outline-secondary">Verificar (integridad, compatibilidad, carga y control)</button></form>
+        {% if comp.compatible %}<form method="post" action="/laboratorio/modelo/{{ clave }}/generar" class="d-flex flex-wrap gap-2 align-items-end m-0"><input type="hidden" name="token_local" value="{{ token_local }}">
+            <div><label class="form-label small mb-0" for="corte-entrada">Corte de entrada (opcional)</label><input id="corte-entrada" class="form-control form-control-sm" name="corte" inputmode="numeric" placeholder="último cargado" style="max-width: 10rem"></div>
+            <button class="btn btn-sm btn-primary">Generar con el modelo cargado</button></form>{% endif %}
+        {% if comp.compatible %}<a class="btn btn-sm btn-outline-primary" href="/carteras/{{ slugs[a.juego] }}?modelo={{ ident.modelo.id }}&amp;registrado={{ clave }}#configuracion">Elegir para la operación diaria…</a>{% endif %}
+    </div>
+    <p class="small text-muted mt-2 mb-0">Generar no reentrena: recarga esta versión y pronostica el sorteo siguiente al corte de entrada (vacío = último sorteo cargado). Un corte anterior al de entrenamiento ({{ ident.corte }}) se rechaza porque el modelo ya vio esos resultados. «Elegir para la operación diaria» abre la configuración de carteras con esta versión preseleccionada; solo se guarda cuando la confirmas allí.</p>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6"><div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3 h-100">
+        <h6>Evaluación asociada (informe de procedencia)</h6>
+        {% if ev.agregado %}{% set ag = ev.agregado %}
+        <div class="tabla-desplazable"><table class="table table-sm small mb-2"><thead><tr><th>Métrica</th><th class="text-end">Receta</th><th class="text-end">Uniforme</th><th class="text-end">Diferencia</th></tr></thead><tbody>
+            <tr><td>{{ 'Log Loss por balota' if colores else 'Log Loss' }}</td><td class="text-end">{{ '%.5f'|format(ag.log_loss) }}</td><td class="text-end">{{ '%.5f'|format(ag.uniforme.log_loss) }}</td><td class="text-end {% if ag.diferencia_log_loss < 0 %}text-success{% elif ag.diferencia_log_loss > 0 %}text-danger{% endif %}">{{ '%+.5f'|format(ag.diferencia_log_loss) }}</td></tr>
+            <tr><td>{{ 'Brier por balota' if colores else 'Brier' }}</td><td class="text-end">{{ '%.5f'|format(ag.brier) }}</td><td class="text-end">{{ '%.5f'|format(ag.uniforme.brier) }}</td><td class="text-end">{{ '%+.5f'|format(ag.diferencia_brier) }}</td></tr>
+            <tr><td>{{ 'Coincidencias por sorteo (0–6)' if colores else 'Aciertos top-5 por sorteo' }}</td><td class="text-end">{{ '%.3f'|format(ag.aciertos) }}</td><td class="text-end">{{ '%.3f'|format(ag.uniforme.aciertos) }}</td><td></td></tr>
+            {% if ev.secundarias and ev.secundarias_uniforme %}{% set s = ev.secundarias %}{% set su = ev.secundarias_uniforme %}
+            <tr><td>Precisión = exhaustividad = F1 ({{ s.regla }})</td><td class="text-end">{{ '%.4f'|format(s.precision_en_k) }}</td><td class="text-end">{{ '%.4f'|format(su.precision_en_k) }}</td><td class="text-end">{{ '%+.4f'|format(s.precision_en_k - su.precision_en_k) }}</td></tr>
+            {% if s.exactitud is not none %}<tr><td>Exactitud por fila ({{ s.regla }})</td><td class="text-end">{{ '%.4f'|format(s.exactitud) }}</td><td class="text-end">{{ '%.4f'|format(su.exactitud) }}</td><td class="text-end">{{ '%+.4f'|format(s.exactitud - su.exactitud) }}</td></tr>{% endif %}
+            {% endif %}
+        </tbody></table></div>
+        <p class="small mb-1"><strong>Esta receta, {{ a.modelo.nombre }}:</strong> {{ ev.estado|replace('_', ' ') }} en {{ ag.sorteos }} objetivos{% if ev.veredicto %}; {{ veredictos.get(ev.veredicto, ev.veredicto) }}{% endif %}{% if ev.posicion_en_el_ranking %}; posición {{ ev.posicion_en_el_ranking }} de {{ ev.candidatos_completos }} candidatos completos{% endif %}.</p>
+        {% if ev.muestra_pequena %}<div class="alert alert-secondary py-1 px-2 small mb-1">Muestra pequeña: las diferencias pueden cambiar mucho con pocos sorteos.</div>{% endif %}
+        {% else %}<p class="small text-muted"><strong>Esta receta, {{ a.modelo.nombre }}:</strong> sin evaluación completa en el informe ({{ (ev.estado or 'sin evaluación')|replace('_', ' ') }}).{% for inc in ev.incidencias %} Bloque {{ inc.bloque }}: {{ inc.estado|replace('_', ' ') }} — {{ inc.motivo }}.{% endfor %}</p>{% endif %}
+        {% set li = lectura_informe %}
+        <div class="small mb-1 ficha-lectura-informe"><strong>Informe de procedencia (corte {{ ev.corte }}), lectura general:</strong>
+            {% if not li.disponible %}no disponible ({{ li.motivo }}); arriba, la evaluación guardada en esta versión.
+            {% elif li.estado == 'menor_perdida_en_esta_evaluacion' %}menor pérdida en esa evaluación: <strong>{{ li.primeros[0].nombre }}</strong>{% if li.primeros[0].es_esta_receta %} (esta receta){% else %}, no esta receta{% endif %}.
+            {% elif li.estado == 'la_uniforme_fue_mejor' %}la <strong>uniforme</strong> tuvo la menor pérdida; ningún modelo la superó en esa evaluación.
+            {% elif li.estado == 'empate' %}empate en la primera posición entre <strong>{{ li.primeros|map(attribute='nombre')|join(', ') }}</strong>.
+            {% else %}comparación incompleta: no hay un modelo y la uniforme con evaluación completa para compararlos.{% endif %}
+        </div>
+        {% if li.disponible and li.ranking %}<ul class="list-unstyled small mb-1 ficha-clasificacion">{% for r in li.ranking %}<li>{{ r.posicion }}. {{ r.nombre }} — {{ 'Log Loss por balota' if colores else 'Log Loss' }} {{ '%.5f'|format(r.log_loss) }}{% if r.es_esta_receta %} <span class="badge bg-primary">esta receta</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+        {% if li.disponible and li.incompletos %}<p class="small text-muted mb-1">Sin evaluación completa en el informe: {% for x in li.incompletos %}{{ x.id }} ({{ x.estado|replace('_', ' ') }}){% if not loop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+        <p class="small text-muted mb-0">{{ ev.nota }} Con la regla top-k y k igual al tamaño del sorteo, precisión, exhaustividad y F1 coinciden; la exactitud por fila está dominada por las ausencias.</p>
+    </div></div>
+    <div class="col-lg-6"><div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3 h-100">
+        <h6>Componentes de inferencia guardados</h6>
+        <ol class="small mb-2">{% for c in a.componentes %}<li><strong>{{ {'preparacion_de_variables': 'preparación de variables', 'calibracion': 'calibración'}.get(c.paso, c.paso|replace('_', ' ')) }}</strong>: {{ c.clase }}{% if c.detalle %} <span class="text-muted">({{ c.detalle }})</span>{% endif %}</li>{% endfor %}
+            <li><strong>transformación de probabilidades</strong>: {{ ident.transformacion.tipo|replace('_', ' ') }} <span class="text-muted">({{ ident.transformacion.detalle }}; código versionado, no estado ajustado)</span></li></ol>
+        <h6 class="small">Variables ({{ ident.variables.version }})</h6>
+        <p class="small mb-2">{{ ident.variables.nombres|join(', ') }}.</p>
+        <h6 class="small">Contrato de inferencia</h6>
+        <p class="small mb-0">{{ etapas.contrato }}</p>
+        {% if not etapas.calibrado %}<p class="small text-muted mb-0 mt-1">El manifiesto guarda el texto común del contrato; esta versión no tiene paso de calibración.</p>{% endif %}
+    </div></div>
+</div>
+<div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3 mb-3">
+    <h6>Entrenamiento</h6>
+    {% set det = a.entrenamiento.detalle %}
+    <dl class="row small mb-2">
+        <dt class="col-sm-4">Objetivos de ajuste</dt><dd class="col-sm-8">{% if det.objetivos_de_ajuste %}{{ det.objetivos_de_ajuste[0] }}–{{ det.objetivos_de_ajuste[1] }} ({{ det.objetivos_de_ajuste[2] }}){% else %}—{% endif %}{% if det.objetivos_base %}; base {{ det.objetivos_base[0] }}–{{ det.objetivos_base[1] }}, calibración {{ det.objetivos_de_calibracion[0] }}–{{ det.objetivos_de_calibracion[1] }}{% endif %}{% if det.frontera_base_calibracion %}; frontera base/calibración {{ det.frontera_base_calibracion }}{% endif %}</dd>
+        <dt class="col-sm-4">Calibración</dt><dd class="col-sm-8">{{ ident.entrenamiento.calibracion }}</dd>
+        <dt class="col-sm-4">Selección de parámetros</dt><dd class="col-sm-8">{{ ident.entrenamiento.seleccion }}</dd>
+        <dt class="col-sm-4">Parámetros ajustados</dt><dd class="col-sm-8">{% for k, v in a.entrenamiento.parametros_ajustados.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+        <dt class="col-sm-4">Perfil · semilla · hilos</dt><dd class="col-sm-8">{{ ident.perfil }} · {{ ident.semilla }} · {{ ident.hilos }}</dd>
+    </dl>
+    {% if det.seleccion %}{% set sel = det.seleccion %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0"><caption class="small">Selección interna: ajuste con {{ sel.objetivos_de_seleccion[0] }}–{{ sel.objetivos_de_seleccion[1] }}, validación con {{ sel.objetivos_de_validacion[0] }}–{{ sel.objetivos_de_validacion[1] }} ({{ sel.criterio }}); {% if etapas.calibrado %}siempre antes de la calibración y del corte{% else %}siempre antes del corte; este modelo no tiene calibración: sus intensidades se transforman en probabilidades con código versionado{% endif %}.</caption>
+        <thead><tr><th>Punto de la rejilla</th><th class="text-end">Pérdida de validación</th><th>Estado</th></tr></thead><tbody>
+        {% for p in sel.puntos %}<tr><td>{% for k, v in p.parametros.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}{% if p.parametros == sel.elegidos %} <span class="badge bg-primary">elegido</span>{% endif %}</td><td class="text-end">{{ '%.6f'|format(p.log_loss) if p.log_loss is not none else '—' }}</td><td>{{ p.estado|replace('_', ' ') }}</td></tr>{% endfor %}
+    </tbody></table></div>{% endif %}
+</div>
+<div class="card stat-card impresion-fragmentable laboratorio-tarjeta p-3 mb-3">
+    <h6>Pronósticos de esta versión</h6>
+    {% if f.pronosticos %}<div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>Objetivo</th><th>Corte de entrada</th><th>Generado</th><th></th></tr></thead><tbody>
+        {% for x in f.pronosticos %}<tr><td>{{ x.objetivo }}</td><td>{{ x.corte }}</td><td>{{ x.generado_en[:19]|replace('T', ' ') }} UTC</td><td><a href="/laboratorio/pronosticos/{{ x.clave }}">abrir</a></td></tr>{% endfor %}
+    </tbody></table></div>
+    <p class="small text-muted mt-2 mb-0">Línea <code>{{ f.linea }}</code>: separada de las líneas que reentrenan, así que su seguimiento mide solo esta versión congelada.</p>
+    {% else %}<p class="small text-muted mb-0">Aún no hay pronósticos generados con esta versión.</p>{% endif %}
+    <p class="small mb-0 mt-2"><strong>Pronóstico de control</strong> (objetivo {{ a.control.objetivo }}, calculado antes de guardar y comprobado tras recargar): {% for c in a.control.primeros %}{{ c[0]|join(' ') if c[0] is iterable and c[0] is not string else c[0] }} ({{ '%.4f'|format(c[1]) }}){% if not loop.last %} · {% endif %}{% endfor %}.</p>
+</div>
+{% set trazabilidad %}<dl class="row mb-2 mt-2">
+        <dt class="col-sm-4">Clave de la versión</dt><dd class="col-sm-8"><code>{{ clave }}</code></dd>
+        <dt class="col-sm-4">Estimador</dt><dd class="col-sm-8">{{ a.estimador.clase }} · {{ a.estimador.bytes }} bytes · {{ a.estimador.formato }}<br><code>{{ a.estimador.sha256 }}</code></dd>
+        <dt class="col-sm-4">Huella del histórico</dt><dd class="col-sm-8"><code>{{ ident.sha256_historico }}</code></dd>
+        <dt class="col-sm-4">Informe de procedencia</dt><dd class="col-sm-8"><code>{{ a.procedencia.experimento }}</code></dd>
+        <dt class="col-sm-4">Receta</dt><dd class="col-sm-8">{{ ident.modelo.id }} v{{ ident.modelo.version }} ({{ ident.modelo.familia }}, {{ ident.modelo.salida|replace('_', ' ') }})</dd>
+        <dt class="col-sm-4">Entorno de entrenamiento</dt><dd class="col-sm-8">{% for k, v in ident.entorno.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>
+        <dt class="col-sm-4">Compatibilidad</dt><dd class="col-sm-8">{{ comp.politica }}</dd>
+        <dt class="col-sm-4">Tablas de la Fase 1</dt><dd class="col-sm-8">modelos: {{ f.proyeccion.modelos.nombre_modelo }} {{ f.proyeccion.modelos.version }}, {{ f.proyeccion.modelos.metodo_validacion }} · metricas_modelo: {% for m in f.proyeccion.metricas_modelo %}{{ m.nombre_metrica }}={{ '%.5f'|format(m.valor) }}{% if not loop.last %}, {% endif %}{% endfor %}. {{ f.proyeccion.nota }}</dd>
+    </dl>{% endset %}
+<details class="card stat-card p-3 mb-3 small laboratorio-desplegable"><summary><strong>Trazabilidad</strong></summary>{{ trazabilidad }}</details>
+<div class="card stat-card p-3 mb-3 small laboratorio-solo-impresion"><strong>Trazabilidad</strong>{{ trazabilidad }}</div>
+{% endblock %}

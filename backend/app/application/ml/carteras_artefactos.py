@@ -121,8 +121,11 @@ def _historico(instantanea: lv.Instantanea) -> dict:
             "sorteos": lv.sorteos_canonicos(instantanea)}
 
 
-def receta_del_modelo(juego: str, modelo: str, perfil: str) -> dict:
-    """Receta de un modelo admitido para carteras (identidad de entrada)."""
+def receta_del_modelo(juego: str, modelo: str, perfil: str, registrado: dict | None = None) -> dict:
+    """Receta de un modelo admitido para carteras (identidad de entrada).
+    Fase 3: `registrado` ({clave, numero, sha256_estimador,
+    corte_de_entrenamiento}) fija una version registrada CONGELADA del modelo;
+    sin el, la receta es la de siempre (reentrena con la instantanea)."""
     if modelo not in ce.modelos_de_cartera(juego):
         raise ArtefactoCarterasError(f"modelo no admitido para {juego}: {modelo!r}")
     if modelo == ce.ID_ENSEMBLE:
@@ -132,7 +135,10 @@ def receta_del_modelo(juego: str, modelo: str, perfil: str) -> dict:
                                  "parametros": lm.parametros_de(lm.CATALOGO[c], perfil)} for c in ce.COMPONENTES[juego]],
                 "pesos": {"bloque_interno": protocolo.bloque_interno, "malla": protocolo.como_dict()["malla"]}}
     e = lm.CATALOGO[modelo]
-    return {"id": e.id, "version": e.version, "tipo": e.tipo, "parametros": lm.parametros_de(e, perfil)}
+    receta = {"id": e.id, "version": e.version, "tipo": e.tipo, "parametros": lm.parametros_de(e, perfil)}
+    if registrado is not None:
+        receta["registrado"] = dict(registrado)
+    return receta
 
 
 def descripcion_del_modelo(juego: str, modelo: str, perfil: str) -> dict:
@@ -152,7 +158,7 @@ def identidad_de_comparacion(instantanea: lv.Instantanea, protocolo: ce.Protocol
             "corte": instantanea.corte, "sha256_historico": instantanea.huella(),
             "version_de_variables": lv.VERSION_VARIABLES,
             "candidatos": [{"id": e.id, "version": e.version, "parametros": lm.parametros_de(e, protocolo.perfil)}
-                           for e in lm.candidatos_del_juego(codigo)]
+                           for e in ce.candidatos_de_comparacion(codigo)]
             + [receta_del_modelo(codigo, ce.ID_ENSEMBLE, protocolo.perfil)],
             "protocolo": protocolo.como_dict(), "transformaciones": _transformaciones(),
             "semilla": lm.SEMILLA, "hilos": lm.HILOS, "entorno": entorno()}
@@ -181,12 +187,12 @@ def comprobar_recetas(artefacto: dict) -> None:
     if identidad["esquema"] == ESQUEMA_COMPARACION:
         perfil = identidad["protocolo"]["perfil"]
         esperado = [{"id": e.id, "version": e.version, "parametros": lm.parametros_de(e, perfil)}
-                    for e in lm.candidatos_del_juego(juego)] + [receta_del_modelo(juego, ce.ID_ENSEMBLE, perfil)]
+                    for e in ce.candidatos_de_comparacion(juego)] + [receta_del_modelo(juego, ce.ID_ENSEMBLE, perfil)]
         if identidad["candidatos"] != esperado:
             raise ArtefactoCarterasError("las recetas de la comparacion no coinciden con este catalogo")
         return
     modelo = identidad["modelo"]
-    if modelo != receta_del_modelo(juego, modelo["id"], identidad["perfil"]):
+    if modelo != receta_del_modelo(juego, modelo["id"], identidad["perfil"], modelo.get("registrado")):
         raise ArtefactoCarterasError(f"la receta {modelo['id']} v{modelo['version']} no esta en este catalogo")
 
 
@@ -209,23 +215,28 @@ def comparar_reproduccion(guardado: dict, recalculado: dict) -> dict:
 # Carteras
 # ---------------------------------------------------------------------------
 
-def linea_de(juego: str, modelo: str, perfil: str, cantidad: int, diversidad: str, semilla: int) -> dict:
+def linea_de(juego: str, modelo: str, perfil: str, cantidad: int, diversidad: str, semilla: int,
+             registrado: dict | None = None) -> dict:
     receta = receta_del_modelo(juego, modelo, perfil)
     sufijo = "" if perfil == "predeterminado" else f"-{perfil}"
-    return {"id": f"{modelo}-v{receta['version']}-n{cantidad}-{diversidad}-s{semilla}{sufijo}", "modelo": modelo,
-            "version": receta["version"], "perfil": perfil, "cantidad": cantidad, "diversidad": diversidad,
-            "semilla": semilla, "juego": juego}
+    version = f"{receta['version']}-reg{registrado['numero']}" if registrado else receta["version"]
+    linea = {"id": f"{modelo}-v{version}-n{cantidad}-{diversidad}-s{semilla}{sufijo}", "modelo": modelo,
+             "version": receta["version"], "perfil": perfil, "cantidad": cantidad, "diversidad": diversidad,
+             "semilla": semilla, "juego": juego}
+    if registrado:
+        linea["registrado"] = {"clave": registrado["clave"], "numero": registrado["numero"]}
+    return linea
 
 
 def identidad_de_cartera(instantanea: lv.Instantanea, modelo: str, perfil: str, cantidad: int, semilla: int,
-                         diversidad: str) -> dict:
+                         diversidad: str, registrado: dict | None = None) -> dict:
     cantidad, semilla, diversidad = cc.validar_parametros(cantidad, semilla, diversidad)
     reglas = instantanea.reglas
     salida = {"esquema": ESQUEMA_CARTERA, "implementacion": VERSION_IMPLEMENTACION, "juego": instantanea.codigo,
               "reglas": reglas.como_dict(), "paleta_del_corte": list(instantanea.paleta()),
               "corte": instantanea.corte, "objetivo": instantanea.corte + 1, "sha256_historico": instantanea.huella(),
               "version_de_variables": lv.VERSION_VARIABLES, "perfil": perfil,
-              "modelo": receta_del_modelo(instantanea.codigo, modelo, perfil),
+              "modelo": receta_del_modelo(instantanea.codigo, modelo, perfil, registrado),
               "cartera": {"cantidad": cantidad, "semilla": semilla, "diversidad": diversidad,
                           "limite_de_diversidad": (cc.LIMITE_COINCIDENCIAS_COLORLOTO if reglas.colores
                                                    else cc.LIMITE_NUMEROS_COMPARTIDOS),
@@ -259,9 +270,9 @@ def cuerpo_de_cartera(instantanea: lv.Instantanea, identidad: dict, fuente: dict
     metricas = cc.metricas_de_cartera(construccion["combinaciones"], juego, fuente)
     return {"esquema": ESQUEMA_CARTERA, "clave_de_entrada": huella(identidad), "identidad": identidad,
             "linea": linea_de(juego, modelo, identidad["perfil"], parametros["cantidad"], parametros["diversidad"],
-                              parametros["semilla"]),
+                              parametros["semilla"], identidad["modelo"].get("registrado")),
             "estado_de_uso": ESTADO_DE_USO, "contexto": contexto(), "juego": juego,
-            "modelo": descripcion_del_modelo(juego, modelo, identidad["perfil"]),
+            "modelo": _descripcion_con_registro(juego, modelo, identidad),
             "datos": {"corte": instantanea.corte, "sha256_historico": instantanea.huella(), "sorteos": len(instantanea),
                       "ultima_fecha": instantanea.sorteos[-1].fecha.isoformat(),
                       "paleta_del_corte": list(instantanea.paleta())},
@@ -273,6 +284,12 @@ def cuerpo_de_cartera(instantanea: lv.Instantanea, identidad: dict, fuente: dict
                         "metricas": metricas, "nota": cc.NOTA_CONSTRUCCION,
                         "aviso": ("Una cartera no es un resultado real del sorteo ni una lista de numeros "
                                   "garantizados; no se presenta ninguna probabilidad del premio mayor.")}}
+
+
+def _descripcion_con_registro(juego: str, modelo: str, identidad: dict) -> dict:
+    descripcion = descripcion_del_modelo(juego, modelo, identidad["perfil"])
+    registrado = identidad["modelo"].get("registrado")
+    return descripcion if registrado is None else {**descripcion, "registrado": registrado}
 
 
 def comparar_cartera(guardado: dict, recalculado: dict) -> dict:
@@ -359,13 +376,19 @@ def cuerpo_de_simulacion(identidad: dict, elegida: dict, uniforme: dict, avance=
 # ---------------------------------------------------------------------------
 
 def cuerpo_de_configuracion(juego: str, version: int, modelo: str, perfil: str, cantidad: int, diversidad: str,
-                            semilla: int) -> dict:
+                            semilla: int, registrado: dict | None = None) -> dict:
+    """Fase 3: con `registrado`, la configuracion elige una version registrada
+    congelada (la operacion diaria la recarga sin reentrenar). Sin el, el cuerpo
+    es identico al de Producto 5."""
     cantidad, semilla, diversidad = cc.validar_parametros(cantidad, semilla, diversidad)
     receta = receta_del_modelo(juego, modelo, perfil)
+    elegido = {"id": modelo, "version": receta["version"]}
+    if registrado is not None:
+        elegido["registrado"] = dict(registrado)
     return {"esquema": ESQUEMA_CONFIGURACION, "juego": juego, "version": version,
-            "modelo": {"id": modelo, "version": receta["version"]}, "perfil": perfil, "cantidad": cantidad,
+            "modelo": elegido, "perfil": perfil, "cantidad": cantidad,
             "diversidad": diversidad, "semilla": semilla,
-            "linea": linea_de(juego, modelo, perfil, cantidad, diversidad, semilla)["id"],
+            "linea": linea_de(juego, modelo, perfil, cantidad, diversidad, semilla, registrado)["id"],
             "nota": ("Configuracion explicita de quien la guardo. No elige el modelo con mejor perdida ni cambia los "
                      "modelos predeterminados de Producto 3.")}
 

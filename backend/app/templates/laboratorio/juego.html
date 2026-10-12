@@ -4,7 +4,8 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
     <h3 class="mb-0">Laboratorio · {{ nombres[juego] }}</h3>
-    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/laboratorio">Laboratorio</a>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="/laboratorio">Laboratorio</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio/modelos?juego={{ slugs[juego] }}">Modelos registrados</a>
         {% if d.lineas %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slugs[juego] }}/seguimiento">Seguimiento</a>{% endif %}</div>
 </div>
 {% include "laboratorio/_aviso.html" %}
