@@ -442,11 +442,14 @@ def abrir_lectura_del_laboratorio():
 
 
 def get_laboratorio() -> LaboratorioDeModelos:
-    directorio = get_settings().directorio_laboratorio_modelos
+    """Fase 3: el mismo almacen guarda los modelos registrados; cada trabajo del
+    proceso trabajador tiene un tiempo maximo (`TIEMPO_MAXIMO_TRABAJADOR_LABORATORIO`)."""
+    settings = get_settings()
+    directorio = settings.directorio_laboratorio_modelos
     operacion = f"{directorio}/operacion"
     return LaboratorioDeModelos(LaboratorioFileStore(directorio), RegistroEjecucionesArchivo(operacion),
                                 CerrojoPorJuego(operacion), abrir_lectura_del_laboratorio,
-                                ejecutor=EjecutorEnProceso())
+                                ejecutor=EjecutorEnProceso(tiempo_maximo=settings.tiempo_maximo_trabajador_laboratorio))
 
 
 def _lanzar_comparacion_en_hilo(funcion, inicio) -> None:
@@ -472,7 +475,8 @@ def get_carteras() -> CarterasDeModelos:
     operacion = f"{directorio}/operacion"
     return CarterasDeModelos(CarterasFileStore(directorio), RegistroEjecucionesArchivo(operacion),
                              CerrojoPorJuego(operacion), abrir_lectura_del_laboratorio,
-                             ejecutor=EjecutorCarterasEnProceso(settings.tiempo_maximo_trabajador_carteras))
+                             ejecutor=EjecutorCarterasEnProceso(settings.tiempo_maximo_trabajador_carteras),
+                             modelos=LaboratorioFileStore(settings.directorio_laboratorio_modelos))
 
 
 def _lanzar_carteras_en_hilo(funcion, inicio) -> None:

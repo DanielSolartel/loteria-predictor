@@ -21,6 +21,11 @@ class TrabajadorFallidoError(Exception):
     interrumpido o fallo de forma inesperada)."""
 
 
+class TiempoAgotadoError(TrabajadorFallidoError):
+    """El trabajador supero su tiempo maximo y se detuvo (estado
+    `tiempo_agotado`). Nada se publico. Comun a Productos 4 y 5."""
+
+
 class EjecutorDeLaboratorio(ABC):
     @abstractmethod
     def evaluar(self, instantanea, entradas, protocolo, avance: Callable[..., None] | None = None) -> tuple[dict, dict]:
@@ -29,3 +34,17 @@ class EjecutorDeLaboratorio(ABC):
     @abstractmethod
     def pronostico(self, informe: dict, entrada) -> dict:
         """Cuerpo de `laboratorio_artefactos.cuerpo_del_pronostico`."""
+
+    def entrenar(self, informe: dict, entrada, avance: Callable[..., None] | None = None) -> dict:
+        """Fase 3: resultado de `modelos_registrados.entrenar` (estimador
+        serializado, detalle y pronostico de control). No escribe nada."""
+        raise NotImplementedError
+
+    def control_registrado(self, artefacto: dict, estimador: bytes, informe: dict) -> dict:
+        """Fase 3: `modelos_registrados.control_recargado` (verificacion)."""
+        raise NotImplementedError
+
+    def pronostico_registrado(self, artefacto: dict, estimador: bytes, sorteos: list) -> dict:
+        """Fase 3: cuerpo de `modelos_registrados.cuerpo_del_pronostico_registrado`
+        con el estimador recargado (sin reentrenar) y la instantanea canonica."""
+        raise NotImplementedError

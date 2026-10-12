@@ -51,6 +51,23 @@ las clases necesarias, que produce valores no finitos o que no alcanza su
 muestra minima lanza `CandidatoNoDisponible` con su estado; nunca se
 sustituye por la uniforme conservando la etiqueta del modelo.
 
+BOSQUES (Fase 3). Random Forest y Extra Trees con las mismas variables:
+- numeros: clasificadores de aparicion con la misma calibracion sigmoide
+  cronologica y el mismo ajuste de cardinalidad que los modelos binarios;
+- ColorLoto: regresores con criterio de Poisson sobre el CONTEO de cada par
+  numero-color por sorteo (0 a 6, con multiplicidad), cuya intensidad se
+  normaliza igual que la de los modelos Poisson. Se conserva la
+  representacion por pares y la suposicion multinomial de Producto 2.
+SELECCION DE PARAMETROS (solo bosques). Cada ajuste elige `max_depth` y
+`min_samples_leaf` de una rejilla fija con una validacion cronologica
+INTERNA: los ultimos max(10, 25 %) objetivos del bloque base (numeros) o del
+ajuste (ColorLoto) validan cada punto ajustado con los objetivos anteriores;
+gana la menor Log Loss (empate: primer punto de la rejilla). Despues se
+reajusta con el punto elegido sobre todo el bloque base (y se calibra con el
+bloque de calibracion). Solo usa objetivos anteriores al corte de ajuste:
+nunca el bloque que se evalua. Las recetas anteriores conservan sus
+parametros fijos (asi se siguen reproduciendo los informes guardados).
+
 Hilos: estas funciones NO cambian los hilos de las bibliotecas numericas del
 proceso que las llama (el limite de threadpoolctl es de proceso: tomado en el
 proceso web alteraria el entorno numerico compartido con Producto 3). El
@@ -60,6 +77,7 @@ si mismo.
 """
 from __future__ import annotations
 
+import itertools
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from types import MappingProxyType
@@ -87,6 +105,11 @@ SEMILLA = 42
 OBSERVADOR_DE_AJUSTE = None
 """Gancho opcional (pruebas): `f(id, posicion_de_corte, objetivos_base,
 objetivos_de_calibracion, filas)` antes de cada ajuste de un modelo nuevo."""
+OBSERVADOR_DE_SELECCION = None
+"""Gancho opcional (pruebas): `f(id, posicion_de_corte, objetivos_de_seleccion,
+objetivos_de_validacion)` antes de la seleccion interna de un bosque."""
+OBJETIVOS_DE_VALIDACION = 10
+"""Minimo de objetivos de la validacion interna de la seleccion (bosques)."""
 PERFILES = ("predeterminado", "reducido")
 """`reducido` solo baja las iteraciones del boosting (pruebas de integracion);
 forma parte de la identidad de la receta y del experimento."""
@@ -138,6 +161,10 @@ _VARS_COL = "par (categoria), " + ", ".join(lv.NOMBRES_VARIABLES_COLORLOTO[1:]) 
 _CARD = ("calibracion sigmoide cronologica y ajuste de cardinalidad: desplazamiento comun de logits por "
          "biseccion para que las marginales sumen 5 (epsilon 1e-6)")
 _NORM = "intensidades Poisson normalizadas: p = (lambda + 1e-6) / suma; sin calibracion sigmoide"
+SELECCION_DESCRIPCION = ("rejilla fija; validacion cronologica interna con los ultimos max(10, 25%) objetivos del bloque base "
+              "(numeros) o del ajuste (ColorLoto); criterio Log Loss; empate: primer punto")
+_P_BOSQUE = {"n_estimators": 100, "max_features": "sqrt", "random_state": SEMILLA, "n_jobs": 1,
+             "rejilla": {"max_depth": [4, 8], "min_samples_leaf": [20, 80]}, "seleccion": SELECCION_DESCRIPCION}
 
 CATALOGO = MappingProxyType({e.id: e for e in (
     EntradaCatalogo(
@@ -205,7 +232,56 @@ CATALOGO = MappingProxyType({e.id: e for e in (
         MappingProxyType({**_P_ARBOL, "loss": "poisson", "par": "categoria nativa (no vista = ausente)"}),
         MappingProxyType(_REQ_NUEVO_CONTEO),
         "Arboles pequenos con perdida de Poisson que aprenden la intensidad de conteo de cada par.", _NORM),
+    # Fase 3: bosques (al final, para no cambiar el orden de las entradas anteriores)
+    EntradaCatalogo(
+        "random_forest_clasificador", "1", "Random Forest (clasificacion)", "modelo_nuevo", "bosques", NUMERICOS,
+        "marginales_de_aparicion", _VARS_NUM,
+        MappingProxyType({**_P_BOSQUE, "bootstrap": True, "criterion": "gini",
+                          "candidato": "codigo ordinal (no visto = ausente)"}),
+        MappingProxyType(_REQ_NUEVO_BINARIO),
+        "Promedia muchos arboles entrenados con remuestreos de los objetivos de ajuste y subconjuntos de variables. "
+        "Profundidad y hoja minima se eligen con una validacion cronologica interna. No aprende la superbalota.",
+        _CARD),
+    EntradaCatalogo(
+        "extra_trees_clasificador", "1", "Extra Trees (clasificacion)", "modelo_nuevo", "bosques", NUMERICOS,
+        "marginales_de_aparicion", _VARS_NUM,
+        MappingProxyType({**_P_BOSQUE, "bootstrap": False, "criterion": "gini",
+                          "candidato": "codigo ordinal (no visto = ausente)"}),
+        MappingProxyType(_REQ_NUEVO_BINARIO),
+        "Como Random Forest, pero con cortes elegidos al azar en cada variable (mas variedad, menos varianza). "
+        "Profundidad y hoja minima se eligen con una validacion cronologica interna. No aprende la superbalota.",
+        _CARD),
+    EntradaCatalogo(
+        "random_forest_poisson", "1", "Random Forest (conteos Poisson)", "modelo_nuevo", "bosques", ("COLORLOTO",),
+        "distribucion_de_pares", _VARS_COL,
+        MappingProxyType({**_P_BOSQUE, "bootstrap": True, "criterion": "poisson",
+                          "par": "codigo ordinal del par (no visto = ausente)"}),
+        MappingProxyType(_REQ_NUEVO_CONTEO),
+        "Regresion con criterio de Poisson sobre cuantas veces aparece cada par numero-color en un sorteo (0 a 6, con "
+        "repeticion): el objetivo es un conteo no negativo. La intensidad se normaliza a una distribucion de pares.",
+        _NORM),
+    EntradaCatalogo(
+        "extra_trees_poisson", "1", "Extra Trees (conteos Poisson)", "modelo_nuevo", "bosques", ("COLORLOTO",),
+        "distribucion_de_pares", _VARS_COL,
+        MappingProxyType({**_P_BOSQUE, "bootstrap": False, "criterion": "poisson",
+                          "par": "codigo ordinal del par (no visto = ausente)"}),
+        MappingProxyType(_REQ_NUEVO_CONTEO),
+        "Extra Trees con criterio de Poisson sobre el conteo de cada par numero-color por sorteo; la intensidad se "
+        "normaliza a una distribucion de pares.", _NORM),
 )})
+
+FAMILIAS_FUTURAS = MappingProxyType({
+    "xgboost": "Gradient boosting de XGBoost: extension futura (dependencia nueva; HistGradientBoosting cubre el "
+               "boosting de arboles).",
+    "lightgbm": "LightGBM: extension futura (dependencia nueva).",
+    "redes_neuronales": "Redes neuronales: extension futura; con unos cientos de sorteos por juego el riesgo de "
+                        "sobreajuste es alto.",
+    "bayesianos": "Modelos bayesianos jerarquicos: extension futura (la multinomial suavizada de ColorLoto es una "
+                  "estimacion puntual Dirichlet, no un modelo bayesiano completo).",
+    "markov": "Cadenas de Markov sobre transiciones entre sorteos: extension futura.",
+})
+"""Familias del ROADMAP que NO estan implementadas. Se listan para no
+declararlas hechas; no forman parte del catalogo ni de ninguna comparacion."""
 
 
 def candidatos_del_juego(codigo: str) -> list[EntradaCatalogo]:
@@ -216,7 +292,30 @@ def parametros_de(entrada: EntradaCatalogo, perfil: str) -> dict:
     parametros = dict(entrada.parametros)
     if perfil == "reducido" and entrada.familia == "arboles":
         parametros["max_iter"] = 10
+    if perfil == "reducido" and entrada.familia == "bosques":
+        parametros["n_estimators"] = 10
+        parametros["rejilla"] = {"max_depth": [4, 8], "min_samples_leaf": [20]}
     return parametros
+
+
+def registrable(entrada: EntradaCatalogo) -> bool:
+    """Se puede guardar como modelo entrenado (Fase 3): tiene parametros
+    aprendidos por un estimador. Las uniformes y las formulas de conteo
+    (frecuencia contraida, multinomial suavizada) se recalculan en cada
+    pronostico y no tienen estimador que congelar."""
+    return entrada.tipo == "modelo_nuevo" or entrada.id == "actual_logistica_ae36"
+
+
+def puntos_de_rejilla(rejilla: dict) -> list[dict]:
+    """Puntos de la rejilla en orden estable (claves ordenadas, valores en su orden)."""
+    claves = sorted(rejilla)
+    return [dict(zip(claves, valores)) for valores in itertools.product(*(rejilla[k] for k in claves))]
+
+
+def parametros_concretos(parametros: dict, punto: dict | None = None) -> dict:
+    """Parametros que recibe el estimador: sin la rejilla ni los textos, con el punto elegido."""
+    concretos = {k: v for k, v in parametros.items() if k not in ("rejilla", "seleccion", "candidato", "par")}
+    return {**concretos, **(punto or {})}
 
 
 # ---------------------------------------------------------------------------
@@ -295,12 +394,17 @@ def division_de_calibracion(objetivos: Sequence[int]) -> tuple[list[int], list[i
 class Ajustado:
     """Candidato ya ajustado con datos anteriores a un corte de ajuste."""
 
-    def __init__(self, entrada: EntradaCatalogo, predecir, detalle: dict, estimador=None):
+    def __init__(self, entrada: EntradaCatalogo, predecir, detalle: dict, estimador=None,
+                 parametros: dict | None = None):
         self.entrada = entrada
         self._predecir = predecir
         self.detalle = detalle
         self.estimador = estimador
-        """Estimador de scikit-learn ajustado (modelos nuevos), para inspeccion."""
+        """Estimador ajustado (modelos nuevos: scikit-learn; AE-36: `ModeloEntrenado`).
+        Es lo que el registro de modelos (Fase 3) congela."""
+        self.parametros = parametros
+        """Parametros concretos con los que se ajusto el estimador (con el punto
+        elegido por la seleccion interna, si la hubo)."""
 
     def predecir(self, filas: lv.Filas) -> np.ndarray:
         """Probabilidad final de cada fila (marginal o de par normalizada por
@@ -387,7 +491,74 @@ def _ajustar_ae36(entrada, instantanea, variables, posicion_de_corte) -> Ajustad
         return np.array(predecir_probabilidades(modelo, filas))
     objetivos = sorted({f.sorteo_objetivo for f in entrenamiento})
     return Ajustado(entrada, predecir, {"objetivos_de_ajuste": [objetivos[0], objetivos[-1], len(objetivos)],
-                                        "frontera_base_calibracion": modelo.frontera_base_calibracion})
+                                        "frontera_base_calibracion": modelo.frontera_base_calibracion},
+                    modelo, dict(entrada.parametros))
+
+
+def inferir(estimador, salida: str, filas: lv.Filas, cantidad: int) -> np.ndarray:
+    """Probabilidad final de cada fila con un estimador YA ajustado (sin
+    reajustar nada): numeros -> probabilidad de la clase 1 y ajuste de
+    cardinalidad por objetivo; pares -> intensidad normalizada por objetivo.
+    La usan la evaluacion, los pronosticos y los modelos registrados
+    recargados (Fase 3), asi que las tres aplican la misma transformacion."""
+    if salida == "distribucion_de_pares":
+        return _por_objetivo(filas, normalizar_intensidades)(estimador.predict(filas.X))
+    indice = list(estimador.classes_).index(1)
+    crudas = estimador.predict_proba(filas.X)[:, indice]
+    return _por_objetivo(filas, lambda v: ajustar_cardinalidad(v, cantidad))(crudas)
+
+
+def division_de_seleccion(objetivos: Sequence[int]) -> tuple[list[int], list[int]]:
+    """(ajuste, validacion) internos de la seleccion, por sorteo completo y en
+    orden cronologico: la validacion son los ultimos max(10, round(0.25 N))."""
+    ordenados = sorted(set(objetivos))
+    n_val = max(OBJETIVOS_DE_VALIDACION, round(0.25 * len(ordenados)))
+    return ordenados[:len(ordenados) - n_val], ordenados[len(ordenados) - n_val:]
+
+
+def _perdida_de_validacion(salida: str, filas: lv.Filas, p: np.ndarray) -> float:
+    """Log Loss binaria media por fila (numeros) o Log Loss por balota (pares)."""
+    p = np.clip(p, EPSILON, 1 - EPSILON)
+    if salida == "distribucion_de_pares":
+        return float(-(filas.y * np.log(p)).sum() / filas.y.sum())
+    return float(-np.mean(filas.y * np.log(p) + (1 - filas.y) * np.log1p(-p)))
+
+
+def _seleccionar(entrada: EntradaCatalogo, parametros: dict, filas: lv.Filas, objetivos: list[int],
+                 posicion_de_corte: int, cantidad: int) -> tuple[dict, dict]:
+    """Elige el punto de la rejilla con objetivos ANTERIORES al corte de ajuste
+    (`objetivos`: base de los binarios o ajuste de los conteos)."""
+    ajuste, validacion = division_de_seleccion(objetivos)
+    if len(ajuste) < OBJETIVOS_DE_VALIDACION:
+        raise CandidatoNoDisponible("muestra_insuficiente", f"la seleccion interna necesita {OBJETIVOS_DE_VALIDACION} "
+                                    f"objetivos de ajuste antes de su validacion; hay {len(ajuste)}")
+    if OBSERVADOR_DE_SELECCION is not None:
+        OBSERVADOR_DE_SELECCION(entrada.id, posicion_de_corte, ajuste, validacion)
+    filas_ajuste = filas.seleccionar(np.isin(filas.objetivos, ajuste))
+    filas_validacion = filas.seleccionar(np.isin(filas.objetivos, validacion))
+    puntos = []
+    for punto in puntos_de_rejilla(parametros["rejilla"]):
+        modelo = pipeline_laboratorio(entrada.familia, entrada.id, parametros_concretos(parametros, punto))
+        y = filas_ajuste.y if entrada.salida == "distribucion_de_pares" else filas_ajuste.y.astype(int)
+        try:
+            if entrada.salida != "distribucion_de_pares" and len(set(y.tolist())) < 2:
+                raise CandidatoNoDisponible("clase_insuficiente", "el ajuste interno no tiene las dos clases")
+            _ajustar(modelo, filas_ajuste.X, y)
+            perdida = _perdida_de_validacion(entrada.salida, filas_validacion,
+                                             inferir(modelo, entrada.salida, filas_validacion, cantidad))
+        except CandidatoNoDisponible as error:
+            puntos.append({"parametros": punto, "estado": error.estado, "log_loss": None})
+            continue
+        puntos.append({"parametros": punto, "estado": "evaluado", "log_loss": round(perdida, 12)})
+    evaluados = [p for p in puntos if p["estado"] == "evaluado"]
+    if not evaluados:
+        raise CandidatoNoDisponible("fallo_de_ajuste", "ningun punto de la rejilla se pudo ajustar en la seleccion")
+    elegido = min(evaluados, key=lambda p: p["log_loss"])  # min devuelve el primero ante empate
+    return elegido["parametros"], {
+        "objetivos_de_seleccion": [ajuste[0], ajuste[-1], len(ajuste)],
+        "objetivos_de_validacion": [validacion[0], validacion[-1], len(validacion)],
+        "criterio": "Log Loss por balota" if entrada.salida == "distribucion_de_pares" else "Log Loss por fila",
+        "puntos": puntos, "elegidos": elegido["parametros"]}
 
 
 def _ajustar_nuevo(entrada, instantanea, variables, posicion_de_corte, perfil) -> Ajustado:
@@ -401,16 +572,19 @@ def _ajustar_nuevo(entrada, instantanea, variables, posicion_de_corte, perfil) -
     filas = variables.de_ajuste(posicion_de_corte)
     numeros = [instantanea.sorteos[i].numero_sorteo for i in posiciones]
     detalle = {"objetivos_de_ajuste": [numeros[0], numeros[-1], len(numeros)]}
-    modelo = pipeline_laboratorio(entrada.familia, entrada.id, parametros_de(entrada, perfil))
+    parametros = parametros_de(entrada, perfil)
+    concretos = parametros_concretos(parametros) if "rejilla" in parametros else parametros
     if entrada.salida == "distribucion_de_pares":
+        if "rejilla" in parametros:
+            punto, detalle["seleccion"] = _seleccionar(entrada, parametros, filas, numeros, posicion_de_corte,
+                                                       reglas.cantidad)
+            concretos = parametros_concretos(parametros, punto)
+        modelo = pipeline_laboratorio(entrada.familia, entrada.id, concretos)
         if OBSERVADOR_DE_AJUSTE is not None:
             OBSERVADOR_DE_AJUSTE(entrada.id, posicion_de_corte, sorted(set(filas.objetivos.tolist())), [], filas)
         modelo = _ajustar(modelo, filas.X, filas.y)
-
-        def predecir_pares(f: lv.Filas):
-            intensidades = modelo.predict(f.X)
-            return _por_objetivo(f, normalizar_intensidades)(intensidades)
-        return Ajustado(entrada, predecir_pares, detalle, modelo)
+        return Ajustado(entrada, lambda f: inferir(modelo, entrada.salida, f, reglas.cantidad), detalle, modelo,
+                        concretos)
     y = filas.y.astype(int)
     if len(set(y.tolist())) < 2:
         raise CandidatoNoDisponible("clase_insuficiente", "el ajuste no tiene apariciones y ausencias")
@@ -420,18 +594,19 @@ def _ajustar_nuevo(entrada, instantanea, variables, posicion_de_corte, perfil) -
     en_calibracion = np.isin(filas.objetivos, calibracion)
     if len(set(y[en_calibracion].tolist())) < 2 or len(set(y[~en_calibracion].tolist())) < 2:
         raise CandidatoNoDisponible("clase_insuficiente", "base o calibracion sin las dos clases")
+    if "rejilla" in parametros:  # la calibracion queda fuera de la seleccion
+        punto, detalle["seleccion"] = _seleccionar(entrada, parametros, filas, base, posicion_de_corte,
+                                                   reglas.cantidad)
+        concretos = parametros_concretos(parametros, punto)
+    modelo = pipeline_laboratorio(entrada.familia, entrada.id, concretos)
     if OBSERVADOR_DE_AJUSTE is not None:
         OBSERVADOR_DE_AJUSTE(entrada.id, posicion_de_corte, base, calibracion, filas)
     calibrado = calibrador_cronologico(modelo, en_calibracion.tolist())
     calibrado = _ajustar(calibrado, filas.X, y)
     detalle.update({"objetivos_base": [base[0], base[-1], len(base)],
                     "objetivos_de_calibracion": [calibracion[0], calibracion[-1], len(calibracion)]})
-    indice = list(calibrado.classes_).index(1)
-
-    def predecir_marginales(f: lv.Filas):
-        crudas = calibrado.predict_proba(f.X)[:, indice]
-        return _por_objetivo(f, lambda v: ajustar_cardinalidad(v, reglas.cantidad))(crudas)
-    return Ajustado(entrada, predecir_marginales, detalle, calibrado)
+    return Ajustado(entrada, lambda f: inferir(calibrado, entrada.salida, f, reglas.cantidad), detalle, calibrado,
+                    concretos)
 
 
 def probabilidades_superbalota(previos: Sequence, rango: tuple[int, int]) -> dict:

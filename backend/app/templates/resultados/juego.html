@@ -93,16 +93,16 @@
 <div class="card stat-card impresion-fragmentable p-3 mb-3 resultados-tarjeta" id="historial">
     {% set h = v.historial %}
     <h6 class="resultados-cabecera">Historial de emisiones <span class="small text-muted fw-normal">· {{ h.total }} fila(s) · página {{ h.pagina }} de {{ h.paginas }}</span></h6>
-    <p class="small text-muted mb-1">Una fila por procedencia, línea y objetivo (la primera emisión sellada). Integridad, histórico hasta el corte, resultado observado y admisión son comprobaciones separadas.</p>
+    <p class="small text-muted mb-1">Una fila por procedencia, línea y objetivo (la primera emisión sellada). Integridad, histórico hasta el corte, resultado observado y admisión son comprobaciones separadas.{% if juego == 'COLORLOTO' %} En ColorLoto, «Aciertos» cuenta <strong>pares número-color</strong> coincidentes (con multiplicidad) de los 6 del sorteo.{% endif %}</p>
     <div class="tabla-desplazable"><table class="table table-sm small mb-1">
-        <thead><tr><th>Objetivo</th><th>Línea</th><th>Tipo</th><th>Estado</th><th>Integridad</th><th>Histórico hasta el corte</th><th>Resultado observado</th><th>Fecha</th><th class="text-end">Aciertos</th><th class="text-end">Log Loss</th><th class="text-end">Δ uniforme</th><th>Superbalota</th><th>Original</th></tr></thead><tbody>
+        <thead><tr><th>Objetivo</th><th>Línea</th><th>Tipo</th><th>Estado</th><th>Integridad</th><th>Histórico hasta el corte</th><th>Resultado observado</th><th>Fecha</th><th class="text-end">{{ 'Aciertos (pares número-color)' if juego == 'COLORLOTO' else 'Aciertos' }}</th><th class="text-end">Log Loss</th><th class="text-end">Δ uniforme</th><th>Superbalota</th><th>Original</th></tr></thead><tbody>
         {% for e in h.filas %}<tr>
             <td>{{ e.objetivo }}</td><td>{{ nombres_de_linea.get(e.clave_linea, e.clave_linea) }}{% if e.carteras %}<div class="text-muted">usado por {{ e.carteras|length }} cartera(s)</div>{% endif %}</td>
             <td>{{ e.tipo or '—' }}</td>
             <td>{{ estados.get(e.estado, e.estado) }}{% if e.motivo %}<div class="text-muted">{{ e.motivo|replace('_', ' ') }}</div>{% endif %}</td>
             <td>{{ e.integridad|replace('_', ' ') }}</td><td>{{ (e.historico or '—')|replace('_', ' ') }}</td>
             <td>{{ m.resultado(e.resultado) }}</td><td>{{ e.fecha_sorteo or '—' }}</td>
-            <td class="text-end">{% if e.aciertos is not none %}{{ e.aciertos }} de {{ e.de }}{% else %}—{% endif %}</td>
+            <td class="text-end">{% if e.aciertos is not none %}{{ e.aciertos }} de {{ e.de }}{% if juego == 'COLORLOTO' %} pares{% endif %}{% else %}—{% endif %}</td>
             <td class="text-end">{{ m.num(e.metricas.log_loss if e.metricas else none) }}</td>
             <td class="text-end">{{ m.num(e.metricas.log_loss - e.metricas.log_loss_uniforme if e.metricas else none, '%+.5f') }}</td>
             <td>{% if e.superbalota %}{{ 'acierto' if e.superbalota.acierto else 'no' }} · {{ m.num(e.superbalota.log_loss, '%.4f') }}{% else %}—{% endif %}</td>

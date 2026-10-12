@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block clase_body %} class="producto1-impresion"{% endblock %}
-{% set colores = a.juego == 'COLORLOTO' %}{% set p = a.pronostico %}
+{% set colores = a.juego == 'COLORLOTO' %}{% set p = a.pronostico %}{% set reg = a.identidad.modelo_registrado %}
 {% block title %}Pronóstico del laboratorio — {{ nombres[a.juego] }} {{ p.objetivo }}{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
     <h3 class="mb-0">{{ nombres[a.juego] }} · objetivo {{ p.objetivo }}</h3>
-    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/laboratorio/experimentos/{{ a.experimento }}">Informe del experimento</a>
+    <div class="d-flex flex-wrap gap-2">{% if reg %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/modelo/{{ reg.clave }}">Ficha del modelo (versión {{ reg.numero }})</a>{% endif %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/experimentos/{{ a.experimento }}">Informe {{ 'de procedencia' if reg else 'del experimento' }}</a>
         <a class="btn btn-sm btn-outline-secondary" href="/laboratorio/{{ slugs[a.juego] }}/seguimiento?linea={{ a.linea.id }}">Seguimiento de la línea</a></div>
 </div>
 {% if reutilizado %}<div class="alert alert-info py-2 small">Resultado ya existente: la misma entrada ya se había generado; se muestra el pronóstico guardado sin reentrenar.</div>{% endif %}
+{% if reg %}<div class="alert alert-primary py-2 small">Generado con la <strong>versión registrada {{ reg.numero }}</strong> de {{ a.modelo.nombre }}, recargada y <strong>sin reentrenar</strong>: entrenada hasta el sorteo {{ reg.corte_de_entrenamiento }}; las variables de este objetivo usan los sorteos hasta el {{ p.calculado_hasta_sorteo }}.{% if a.ajuste_final.colores_no_vistos_en_el_entrenamiento %} Colores no vistos al entrenar: {{ a.ajuste_final.colores_no_vistos_en_el_entrenamiento|join(', ') }} (sus pares se codifican como categoría ausente).{% endif %}</div>{% endif %}
 <div class="card stat-card impresion-fragmentable p-3 mb-3 d-flex flex-column">
     <div class="impresion-cabecera"><p class="small mb-1"><strong>{{ a.modelo.nombre }}</strong> <span class="badge {% if a.modelo.tipo == 'referencia' %}bg-secondary{% else %}bg-primary{% endif %}">{{ 'referencia' if a.modelo.tipo == 'referencia' else 'modelo nuevo' }}</span> · línea <code>{{ a.linea.id }}</code> · versión {{ g.version }} de {{ g.versiones }} en este objetivo</p>
         <p class="small mb-2">Objetivo {{ p.objetivo }} · calculado con los sorteos hasta el {{ p.calculado_hasta_sorteo }} ({{ a.datos.sorteos }} sorteos, último del {{ a.datos.ultima_fecha }}).</p></div>
@@ -44,6 +45,7 @@
 {% set trazabilidad %}<dl class="row mb-2 mt-2">
         <dt class="col-sm-4">Clave</dt><dd class="col-sm-8"><code>{{ g.identificador }}</code></dd>
         <dt class="col-sm-4">Experimento</dt><dd class="col-sm-8"><code>{{ a.experimento }}</code></dd>
+        {% if reg %}<dt class="col-sm-4">Modelo registrado</dt><dd class="col-sm-8">versión {{ reg.numero }} · <code>{{ reg.clave }}</code><br>estimador <code>{{ reg.sha256_estimador }}</code> · corte de entrenamiento {{ reg.corte_de_entrenamiento }}</dd>{% endif %}
         <dt class="col-sm-4">Huella del histórico</dt><dd class="col-sm-8"><code>{{ a.datos.sha256_historico }}</code></dd>
         <dt class="col-sm-4">Receta</dt><dd class="col-sm-8">{{ a.modelo.id }} v{{ a.modelo.version }}: {% for k, v in a.modelo.parametros.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}. {{ a.modelo.transformacion }}.</dd>
         <dt class="col-sm-4">Ajuste final</dt><dd class="col-sm-8">{% for k, v in a.ajuste_final.items() %}{{ k|replace('_', ' ') }}: {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>
@@ -52,7 +54,7 @@
     </dl>{% endset %}
 <details class="card stat-card p-3 mb-3 small laboratorio-desplegable"><summary><strong>Trazabilidad</strong></summary>
     {{ trazabilidad }}
-    <form method="post" action="/laboratorio/pronosticos/{{ g.identificador }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-outline-secondary">Verificar (reentrena con la instantánea del experimento)</button></form>
+    <form method="post" action="/laboratorio/pronosticos/{{ g.identificador }}/verificar" class="m-0"><input type="hidden" name="token_local" value="{{ token_local }}"><button class="btn btn-sm btn-outline-secondary">{{ 'Verificar (recarga el modelo registrado; no reentrena)' if reg else 'Verificar (reentrena con la instantánea del experimento)' }}</button></form>
 </details>
 <div class="card stat-card p-3 mb-3 small laboratorio-solo-impresion"><strong>Trazabilidad</strong>
     {{ trazabilidad }}

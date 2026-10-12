@@ -83,3 +83,8 @@ tests/unit/test_fase5_motor.py
 tests/unit/test_fase5_descriptivas.py
 tests/unit/test_fase5_web.py
 tests/unit/test_fase5_pvalores.py
+tests/unit/test_fase3_bosques.py
+tests/unit/test_fase3_registro.py
+tests/unit/test_fase3_integracion.py
+tests/unit/test_fase3_rutas.py
+tests/unit/test_fase3_presentacion.py

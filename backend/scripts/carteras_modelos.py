@@ -10,6 +10,8 @@ Uso (desde `backend`, con `DATABASE_URL` apuntando a la base):
   python -m scripts.carteras_modelos comparar --juego BALOTO --corte 2700 --bloques 3
   python -m scripts.carteras_modelos configurar --juego BALOTO --modelo ensemble_temporal --cantidad 5 \
       --diversidad limitada --semilla 42
+  python -m scripts.carteras_modelos configurar --juego BALOTO --modelo random_forest_clasificador \
+      --registrado <clave del modelo registrado>   (Fase 3: version congelada)
   python -m scripts.carteras_modelos configuracion --juego BALOTO
   python -m scripts.carteras_modelos generar --juego BALOTO --modelo ensemble_temporal [--cantidad 5] \
       [--diversidad libre] [--semilla 42] [--corte 2700]
@@ -30,7 +32,9 @@ Ordenes:
 - `comparar`: compara el modelo combinado con los candidatos de Producto 4
   sobre la muestra comun (corte opcional, solo con un juego; `--bloques`
   1..6). Una entrada identica reutiliza la comparacion guardada.
-- `configurar`: guarda una version nueva e inmutable de la configuracion.
+- `configurar`: guarda una version nueva e inmutable de la configuracion. Con
+  `--registrado` (Fase 3) elige una version registrada congelada del mismo juego
+  y modelo: la operacion diaria la recarga sin reentrenar.
 - `generar`: una cartera con parametros explicitos, o la de la configuracion
   vigente de cada juego (`--configuradas`). Misma entrada -> la misma cartera.
 - `simular`: simula una cartera guardada frente a la cartera uniforme del
@@ -146,7 +150,9 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--cantidad", type=int, default=cc.CANTIDAD_PREDETERMINADA)
     p.add_argument("--diversidad", default="libre", choices=list(cc.DIVERSIDADES))
     p.add_argument("--semilla", type=int, default=cc.SEMILLA_PREDETERMINADA)
-    p.add_argument("--perfil", default="predeterminado", choices=["predeterminado", "reducido"])
+    p.add_argument("--perfil", default=None, choices=["predeterminado", "reducido"],
+                   help="por defecto, el de la version registrada o predeterminado")
+    p.add_argument("--registrado", help="clave de una version registrada del mismo juego y modelo (Fase 3)")
     p = sub.add_parser("configuracion", help="configuracion vigente y versiones de un juego")
     p.add_argument("--juego", required=True, choices=list(JUEGOS))
     p = sub.add_parser("generar", help="genera una cartera (o las configuradas)")
@@ -262,7 +268,7 @@ def _orden(args, servicio, salida, errores) -> int:
         return _trabajo(servicio, "comparacion", juegos, parametros, salida, errores)
     if args.orden == "configurar":
         g = servicio.configurar(args.juego, args.modelo, args.cantidad, args.diversidad, args.semilla, args.perfil,
-                                origen="comando")
+                                origen="comando", registrado=args.registrado)
         _imprimir({"version": g.artefacto["version"], "configuracion": g.artefacto}, salida)
         return EXIT_OK
     if args.orden == "configuracion":

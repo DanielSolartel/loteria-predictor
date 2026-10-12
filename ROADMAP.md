@@ -1,5 +1,45 @@
 # Roadmap del proyecto
 
+## Estado por fase (actualizado en la entrega «Fase 3 — modelos versionados»)
+
+Este resumen no sustituye a las secciones de cada fase, que conservan su historia y su evidencia. Dos estados distintos, siempre por separado:
+
+- **finalización técnica**: la capacidad está implementada y verificada en un entorno concreto;
+- **evidencia de ventaja predictiva**: no existe para ninguna fase. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO de AE-39 vigente y `AUTORIZA_EVALUACION = False`.
+
+| Fase | Implementación | Validación | Pendiente concreto |
+|---|---|---|---|
+| 1. Dominio + MVP HTML | ✅ Completa | Windows con PostgreSQL real; GitHub Actions | — |
+| 2. Adquisición automática de datos | ✅ Completa | Windows con PostgreSQL real; GitHub Actions | — |
+| 3. Machine Learning | 🟢 Ingeniería implementada: variables causales, evaluación temporal común (walk-forward), catálogo de 6 candidatos por juego con Random Forest y Extra Trees, selección de parámetros separada de la evaluación final, métricas principales y secundarias frente a la uniforme y registro de modelos entrenados y versionados que se recargan sin reentrenar ([detalle](#-fase-3--machine-learning-ingeniería-implementada-v2-validada-en-windows-con-histórico-real-ajustes-de-cierre-pendientes-de-validar-sin-ventaja-predictiva-acreditada)) | Linux (Cloud) con fixtures sintéticas: pruebas focales, regresiones, selección de Windows, una suite completa y demostración de los cuatro juegos. Windows (operador, Python 3.14.6): la v2 pasó las pruebas focales, las regresiones de Productos 1–6, la selección, la demostración y OpenSSL, y se recorrió con el histórico real de los cuatro juegos (sin la suite completa). Los ajustes de cierre están verificados en Linux y **pendientes de validar en Windows**. GitHub Actions, cuando se abra el PR | Validación en Windows de los ajustes de cierre (guía `backend/docs/fase3_windows.md`); GitHub Actions; PDF en Carta, A4 y horizontal en Windows. XGBoost, LightGBM, redes neuronales, modelos bayesianos y Markov: extensiones futuras, no implementadas |
+| 4. Predicciones | 🟡 Parcial: pronósticos experimentales de los cuatro juegos (Productos 1–3), laboratorio (Producto 4), carteras de la configuración vigente en la operación diaria (Producto 5), resultados observados y calibración (Producto 6) y, desde la Fase 3, pronósticos con una versión registrada congelada elegida explícitamente | Productos 1–6: Windows con histórico real y GitHub Actions; avance de la Fase 3: Linux y Windows con histórico real (v2) | Nivel de confianza calibrado frente al rendimiento observado; números fuertes y débiles con explicación; caso de uso común `GenerarPredicciones`; decidir si la tabla `predicciones` se usa o se sustituye formalmente por los almacenes inmutables |
+| 5. Estadísticas descriptivas | ✅ Completa | Windows con histórico real; GitHub Actions (ejecuciones 42 a 46) | — |
+| 6. Simulaciones | 🟡 Parcial: AE-49 a AE-51 (referencia Monte Carlo bajo azar uniforme) y la simulación Monte Carlo de carteras de Producto 5 | Windows y GitHub Actions | Simulaciones de escenarios por juego más allá de las carteras; panel de simulaciones (hoy «Próximamente») |
+| 7. API pública | 🔜 Hay una API REST interna de solo lectura por producto | — | API pública versionada, autenticación y límites |
+| 8. Frontend React | 🔜 | — | Todo |
+| 9. Despliegue | 🔜 | — | Todo |
+
+**Orden de las próximas entregas: 3 → 4 → 6 → 7 → 8 → 9.** Primero, la validación en Windows de los ajustes de cierre de la Fase 3 y su PR; después Predicciones, Simulaciones, API pública, Frontend React y Despliegue.
+
+**GitHub Actions.** El workflow `validacion-python-314.yml` ya se ejecuta en cada push a `main`/`develop` y en cada PR. Evidencia sobre la base de esta entrega (`c7644c4`, merge del PR #91): ejecución 45, Linux con la suite completa (`6379 passed`, OpenSSL `SUPERADOS 7/7`) y Windows con la selección (`2134 passed`, OpenSSL `SUPERADOS 7/7`), ambos en verde; la 46 (`develop`) también. La entrega de la Fase 3 todavía no se ha ejecutado en Actions.
+
+### Historial de productos (Productos 1–6)
+
+Entregas orientadas al usuario, hechas sin abrir otra etapa AE. Su detalle y su evidencia completos siguen en la sección de la Fase 4, donde se registraron; aquí solo se vinculan a sus fases.
+
+| Producto | Qué añadió | Fases | Estado |
+|---|---|---|---|
+| 1 | Estadísticas por juego (`/estadisticas`) y pronóstico experimental de Baloto y Revancha (`/pronosticos`) | 5 y 4 | Sus pruebas se ejecutaron en Windows dentro de la validación de Producto 2; GitHub Actions en verde |
+| 2 | Pronósticos de MiLoto y ColorLoto y resultados observados de los cuatro juegos | 4 | Validado en Windows; GitHub Actions en verde |
+| 3 | Panel diario (`/operacion`), actualización incremental, generación por juego y rendimiento (`/rendimiento`); publicación atómica (#83) | 2 y 4 | Validado en Windows; GitHub Actions en verde |
+| 4 | Laboratorio de modelos (`/laboratorio`): variables causales, evaluación temporal común, comparación frente a la uniforme y pronóstico con el modelo elegido | 3 (y 4) | Validado en Windows; GitHub Actions en verde |
+| 5 | Modelo combinado, carteras reproducibles, simulación Monte Carlo y configuración versionada por juego (`/carteras`) | 3, 4 y 6 | Validado en Windows; GitHub Actions en verde |
+| 6 | Centro de resultados (`/resultados`): pronósticos emitidos frente a los sorteos reales, muestra común, calibración, informes verificables y «usar esta configuración» | 4 (y 3) | Validado en Windows; GitHub Actions en verde |
+
+La entrega «Fase 3 — modelos versionados» no es un Producto 7: completa la ingeniería de la Fase 3 sobre lo construido en los Productos 4–6 (ver la sección de la Fase 3).
+
+---
+
 > **Nota sobre el orden de las fases:** en esta versión del roadmap, Machine Learning (Fase 3) y Predicciones (Fase 4) aparecen antes de Estadísticas descriptivas (Fase 5). El orden técnicamente más habitual es Estadísticas → Ingeniería de características → ML → Predicciones, ya que los modelos de ML normalmente se construyen sobre features derivadas del análisis estadístico. Si se prefiere ese orden, es un cambio puramente de secuencia (no de alcance) y se puede reordenar antes de iniciar la Fase 3 sin ningún impacto en lo ya construido.
 
 > **Actualización (Etapa AE-35):** esta nota quedó resuelta con evidencia real. La dependencia FORMAL de la Fase 3 siempre fue únicamente la Fase 2 (el Data Quality Report como gate de entrada, ver más abajo) -nunca completar la Fase 5. Una recomendación informal mucho más antigua (Etapa W/Y de este mismo documento, cuando solo existían dos métricas numéricas conectadas) siguió sugiriendo tácitamente "una estadística más" en cada etapa reciente, sin haber sido reevaluada desde entonces -eso era una preferencia de secuencia reafirmada por costumbre, nunca una dependencia técnica real. AE-35 ejecutó el Data Quality Report real sobre PostgreSQL, confirmó una cobertura del 100% sin huecos para los cuatro juegos, y emitió una decisión **GO CONDICIONAL**: GO para Baloto y Baloto Revancha, NO-GO temporal para MiLoto (70 sorteos), pospuesto para ColorLoto (215 sorteos, objetivo de representación distinto). Las 17 funciones estadísticas todavía sin conectar (7 familias reales) permanecen como backlog descriptivo, explícitamente no bloqueante para Machine Learning. **Actualización (Fase 5):** las 17 quedan conectadas (ver la sección de la Fase 5).
@@ -45,7 +85,9 @@
 
 ---
 
-## 🟡 Fase 3 — Machine Learning (gate de calidad superado, GO CONDICIONAL)
+## 🟢 Fase 3 — Machine Learning (ingeniería implementada; v2 validada en Windows con histórico real; ajustes de cierre pendientes de validar; sin ventaja predictiva acreditada)
+
+> Encabezados anteriores: «🟢 Fase 3 — Machine Learning (ingeniería implementada en Linux; validación en Windows pendiente; sin ventaja predictiva acreditada)» (entregas v1 y v2) y «🟡 Fase 3 — Machine Learning (gate de calidad superado, GO CONDICIONAL)». El gate y la decisión GO CONDICIONAL de AE-35 siguen descritos abajo.
 
 **Objetivo:** entrenar y comparar modelos de Machine Learning (Random Forest, XGBoost, LightGBM, redes neuronales, modelos bayesianos, Markov) sobre los datos históricos, con validación rigurosa que evite sobreajuste.
 
@@ -62,9 +104,144 @@
 
 **Criterios de finalización:** modelos entrenados y versionados, métricas registradas y consultables, comparación contra baseline documentada, sin overfitting demostrable en validación fuera de muestra.
 
+**Entrega «Fase 3 — modelos versionados» (base `c7644c4`, merge del PR #91; implementada y verificada en Linux con fixtures sintéticas; v2 validada en Windows por el operador y recorrida con el histórico real; ajustes de cierre pendientes de validar en Windows).** Completa la ingeniería de esta fase sobre lo construido en los Productos 4–6 y adelanta parte de la Fase 4. Una capacidad de ingeniería se considera completa sin exigir ventaja frente al azar; su finalización **no** acredita ninguna ventaja predictiva. Siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
+
+| Criterio de la fase | Dónde se cumple | Estado |
+|---|---|---|
+| Pipeline de features | `laboratorio_variables` (`producto4-variables-1`): variables causales por objetivo, calculadas solo con sorteos anteriores | ✅ |
+| Time Series Split / Walk Forward | `laboratorio_evaluacion`: hasta 6 bloques de 10 objetivos, reajuste al inicio de cada bloque, mismos objetivos y misma uniforme para todos | ✅ |
+| Métricas | Log Loss y Brier (principales); aciertos top-k; precisión, exhaustividad, F1 y exactitud **derivadas** de los aciertos guardados (con k igual al tamaño del sorteo las tres primeras coinciden, y la exactitud por fila la dominan las ausencias); diagnóstico de calibración | ✅ |
+| Registro de modelos entrenados y sus métricas | Versiones por juego y modelo en el almacén del laboratorio (manifiesto sellado + estimador), con la evaluación asociada; proyección de solo lectura a las columnas de `modelos` y `metricas_modelo` | ✅, con la decisión documentada abajo |
+| Comparación explícita contra baseline | La uniforme en cada informe, ficha, pronóstico y seguimiento | ✅ |
+| Modelos entrenados y versionados | Identidad determinista (receta, datos, entrenamiento y entorno); misma entrada → misma versión; cambio → versión nueva; nada se sobrescribe | ✅ |
+| Métricas registradas y consultables | Manifiesto, ficha web, API (`GET /api/laboratorio/modelos…`) y comando | ✅ |
+| Sin sobreajuste demostrable en validación fuera de muestra | Evaluación fuera de muestra con selección de parámetros separada de la evaluación final y de la calibración; ninguna elección automática del «mejor» modelo | Protocolo implementado. No es una afirmación de ventaja: con los datos reales, la uniforme no ha sido superada de forma acreditada |
+| Familias del objetivo | Random Forest ✅ y Extra Trees ✅ (nuevas), además de la logística regularizada, el gradient boosting de árboles (HistGradientBoosting), Poisson y las referencias. XGBoost, LightGBM, redes neuronales, modelos bayesianos y Markov | 🔜 Extensiones futuras, no implementadas ni declaradas (`laboratorio_modelos.FAMILIAS_FUTURAS`) |
+
+**Qué añade:**
+- **Catálogo (6 candidatos por juego).** Random Forest y Extra Trees:
+  - números (Baloto, Revancha y MiLoto): clasificadores de aparición con la misma calibración sigmoide cronológica y el mismo ajuste de cardinalidad (las marginales suman 5);
+  - ColorLoto: regresores con criterio de Poisson sobre el conteo de cada par número-color por sorteo (0 a 6, con multiplicidad), normalizados a una distribución de pares; se conserva la representación por pares y la suposición multinomial de Producto 2.
+  Se mantienen las estrategias actuales y la uniforme.
+- **Selección de parámetros separada de la evaluación final** (solo bosques): rejilla fija (`max_depth` 4/8 × `min_samples_leaf` 20/80) validada con los últimos max(10, 25 %) objetivos del bloque base, siempre antes del bloque evaluado y, en los clasificadores, antes de la calibración (los regresores Poisson no tienen calibración: sus intensidades se normalizan con código versionado). Las recetas anteriores conservan sus parámetros fijos, así que los informes guardados de Producto 4 se siguen reproduciendo.
+- **Incidencias por candidato** (`muestra_insuficiente`, `clase_insuficiente`, `no_converge`, `salida_invalida`, `fallo_de_ajuste`): un candidato o un juego sin datos suficientes no bloquea a los demás.
+- **Tiempo máximo** de cada trabajo del proceso trabajador del laboratorio (`TIEMPO_MAXIMO_TRABAJADOR_LABORATORIO`, 1800 s), además del límite de hilos que ya existía.
+- **Registro de modelos entrenados:**
+  - entrena un candidato registrable de un informe con su corte explícito;
+  - guarda el estimador con la preparación de variables y la calibración; las transformaciones de probabilidad son código versionado, comprobado al cargar;
+  - registra identidad, versión, juego, objetivo estadístico, variables, parámetros (con el punto elegido), semilla, entorno, periodo de entrenamiento, corte, huella del histórico y evaluación asociada;
+  - lista, consulta y verifica las versiones, y recarga una versión compatible para generar **sin reentrenar**.
+- **Publicación atómica en tres archivos** (mismas garantías que #83):
+  1. el estimador, con su SHA-256 como nombre;
+  2. la reserva exclusiva del número de versión;
+  3. el manifiesto sellado, en último lugar.
+  Un lector nunca ve una versión incompleta. Una interrupción deja, como mucho, un estimador o una reserva sin manifiesto: se informan y nunca se presentan como modelo válido. La misma entrada publicada por varios procesos produce una sola versión.
+- **Carga verificada antes de deserializar:**
+  - rutas construidas solo con juego y clave validados;
+  - manifiesto canónico y sellado;
+  - entorno compatible (misma scikit-learn; mismas versiones menores de Python, NumPy y SciPy);
+  - mismas variables y transformaciones;
+  - SHA-256 y tamaño del estimador;
+  - deserialización restringida a una lista cerrada de clases.
+  Solo se cargan modelos producidos por la aplicación.
+- **Contrato de inferencia del modelo congelado:** con un corte de entrada C mayor o igual que el de entrenamiento, las variables del objetivo C + 1 usan solo los sorteos hasta C; no se reajusta nada. Un corte anterior se rechaza.
+- **Flujo visible:** comparar → «Entrenar y guardar versión» (progreso: leyendo el informe, entrenando, publicando) → ficha (`/laboratorio/modelo/{clave}`) → verificar → generar con el modelo cargado → resultados observados de su línea propia (`<modelo>-v<receta>-reg<n>`). La lista de versiones (`/laboratorio/modelos`) informa de la compatibilidad, las versiones alteradas y las reservas sin publicar. Cada pronóstico identifica su versión registrada.
+- **Una sola selección del operador:** elegir una versión para la operación diaria es una configuración explícita de Producto 5 (campo `modelo.registrado`), también desde «usar esta configuración» de Producto 6. Las carteras configuradas recargan esa versión sin reentrenarla. Comparar o entrenar nunca cambia la configuración vigente.
+
+**Decisiones que se apartan del diseño original:**
+- **Tablas `modelos` y `metricas_modelo`.** No se escriben. El manifiesto sellado del almacén es la única fuente de cada versión: publicarla en PostgreSQL y en archivos a la vez dejaría dos registros que pueden discrepar sin una transacción común. La ficha y la API muestran la proyección a sus columnas, con `activo` sin valor, porque el modelo vigente lo decide la configuración de carteras.
+- **Comparación de Producto 5.** Congela su conjunto de candidatos (`carteras_ensemble.CANDIDATOS_DE_COMPARACION`), para no cambiar la identidad ni la reproducción de las comparaciones ya guardadas. Los bosques sí se pueden usar para generar carteras.
+- **Recetas anteriores.** No se les añade selección de parámetros: cambiarlas invalidaría la reproducción de los informes `producto4-2` guardados.
+
+**Verificación de la entrega original (v1; Linux, Cloud, Python 3.11.15, fixtures sintéticas):** Fase 3 `60 passed` (registro 33, bosques 13, integración 14); regresiones de Productos 1 a 6 (`85`, `39`, `66` con la cobertura de #83, `94`, `96` y `73 passed`) y de la Fase 5 (`94 passed`); selección de Windows ejecutada en Linux (88 entradas) `2194 passed`; una suite completa `6439 passed`; OpenSSL `SUPERADOS 7/7` en modo `exigir`; demostración sintética 7/7; `pip check` y espacios limpios. Revisión visual con Bootstrap real a 1366 y 390 px de ancho y PDF en Carta vertical y horizontal. Son cifras de Linux: no acreditan Windows ni el histórico real.
+
+**Primera ejecución en Windows (v1) y corrección de rutas (v2):**
+- **Windows, v1** (evidencia del operador): parche de 477419 bytes aplicado en `C:\GitHub\loteria-predictor-fase3`; sus 51 archivos coincidieron con el manifiesto (CRLF/LF normalizado solo en memoria); espacios y configuración del worktree correctos. Pruebas focales: `6 failed, 54 passed`, con el aviso conocido de Starlette. El script se detuvo ahí: no hay resultados de regresiones, demostración ni selección.
+- **Causa:** el publicador del laboratorio formaba el temporal con el nombre final entero (`.<nombre final>.<16 hex>.tmp`, 22 caracteres más). Cuatro trazas mostraban destinos de 240 o 242 caracteres, que cabían, y temporales de 262 o 264, por encima del límite de Windows sin rutas largas (259). El HTTP 500 y el código 3 de la línea de comandos eran el mismo fallo al publicar el pronóstico de una versión registrada (la ruta más larga del almacén).
+- **Corrección (v2):** el laboratorio publica con el temporal corto de Producto 5, `.publicacion.<16 hex>.tmp`, en la misma carpeta que el destino; un solo publicador (`laboratorio_file_store._publicar`) para Productos 4 a 6. Se conservan la creación exclusiva, `flush` + `fsync`, el enlace duro sin sobrescritura, los nombres finales, las claves, los sellos, las secuencias, las versiones y la idempotencia. Los temporales con el nombre anterior o el nuevo se reconocen (`temporales`, `huerfanos`), nunca se listan como resultados y nunca se borran solos.
+- **Regresiones** (`test_fase3_rutas.py`): simulan el límite con el presupuesto de rutas de Producto 5 (destinos admisibles cuyo temporal anterior no cabe), fallan con el código anterior y pasan con el corregido. Comprueban también contenido final, ausencia de sobrescritura, temporales antiguos y nuevos, lectura concurrente, interrupción, reintento, dos escritores e idempotencia. Una simulación adicional de las 60 pruebas focales con una carpeta temporal de 60 caracteres reproduce exactamente `6 failed, 54 passed` (temporales de 262 y 264, un HTTP 500) con el código anterior y da `60 passed` con el corregido.
+- **Sin cambios** en modelos, fórmulas, contratos de inferencia ni el estado experimental. La simulación y Linux no validan Windows.
+
+**Verificación de la v2 (Linux, mismo entorno; no acredita Windows):** Fase 3 `69 passed` (registro 33, bosques 13, integración 14 y rutas 9); Productos 1 a 6 (`85`, `39`, `66` con la cobertura de #83, `94`, `96` y `73 passed`) y Fase 5 (`94 passed`); selección de Windows ejecutada en Linux (89 entradas) `2203 passed`; una suite completa `6448 passed`; OpenSSL `SUPERADOS 7/7` en modo `exigir`; demostración sintética 7/7; `pip check` limpio; espacios limpios y cadena base → entrega original → incremental comprobada en una extracción limpia.
+
+**Evidencia de Windows de la v2** (producida por el operador en su equipo; Claude no la ejecutó):
+- **Validación nativa** (Python 3.14.6; evidencia en `%TEMP%\f3c-evidencia-20261011-002007-202b4aad`):
+  - los 53 archivos coincidieron con el manifiesto v2 (CRLF/LF normalizado) y el índice real quedó vacío;
+  - Fase 3: primera pasada `1 failed, 68 passed`. `test_temporales_anteriores_y_nuevos_se_reconocen_y_se_conservan` superaba el límite de 259 caracteres bajo la carpeta temporal larga de pytest; con la raíz corta `C:\GitHub\f3t-29c2818301a4`, `69 passed`;
+  - Productos 6, 5 y 4: `73`, `96` y `94 passed`; Productos 1 a 3: `229 passed`;
+  - selección de Windows (89 entradas): `2203 passed`;
+  - demostración sintética 7/7; OpenSSL `SUPERADOS 7/7` en modo `exigir`; `pip check` y espacios limpios; el aviso conocido de Starlette/httpx;
+  - la suite completa no se ejecutó en Windows.
+- **Recorrido con el histórico real** (evidencia en `%TEMP%\f3-real-20261011-010241-7a44f090`):
+
+  | Juego | Sorteos | Último cargado | Corte | Modelo registrado | Versión | Siguiente objetivo |
+  |---|---:|---:|---:|---|---:|---:|
+  | Baloto | 639 | 2719 | 2714 | `random_forest_clasificador` | 1 | 2720 |
+  | Baloto Revancha | 639 | 2719 | 2714 | `extra_trees_clasificador` | 1 | 2720 |
+  | MiLoto | 89 | 620 | 615 | `random_forest_clasificador` | 1 | 621 |
+  | ColorLoto | 225 | 225 | 220 | `random_forest_poisson` | 1 | 226 |
+
+  - Los seis candidatos de cada juego terminaron.
+  - Las cuatro versiones se guardaron, se cargaron en otro proceso y reprodujeron exactamente su pronóstico de control. Repetir las mismas entradas reutilizó los artefactos.
+  - Los 136 artefactos previos se conservaron, comprobados por SHA-256.
+  - No hubo importación ni cambio de configuración de modelos.
+  - El registro inmutable de archivos fue la persistencia usada: la proyección a `modelos` y `metricas_modelo` no significa que esas tablas se hayan poblado.
+- **Pronósticos retrospectivos** (el resultado ya existía al generarlos):
+
+  | Juego | Objetivo | Aciertos | Log Loss | Uniforme |
+  |---|---:|---|---:|---:|
+  | Baloto | 2715 | 1 de 5 números | 0.35358 | 0.35945 |
+  | Baloto Revancha | 2715 | 0 de 5 | 0.36386 | 0.35945 |
+  | MiLoto | 616 | 1 de 5 | 0.37827 | 0.38296 |
+  | ColorLoto | 221 | 1 de 6 pares número-color (5 de 6 números, aparte) | 3.71437 | 3.73767 |
+
+  Es una observación retrospectiva por juego: no acredita anterioridad prospectiva ni capacidad predictiva. Que el registro funcione y respete la disciplina temporal no demuestra ausencia de sobreajuste ni ventaja futura.
+- **Revisión de la interfaz** (operador, con ayuda de ChatGPT):
+  - lista de versiones, fichas y verificaciones de los cuatro juegos; pronósticos de Baloto 2715 y 2720 y de ColorLoto 221 y 226;
+  - tras un reinicio real de Uvicorn, la verificación de MiLoto mantuvo la versión, la clave, el SHA-256 del estimador y el control exacto, y generar de nuevo Baloto 2720 reutilizó el mismo pronóstico (fecha original, clave y contenido);
+  - Resultados integró las líneas registradas de Baloto y ColorLoto mediante filtros explícitos; «Sin muestra común» con una sola línea es un estado correcto;
+  - el informe de Baloto del corte 2714 (16 páginas) mostró los seis candidatos y 60 objetivos comunes;
+  - PDF en **Legal vertical (612×1008 puntos, Chrome 155)**, sin solapamientos. Carta, A4 y horizontal no se validaron en Windows.
+- **Correcciones documentales:**
+  - la carpeta del laboratorio del worktree (`C:\GitHub\loteria-predictor-fase3\backend\storage\laboratorio`) mide 61 caracteres, no 59; el máximo admisible sigue siendo 111;
+  - el sistema operativo registrado en el entorno es informativo y no bloquea la carga (política: misma scikit-learn y mismas versiones menores de Python, NumPy y SciPy).
+
+**Ajustes de cierre (incremental `fase3-ajustes-cierre.patch`; verificados en Linux, pendientes de validar en Windows).** Corrigen tres ambigüedades de presentación que encontró la revisión y la prueba de temporales. No cambian modelos, estimadores, parámetros, probabilidades, la API ni los artefactos (huellas, versiones, fechas y contenido).
+- **A. Ficha: receta frente a informe** (`web/routers/laboratorio.py`, `laboratorio/modelo.html`):
+  - la evaluación de la versión se presenta como «Esta receta, nombre»;
+  - aparte, «Informe de procedencia (corte C), lectura general», leída del resumen del informe guardado: el modelo de menor pérdida («no esta receta» o «esta receta»), la victoria de la uniforme, el empate en la primera posición o la comparación incompleta;
+  - la clasificación guardada, sin recalcular ni reordenar, con esta receta marcada.
+
+  Caso real: en Baloto (corte 2714), Logística AE-36 primera (0.35942), uniforme segunda (0.35945) y Random Forest tercero (0.35947).
+- **B. Ficha Poisson de ColorLoto:**
+  - ya no dice «siempre antes de la calibración»: la selección es «siempre antes del corte», y las intensidades se transforman en probabilidades con código versionado (`p = (lambda + delta) / suma por objetivo`);
+  - los clasificadores calibrados conservan su explicación;
+  - el manifiesto conserva el texto común del contrato, y solo su presentación se adapta.
+- **C. `/resultados/colorloto`:**
+  - «Aciertos medios (pares número-color)» y «Aciertos (pares número-color)», con «N de 6 pares» y una nota;
+  - los demás juegos y la superbalota no cambian.
+
+  Caso real del objetivo 221: 1 de 6 pares; 5 de 6 números y 3 de 6 colores son otras intersecciones, que no se muestran ahí.
+- **Prueba de temporales anteriores y nuevos** (`test_fase3_rutas.py`):
+  - usa su propia carpeta temporal de raíz corta (la carpeta temporal del sistema con el prefijo `f3t`) y borra solo lo que crea;
+  - no depende de `--basetemp` ni de `PYTEST_ADDOPTS`;
+  - conserva los nombres, las carpetas y las comprobaciones;
+  - no cambia el código de publicación.
+- **Regresiones nuevas** (`test_fase3_presentacion.py`, en la selección de Windows): el caso real, los cuatro estados del informe, el informe no disponible, el orden guardado, Poisson frente a calibrado, el caso 221 y las etiquetas de los demás juegos.
+
+**Verificación en Linux de los ajustes de cierre** (Cloud, Python 3.11.15; no acredita Windows): Fase 3 `81 passed` (registro 33, bosques 13, integración 14, rutas 9 y presentación 12) con invocación normal, sin `--basetemp` ni `PYTEST_ADDOPTS`; con el límite de 259 caracteres simulado (carpeta de pytest de 61 y `%TEMP%` de 34), `81 passed` y 0 rutas rechazadas; Productos 1 a 6 (`85`, `39`, `66`, `94`, `96` y `73 passed`), lista de Productos 1 a 3 del script `229 passed` y Fase 5 `94 passed`; selección de Windows ejecutada en Linux (90 entradas, sin comentarios ni líneas en blanco) `2215 passed`; una suite completa `6460 passed` (1200 s); OpenSSL `SUPERADOS 7/7` en modo `exigir` sobre la selección y sobre la suite; demostración sintética 7/7; `pip check` limpio; espacios limpios, incluidos los archivos nuevos; revisión visual con Bootstrap real (Chromium de Playwright, 1366 y 390 px; PDF en Carta vertical y horizontal, A4 y Legal vertical) sin solapamientos ni desbordamiento horizontal; cadena base → entrega original → rutas → cierre comprobada en una extracción limpia (árbol final idéntico, reversión exacta a la v2). Python 3.11.15, scikit-learn 1.9.1, NumPy 2.4.6, SciPy 1.17.1. Sobre la v2 exacta, las 12 pruebas de presentación dan `9 failed, 3 passed`: fallan por sus comprobaciones nuevas, y pasan las 3 que protegen lo que no debe cambiar (el cálculo del caso 221, la ficha del clasificador calibrado y las etiquetas de MiLoto). La prueba de temporales final pasa con el código de publicación de la v2, también con el límite simulado; la prueba anterior, con ese mismo límite, reproduce el fallo de Windows (`1 failed`).
+
+**Pendiente:**
+- la validación en Windows de los ajustes de cierre: `aplicar-fase3-cierre.ps1` sobre el worktree con la v2;
+- la ejecución en GitHub Actions, con el PR;
+- la suite completa en Windows, que no se ha ejecutado;
+- la impresión en Carta, A4 y horizontal en Windows;
+- las familias futuras (XGBoost, LightGBM, redes neuronales, modelos bayesianos y Markov), que siguen identificadas como futuras;
+- la evidencia predictiva, que sigue sin existir.
+
 ---
 
-## 🔜 Fase 4 — Predicciones
+## 🟡 Fase 4 — Predicciones (parcial: pronósticos experimentales de los Productos 1–6 y, desde la Fase 3, con modelos registrados)
 
 **Objetivo:** generar recomendaciones diarias (combinaciones, números fuertes/débiles, probabilidades estimadas) a partir de los modelos entrenados en la Fase 3, con explicabilidad y nivel de confianza.
 
@@ -78,6 +255,10 @@
 - Tabla `predicciones` (ya presente en el esquema desde la Fase 1).
 
 **Criterios de finalización:** predicciones generadas diariamente, explicables, con nivel de confianza calibrado contra el desempeño histórico real del modelo.
+
+**Avance de la Fase 4 (resumen; el detalle sigue en los Productos 1–6 de esta sección y en la entrega de la Fase 3):**
+- Hecho: pronósticos experimentales de los cuatro juegos con su explicación y su referencia uniforme (Productos 1–2); generación diaria desde el panel (Producto 3); pronóstico con el modelo elegido del laboratorio (Producto 4); carteras de combinaciones de la configuración vigente (Producto 5); resultados observados, calibración descriptiva e informes (Producto 6); pronósticos con una versión registrada congelada y elegida explícitamente, también en la operación diaria (Fase 3).
+- Pendiente: nivel de confianza calibrado frente al rendimiento observado; números fuertes y débiles con su explicación; un caso de uso común `GenerarPredicciones`; decidir si la tabla `predicciones` se usa o se sustituye formalmente por los almacenes inmutables. Ninguna de estas piezas puede presentarse como evidencia predictiva mientras siga el NO-GO.
 
 **Etapa AE-52 -registro prospectivo de ML (preparación de una evaluación prospectiva), validada:** primera etapa para poder evaluar una estrategia de ML de forma prospectiva, como exige el NO-GO de AE-39: una evaluación prerregistrada antes de observar los sorteos posteriores a ese prerregistro. AE-52 **no genera predicciones**, no entrena ni carga modelos, no evalúa resultados y **no modifica el NO-GO**. Tampoco activa recomendaciones, apuestas ni predicciones para usuarios. **AE-52 no acumula evidencia prospectiva**: el único registro real que admite es un borrador sin salidas, y ningún sorteo cuenta todavía para ningún mínimo.
 
@@ -2985,7 +3166,7 @@ El detalle, las decisiones pendientes y los límites están en la sección AE-76
 
 R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; D8 sigue aprobada solo para el modelo sintético y D9 con su espera provisional; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
 
-AE-76 queda **validada localmente como trabajo preparatorio**: el expediente sintético y sus pruebas. **Validación del operador en Windows** (Python `3.14.6`, atribuida al usuario): parche completo comprobado y diez archivos; `40 passed` (AE-76); selección `1273 passed, 7 skipped`, con `OMITIDOS 7/7` sin OpenSSL en `PATH` y cero contrastes superados allí; `1218 passed` en los dos módulos que fallaron con `3.14.0rc2`; `pip check` limpio. Los siete contrastes superados y la suite completa (`5525 passed`) son solo del sandbox Linux con Python `3.11.15`; los `58 failed` de la simulación con `3.14.0rc2` se deben a pydantic con ese candidato. No se afirma que la suite completa haya pasado con Python 3.14 final, y **el workflow todavía no se ha ejecutado en GitHub Actions**. El detalle y los límites están en la sección AE-76 de `ARCHITECTURE.md`.
+AE-76 queda **validada localmente como trabajo preparatorio**: el expediente sintético y sus pruebas. **Validación del operador en Windows** (Python `3.14.6`, atribuida al usuario): parche completo comprobado y diez archivos; `40 passed` (AE-76); selección `1273 passed, 7 skipped`, con `OMITIDOS 7/7` sin OpenSSL en `PATH` y cero contrastes superados allí; `1218 passed` en los dos módulos que fallaron con `3.14.0rc2`; `pip check` limpio. Los siete contrastes superados y la suite completa (`5525 passed`) son solo del sandbox Linux con Python `3.11.15`; los `58 failed` de la simulación con `3.14.0rc2` se deben a pydantic con ese candidato. No se afirma que la suite completa haya pasado con Python 3.14 final, y **el workflow todavía no se había ejecutado en GitHub Actions** (después sí: ver AE-77 y, por ejemplo, la ejecución 45). El detalle y los límites están en la sección AE-76 de `ARCHITECTURE.md`.
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades ni canales operativos, red ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-75 sin cambios.
 
@@ -2999,7 +3180,7 @@ El detalle, la reutilización controlada de AE-75 y los límites están en la se
 
 A1–A3 y C1–C3 siguen sin decidir; D8 sigue limitada al modelo sintético y D9 con su espera provisional. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
 
-AE-77 queda **validada localmente como trabajo preparatorio** (piezas y pruebas con fixtures). **Validación del operador en Windows** (Python `3.14.6`, atribuida al usuario): parche completo comprobado y ocho archivos; `29 passed` (AE-77), `110 passed` (AE-52), selección `1302 passed, 7 skipped` y `pip check` limpio. El comprobador informó `OMITIDOS 7/7` sin OpenSSL en `PATH`: esos siete contrastes no se ejecutaron en Windows y no cuentan como éxitos. Solo en el sandbox Linux: `569 passed` (AE-60 a AE-77), `1309 passed` en las focalizadas, suite completa `5554 passed, 0 skipped` y `SUPERADOS 7/7`. **GitHub Actions todavía no ha ejecutado AE-77.** La autoridad del conjunto esperado y la completitud global siguen pendientes. El detalle y los límites están en la sección AE-77 de `ARCHITECTURE.md`.
+AE-77 queda **validada localmente como trabajo preparatorio** (piezas y pruebas con fixtures). **Validación del operador en Windows** (Python `3.14.6`, atribuida al usuario): parche completo comprobado y ocho archivos; `29 passed` (AE-77), `110 passed` (AE-52), selección `1302 passed, 7 skipped` y `pip check` limpio. El comprobador informó `OMITIDOS 7/7` sin OpenSSL en `PATH`: esos siete contrastes no se ejecutaron en Windows y no cuentan como éxitos. Solo en el sandbox Linux: `569 passed` (AE-60 a AE-77), `1309 passed` en las focalizadas, suite completa `5554 passed, 0 skipped` y `SUPERADOS 7/7`. **GitHub Actions todavía no ha ejecutado AE-77.** *Actualización: después sí lo ejecutó (ver «Evidencia previa, en CI», sobre `e71a4f5`).* La autoridad del conjunto esperado y la completitud global siguen pendientes. El detalle y los límites están en la sección AE-77 de `ARCHITECTURE.md`.
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-76 sin cambios.
 
@@ -3062,7 +3243,7 @@ Una firma válida solo prueba la firma de esos bytes frente a una clave admitida
 
 A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`.
 
-AE-80 queda **validada localmente como trabajo preparatorio** (claves y políticas de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo de 157378 bytes comprobado y quince archivos; `79 passed` (AE-80), `110 passed` (AE-52), selección `1504 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostraciones `5/5` y `8/8` y `pip check` limpio; la suite completa no se ejecutó en Windows. Solo en el sandbox Linux: `764 passed` (AE-60 a AE-80) y suite completa `5749 passed, 0 skipped`. **GitHub Actions todavía no ha ejecutado AE-80.** No se acredita autoridad operativa, completitud global, cronología ni R0 final. Esta validación local no autoriza inferencia ni evaluación.
+AE-80 queda **validada localmente como trabajo preparatorio** (claves y políticas de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo de 157378 bytes comprobado y quince archivos; `79 passed` (AE-80), `110 passed` (AE-52), selección `1504 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostraciones `5/5` y `8/8` y `pip check` limpio; la suite completa no se ejecutó en Windows. Solo en el sandbox Linux: `764 passed` (AE-60 a AE-80) y suite completa `5749 passed, 0 skipped`. **GitHub Actions todavía no ha ejecutado AE-80.** *Actualización (Fase 3): las ejecuciones posteriores de Actions (p. ej. la 45 sobre `c7644c4`) incluyen sus pruebas y su demostración, en verde.* No se acredita autoridad operativa, completitud global, cronología ni R0 final. Esta validación local no autoriza inferencia ni evaluación.
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, observadores, monitores ni canales operativos, red, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-79 sin cambios.
 
@@ -3083,7 +3264,7 @@ Un archivo local, dos firmas o una huella copiada no acreditan publicación exte
 
 A1–A3, C1–C3, D8 operativa y D9 definitiva siguen sin decidir. R0, R9 y las ocho condiciones siguen `sin_fijar`; F1, F2, O3, N2 y U1 siguen pendientes; `expediente_sin_eleccion` y `AUTORIZA_EVALUACION = False`; `r0_final` no se promociona.
 
-AE-81 queda **validada localmente como trabajo preparatorio** (claves, políticas e inventarios de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo de 137563 bytes comprobado y once archivos; `44 passed` (AE-81), `110 passed` (AE-52), selección `1548 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostraciones `5/5`, `8/8` y `10/10` y `pip check` limpio; la suite completa no se ejecutó en Windows. Solo en el sandbox Linux: `808 passed` (AE-60 a AE-81) y suite completa `5793 passed, 0 skipped`. **GitHub Actions todavía no ha ejecutado AE-81.** La publicación externa sigue no acreditada; autoridad, cronología y completitud global siguen pendientes. Esta validación local no autoriza inferencia ni evaluación.
+AE-81 queda **validada localmente como trabajo preparatorio** (claves, políticas e inventarios de prueba). **Validación del operador en Windows** (Python `3.14.6`, OpenSSL `3.5.6`, atribuida al usuario): parche completo de 137563 bytes comprobado y once archivos; `44 passed` (AE-81), `110 passed` (AE-52), selección `1548 passed` sin omisiones, `SUPERADOS 7/7` en modo `exigir`, demostraciones `5/5`, `8/8` y `10/10` y `pip check` limpio; la suite completa no se ejecutó en Windows. Solo en el sandbox Linux: `808 passed` (AE-60 a AE-81) y suite completa `5793 passed, 0 skipped`. **GitHub Actions todavía no ha ejecutado AE-81.** *Actualización (Fase 3): las ejecuciones posteriores de Actions (p. ej. la 45 sobre `c7644c4`) incluyen sus pruebas y su demostración, en verde.* La publicación externa sigue no acreditada; autoridad, cronología y completitud global siguen pendientes. Esta validación local no autoriza inferencia ni evaluación.
 
 No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, claves, sellos, autoridades, publicadores, monitores ni canales operativos, red, servicios de publicación, secretos ni el reloj local como evidencia. AE-39 sigue en NO-GO, AE-41 bloqueado, los siete pendientes de AE-52 abiertos, la especificación de AE-53 sin aprobar y los bloqueos de AE-40 a AE-80 sin cambios.
 
@@ -3222,7 +3403,7 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
     - OpenSSL `SUPERADOS 7/7` en modo exigir; `pip check` limpio; un aviso de deprecación de Starlette, sin fallos.
     - PDF de Windows revisados en Carta vertical: MiLoto conserva las 39 filas y ColorLoto las 42, sin solapamientos. Las sugerencias aparecen en la primera página y se conservan avisos, trazabilidad, métricas, resultados observados y versiones.
     - Esta revisión visual cubre esos dos PDF en Carta vertical. No hay evidencia de ejecución de la suite completa en Windows.
-  - **GitHub Actions:** todavía no ha validado esta rama.
+  - **GitHub Actions:** todavía no había validado esa rama. *Actualización (Fase 3):* la ejecución 45 de GitHub Actions (push a `main` de `c7644c4`, merge del PR #91) lo cubrió en verde: Linux, suite completa con 6379 superadas; Windows, selección con 2134 superadas; OpenSSL 7/7 en ambos.
 - **Impresión de las páginas de pronóstico.**
   - **Causa:** la regla `break-inside: avoid` se aplicaba a todas las tarjetas. La del pronóstico, con el ranking de 39 o 42 filas, no cabía en el espacio que quedaba en la primera página, así que el navegador la empujaba entera a la segunda. La primera página quedaba con solo el título, los avisos y la introducción.
   - **Corrección:** las tarjetas largas (`impresion-fragmentable`) pueden fragmentarse. Esto cubre el pronóstico, la evaluación, los resultados observados y las versiones.
@@ -3342,7 +3523,7 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
     - OpenSSL 7/7 y demostración 6/6;
     - `pip check` y la comprobación de espacios, limpios;
     - extracción limpia con los 38 archivos idénticos y 225 pruebas focales.
-  - **GitHub Actions:** todavía no ha ejecutado Producto 3.
+  - **GitHub Actions:** todavía no había ejecutado Producto 3 en esa entrega. *Actualización (Fase 3):* la ejecución 45 de GitHub Actions (push a `main` de `c7644c4`, merge del PR #91) lo cubrió en verde: Linux, suite completa con 6379 superadas; Windows, selección con 2134 superadas; OpenSSL 7/7 en ambos.
   - **Límites:**
     - Las regresiones de publicación atómica y de lectura parcial pasaron en Windows, pero no se ensayó una pérdida de energía, así que no se acredita una durabilidad absoluta en NTFS.
     - No se creó ninguna tarea real del Programador de tareas.
@@ -3350,7 +3531,7 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
     - Las métricas de distintos juegos no se fusionan en una precisión global.
 
 
-**Producto 4 -laboratorio de modelos y pronósticos comparables:** entrena modelos nuevos con el histórico de cada juego, los compara en una pantalla y genera un pronóstico con el modelo elegido (`/laboratorio`). Estado: **validado localmente en Windows con el histórico real**; la impresión ajustada en Carta vertical también quedó validada; GitHub Actions todavía no lo ha ejecutado. La impresión horizontal no se ha revalidado en Windows. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`; nada de esto acredita ventaja predictiva.
+**Producto 4 -laboratorio de modelos y pronósticos comparables:** entrena modelos nuevos con el histórico de cada juego, los compara en una pantalla y genera un pronóstico con el modelo elegido (`/laboratorio`). Estado: **validado localmente en Windows con el histórico real**; la impresión ajustada en Carta vertical también quedó validada; GitHub Actions no lo había ejecutado en esa entrega; después lo cubrió en verde la ejecución 45 (push a `main` de `c7644c4`). La impresión horizontal no se ha revalidado en Windows. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`; nada de esto acredita ventaja predictiva.
 - **Modelos nuevos** (catálogo explícito con identidad, versión, parámetros y requisitos; las referencias están rotuladas como tales):
   - Baloto, Revancha y MiLoto: regresión logística regularizada (C=1) y `HistGradientBoostingClassifier` (80 iteraciones, profundidad 3, 7 hojas, L2=1, sin parada temprana), con calibración sigmoide sobre un bloque cronológico posterior al ajuste. Aprenden la aparición de cada número. Después, un ajuste de cardinalidad (desplazamiento común de logits por bisección, épsilon 1e-6) hace que las marginales sumen 5 sin superar 1. El producto de cinco marginales no es la probabilidad del premio mayor.
   - ColorLoto: `PoissonRegressor` (alpha=1) y `HistGradientBoostingRegressor` con pérdida Poisson. Aprenden cuántas veces aparece cada par número-color (0 a 6) y sus intensidades se normalizan a una distribución de pares (protección fija 1e-6). La combinación se mide y se genera con la suposición multinomial de Producto 2 (6 balotas independientes e idénticamente distribuidas dada la distribución estimada); el modelo no la demuestra y no es una predictiva Dirichlet-multinomial. Sin calibración sigmoide.
@@ -3443,10 +3624,10 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
       - Producto 4 `94 passed`, con 17 pruebas nuevas de impresión (14 de ellas fallan sobre el estado anterior al ajuste) y Productos 1 a 3 `225 passed`;
       - selección filtrada (67 entradas) `1867 passed`, sin omisiones; OpenSSL `SUPERADOS 7/7` (`exigir`) en la selección y en la suite; demostración 8/8; `pip check` y espacios limpios;
       - impresión comprobada en Chromium 141 con Bootstrap 5.3.3 y fixtures de tamaño real, en Carta vertical y horizontal: Trazabilidad y Parámetros impresos, ninguna tarjeta separada de su tabla ni título al pie, las mismas filas que antes, y la pantalla y las páginas ajenas al laboratorio idénticas píxel a píxel. No sustituye la revisión en Windows con los informes reales.
-  - **GitHub Actions:** todavía no ha ejecutado Producto 4.
-- **Pendiente:** la ejecución de GitHub Actions. La impresión horizontal no se ha revalidado en Windows; la evidencia real de impresión cubre Carta vertical. Ver `backend/docs/producto4_windows.md`.
+  - **GitHub Actions:** todavía no había ejecutado Producto 4 en esa entrega. *Actualización (Fase 3):* la ejecución 45 de GitHub Actions (push a `main` de `c7644c4`, merge del PR #91) lo cubrió en verde: Linux, suite completa con 6379 superadas; Windows, selección con 2134 superadas; OpenSSL 7/7 en ambos.
+- **Pendiente en esa entrega:** la ejecución de GitHub Actions; quedó cubierta por la ejecución 45. La impresión horizontal no se ha revalidado en Windows; la evidencia real de impresión cubre Carta vertical. Ver `backend/docs/producto4_windows.md`.
 
-**Producto 5 -modelo combinado, carteras y simulación:** combina la uniforme y las dos familias nuevas de Producto 4 con pesos aprendidos solo del pasado, genera carteras de combinaciones válidas y reproducibles para los cuatro juegos, las simula frente a una cartera uniforme y sigue sus aciertos observados (`/carteras`). Estado: **validado localmente en Windows con histórico real**, incluida la revisión de impresión de carteras, comparación, seguimiento y simulación en Carta vertical y horizontal; GitHub Actions todavía no lo ha ejecutado. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`; nada de esto acredita ventaja predictiva ni es una recomendación de apuesta.
+**Producto 5 -modelo combinado, carteras y simulación:** combina la uniforme y las dos familias nuevas de Producto 4 con pesos aprendidos solo del pasado, genera carteras de combinaciones válidas y reproducibles para los cuatro juegos, las simula frente a una cartera uniforme y sigue sus aciertos observados (`/carteras`). Estado: **validado localmente en Windows con histórico real**, incluida la revisión de impresión de carteras, comparación, seguimiento y simulación en Carta vertical y horizontal; GitHub Actions no lo había ejecutado en esa entrega; después lo cubrió en verde la ejecución 45 (push a `main` de `c7644c4`). Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`; nada de esto acredita ventaja predictiva ni es una recomendación de apuesta.
 - **Modelo combinado** (`ensemble_temporal` v1, protocolo `producto5-protocolo-1`): mezcla convexa de las probabilidades finales de tres componentes fijos, sin reentrenarlos ni cambiar sus recetas: uniforme + logística regularizada + HGB clasificador (Baloto, Revancha y MiLoto) y uniforme de la paleta + Poisson regularizado + HGB Poisson (ColorLoto). La mezcla conserva marginales en (0, 1) que suman 5, o una distribución de pares con masa 1.
   - Pesos: malla fija de 66 mezclas (i/10, j/10, k/10) evaluadas sobre predicciones ya calculadas (un ajuste por componente y corte, no 66 reentrenamientos). Criterio: Log Loss media por sorteo en un bloque interno de 10 objetivos (números: binaria por fila; ColorLoto: por balota con multiplicidades). Desempate: mínima pérdida; entre las mezclas a 1e-12 del mínimo, mayor peso de la uniforme y después del componente lineal.
   - Particiones causales para un bloque exterior que empieza en la posición s: bloque interno s-10..s-1; componentes ajustados (con su base y calibración) solo con objetivos anteriores a s-10; pesos elegidos con esas predicciones; componentes reajustados antes de s con los pesos fijos; bloque exterior evaluado sin usar sus etiquetas para nada. Mínimos: 20 de calentamiento + 30 de ajuste + 10 internos (60 sorteos para generar) y al menos 10 objetivos exteriores (70 para comparar; MiLoto con 87 sorteos tiene 27). Hasta 6 bloques exteriores.
@@ -3505,10 +3686,10 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
     - ColorLoto identifica los pares repetidos y distingue la repetición de un número de la repetición de un par número-color;
     - el panel y los catálogos se revisaron antes, solo en Carta vertical.
   - **Linux** (Cloud, solo fixtures sintéticas; no es el histórico real), sobre la v2: Producto 5 `96 passed`, Producto 4 `94 passed`, Productos 1 a 3 `225 passed`, selección filtrada (76 entradas) `1963 passed`, demostración 11/11, suite completa una vez `6208 passed` sin fallos ni omisiones, OpenSSL `SUPERADOS 7/7` (`exigir`) en la selección y en la suite, y `pip check` limpio. Las dos cadenas de parches (base → original → corrección y base → completo v2) dan el mismo contenido final.
-  - **GitHub Actions:** todavía no ha ejecutado Producto 5. Los checks de Producto 4 o de la base no lo acreditan.
-- **Pendiente:** la ejecución de GitHub Actions. Ver `backend/docs/producto5_windows.md`.
+  - **GitHub Actions:** todavía no había ejecutado Producto 5 en esa entrega. *Actualización (Fase 3):* la ejecución 45 de GitHub Actions (push a `main` de `c7644c4`, merge del PR #91) lo cubrió en verde: Linux, suite completa con 6379 superadas; Windows, selección con 2134 superadas; OpenSSL 7/7 en ambos.
+- **Pendiente en esa entrega:** la ejecución de GitHub Actions; quedó cubierta por la ejecución 45. Ver `backend/docs/producto5_windows.md`.
 
-**Producto 6 -centro de resultados y evaluación continua de modelos:** reúne en `/resultados` los pronósticos ya emitidos por la operación diaria (Productos 1-3), el laboratorio (Producto 4) y el vector fuente de las carteras (Producto 5), los compara con los sorteos reales cargados y conserva fotografías verificables de cada consulta. Estado: **validado localmente en Windows con histórico real** (versión v2), con la revisión de los PDF reales adjuntos; GitHub Actions todavía no lo ha ejecutado. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`. La conclusión real de Producto 5 (la uniforme tuvo menor pérdida que el modelo combinado en los cuatro juegos de aquella evaluación) no se convierte aquí en una victoria predictiva: las cifras describen objetivos ya observados.
+**Producto 6 -centro de resultados y evaluación continua de modelos:** reúne en `/resultados` los pronósticos ya emitidos por la operación diaria (Productos 1-3), el laboratorio (Producto 4) y el vector fuente de las carteras (Producto 5), los compara con los sorteos reales cargados y conserva fotografías verificables de cada consulta. Estado: **validado localmente en Windows con histórico real** (versión v2), con la revisión de los PDF reales adjuntos; GitHub Actions no lo había ejecutado en esa entrega; después lo cubrió en verde la ejecución 45 (push a `main` de `c7644c4`). Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO vigente y `AUTORIZA_EVALUACION = False`. La conclusión real de Producto 5 (la uniforme tuvo menor pérdida que el modelo combinado en los cuatro juegos de aquella evaluación) no se convierte aquí en una victoria predictiva: las cifras describen objetivos ya observados.
 - **Unidad de evaluación:** una emisión por procedencia, línea y objetivo, la PRIMERA según el orden sellado de su procedencia (`secuencia_en_el_objetivo` de Productos 1-3 con la política de `/rendimiento`; `secuencia_en_la_linea` de Productos 4 y 5). Nunca la fecha, el nombre del archivo, el mtime ni la versión con más aciertos. Si la primera no es evaluable, el objetivo se excluye sin pasar a otra versión; un archivo ilegible que hace ambiguo el orden excluye el objetivo.
   - Una **línea** identifica versión y configuración: Productos 1-3 por versión de la línea y huella de la configuración; Producto 4 por su línea (`modelo-vN-perfil`); Producto 5 por modelo, versión y perfil del vector fuente. No se agrupan modelos distintos por familia.
   - Se separan siempre integridad y legibilidad del artefacto, histórico hasta el corte («coincide», «cambio», «no disponible»), resultado observado (pendiente, observado, hueco) y admisión. Un histórico cambiado o no disponible, o un resultado fuera del universo congelado, no produce evaluación; una base que no responde deja las emisiones «sin base» (no son ceros ni pendientes confirmados) y no se inventa un último resultado.
@@ -3566,13 +3747,13 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
     - informe guardado de Baloto `c0568aceb510def0280acb6cab7def694b8a8145c6ad8dc5aa86499ef387dc0a`, con 5 emisiones y 5 artefactos de origen congelados. Su verificación confirma por separado integridad correcta (bytes canónicos, sello y clave), reproducción exacta (métricas por emisión, resúmenes, comparación de modelos, calibración y cálculos de carteras: 5 emisiones y 2 pares cartera-objetivo, sin reentrenar ni consultar la base) y coincidencia con la consulta actual;
     - las dos carteras de Baloto tienen 5 combinaciones y se comparan sobre el objetivo 2719, con un máximo de 1 acierto cada una; ese máximo no se mezcla con el Log Loss y el vector fuente se cuenta una vez por objetivo, no una vez por cartera;
     - comprobación ligera en Linux (extracción de texto, sin repetir la revisión visual) de los cinco PDF adjuntos a esta revisión: el informe de Baloto recibido es el de A4 vertical (6 páginas); formatos, páginas, clave y cifras coinciden con lo anterior. Los PDF del informe en Carta vertical y horizontal no se recibieron aquí. La revisión no se extiende a las pantallas de Revancha y MiLoto, que no se adjuntaron, ni a todos los formatos de cada pantalla.
-  - **GitHub Actions:** todavía no ha ejecutado Producto 6; no hay PR ni ejecución presentada para esta entrega. Los checks de Producto 5 no cuentan como ejecución de Producto 6.
-- **Pendiente:** la ejecución de GitHub Actions (no hay PR ni ejecución presentada para Producto 6; los checks de Producto 5 no cuentan). Ver `backend/docs/producto6_windows.md`.
+  - **GitHub Actions:** todavía no había ejecutado Producto 6 en esa entrega (sin PR ni ejecución presentada). *Actualización (Fase 3):* la ejecución 45 de GitHub Actions (push a `main` de `c7644c4`, merge del PR #91) lo cubrió en verde: Linux, suite completa con 6379 superadas; Windows, selección con 2134 superadas; OpenSSL 7/7 en ambos.
+- **Pendiente en esa entrega:** la ejecución de GitHub Actions; quedó cubierta por la ejecución 45, tras el PR #89. Ver `backend/docs/producto6_windows.md`.
 
 
 ---
 
-## ✅ Fase 5 — Estadísticas descriptivas (completa; validada localmente en Windows con histórico real; GitHub Actions pendiente)
+## ✅ Fase 5 — Estadísticas descriptivas (completa; validada localmente en Windows con histórico real; ejecutada en verde en GitHub Actions)
 
 **Objetivo:** análisis estadístico clásico sobre los datos históricos — frecuencias, intervalos entre apariciones, correlaciones, patrones temporales.
 
@@ -3609,7 +3790,7 @@ No se usaron sorteos reales, PostgreSQL, entrenamiento, inferencia operativa, cl
 | Validación defensiva de integridad histórica (cantidad, duplicados, rango) antes de calcular distribuciones que dependen de esos invariantes | ✅ Compartida entre `distribucion_pares_impares` y `distribucion_altos_bajos` vía un helper reutilizable -corrige una laguna real: la validación original de pares/impares (Etapa Y) no detectaba duplicados |
 
 
-**Fase 5 completa y validada localmente en Windows con histórico real** (v2; GitHub Actions pendiente). La auditoría sobre `9fab331` (merge del PR de Producto 6) contrastó cada componente de esta tabla con el código, las rutas y las pruebas: las 43 visualizaciones anteriores estaban terminadas (la sección «Estadísticas» del README estaba atrasada) y los huecos reales eran las 17 funciones del motor todavía sin conectar (7 familias), el panel unificado y las correlaciones de Pearson y Spearman, que no existían. Todo queda conectado con un catálogo único (`app/application/estadisticas/descriptivas.py`), un caso de uso de solo lectura (`ConsultarEstadisticasDescriptivas`), páginas `/estadisticas/{juego}/{metrica}` y `/estadisticas/{juego}/panel`, y su API JSON. Matriz de requisitos, unidades, estados y cómo se obtiene cada p-value en el README («Fase 5 — estadísticas descriptivas completas»); diseño y reutilización en ARCHITECTURE; recorrido de validación en `backend/docs/fase5_windows.md`. Validación, por entorno (detalle en el README y en la guía): en Windows (operador, Python 3.14.6), Fase 5 `94 passed`, Productos 6, 5, 4 y 1 a 3 `73`, `96`, `94` y `225 passed`, selección filtrada `2130 passed`, demostraciones 8/8 y 9/9 con datos sintéticos, OpenSSL `SUPERADOS 7/7` (`exigir`), `pip check` y espacios limpios, sin ejecutar la suite completa; la comprobación con histórico real (Baloto y Revancha 639 sorteos, MiLoto 89, ColorLoto 225, sin huecos) terminó correctamente, y se revisaron las 51 páginas de 14 PDF en A4 y Legal (ninguno en Carta). En Linux, con fixtures sintéticas, la suite completa dio `6375 passed`. GitHub Actions todavía no ha ejecutado esta entrega. No cambia `experimental_no_acreditado`, el NO-GO ni `AUTORIZA_EVALUACION = False`, y no completa las fases de ML, predicción ni evaluación.
+**Fase 5 completa y validada localmente en Windows con histórico real** (v2; después ejecutada en verde en GitHub Actions, ejecución 42). La auditoría sobre `9fab331` (merge del PR de Producto 6) contrastó cada componente de esta tabla con el código, las rutas y las pruebas: las 43 visualizaciones anteriores estaban terminadas (la sección «Estadísticas» del README estaba atrasada) y los huecos reales eran las 17 funciones del motor todavía sin conectar (7 familias), el panel unificado y las correlaciones de Pearson y Spearman, que no existían. Todo queda conectado con un catálogo único (`app/application/estadisticas/descriptivas.py`), un caso de uso de solo lectura (`ConsultarEstadisticasDescriptivas`), páginas `/estadisticas/{juego}/{metrica}` y `/estadisticas/{juego}/panel`, y su API JSON. Matriz de requisitos, unidades, estados y cómo se obtiene cada p-value en el README («Fase 5 — estadísticas descriptivas completas»); diseño y reutilización en ARCHITECTURE; recorrido de validación en `backend/docs/fase5_windows.md`. Validación, por entorno (detalle en el README y en la guía): en Windows (operador, Python 3.14.6), Fase 5 `94 passed`, Productos 6, 5, 4 y 1 a 3 `73`, `96`, `94` y `225 passed`, selección filtrada `2130 passed`, demostraciones 8/8 y 9/9 con datos sintéticos, OpenSSL `SUPERADOS 7/7` (`exigir`), `pip check` y espacios limpios, sin ejecutar la suite completa; la comprobación con histórico real (Baloto y Revancha 639 sorteos, MiLoto 89, ColorLoto 225, sin huecos) terminó correctamente, y se revisaron las 51 páginas de 14 PDF en A4 y Legal (ninguno en Carta). En Linux, con fixtures sintéticas, la suite completa dio `6375 passed`. GitHub Actions la ejecutó después en verde (ejecución 42 sobre `24c9861`, merge del PR #90, y de nuevo la 45 sobre `c7644c4`). No cambia `experimental_no_acreditado`, el NO-GO ni `AUTORIZA_EVALUACION = False`, y no completa las fases de ML, predicción ni evaluación.
 
 **Checkpoint de tests validado (Etapa V):** `904 passed` con `pytest` real contra PostgreSQL.
 **Checkpoint de tests validado (Etapa W, distancia desde la última aparición):** `946 passed` con `pytest` real contra PostgreSQL.
@@ -3829,7 +4010,7 @@ No se entrenó ni evaluó ML, no se leyeron números ganadores y no se generaron
 
 ---
 
-## 🟡 Fase 6 — Simulaciones (parcial: AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada)
+## 🟡 Fase 6 — Simulaciones (parcial: AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada; Producto 5: simulación Monte Carlo de carteras)
 
 **Objetivo:** simulaciones Monte Carlo para estimar el comportamiento esperado bajo el modelo de azar uniforme, y contrastarlo contra los patrones detectados en la Fase 5.
 
@@ -4113,6 +4294,8 @@ No se entrenó ni evaluó ML y no se generaron predicciones. Claude no leyó nú
 ---
 
 ## Siguiente decisión recomendada
+
+> **Actualización (entrega «Fase 3 — modelos versionados»):** el orden vigente de las próximas entregas es **3 → 4 → 6 → 7 → 8 → 9** (ver «Estado por fase» al principio). Lo que sigue se conserva como registro histórico.
 
 > **Actualización (Etapa W):** la recomendación de esta sección (opción 2 — conectar una nueva métrica numérica ya existente en el motor) fue ejecutada: se agregó "Distancia desde la última aparición" (`atrasos_numeros`) para números principales de Baloto, Baloto Revancha y MiLoto. Se conserva el análisis original abajo como registro de la decisión tomada. La siguiente decisión de esta misma naturaleza (qué conectar después) no ha sido evaluada todavía.
 >

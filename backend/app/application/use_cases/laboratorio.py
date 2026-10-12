@@ -20,6 +20,17 @@ API y el comando `python -m scripts.laboratorio_modelos`.
   con la instantanea guardada y coincidencia con la base actual, por
   separado. Reentrenan, sin guardar nada.
 - `seguimiento`: resultados observados por linea de modelo.
+- Fase 3, MODELOS REGISTRADOS: `iniciar_entrenamiento` + `ejecutar_entrenamiento`
+  (o `entrenar_ahora`) entrena un candidato de un informe con su instantanea
+  (corte explicito del informe) en el proceso trabajador y publica la version
+  (manifiesto + estimador) con progreso persistente; misma entrada -> la misma
+  version. `modelos`/`modelo`/`ficha_del_modelo` consultan las versiones;
+  `verificar_modelo` comprueba integridad, compatibilidad, carga restringida y
+  el pronostico de control; `generar_con_modelo` recarga la version y
+  pronostica el sorteo siguiente a un corte de entrada (>= el de entrenamiento)
+  SIN reentrenar, en una linea propia de la version (`<modelo>-v<receta>-reg<n>`).
+  Elegir una version para la operacion diaria es una configuracion explicita
+  de Producto 5; comparar o entrenar nunca la cambia.
 
 Solo se lee PostgreSQL. Comparar y generar escriben unicamente en el almacen
 del laboratorio. Nada de esto importa sorteos ni cambia la operacion diaria,
@@ -31,18 +42,23 @@ import time
 from collections import Counter
 from collections.abc import Callable, Iterable
 from contextlib import AbstractContextManager
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from typing import Any
 
 from app.application.estadisticas.resumen_juego import evaluar_frescura
 from app.application.exceptions import JuegoNoEncontradoError
-from app.application.interfaces.ejecutor_laboratorio import EjecutorDeLaboratorio, TrabajadorFallidoError
-from app.application.interfaces.laboratorio_store import GuardadoLaboratorio
+from app.application.interfaces.ejecutor_laboratorio import (
+    EjecutorDeLaboratorio,
+    TiempoAgotadoError,
+    TrabajadorFallidoError,
+)
+from app.application.interfaces.laboratorio_store import GuardadoLaboratorio, GuardadoModelo, IlegibleModelo
 from app.application.ml import laboratorio_artefactos as la
 from app.application.ml import laboratorio_evaluacion as le
 from app.application.ml import laboratorio_modelos as lm
 from app.application.ml import laboratorio_variables as lv
+from app.application.ml import modelos_registrados as mr
 from app.application.ml import resultados_observados as ro
 from app.application.use_cases.operacion_diaria import EjecucionActivaError, mensaje_legible, nuevo_identificador
 
@@ -53,7 +69,9 @@ SLUGS = {"BALOTO": "baloto", "BALOTO_REVANCHA": "baloto-revancha", "MILOTO": "mi
 
 class LaboratorioError(Exception):
     """Error esperado con un codigo estable (`no_encontrado`, `no_valido`,
-    `muestra_insuficiente`, `alterado`, `no_disponible`, `base_no_disponible`)."""
+    `muestra_insuficiente`, `alterado`, `no_disponible`, `base_no_disponible`;
+    Fase 3: `incompatible`, `corte_no_valido`, `estimador_no_admitido`,
+    `no_registrable`, `tiempo_agotado`)."""
 
     def __init__(self, codigo: str, mensaje: str):
         self.codigo = codigo
@@ -97,6 +115,18 @@ class EjecutorEnEsteProceso(EjecutorDeLaboratorio):
     def pronostico(self, informe, entrada):
         return la.cuerpo_del_pronostico(informe, entrada)
 
+    def entrenar(self, informe, entrada, avance=None):
+        return mr.entrenar(informe, entrada)
+
+    def control_registrado(self, artefacto, estimador, informe):
+        return mr.control_recargado(artefacto, estimador, informe)
+
+    def pronostico_registrado(self, artefacto, estimador, sorteos):
+        recargado = mr.deserializar_estimador(estimador, artefacto["estimador"]["sha256"],
+                                              artefacto["estimador"]["bytes"])
+        return mr.cuerpo_del_pronostico_registrado(artefacto, recargado,
+                                                   lv.instantanea_desde_canonicos(artefacto["juego"], sorteos))
+
 
 class LaboratorioDeModelos:
     def __init__(self, almacen, registro, cerrojo, abrir_lectura: Callable[[], AbstractContextManager[Lectura]],
@@ -132,9 +162,11 @@ class LaboratorioDeModelos:
 
     @staticmethod
     def catalogo(perfil: str = "predeterminado") -> dict:
-        return {"juegos": {j: [e.como_dict(perfil) for e in lm.candidatos_del_juego(j)] for j in JUEGOS},
+        return {"juegos": {j: [{**e.como_dict(perfil), "registrable": lm.registrable(e)}
+                               for e in lm.candidatos_del_juego(j)] for j in JUEGOS},
                 "variables": lv.VERSION_VARIABLES, "protocolo": le.Protocolo(perfil=perfil).como_dict(),
-                "implementacion": la.VERSION_IMPLEMENTACION}
+                "implementacion": la.VERSION_IMPLEMENTACION, "registro": mr.VERSION_REGISTRO,
+                "familias_futuras": dict(lm.FAMILIAS_FUTURAS)}
 
     def diagnostico(self, juego: str, protocolo: le.Protocolo | None = None) -> dict:
         _validar_juego(juego)
@@ -317,7 +349,7 @@ class LaboratorioDeModelos:
     def recuperar(self) -> list[str]:
         marcadas = []
         for e in self._registro.listar(200):
-            if e.get("tipo") != "comparacion":
+            if e.get("tipo") not in ("comparacion", "entrenamiento"):
                 continue
             derivada = self._derivar(e)
             if derivada is not e and derivada.get("estado") == "interrumpida":
@@ -473,6 +505,12 @@ class LaboratorioDeModelos:
         artefacto = guardado.artefacto
         salida = {"pronostico": clave, "integridad": "correcta",
                   "mismo_entorno": artefacto["identidad"]["entorno"] == la.entorno()}
+        if "modelo_registrado" in artefacto["identidad"]:
+            salida["reproduccion"] = self._reproducir_pronostico_registrado(artefacto)
+            completo = self._historico_o_none(artefacto["juego"])
+            salida["base_actual"] = (None if completo is None
+                                     else ro.comparar_con_resultado(artefacto, completo)["historico_hasta_el_corte"])
+            return salida
         try:
             informe = self.experimento(artefacto["experimento"]).artefacto
             entrada = self._entrada_del_informe(informe, artefacto["modelo"]["id"])
@@ -516,6 +554,277 @@ class LaboratorioDeModelos:
         return {"juego": juego, "base": "no_disponible" if completo is None else "consultada", "lineas": por_linea,
                 "comparacion": la.comparacion_entre_lineas(por_linea, tipo) if len(por_linea) > 1 else None,
                 "nota": la.NOTA_SEGUIMIENTO}
+
+
+    # ------------------------------------------------------------------
+    # Fase 3: modelos registrados
+    # ------------------------------------------------------------------
+
+    def _entrada_registrable(self, informe: dict, modelo: str) -> lm.EntradaCatalogo:
+        entrada = self._entrada_del_informe(informe, modelo)
+        if not lm.registrable(entrada):
+            raise LaboratorioError("no_registrable", f"{entrada.nombre} no tiene un estimador que guardar: se "
+                                                     "recalcula en cada pronostico")
+        return entrada
+
+    def iniciar_entrenamiento(self, clave_experimento: str, modelo: str, origen: str = "web") -> Inicio:
+        informe = self.experimento(clave_experimento).artefacto
+        self._entrada_registrable(informe, modelo)
+        juego = informe["juego"]
+        ahora = self._reloj()
+        identificador = self._nuevo_identificador(ahora)
+        cerrojos = self._cerrojo.adquirir((juego,), identificador)
+        if isinstance(cerrojos, dict):
+            raise EjecucionActivaError(cerrojos)
+        ejecucion = {"id": identificador, "tipo": "entrenamiento", "origen": origen, "estado": "en_curso",
+                     "fase": "inicio", "iniciada_en": ahora.isoformat(), "finalizada_en": None, "orden": [juego],
+                     "experimento": clave_experimento, "modelo": modelo, "corte": informe["datos"]["corte"],
+                     "juegos": {juego: {"juego": juego, "estado": "pendiente", "fase": "inicio"}}}
+        try:
+            self._registro.guardar(ejecucion)
+        except BaseException:
+            cerrojos.liberar()
+            raise
+        return Inicio(ejecucion, cerrojos, (juego,))
+
+    def ejecutar_entrenamiento(self, inicio: Inicio) -> dict:
+        ejecucion = inicio.ejecucion
+        juego = inicio.juegos[0]
+        try:
+            ejecucion["fase"] = "entrenando"
+            r = self._entrenar(ejecucion, juego)
+            ejecucion["juegos"][juego] = r
+            ejecucion["estado"] = "exito" if r["estado"] in ("terminado", "reutilizado") else "fallo"
+            ejecucion["fase"] = "terminado"
+            ejecucion["finalizada_en"] = self._reloj().isoformat()
+            self._registro.guardar(ejecucion)
+            return ejecucion
+        finally:
+            inicio.cerrojos.liberar()
+
+    def entrenar_ahora(self, clave_experimento: str, modelo: str, origen: str = "comando") -> dict:
+        return self.ejecutar_entrenamiento(self.iniciar_entrenamiento(clave_experimento, modelo, origen))
+
+    def _entrenar(self, ejecucion: dict, juego: str) -> dict:
+        r = {"juego": juego, "estado": "en_curso", "fase": "leyendo_informe", "inicio": self._reloj().isoformat(),
+             "fin": None, "modelo": ejecucion["modelo"], "experimento": ejecucion["experimento"],
+             "modelo_registrado": None, "numero": None, "mensaje": None}
+        self._avance(ejecucion, r, "leyendo_informe")
+        try:
+            informe = self.experimento(ejecucion["experimento"]).artefacto
+            entrada = self._entrada_registrable(informe, ejecucion["modelo"])
+            identidad = mr.identidad_del_modelo(informe, entrada)
+            clave = mr.huella(identidad)
+            r.update({"modelo_registrado": clave, "corte": informe["datos"]["corte"],
+                      "sorteos": informe["datos"]["sorteos"]})
+            existente = self._almacen.obtener_modelo(clave)
+            if existente is not None:
+                return self._cerrar_con_modelo(r, existente, reutilizado=True)
+            iniciado = self._reloj().isoformat()
+            self._avance(ejecucion, r, "entrenando")
+            inicio = time.perf_counter()
+            entrenado = self._ejecutor.entrenar(informe, entrada,
+                                                avance=lambda fase, **d: self._avance(ejecucion, r, fase, **d))
+            self._avance(ejecucion, r, "publicando")
+            cuerpo = mr.cuerpo_del_modelo(informe, entrada, identidad,
+                                          {k: v for k, v in entrenado.items() if k != "contenido"})
+            artefacto = mr.componer(cuerpo, {"iniciado_en": iniciado, "terminado_en": self._reloj().isoformat(),
+                                             "segundos": round(time.perf_counter() - inicio, 3),
+                                             "origen": ejecucion["origen"], "ejecucion": ejecucion["id"],
+                                             "nota": "datos de publicacion: fuera de la huella de reproduccion"})
+            try:
+                guardado = self._almacen.guardar_modelo(artefacto, entrenado["contenido"])
+            except FileExistsError:  # otro proceso publico la misma entrada mientras tanto
+                return self._cerrar_con_modelo(r, self._almacen.obtener_modelo(clave), reutilizado=True)
+            return self._cerrar_con_modelo(r, guardado, reutilizado=False)
+        except LaboratorioError as error:
+            return self._cerrar(r, error.codigo if error.codigo in ("no_registrable", "alterado") else "fallo",
+                                str(error))
+        except mr.ModeloRegistradoError as error:
+            return self._cerrar(r, error.estado, error.motivo)
+        except lm.CandidatoNoDisponible as error:
+            return self._cerrar(r, error.estado, f"El modelo no se pudo ajustar: {error.motivo}")
+        except TiempoAgotadoError as error:
+            return self._cerrar(r, "tiempo_agotado", f"Tiempo agotado: {mensaje_legible(error)}")
+        except TrabajadorFallidoError as error:  # el proceso trabajador murio: nada se publico
+            return self._cerrar(r, "fallo", f"Fallo del proceso de entrenamiento: {mensaje_legible(error)}")
+        except Exception as error:
+            return self._cerrar(r, "fallo", mensaje_legible(error))
+
+    def _cerrar_con_modelo(self, r: dict, guardado, reutilizado: bool) -> dict:
+        if not isinstance(guardado, GuardadoModelo):
+            motivo = getattr(guardado, "motivo", "no encontrado")
+            return self._cerrar(r, "alterado", f"ya existe una version con la misma entrada pero esta alterada o "
+                                               f"incompleta ({motivo}); no se sobrescribe")
+        r["numero"] = guardado.numero
+        return self._cerrar(r, "reutilizado" if reutilizado else "terminado", None)
+
+    def modelos(self, juego: str) -> dict:
+        """Versiones registradas del juego (solo lectura), con su
+        compatibilidad con este entorno, y las incidencias del almacen."""
+        _validar_juego(juego)
+        versiones, ilegibles = [], []
+        for e in self._almacen.modelos(juego):
+            if isinstance(e, GuardadoModelo):
+                compat = mr.compatibilidad(e.artefacto)
+                versiones.append({**mr.resumen(e.artefacto), "compatible": compat["compatible"],
+                                  "motivos": compat["motivos"]})
+            else:
+                ilegibles.append({"clave": e.identificador, "motivo": e.motivo, "modelo": e.modelo,
+                                  "numero": e.numero})
+        return {"juego": juego, "nombre": NOMBRES[juego], "versiones": versiones, "ilegibles": ilegibles,
+                "reservas_sin_modelo": [asdict(x) for x in self._almacen.reservas_sin_modelo(juego)],
+                "registrables": [{"id": e.id, "nombre": e.nombre, "familia": e.familia}
+                                 for e in lm.candidatos_del_juego(juego) if lm.registrable(e)],
+                "activa": self._cerrojo.activa(juego)}
+
+    def modelo(self, clave: str) -> GuardadoModelo:
+        guardado = self._almacen.obtener_modelo(clave)
+        if guardado is None:
+            raise LaboratorioError("no_encontrado", f"No existe el modelo registrado {clave}")
+        if not isinstance(guardado, GuardadoModelo):
+            raise LaboratorioError("alterado", f"El modelo {clave} esta alterado o incompleto ({guardado.motivo}); "
+                                               "no se carga")
+        return guardado
+
+    def ficha_del_modelo(self, clave: str) -> dict:
+        """Ficha de solo lectura: manifiesto, compatibilidad (sin deserializar),
+        proyeccion a las tablas de la Fase 1 y pronosticos de su linea."""
+        guardado = self.modelo(clave)
+        artefacto = guardado.artefacto
+        linea = mr.linea_registrada(artefacto)["id"]
+        pronosticos = [{"clave": e.identificador, "objetivo": e.objetivo, "secuencia": e.secuencia,
+                        "corte": e.artefacto["datos"]["corte"],
+                        "generado_en": e.artefacto["generacion"]["generado_en"]}
+                       for e in (self._almacen.pronosticos(guardado.juego, linea)
+                                 if linea in self._almacen.lineas(guardado.juego) else [])
+                       if isinstance(e, GuardadoLaboratorio)]
+        return {"modelo": artefacto, "resumen": mr.resumen(artefacto), "compatibilidad": mr.compatibilidad(artefacto),
+                "proyeccion": mr.proyeccion_a_tablas(artefacto), "linea": linea, "pronosticos": pronosticos,
+                "base_actual": self.estado_frente_a_la_base({"juego": guardado.juego,
+                                                             "datos": artefacto["datos"]})}
+
+    def verificar_modelo(self, clave: str) -> dict:
+        """Integridad, compatibilidad, carga restringida y pronostico de control
+        (con la instantanea del informe de procedencia). No escribe nada."""
+        guardado = self._almacen.obtener_modelo(clave)
+        if guardado is None:
+            raise LaboratorioError("no_encontrado", f"No existe el modelo registrado {clave}")
+        if isinstance(guardado, IlegibleModelo):
+            return {"modelo": clave, "integridad": "alterado", "motivo": guardado.motivo, "compatibilidad": None,
+                    "carga": None, "reproduccion": None, "base_actual": None}
+        artefacto = guardado.artefacto
+        salida = {"modelo": clave, "numero": guardado.numero, "integridad": "correcta",
+                  "estimador": {"sha256": artefacto["estimador"]["sha256"], "bytes": artefacto["estimador"]["bytes"],
+                                "estado": "coincide con el manifiesto"},
+                  "compatibilidad": mr.compatibilidad(artefacto), "carga": None, "reproduccion": None,
+                  "base_actual": self.estado_frente_a_la_base({"juego": guardado.juego, "datos": artefacto["datos"]})}
+        if not salida["compatibilidad"]["compatible"]:
+            salida["carga"] = {"estado": "no_intentada", "motivo": "entorno o codigo incompatible"}
+            return salida
+        try:
+            informe = self.experimento(artefacto["procedencia"]["experimento"]).artefacto
+        except LaboratorioError as error:
+            salida["carga"] = {"estado": "no_intentada", "motivo": f"informe de procedencia: {error}"}
+            return salida
+        try:
+            inicio = time.perf_counter()
+            control = self._ejecutor.control_registrado(artefacto, self._almacen.leer_estimador(guardado), informe)
+        except mr.ModeloRegistradoError as error:
+            salida["carga"] = {"estado": error.estado, "motivo": error.motivo}
+            return salida
+        except (lm.CandidatoNoDisponible, TrabajadorFallidoError, la.ArtefactoLaboratorioError) as error:
+            salida["carga"] = {"estado": "fallo", "motivo": mensaje_legible(error)}
+            return salida
+        guardado_control = artefacto["control"]
+        salida["carga"] = {"estado": "correcta", "clase": control["clase"]}
+        salida["reproduccion"] = {"objetivo": control["objetivo"],
+                                  "exacta": control["sha256_probabilidades"] == guardado_control["sha256_probabilidades"],
+                                  "control_guardado": guardado_control["sha256_probabilidades"],
+                                  "control_actual": control["sha256_probabilidades"],
+                                  "segundos": round(time.perf_counter() - inicio, 3)}
+        return salida
+
+    def generar_con_modelo(self, clave: str, corte: int | None = None, origen: str = "web"):
+        """Pronostico del sorteo siguiente a `corte` (por defecto el ultimo
+        cargado) con la version registrada recargada, SIN reentrenar."""
+        guardado = self.modelo(clave)
+        artefacto = guardado.artefacto
+        juego = guardado.juego
+        compat = mr.compatibilidad(artefacto)
+        if not compat["compatible"]:
+            raise LaboratorioError("incompatible", "El modelo no se puede cargar en este entorno: "
+                                                   + "; ".join(compat["motivos"]))
+        try:
+            historico = self._historico(juego, corte)
+        except Exception as error:
+            raise LaboratorioError("base_no_disponible", mensaje_legible(error)) from error
+        if corte is not None and corte not in {s.numero_sorteo for s in historico}:
+            raise LaboratorioError("no_valido", f"el corte {corte} no es un sorteo cargado")
+        try:
+            instantanea = lv.validar_instantanea(juego, historico, corte)
+            mr.validar_corte_de_entrada(artefacto, instantanea)
+        except lv.HistoricoNoValidoError as error:
+            raise LaboratorioError("no_valido", str(error)) from error
+        except mr.ModeloRegistradoError as error:
+            raise LaboratorioError(error.estado, error.motivo) from error
+        clave_pronostico = la.huella(mr.identidad_del_pronostico_registrado(artefacto, instantanea))
+        existente = self._almacen.obtener_pronostico(clave_pronostico)
+        if existente is not None:
+            if not isinstance(existente, GuardadoLaboratorio):
+                raise LaboratorioError("alterado", "ya existe un pronostico con la misma entrada pero esta alterado; "
+                                                   "no se sobrescribe")
+            return replace(existente, reutilizado=True)
+        try:
+            cuerpo = self._ejecutor.pronostico_registrado(artefacto, self._almacen.leer_estimador(guardado),
+                                                          lv.sorteos_canonicos(instantanea))
+        except mr.ModeloRegistradoError as error:
+            raise LaboratorioError(error.estado, error.motivo) from error
+        except lm.CandidatoNoDisponible as error:
+            raise LaboratorioError(error.estado, error.motivo) from error
+        except TiempoAgotadoError as error:
+            raise LaboratorioError("tiempo_agotado", mensaje_legible(error)) from error
+        except TrabajadorFallidoError as error:
+            raise LaboratorioError("fallo_del_trabajador", f"Fallo del proceso trabajador: {error}") from error
+        ahora = self._reloj()
+        completo = self._historico_o_none(juego)
+        generacion = {"generado_en": ahora.isoformat(),
+                      "nota": "reloj local de quien genero; no prueba anterioridad frente al sorteo real",
+                      "clasificacion_temporal": None, "frescura": None, "origen": origen,
+                      "base": "no_disponible" if completo is None else "consultada"}
+        if completo:
+            sb = (cuerpo["superbalota"] or {}).get("pronostico", {}).get("sugerida")
+            generacion["clasificacion_temporal"] = ro.clasificar_objetivo(juego, cuerpo["pronostico"], sb, completo)
+            ultima = max(completo, key=lambda r: r.numero_sorteo).fecha
+            generacion["frescura"] = evaluar_frescura(ultima, ahora.date())
+        try:
+            return self._almacen.guardar_pronostico(la.componer(cuerpo, "generacion", generacion))
+        except FileExistsError:
+            existente = self._almacen.obtener_pronostico(clave_pronostico)
+            if not isinstance(existente, GuardadoLaboratorio):
+                raise
+            return replace(existente, reutilizado=True)
+
+    def _reproducir_pronostico_registrado(self, artefacto: dict) -> dict:
+        try:
+            guardado = self.modelo(artefacto["identidad"]["modelo_registrado"]["clave"])
+            compat = mr.compatibilidad(guardado.artefacto)
+            if not compat["compatible"]:
+                return {"estado": "no_reproducible", "motivo": "modelo incompatible: " + "; ".join(compat["motivos"])}
+            corte = artefacto["datos"]["corte"]
+            historico = self._historico(artefacto["juego"], corte)
+            instantanea = lv.validar_instantanea(artefacto["juego"], historico, corte)
+            if instantanea.huella() != artefacto["datos"]["sha256_historico"]:
+                return {"estado": "no_reproducible", "motivo": "el historico de la base hasta el corte cambio"}
+            recalculado = self._ejecutor.pronostico_registrado(guardado.artefacto,
+                                                               self._almacen.leer_estimador(guardado),
+                                                               lv.sorteos_canonicos(instantanea))
+            return la.comparar_pronostico(artefacto, recalculado)
+        except (LaboratorioError, mr.ModeloRegistradoError, lm.CandidatoNoDisponible, lv.HistoricoNoValidoError,
+                TrabajadorFallidoError) as error:
+            return {"estado": "no_reproducible", "motivo": mensaje_legible(error)}
+        except Exception as error:  # base no disponible
+            return {"estado": "no_reproducible", "motivo": f"base no disponible: {mensaje_legible(error)}"}
 
 
 def _validar_juego(juego: str) -> None:

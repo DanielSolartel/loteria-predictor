@@ -229,12 +229,34 @@ def cuerpo_del_pronostico(informe: dict, entrada: lm.EntradaCatalogo) -> dict:
     ajustado = lm.ajustar_candidato(entrada, instantanea, variables, n, perfil)
     filas = variables.filas([n])
     p = ajustado.predecir(filas)
-    reglas = instantanea.reglas
     identidad = identidad_del_pronostico(informe, entrada)
     evaluacion = next((c for c in informe["candidatos"] if c["id"] == entrada.id), None)
+    pronostico, superbalota = contenido_del_pronostico(instantanea, filas.candidatos, p, d)
+    return {"esquema": ESQUEMA_PRONOSTICO, "clave_de_entrada": huella(identidad), "identidad": identidad,
+            "linea": linea_de(informe["juego"], entrada, perfil), "estado_de_uso": ESTADO_DE_USO,
+            "contexto": contexto(), "juego": informe["juego"], "experimento": informe["clave"],
+            "modelo": entrada.como_dict(perfil),
+            "datos": {"corte": instantanea.corte, "sha256_historico": instantanea.huella(), "sorteos": n,
+                      "ultima_fecha": instantanea.sorteos[-1].fecha.isoformat()},
+            "ajuste_final": ajustado.detalle, "pronostico": pronostico, "superbalota": superbalota,
+            "evaluacion_del_experimento": evaluacion_resumida(evaluacion)}
+
+
+def evaluacion_resumida(evaluacion: dict | None) -> dict | None:
+    return None if evaluacion is None else {
+        "estado": evaluacion["estado"], "agregado": evaluacion["agregado"], "veredicto": evaluacion.get("veredicto"),
+        "nota": "comparacion exploratoria del experimento; no acredita ventaja futura"}
+
+
+def contenido_del_pronostico(instantanea: lv.Instantanea, candidatos: Sequence, p: np.ndarray,
+                             d: int) -> tuple[dict, dict | None]:
+    """(pronostico, superbalota) del objetivo corte + 1 con las probabilidades
+    `p` de `candidatos` (numeros o pares). Comun a los pronosticos que reajustan
+    (Producto 4) y a los de un modelo registrado congelado (Fase 3)."""
+    reglas = instantanea.reglas
     pronostico = {"objetivo": instantanea.corte + 1, "calculado_hasta_sorteo": instantanea.corte}
     if reglas.colores:
-        dist = {tuple(c): float(v) for c, v in zip(filas.candidatos, p)}
+        dist = {tuple(c): float(v) for c, v in zip(candidatos, p)}
         sugeridos = pcl.multiconjunto_mas_probable(dist)
         m = len(dist)
         pronostico.update({
@@ -250,7 +272,7 @@ def cuerpo_del_pronostico(informe: dict, entrada: lm.EntradaCatalogo) -> dict:
                           "Dirichlet-multinomial",
             "nota": "multiconjunto mas probable (6 pares, con repeticion); no es una garantia"})
     else:
-        marginal = dict(zip(filas.candidatos, p.tolist()))
+        marginal = dict(zip(candidatos, p.tolist()))
         orden = sorted(marginal, key=lambda c: (-marginal[c], c))
         uniforme = reglas.cantidad / len(reglas.candidatos)
         pronostico.update({
@@ -269,17 +291,7 @@ def cuerpo_del_pronostico(informe: dict, entrada: lm.EntradaCatalogo) -> dict:
                                                    "probabilidad_uniforme": _r(1 / len(sb), d)}
                                                   for c in sorted(sb, key=lambda c: (-sb[c], c))],
                                       "sugerida": min(sb, key=lambda c: (-sb[c], c))}}
-    return {"esquema": ESQUEMA_PRONOSTICO, "clave_de_entrada": huella(identidad), "identidad": identidad,
-            "linea": linea_de(informe["juego"], entrada, perfil), "estado_de_uso": ESTADO_DE_USO,
-            "contexto": contexto(), "juego": informe["juego"], "experimento": informe["clave"],
-            "modelo": entrada.como_dict(perfil),
-            "datos": {"corte": instantanea.corte, "sha256_historico": instantanea.huella(), "sorteos": n,
-                      "ultima_fecha": instantanea.sorteos[-1].fecha.isoformat()},
-            "ajuste_final": ajustado.detalle, "pronostico": pronostico, "superbalota": superbalota,
-            "evaluacion_del_experimento": None if evaluacion is None else {
-                "estado": evaluacion["estado"], "agregado": evaluacion["agregado"],
-                "veredicto": evaluacion.get("veredicto"),
-                "nota": "comparacion exploratoria del experimento; no acredita ventaja futura"}}
+    return pronostico, superbalota
 
 
 def con_orden(artefacto: dict, secuencia: int, version_anterior: str | None) -> dict:

@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block clase_body %} class="producto1-impresion"{% endblock %}
-{% block title %}Comparación de modelos{% endblock %}
+{% set titulo = 'Entrenar y guardar un modelo' if e.tipo == 'entrenamiento' else 'Comparación de modelos' %}
+{% block title %}{{ titulo }}{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
-    <h3 class="mb-0">Comparación de modelos</h3>
-    <a class="btn btn-sm btn-outline-secondary" href="/laboratorio">Laboratorio</a>
+    <h3 class="mb-0">{{ titulo }}</h3>
+    <div class="d-flex gap-2">{% if e.tipo == 'entrenamiento' %}<a class="btn btn-sm btn-outline-secondary" href="/laboratorio/experimentos/{{ e.experimento }}">Informe de procedencia</a><a class="btn btn-sm btn-outline-secondary" href="/laboratorio/modelos">Modelos registrados</a>{% endif %}
+    <a class="btn btn-sm btn-outline-secondary" href="/laboratorio">Laboratorio</a></div>
 </div>
 {% include "laboratorio/_ejecucion_estado.html" %}
 {% endblock %}

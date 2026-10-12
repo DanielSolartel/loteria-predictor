@@ -216,6 +216,31 @@ def agregar(por_objetivo: dict, uniforme: dict, objetivos: list[int], d: int, co
     return salida
 
 
+def metricas_secundarias(candidato: dict, colores: bool, cantidad: int, decimales: int = 6) -> dict | None:
+    """Metricas secundarias (Fase 3) DERIVADAS de los aciertos por objetivo ya
+    guardados en el informe (no cambian ningun artefacto). Regla de decision:
+    los k primeros del ranking (k = 5 numeros; ColorLoto: el multiconjunto mas
+    probable de 6 balotas, con multiplicidad). Con k igual al tamano del sorteo
+    la precision, la exhaustividad y F1 coinciden (aciertos / k). La exactitud
+    por fila (solo numeros) esta dominada por las ausencias: la uniforme ya
+    obtiene una exactitud alta. Se comparan con las de la uniforme del mismo
+    informe."""
+    filas = candidato.get("por_objetivo") or []
+    if not filas:
+        return None
+    k = pcl.BALOTAS if colores else cantidad
+    n = len(filas)
+    aciertos = sum(f["aciertos"] for f in filas)
+    proporcion = round(aciertos / (k * n), decimales)
+    salida = {"regla": f"top-{k}", "k": k, "objetivos": n, "aciertos": aciertos,
+              "aciertos_por_sorteo": round(aciertos / n, decimales), "precision_en_k": proporcion,
+              "exhaustividad_en_k": proporcion, "f1_en_k": proporcion, "exactitud": None}
+    if not colores:
+        total = sum(f["filas"] for f in filas)
+        salida["exactitud"] = round(sum(f["filas"] - 2 * k + 2 * f["aciertos"] for f in filas) / total, decimales)
+    return salida
+
+
 def diagnostico_de_calibracion(filas: lv.Filas, p: np.ndarray, colores: bool) -> list[dict]:
     """Intervalos fijos: probabilidad media frente a frecuencia observada.
     ColorLoto: probabilidad normalizada del par frente a su proporcion de

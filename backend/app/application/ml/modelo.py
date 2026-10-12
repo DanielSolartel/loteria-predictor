@@ -415,10 +415,34 @@ def transformador_laboratorio(familia: str) -> ColumnTransformer:
                              remainder="passthrough")
 
 
+BOSQUES_DEL_LABORATORIO = ("random_forest_clasificador", "extra_trees_clasificador", "random_forest_poisson",
+                           "extra_trees_poisson")
+"""Fase 3: Random Forest y Extra Trees del laboratorio (clasificacion para los
+numeros; regresion con criterio de Poisson para los pares de ColorLoto)."""
+
+
+def _bosque_laboratorio(modelo: str, parametros: dict):
+    from sklearn.ensemble import (
+        ExtraTreesClassifier,
+        ExtraTreesRegressor,
+        RandomForestClassifier,
+        RandomForestRegressor,
+    )
+
+    clase = {"random_forest_clasificador": RandomForestClassifier, "extra_trees_clasificador": ExtraTreesClassifier,
+             "random_forest_poisson": RandomForestRegressor, "extra_trees_poisson": ExtraTreesRegressor}[modelo]
+    return clase(n_estimators=parametros["n_estimators"], max_depth=parametros["max_depth"],
+                 min_samples_leaf=parametros["min_samples_leaf"], max_features=parametros["max_features"],
+                 bootstrap=parametros["bootstrap"], criterion=parametros["criterion"],
+                 random_state=parametros["random_state"], n_jobs=parametros["n_jobs"])
+
+
 def estimador_laboratorio(modelo: str, parametros: dict):
     from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
     from sklearn.linear_model import PoissonRegressor
 
+    if modelo in BOSQUES_DEL_LABORATORIO:
+        return _bosque_laboratorio(modelo, parametros)
     if modelo == "logistica_regularizada":
         return LogisticRegression(C=parametros["C"], solver=parametros["solver"], max_iter=parametros["max_iter"],
                                   random_state=parametros["semilla"])
@@ -459,3 +483,30 @@ def ajustar_registrando_convergencia(estimador, X, y) -> list[str]:
         if not issubclass(aviso.category, ConvergenceWarning):
             warnings.warn_explicit(aviso.message, aviso.category, aviso.filename, aviso.lineno)
     return [str(a.message)[:200] for a in avisos if issubclass(a.category, ConvergenceWarning)]
+
+
+def componentes_de_inferencia(estimador) -> list[dict]:
+    """Descripcion legible de los componentes de inferencia serializados de
+    un modelo registrado (Fase 3): preparacion de variables, estimador y
+    calibracion."""
+    salida = []
+    base = estimador
+    if isinstance(estimador, CalibratedClassifierCV):
+        calibrado = estimador.calibrated_classifiers_[0]
+        base = calibrado.estimator
+        salida.append({"paso": "calibracion", "clase": type(calibrado.calibrators[0]).__name__,
+                       "detalle": "sigmoide ajustada solo con el bloque cronologico de calibracion"})
+    if isinstance(base, Pipeline):
+        for nombre, paso in base.steps:
+            if nombre == "variables" and hasattr(paso, "transformers_"):
+                partes = ", ".join(f"{n}: {type(t).__name__ if not isinstance(t, str) else t}"
+                                   for n, t, _ in paso.transformers_)
+                salida.insert(0, {"paso": "preparacion_de_variables", "clase": type(paso).__name__,
+                                  "detalle": partes})
+            elif nombre == "columnas" and hasattr(paso, "transformers_"):
+                salida.insert(0, {"paso": "preparacion_de_variables", "clase": type(paso).__name__,
+                                  "detalle": "identidad del candidato en One-Hot (AE-36)"})
+            else:
+                salida.insert(len(salida) - (1 if salida and salida[-1]["paso"] == "calibracion" else 0),
+                              {"paso": "estimador", "clase": type(paso).__name__, "detalle": nombre})
+    return salida

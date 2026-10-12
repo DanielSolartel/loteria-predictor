@@ -189,7 +189,9 @@ def test_paleta_nueva_se_excluye_con_motivo_y_el_codificador_ignora_lo_no_visto(
 def test_catalogo_rotula_referencias_y_modelos_nuevos():
     for codigo in lv.JUEGOS:
         entradas = lm.candidatos_del_juego(codigo)
-        assert sum(e.tipo == "modelo_nuevo" for e in entradas) == 2
+        # Fase 3: los dos modelos nuevos de Producto 4 siguen; se anaden dos bosques
+        assert sum(e.tipo == "modelo_nuevo" and e.familia != "bosques" for e in entradas) == 2
+        assert sum(e.familia == "bosques" for e in entradas) == 2
         assert sum(e.familia == "uniforme" for e in entradas) == 1
         assert sum(e.familia == "estrategia_actual" for e in entradas) == 1
         for e in entradas:

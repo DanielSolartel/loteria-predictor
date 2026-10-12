@@ -57,7 +57,8 @@ def main() -> int:
         resultados.append(_paso(1, "Catalogo: " + "; ".join(
             f"{NOMBRES[j]} {len(c)} candidatos ({sum(x['tipo'] == 'modelo_nuevo' for x in c)} nuevos)"
             for j, c in catalogo["juegos"].items()),
-            all(sum(x["tipo"] == "modelo_nuevo" for x in c) == 2 for c in catalogo["juegos"].values())))
+            all(sum(x["tipo"] == "modelo_nuevo" and x["familia"] != "bosques" for x in c) == 2  # + 2 bosques (Fase 3)
+                and sum(x["familia"] == "bosques" for x in c) == 2 for c in catalogo["juegos"].values())))
 
         inicio = time.perf_counter()
         comparacion = lab.comparar_ahora(JUEGOS, origen="demostracion")

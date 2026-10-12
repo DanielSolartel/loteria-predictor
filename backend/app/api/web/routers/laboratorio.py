@@ -20,7 +20,22 @@ Router web de Producto 4: laboratorio de modelos.
 - `GET /laboratorio/pronosticos/{clave}`: pronostico del laboratorio.
 - `GET /laboratorio/{slug}/seguimiento`: resultados observados por linea.
 
-Ningun GET entrena, importa ni escribe.
+Fase 3, modelos registrados:
+- `POST /laboratorio/experimentos/{clave}/entrenar`: «Entrenar y guardar
+  version» de un candidato del informe (POST protegido; progreso en la misma
+  pagina de ejecuciones; misma entrada -> la misma version).
+- `GET /laboratorio/modelos[?juego=slug]`: catalogo registrable y versiones de
+  cada juego, con su compatibilidad y las incidencias del almacen.
+- `GET /laboratorio/modelo/{clave}`: ficha (entrenamiento, variables,
+  componentes, evaluacion asociada frente a la uniforme, procedencia).
+- `POST /laboratorio/modelo/{clave}/verificar`: integridad, compatibilidad,
+  carga restringida y pronostico de control (POST protegido).
+- `POST /laboratorio/modelo/{clave}/generar`: pronostico con la version
+  recargada, sin reentrenar (POST protegido).
+Elegir la version para la operacion diaria se hace en la configuracion de
+carteras (Producto 5); nada de esto la cambia.
+
+Ningun GET entrena, carga un estimador, importa ni escribe.
 """
 from __future__ import annotations
 
@@ -36,6 +51,7 @@ from app.api.web import proteccion_local
 from app.api.web.routers.operacion import grafica
 from app.api.web.routers.producto import _base, _conectada
 from app.application.ml import laboratorio_evaluacion as le
+from app.application.ml import laboratorio_modelos as lm
 from app.application.use_cases.laboratorio import JUEGOS, NOMBRES, SLUGS, LaboratorioDeModelos, LaboratorioError
 from app.application.use_cases.operacion_diaria import EjecucionActivaError, identificador_valido, mensaje_legible
 from app.infrastructure.db.session import get_db
@@ -50,13 +66,22 @@ VEREDICTOS = {"menor_perdida_que_la_uniforme_en_esta_evaluacion": "menor pérdid
               "la_uniforme_fue_mejor": "la uniforme fue mejor", "empate": "empate", "referencia": "referencia"}
 _CODIGO_HTTP = {"no_encontrado": 404, "no_valido": 422, "alterado": 409, "no_disponible": 409,
                 "muestra_insuficiente": 422, "no_converge": 422, "clase_insuficiente": 422, "salida_invalida": 422,
-                "fallo_de_ajuste": 422, "fallo_del_trabajador": 500}
+                "fallo_de_ajuste": 422, "fallo_del_trabajador": 500, "incompatible": 409, "corte_no_valido": 422,
+                "estimador_no_admitido": 409, "no_registrable": 422, "tiempo_agotado": 504,
+                "base_no_disponible": 503}
+ESTADOS_DE_ENTRENAMIENTO = {"terminado": "versión nueva guardada", "reutilizado": "versión ya existente (misma entrada)",
+                            "tiempo_agotado": "tiempo agotado", "no_registrable": "no registrable",
+                            "alterado": "versión existente alterada", "muestra_insuficiente": "muestra insuficiente",
+                            "no_converge": "no converge", "clase_insuficiente": "clases insuficientes",
+                            "salida_invalida": "salida no válida", "fallo_de_ajuste": "fallo de ajuste",
+                            "no_reproduce": "el estimador recargado no reproduce el control",
+                            "estimador_no_admitido": "estimador no admitido", "fallo": "error"}
 
 
 def _contexto(request: Request, db_conectada: bool) -> dict:
     return {**_base(request, "laboratorio", db_conectada), "nombres": NOMBRES, "slugs": SLUGS,
             "token_local": proteccion_local.token_local(), "estados_resumen": ESTADOS_RESUMEN,
-            "veredictos": VEREDICTOS}
+            "veredictos": VEREDICTOS, "estados_de_entrenamiento": ESTADOS_DE_ENTRENAMIENTO}
 
 
 def _error(request: Request, mensaje: str, status_code: int, **extra):
@@ -101,10 +126,17 @@ def experimento(identificador: str, request: Request, db: Session = Depends(get_
     informe = guardado.artefacto
     graficas = {c["id"]: grafica(_serie(c["por_objetivo"])) for c in informe["candidatos"]
                 if c["estado"] == "completo" and c["familia"] != "uniforme"}
+    colores = informe["juego"] == "COLORLOTO"
+    cantidad = informe["identidad"]["reglas"]["cantidad"]
     return templates.TemplateResponse(request=request, name="laboratorio/informe.html", context={
         **_contexto(request, _conectada(db)), "i": informe, "clave": guardado.identificador,
         "base": lab.estado_frente_a_la_base(informe), "graficas": graficas,
-        "pronosticos": {c["id"] for c in informe["candidatos"] if c["genera_pronostico"]}})
+        "pronosticos": {c["id"] for c in informe["candidatos"] if c["genera_pronostico"]},
+        "registrables": {c["id"] for c in informe["candidatos"]
+                         if c["id"] in lm.CATALOGO and lm.registrable(lm.CATALOGO[c["id"]])},
+        "secundarias": {c["id"]: le.metricas_secundarias(c, colores, cantidad) for c in informe["candidatos"]
+                        if c["estado"] == "completo"},
+        "uniforme_id": next((c["id"] for c in informe["candidatos"] if c["familia"] == "uniforme"), None)})
 
 
 def _serie(por_objetivo: list[dict]) -> list[dict]:
@@ -122,7 +154,8 @@ def estado_ejecucion(identificador: str, request: Request, lab: LaboratorioDeMod
     if ejecucion is None:
         raise HTTPException(status_code=404, detail="Ejecución no encontrada")
     return templates.TemplateResponse(request=request, name="laboratorio/_ejecucion_estado.html", context={
-        "e": ejecucion, "nombres": NOMBRES, "estados_resumen": ESTADOS_RESUMEN})
+        "e": ejecucion, "nombres": NOMBRES, "estados_resumen": ESTADOS_RESUMEN,
+        "estados_de_entrenamiento": ESTADOS_DE_ENTRENAMIENTO})
 
 
 @router.post("/laboratorio/comparar")
@@ -206,6 +239,121 @@ def verificar_pronostico(clave: str, request: Request, token_local: Annotated[st
         return _error(request, str(error), _CODIGO_HTTP.get(error.codigo, 400))
     return templates.TemplateResponse(request=request, name="laboratorio/verificacion.html", context={
         **_contexto(request, _conectada(db)), "r": resultado, "tipo": "pronostico", "clave": clave})
+
+
+# ---------------------------------------------------------------------------
+# Fase 3: modelos registrados (antes de las rutas con {slug})
+# ---------------------------------------------------------------------------
+
+@router.post("/laboratorio/experimentos/{clave}/entrenar")
+def entrenar(clave: str, request: Request, modelo: Annotated[str, Form()] = "",
+             token_local: Annotated[str, Form()] = "", lab: LaboratorioDeModelos = Depends(get_laboratorio),
+             lanzar=Depends(get_lanzador_de_laboratorio)):
+    rechazo = _rechazo(request, token_local)
+    if rechazo is not None:
+        return rechazo
+    try:
+        inicio_ = lab.iniciar_entrenamiento(clave, modelo, "web")
+    except LaboratorioError as error:
+        return _error(request, f"No se inició el entrenamiento: {error}", _CODIGO_HTTP.get(error.codigo, 400))
+    except EjecucionActivaError as error:
+        return _error(request, "Ya hay un trabajo del laboratorio en curso para "
+                      + ", ".join(NOMBRES[j] for j in sorted(error.activas)) + ". Ábrelo o espera a que termine.",
+                      409, activas=error.activas)
+    except OSError as error:
+        return _error(request, f"No se pudo registrar el entrenamiento: {mensaje_legible(error)}", 500)
+    try:
+        lanzar(lab.ejecutar_entrenamiento, inicio_)
+    except Exception as error:  # no se pudo crear el hilo: nada queda falsamente activo
+        lab.abortar(inicio_, str(error))
+        return _error(request, f"No se pudo iniciar el entrenamiento: {mensaje_legible(error)}", 500)
+    return RedirectResponse(url=f"/laboratorio/experimentos/{inicio_.ejecucion['id']}", status_code=303)
+
+
+@router.get("/laboratorio/modelos")
+def modelos(request: Request, juego: str | None = Query(default=None), db: Session = Depends(get_db),
+            lab: LaboratorioDeModelos = Depends(get_laboratorio)):
+    codigos = [_codigo(juego)] if juego else list(JUEGOS)
+    return templates.TemplateResponse(request=request, name="laboratorio/modelos.html", context={
+        **_contexto(request, _conectada(db)), "datos": [lab.modelos(c) for c in codigos],
+        "catalogo": lab.catalogo(), "filtro": juego})
+
+
+@router.get("/laboratorio/modelo/{clave}")
+def ficha_del_modelo(clave: str, request: Request, db: Session = Depends(get_db),
+                     lab: LaboratorioDeModelos = Depends(get_laboratorio)):
+    try:
+        ficha = lab.ficha_del_modelo(clave)
+    except LaboratorioError as error:
+        return _error(request, str(error), _CODIGO_HTTP.get(error.codigo, 400))
+    return templates.TemplateResponse(request=request, name="laboratorio/modelo.html", context={
+        **_contexto(request, _conectada(db)), "f": ficha, "a": ficha["modelo"], "clave": clave,
+        "lectura_informe": _lectura_del_informe(lab, ficha["modelo"]), "etapas": _etapas(ficha["modelo"])})
+
+
+_CONTRATO_CONGELADO = "estimador, calibracion y parametros elegidos quedan congelados (no se reajustan)"
+
+
+def _lectura_del_informe(lab: LaboratorioDeModelos, artefacto: dict) -> dict:
+    """Lectura del informe de procedencia GUARDADO para la ficha: su estado, quien quedo primero (o los
+    empatados) y la clasificacion tal cual, con esta receta marcada. Solo lee el informe: no reentrena, no
+    recalcula ni reordena. Asi la ficha distingue la evaluacion de su receta del ganador del informe."""
+    modelo = artefacto["identidad"]["modelo"]["id"]
+    try:
+        resumen = lab.experimento(artefacto["procedencia"]["experimento"]).artefacto["resumen"]
+    except LaboratorioError as error:
+        return {"disponible": False, "motivo": str(error)}
+    ranking = [{**r, "es_esta_receta": r["id"] == modelo} for r in resumen.get("ranking") or []]
+    primeros = [r for r in ranking if r["log_loss"] == ranking[0]["log_loss"]] if ranking else []
+    return {"disponible": True, "estado": resumen["estado"], "ranking": ranking, "primeros": primeros,
+            "incompletos": resumen.get("incompletos") or []}
+
+
+def _etapas(artefacto: dict) -> dict:
+    """Etapas reales de la version: si tiene paso de calibracion (clasificadores calibrados) o no (Poisson:
+    intensidades transformadas en probabilidades con codigo versionado). El manifiesto guarda un texto de
+    contrato comun; para un modelo sin calibracion, la ficha lo presenta sin atribuirle esa etapa."""
+    calibrado = any(c.get("paso") == "calibracion" for c in artefacto.get("componentes") or [])
+    contrato = artefacto["contrato_de_inferencia"]
+    if not calibrado and _CONTRATO_CONGELADO in contrato:
+        detalle = (artefacto["identidad"].get("transformacion") or {}).get("detalle", "")
+        contrato = contrato.replace(_CONTRATO_CONGELADO, (
+            "estimador y parametros elegidos quedan congelados (no se reajustan); este modelo no tiene calibracion: "
+            f"sus intensidades se transforman en probabilidades con codigo versionado ({detalle})"))
+    return {"calibrado": calibrado, "contrato": contrato}
+
+
+@router.post("/laboratorio/modelo/{clave}/verificar")
+def verificar_modelo(clave: str, request: Request, token_local: Annotated[str, Form()] = "",
+                     db: Session = Depends(get_db), lab: LaboratorioDeModelos = Depends(get_laboratorio)):
+    rechazo = _rechazo(request, token_local)
+    if rechazo is not None:
+        return rechazo
+    try:
+        resultado = lab.verificar_modelo(clave)
+    except LaboratorioError as error:
+        return _error(request, str(error), _CODIGO_HTTP.get(error.codigo, 400))
+    return templates.TemplateResponse(request=request, name="laboratorio/verificacion_modelo.html", context={
+        **_contexto(request, _conectada(db)), "r": resultado, "clave": clave})
+
+
+@router.post("/laboratorio/modelo/{clave}/generar")
+def generar_con_modelo(clave: str, request: Request, corte: Annotated[str, Form()] = "",
+                       token_local: Annotated[str, Form()] = "", lab: LaboratorioDeModelos = Depends(get_laboratorio)):
+    rechazo = _rechazo(request, token_local)
+    if rechazo is not None:
+        return rechazo
+    corte = corte.strip()
+    if corte and not corte.isdigit():
+        return _error(request, "El corte de entrada debe ser un número de sorteo cargado.", 422)
+    try:
+        guardado = lab.generar_con_modelo(clave, int(corte) if corte else None, "web")
+    except LaboratorioError as error:
+        return _error(request, f"No se generó el pronóstico: {error}", _CODIGO_HTTP.get(error.codigo, 400))
+    except OSError as error:
+        return _error(request, f"No se pudo guardar el pronóstico: {mensaje_legible(error)}", 500)
+    sufijo = "?reutilizado=1" if guardado.reutilizado else ""
+    return RedirectResponse(url=f"/laboratorio/pronosticos/{guardado.identificador}{sufijo}", status_code=303)
 
 
 @router.get("/laboratorio/{slug}/seguimiento")

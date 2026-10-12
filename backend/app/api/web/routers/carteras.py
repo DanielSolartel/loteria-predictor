@@ -306,8 +306,11 @@ def seguimiento(slug: str, request: Request, linea: str | None = Query(default=N
 
 
 @router.get("/carteras/{slug}")
-def juego(slug: str, request: Request, db: Session = Depends(get_db),
+def juego(slug: str, request: Request, modelo: str | None = Query(default=None),
+          registrado: str | None = Query(default=None), db: Session = Depends(get_db),
           servicio: CarterasDeModelos = Depends(get_carteras)):
+    """`modelo` y `registrado` (Fase 3) solo PRESELECCIONAN el formulario de
+    configuracion; no guardan nada."""
     codigo = _codigo(slug)
     lineas = []
     for nombre in servicio.lineas(codigo):
@@ -316,7 +319,8 @@ def juego(slug: str, request: Request, db: Session = Depends(get_db),
     return templates.TemplateResponse(request=request, name="carteras/juego.html", context={
         **_contexto(request, _conectada(db)), "juego": codigo, "d": servicio.diagnostico(codigo), "lineas": lineas,
         "configuraciones": servicio.configuraciones(codigo), "max_bloques": ce.MAXIMO_BLOQUES,
-        "cartera": servicio.catalogo()["cartera"]})
+        "cartera": servicio.catalogo()["cartera"], "registrados": servicio.modelos_registrados(codigo),
+        "preseleccion": {"modelo": modelo, "registrado": registrado}})
 
 
 # ---------------------------------------------------------------------------
@@ -374,13 +378,14 @@ def simular(clave: str, request: Request, simulaciones: Annotated[int, Form()] =
 def configurar(slug: str, request: Request, modelo: Annotated[str, Form()] = "",
                cantidad: Annotated[int, Form()] = cc.CANTIDAD_PREDETERMINADA,
                diversidad: Annotated[str, Form()] = "libre", semilla: Annotated[int, Form()] = cc.SEMILLA_PREDETERMINADA,
-               token_local: Annotated[str, Form()] = "", servicio: CarterasDeModelos = Depends(get_carteras)):
+               registrado: Annotated[str, Form()] = "", token_local: Annotated[str, Form()] = "",
+               servicio: CarterasDeModelos = Depends(get_carteras)):
     rechazo = _rechazo(request, token_local)
     if rechazo is not None:
         return rechazo
     codigo = _codigo(slug)
     try:
-        servicio.configurar(codigo, modelo, cantidad, diversidad, semilla, origen="web")
+        servicio.configurar(codigo, modelo, cantidad, diversidad, semilla, origen="web", registrado=registrado or None)
     except CarterasError as error:
         return _error(request, f"Configuración no válida: {error}", _CODIGO_HTTP.get(error.codigo, 400))
     except OSError as error:

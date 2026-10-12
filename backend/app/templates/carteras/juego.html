@@ -52,16 +52,22 @@
     <div class="col-lg-6"><div class="card stat-card p-3 h-100" id="configuracion">
         <h6>Configuración del juego</h6>
         {% set c = d.configuracion %}
-        {% if c and c.estado == 'vigente' %}<p class="small mb-2">Vigente: <strong>versión {{ c.version }}</strong> · {{ c.modelo.id }} v{{ c.modelo.version }} · {{ c.cantidad }} combinaciones · diversidad {{ c.diversidad }} · semilla {{ c.semilla }} · línea <code>{{ c.linea }}</code>. Guardada {{ c.registro.guardada_en[:19]|replace('T', ' ') }} UTC ({{ c.registro.origen }}).</p>
+        {% if c and c.estado == 'vigente' %}<p class="small mb-2">Vigente: <strong>versión {{ c.version }}</strong> · {{ c.modelo.id }} v{{ c.modelo.version }}{% if c.modelo.registrado %} · <a href="/laboratorio/modelo/{{ c.modelo.registrado.clave }}">modelo registrado v{{ c.modelo.registrado.numero }}</a> (congelado, entrenado hasta {{ c.modelo.registrado.corte_de_entrenamiento }}){% endif %} · {{ c.cantidad }} combinaciones · diversidad {{ c.diversidad }} · semilla {{ c.semilla }} · línea <code>{{ c.linea }}</code>. Guardada {{ c.registro.guardada_en[:19]|replace('T', ' ') }} UTC ({{ c.registro.origen }}).</p>
         {% elif c %}<div class="alert alert-danger py-1 px-2 small">{{ c.mensaje }}</div>
         {% else %}<p class="small text-muted mb-2">Sin configuración: «Generar carteras configuradas» marca este juego como «sin configuración».</p>{% endif %}
         <form method="post" action="/carteras/{{ slugs[juego] }}/configurar" class="d-flex flex-wrap gap-2 align-items-end m-0">
             <input type="hidden" name="token_local" value="{{ token_local }}">
             {% if c and c.estado == 'vigente' %}{% set m_, n_, v_, s_ = c.modelo.id, c.cantidad, c.diversidad, c.semilla %}{% else %}{% set m_, n_, v_, s_ = 'ensemble_temporal', none, 'libre', none %}{% endif %}
+            {% set r_ = preseleccion.registrado or ((c.modelo.registrado or {}).clave if c and c.estado == 'vigente' and c.modelo.registrado else '') %}
+            {% if preseleccion.modelo %}{% set m_ = preseleccion.modelo %}{% endif %}
             {% with prefijo='cfg', m=m_, cantidad=n_, diversidad=v_, semilla=s_ %}{% include "carteras/_campos_cartera.html" %}{% endwith %}
+            {% if registrados %}<div><label class="form-label small mb-0" for="cfg-registrado">Versión registrada (opcional)</label>
+                <select class="form-select form-select-sm" id="cfg-registrado" name="registrado"><option value="">ninguna: la receta se reentrena en cada cartera</option>
+                {% for x in registrados %}<option value="{{ x.clave }}" {% if x.clave == r_ %}selected{% endif %} {% if not x.compatible %}disabled{% endif %}>{{ x.nombre }} · v{{ x.numero }} · corte {{ x.corte }}{% if not x.compatible %} (incompatible){% endif %}</option>{% endfor %}</select></div>{% endif %}
             <button class="btn btn-sm btn-outline-primary">Guardar como versión nueva</button>
         </form>
-        <p class="small text-muted mt-2 mb-1">Cada cambio crea una versión nueva e inmutable; no elige el modelo con menor pérdida ni cambia los modelos de Producto 3.</p>
+        {% if preseleccion.registrado %}<div class="alert alert-info py-1 px-2 small mt-2 mb-0">Versión registrada preseleccionada desde su ficha. No se guarda nada hasta que pulses «Guardar como versión nueva».</div>{% endif %}
+        <p class="small text-muted mt-2 mb-1">Cada cambio crea una versión nueva e inmutable; no elige el modelo con menor pérdida ni cambia los modelos de Producto 3. Con una versión registrada, el modelo elegido debe ser el de esa versión: la operación diaria la recarga y genera sin reentrenarla.</p>
         {% if configuraciones %}<details class="small carteras-desplegable"><summary class="text-muted">Versiones ({{ configuraciones|length }})</summary>
             <ul class="mb-0">{% for v in configuraciones %}{% if v.artefacto is defined %}<li>v{{ v.artefacto.version }}: <code>{{ v.artefacto.linea }}</code> · {{ v.artefacto.registro.guardada_en[:19]|replace('T', ' ') }} UTC</li>{% else %}<li class="text-danger">{{ v.identificador }}: ilegible ({{ v.motivo }})</li>{% endif %}{% endfor %}</ul></details>{% endif %}
     </div></div>
