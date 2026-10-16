@@ -181,6 +181,36 @@ body.producto1-impresion .resultados-lectura {
     border-radius: 4px;
 }
 
+/* Fase 4: centro de predicciones. Solo clases `predicciones-*`, que solo usan
+   las plantillas de templates/predicciones/. */
+.predicciones-barra { fill: var(--brand); opacity: 0.85; }
+.predicciones-uniforme { stroke: #6c757d; stroke-width: 1.5; }
+.predicciones-intervalo { stroke: var(--brand); stroke-width: 3; }
+.predicciones-punto { fill: #212529; }
+.predicciones-eje { stroke: #dee2e6; stroke-width: 1; }
+svg.predicciones-grafica { max-width: 680px; }
+.predicciones-solo-impresion { display: none; }
+
+/* La etiqueta larga y el valor de la transformacion conservan su propia
+   columna y una separacion explicita, incluso al estrecharse el papel. */
+.predicciones-metodo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+    column-gap: 1.25rem;
+    row-gap: 0.35rem;
+}
+.predicciones-metodo > dt,
+.predicciones-metodo > dd {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+@media screen and (max-width: 575.98px) {
+    .predicciones-metodo { grid-template-columns: minmax(0, 1fr); row-gap: 0.2rem; }
+    .predicciones-metodo > dd { margin-bottom: 0.55rem; }
+}
+
 /* Impresion y PDF de las paginas de Producto 1 (plantillas en
    templates/producto/, que marcan <body class="producto1-impresion">).
    Ninguna regla afecta a otras paginas ni cambia nada en pantalla. */
@@ -398,5 +428,76 @@ body.producto1-impresion .resultados-lectura {
 
     body.producto1-impresion svg.descriptivas-grafica {
         max-height: 9cm;
+    }
+
+    /* Centro de predicciones (Fase 4): solo clases `predicciones-*`. Las tarjetas
+       largas se fragmentan (no se empujan enteras a otra pagina), su altura sigue
+       al contenido, cada titulo queda pegado a su contenido, cada titulo y contexto se unen al comienzo de su grafica, las graficas no pasan de media pagina, la
+       navegacion interna y los desplegables no se imprimen (si su copia abierta)
+       y los colores de ColorLoto conservan su muestra y su nombre en texto. */
+    body.producto1-impresion .stat-card.predicciones-fragmentable {
+        break-inside: auto;
+        page-break-inside: auto;
+    }
+
+    body.producto1-impresion .predicciones-tarjeta {
+        /* Bootstrap .card es flex; como bloque sus cabeceras y contenido
+           obedecen las reglas de fragmentacion sin desplazar toda la tarjeta. */
+        display: block;
+        height: auto !important;
+    }
+
+    body.producto1-impresion .predicciones-cabecera {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    body.producto1-impresion .predicciones-inicio {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* Solo el inicio corto (titulo, contexto y grafica), nunca la tarjeta o
+       la tabla completa, se conserva como una caja indivisible. Chromium
+       podia partir un bloque con break-inside:avoid entre titulo y contexto. */
+    body.producto1-impresion .predicciones-inicio {
+        display: inline-block;
+        width: 100%;
+        vertical-align: top;
+    }
+
+    body.producto1-impresion .predicciones-diagnostico {
+        break-inside: auto;
+        page-break-inside: auto;
+    }
+
+    body.producto1-impresion .predicciones-evaluacion {
+        break-inside: auto;
+        page-break-inside: auto;
+    }
+
+    body.producto1-impresion .predicciones-nav,
+    body.producto1-impresion details.predicciones-desplegable {
+        display: none !important;
+    }
+
+    body.producto1-impresion .predicciones-solo-impresion {
+        display: block;
+    }
+
+    body.producto1-impresion svg.predicciones-grafica {
+        max-height: 9cm;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    body.producto1-impresion .predicciones-barra,
+    body.producto1-impresion .predicciones-par .color-swatch {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 }

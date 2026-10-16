@@ -8,21 +8,21 @@ Plataforma de análisis estadístico y adquisición de datos para MiLoto, Baloto
 
 ## Estado del proyecto
 
-Estado por fase tras la entrega «Fase 3 — modelos versionados». La finalización técnica y la evidencia de ventaja predictiva son estados distintos: ninguna fase acredita ventaja frente al azar. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO de AE-39 vigente y `AUTORIZA_EVALUACION = False`. Detalle, evidencia y pendientes en [ROADMAP.md](./ROADMAP.md) («Estado por fase»).
+Estado por fase tras la entrega «Fase 4 — predicciones explicables y fiabilidad observada». La finalización técnica y la evidencia de ventaja predictiva son estados distintos: ninguna fase acredita ventaja frente al azar. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO de AE-39 vigente y `AUTORIZA_EVALUACION = False`. Detalle, evidencia y pendientes en [ROADMAP.md](./ROADMAP.md) («Estado por fase»).
 
 | Fase | Implementación | Validación | Pendiente |
 |---|---|---|---|
 | 1. Dominio + MVP HTML/HTMX | ✅ Completa | Windows; GitHub Actions | — |
 | 2. Adquisición automática de datos | ✅ Completa | Windows; GitHub Actions | — |
-| 3. Machine Learning | 🟢 Ingeniería implementada: Random Forest y Extra Trees, selección de parámetros separada, métricas frente a la uniforme y registro de modelos entrenados y versionados que se recargan sin reentrenar — ver [Fase 3](#machine-learning-modelos-entrenados-y-versionados-fase-3) | Linux con fixtures sintéticas. Windows (operador, Python 3.14.6): la v2 pasó las pruebas focales, las regresiones de Productos 1–6, la selección, la demostración y OpenSSL, y se recorrió con el histórico real de los cuatro juegos; los ajustes de cierre están **pendientes de validar en Windows** (`backend/docs/fase3_windows.md`) | Validación en Windows de los ajustes de cierre; GitHub Actions; XGBoost, LightGBM, redes, bayesianos y Markov como extensiones futuras |
-| 4. Predicciones | 🟡 Parcial: Productos 1–6 y, desde la Fase 3, pronósticos con una versión registrada elegida explícitamente | Productos 1–6: Windows y GitHub Actions | Nivel de confianza calibrado, números fuertes/débiles explicados, caso `GenerarPredicciones` común |
+| 3. Machine Learning | 🟢 Ingeniería implementada y validada: Random Forest y Extra Trees, selección de parámetros separada, métricas frente a la uniforme y registro de modelos entrenados y versionados que se recargan sin reentrenar — ver [Fase 3](#machine-learning-modelos-entrenados-y-versionados-fase-3) | Linux con fixtures sintéticas. Windows (operador, Python 3.14.6): la v2 con el histórico real y, al cierre, Fase 3 `81 passed`, selección `2215 passed` y OpenSSL 7/7, con las aclaraciones revisadas en PDF Legal vertical. GitHub Actions: ejecuciones 47 (PR #92), 48 y 49 en verde | Suite completa en Windows; PDF en Carta, A4 y horizontal en Windows; XGBoost, LightGBM, redes, bayesianos y Markov como extensiones futuras |
+| 4. Predicciones | 🟢 Implementación y validación local v3.4 completadas: predicciones de los cuatro juegos, explicación y fiabilidad observada — ver [Fase 4](#predicciones-explicables-y-fiabilidad-observada-fase-4) | Linux sintético por Codex Cloud; Windows nativo por Daniel, con baterías reducidas identificadas; auditoría de archivos, PDF y capturas por ChatGPT; publicación nativa v3.3 conservada | Aplicación del cierre documental y commit/push/PR por Daniel; GitHub Actions del PR final; suite completa nativa Windows; acreditación prospectiva |
 | 5. Estadísticas descriptivas | ✅ Completa — ver [Fase 5](#fase-5--estadísticas-descriptivas-completas) y `backend/docs/fase5_windows.md` | Windows con histórico real; GitHub Actions (ejecuciones 42 a 46) | — |
 | 6. Simulaciones | 🟡 Parcial: AE-49 a AE-51 y la simulación de carteras de Producto 5 | Windows; GitHub Actions | Escenarios por juego más allá de las carteras |
 | 7. API pública | 🔜 Hay una API REST interna de solo lectura | — | API pública versionada y autenticada |
 | 8. Frontend React | 🔜 | — | — |
 | 9. Despliegue | 🔜 | — | — |
 
-**Próximas entregas, en orden: 3 → 4 → 6 → 7 → 8 → 9.** GitHub Actions ya ejecuta el workflow en cada push y PR. Sobre la base de esta entrega (`c7644c4`), la ejecución 45 dio Linux `6379 passed` y Windows `2134 passed`, con OpenSSL 7/7 en ambos. La entrega de la Fase 3 aún no se ha ejecutado allí.
+**Próximas entregas, en orden: 4 → 6 → 7 → 8 → 9.** La Fase 3 quedó cerrada con el PR #92 (base de esta entrega: `8a53108`). GitHub Actions ejecuta el workflow en cada push y PR: la ejecución 47 (PR #92) terminó en verde con la suite completa en Linux y la selección en Windows, y las 48 (`main`) y 49 (`develop`) sobre `8a53108` también. La entrega de la Fase 4 aún no se ha ejecutado allí. (Antes, sobre `c7644c4`: ejecución 45, Linux `6379 passed` y Windows `2134 passed`, con OpenSSL 7/7 en ambos.)
 
 **Historial de productos**, vinculados a sus fases (detalle al final de este documento y en el ROADMAP):
 
@@ -146,7 +146,7 @@ La auditoría sobre `9fab331` encontró terminadas las 43 visualizaciones anteri
 
 ## Machine Learning: modelos entrenados y versionados (Fase 3)
 
-**Estado: implementada. La v2 está validada por el operador en Windows nativo (Python 3.14.6) y recorrida con el histórico real de los cuatro juegos. Los ajustes de cierre (tres aclaraciones de presentación y la prueba de temporales) están verificados en Linux y pendientes de validar en Windows. GitHub Actions todavía no ha ejecutado la Fase 3** (guía: `backend/docs/fase3_windows.md`). Es finalización técnica, no evidencia predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
+**Estado: implementada y validada; cerrada con el PR #92 (base `8a53108`).** La v2 está validada por el operador en Windows nativo (Python 3.14.6) y recorrida con el histórico real de los cuatro juegos, y los ajustes de cierre se validaron después en Windows (ver «Cierre», abajo). GitHub Actions la ejecutó en verde (ejecuciones 47, 48 y 49). Guía: `backend/docs/fase3_windows.md`. *Estado anterior, al entregar los ajustes de cierre: «implementada; v2 validada en Windows; ajustes de cierre pendientes de validar en Windows; GitHub Actions todavía no ha ejecutado la Fase 3».* Es finalización técnica, no evidencia predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
 
 **Informe frente a modelo registrado.**
 - Un informe del laboratorio (Producto 4) guarda la receta, el histórico y las métricas de una comparación. Se reproduce reentrenando.
@@ -251,13 +251,140 @@ Es una sola observación retrospectiva por juego: no acredita anterioridad prosp
 
 **Verificación en Linux de los ajustes de cierre** (Cloud, Python 3.11.15; no acredita Windows): Fase 3 `81 passed` (registro 33, bosques 13, integración 14, rutas 9 y presentación 12) con invocación normal, sin `--basetemp` ni `PYTEST_ADDOPTS`; con el límite de 259 caracteres simulado (carpeta de pytest de 61 y `%TEMP%` de 34), `81 passed` y 0 rutas rechazadas; Productos 1 a 6 (`85`, `39`, `66`, `94`, `96` y `73 passed`), lista de Productos 1 a 3 del script `229 passed` y Fase 5 `94 passed`; selección de Windows ejecutada en Linux (90 entradas, sin comentarios ni líneas en blanco) `2215 passed`; una suite completa `6460 passed` (1200 s); OpenSSL `SUPERADOS 7/7` en modo `exigir` sobre la selección y sobre la suite; demostración sintética 7/7; `pip check` limpio; espacios limpios, incluidos los archivos nuevos; revisión visual con Bootstrap real (Chromium de Playwright, 1366 y 390 px; PDF en Carta vertical y horizontal, A4 y Legal vertical) sin solapamientos ni desbordamiento horizontal; cadena base → entrega original → rutas → cierre comprobada en una extracción limpia (árbol final idéntico, reversión exacta a la v2). Python 3.11.15, scikit-learn 1.9.1, NumPy 2.4.6, SciPy 1.17.1. Sobre la v2 exacta, las 12 pruebas de presentación dan `9 failed, 3 passed`: fallan por sus comprobaciones nuevas, y pasan las 3 que protegen lo que no debe cambiar (el cálculo del caso 221, la ficha del clasificador calibrado y las etiquetas de MiLoto). La prueba de temporales final pasa con el código de publicación de la v2, también con el límite simulado; la prueba anterior, con ese mismo límite, reproduce el fallo de Windows (`1 failed`).
 
+**Cierre (PR #92 fusionado; nueva base `8a53108`):**
+- **Windows (operador, Python 3.14.6):** Fase 3 `81 passed` con invocación normal, sin `--basetemp`; selección de Windows `2215 passed`; OpenSSL `SUPERADOS 7/7`. Las tres aclaraciones de presentación se revisaron en PDF **Legal vertical**.
+- **GitHub Actions:** ejecución 47 (PR #92) en verde, con la suite completa en Linux y la selección en Windows; 48 (`main`) y 49 (`develop`) sobre `8a53108`, también en verde.
+- **No ejecutado en Windows:** la suite completa. El PDF en Carta, A4 y horizontal solo se revisó en Linux.
+
 **Pendiente:**
-- la validación en Windows de los ajustes de cierre;
-- GitHub Actions, que se ejecutará con el PR;
 - la suite completa en Windows, que no se ha ejecutado;
 - la impresión en Carta, A4 y horizontal en Windows.
 
 XGBoost, LightGBM, redes, modelos bayesianos y Markov siguen como familias futuras.
+
+*Lista anterior, al entregar los ajustes de cierre: la validación en Windows de esos ajustes y GitHub Actions (ambas cumplidas con el cierre), la suite completa en Windows y la impresión en Carta, A4 y horizontal en Windows.*
+
+---
+
+## Predicciones explicables y fiabilidad observada (Fase 4)
+
+**Estado: implementación y validación local v3.4 completadas; cierre documental preparado para Windows** (guía: `backend/docs/fase4_windows.md`). Es finalización técnica, no evidencia predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`. Ninguna cifra es un nivel de confianza.
+
+**Cierre local v3.4 (16 de octubre de 2026, Colombia).** La implementación y la validación local están completadas con los alcances del resumen consolidado aportado. Daniel ejecutó Windows nativo; Codex Cloud ejecutó Linux con datos sintéticos; ChatGPT auditó los archivos y la evidencia entregada y registró su revisión previa de PDF y capturas, que no están incluidos en los ZIP de este cierre. Este cierre documental no vuelve a ejecutar esas verificaciones ni convierte una auditoría en pruebas nuevas.
+
+**Windows nativo v3.4, ejecutado por Daniel:** Windows 11 AMD64, Windows PowerShell 5.1, Python 3.14.6 y pytest 9.1.1. Focal **198 aprobadas**; regresiones: Fase 3 **81**, Producto 6 **73**, Producto 5 **96**, Producto 4 **94**, Fase 5 **94** y Productos 1–3 **229**. Demostración con datos sintéticos **8/8** y `pip check` correcto. ConEnlaces terminó con **217 aprobadas** en `fase4_sin_publicacion` y **2432** en `seleccion_windows_sin_publicacion` (100 entradas), sin fallos, errores ni omisiones; OpenSSL `exigir` **7/7** en el JUnit de esa selección. Consta el aviso conocido Starlette/httpx. Estas dos baterías son **reducidas**: excluyen las tres familias de publicación v3.3 y no equivalen a nuevas ejecuciones de toda Fase 4, de la selección completa ni de la suite completa Windows. Los grupos se solapan y no se suman. La bandera `validacion_completa: true` de `ConEnlaces/resumen.json` indica progreso del script; no acredita una ejecución completa nativa.
+
+**Publicación nativa conservada de v3.3:** Daniel validó **82 aprobadas** en NTFS con `SetFileInformationByHandle(FileRenameInfoEx)`, clase **22**, flags **3**. La prueba real completó **120 publicaciones** con lectores en hilos y otro proceso, sin lecturas parciales, y verificó el destino retenido por otro proceso. Los cinco archivos de ese mecanismo permanecen byte-idénticos en v3.4; es evidencia nativa de **v3.3**, no una ejecución nueva de v3.4.
+
+**Recorrido real y reproducción.** Daniel recuperó Baloto reutilizando la cartera publicada y completando su explicación en una ejecución nueva; conservó los registros fallidos y el temporal original, sin promocionarlos ni reescribirlos. Las cuatro emisiones de tres combinaciones y Baloto de cinco persistieron tras el reinicio, con integridad, reproducción exacta e importancias disponibles y páginas terminadas sin sondeo. Pedir cinco conservó en tres la configuración vigente; repetir Baloto de tres reutilizó cartera y explicación y añadió únicamente los dos registros de ejecución. La reproducción comprueba la huella del **vector fuente**, recalcula **rankings y variables** y los compara con la explicación guardada. La integridad de esta explicación cubre las importancias guardadas y la referencia SHA-256 del estimador. El cotejo directo del archivo del estimador se hace al emitir la explicación; la reproducción de una consulta GET **no lo abre ni lo carga, no ejecuta una nueva inferencia ni recalcula las importancias**.
+
+**Instantáneas distintas, consultas de solo lectura.** Los PDF y las primeras **seis consultas de API** corresponden a la base anterior: **219 archivos** intactos antes/después; ChatGPT contrastó además 68 medias y límites con los PDF. Antes del último bloque se añadieron **12 archivos**, conservando los 219 originales: nueve HTML, un registro de operación y dos archivos de un pronóstico de ColorLoto. El primer intento del ayudante de parámetros se detuvo por su guarda, con cero consultas y 231 archivos intactos; se corrigió solo el ayudante. Las últimas **60 consultas**, sobre la base actualizada, dieron **28 HTTP 200 y 32 HTTP 422 esperados** en API y web: parámetros vacíos equivalentes a ausentes, GET repetidos idénticos, corte y selección conservados y rechazos de valores inválidos. Sus tres inventarios de **231 archivos** coinciden, sin alterados, ausentes ni nuevos; se verificó la cadena **219 → 231 → 231** y la conservación de los tres archivos del fallo original. No se exige igualdad de cifras o pendientes entre fechas. ChatGPT auditó JSON, huellas, formularios extraídos e inventarios; el último ZIP no incluye cada cuerpo HTML completo.
+
+**Pantalla e impresión nativas revisadas.** Daniel produjo los PDF con Chrome 155/Windows y ChatGPT inspeccionó **27 PDF principales, 203 páginas**, en Carta vertical, Carta horizontal y A4 vertical: 15 predicciones (139 páginas) y 12 Fiabilidad (64). Las cinco predicciones conservan todas sus combinaciones en la primera página; se revisaron tablas, cabeceras, gráficas, avisos y trazas sin pérdidas ni solapamientos detectados. Un PDF de Fiabilidad Baloto uniforme, Carta vertical de **ocho páginas**, se revisó aparte y no se suma a los 27/203. Los multiconjuntos de cifras coinciden entre formatos como contraste auxiliar, sin validar el vector completo de API; las dimensiones del PDF no prueban la escala del diálogo. También se revisaron el formulario con corte 2719/línea uniforme y ColorLoto `pares`. La muestra estrecha Baloto de cinco, **390 × 648 píxeles CSS**, fue legible en los elementos inspeccionados, con desplazamiento horizontal de la tabla; es representativa, no exhaustiva de los cuatro juegos. Este cierre usa esa auditoría aportada y no vuelve a inspeccionar PDF ni capturas.
+
+**Linux sintético, ejecutado por Codex Cloud:** suite completa **6759 aprobadas**, selección filtrada **2514**, sin fallos, errores ni omisiones; OpenSSL `exigir` **7/7 en ambos JUnit**, demostración **8/8** y `pip check` correcto. Se registraron seis avisos en la suite y uno en la selección. La comparación sintética propia de **54 PDF**, 473 filas y 207 grupos pertenece a Cloud/Linux; no se atribuye a Daniel, a Windows real ni a pruebas ejecutadas por ChatGPT. La auditoría separada de ChatGPT comprobó paquete/manifiestos, aplicación y reversión, contenido/espacios del incremental, sintaxis y controles estadísticos directos sin repetir la suite completa.
+
+**v3.4** corrige el corte vacío y la selección persistente de Fiabilidad, el componente real de ColorLoto, la lectura numérica cerca de cero, el texto de MiLoto y el singular/plural, y la disposición de pantalla e impresión. Mantiene las probabilidades congeladas, las unidades por balota, las multiplicidades y las consultas de solo lectura. Añadir una línea sigue siendo aditivo y no modifica la configuración. La superbalota de `carteras:uniforme-v1` conserva su estrategia de frecuencia con suavizado de Laplace; el nombre de la línea no implica deltas nulos en todos sus componentes.
+
+**Siguiente paso: cierre exclusivamente documental.** Aplicar `aplicar-fase4-cierre.ps1` en Windows PowerShell 5.1, consola normal, siguiendo `fase4-guia-cierre-windows.md`; verifica código y manifiestos y aplica únicamente los cuatro documentos. No requiere repetir pruebas, demostraciones, entrenamiento, generación, recuperación ni consultas o revisión visual. Daniel realizará después commit, push y PR desde Windows. Permanecen **pendientes separados** GitHub Actions sobre el PR final, la **suite completa nativa Windows** y la **acreditación prospectiva** con muestras suficientes por línea y tipo. La implementación y validación local completadas no acreditan ventaja predictiva: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+
+**Un solo flujo para los cuatro juegos** (`/predicciones`, en la navegación como «Centro de predicciones»):
+1. **Elegir** el modelo en `/carteras/<juego>`: receta o versión registrada, cantidad, diversidad y semilla. Es la configuración de Producto 5, la única elección del operador, y el centro nunca la cambia ni elige otro modelo por su cuenta.
+2. **Generar** («Generar con la configuración» o el comando). Usa el mismo caso de uso de Producto 5: mismo cerrojo, misma identidad y misma reutilización. Una versión registrada se recarga con las comprobaciones de la Fase 3, sin reentrenar. Después se guarda la explicación. «Generar cinco combinaciones» es una petición aparte que no cambia la cantidad configurada.
+3. **Consultar** `/predicciones/<juego>`. La página muestra:
+   - la configuración, la versión registrada y su compatibilidad;
+   - los cortes de entrenamiento y de entrada, el objetivo, la generación, la integridad y la frescura frente a la base;
+   - las combinaciones, cada una con su papel: la «sugerencia del modelo», con la probabilidad de cada elemento, o la «línea muestreada», sin marginales;
+   - los fuertes y débiles, la explicación, la fiabilidad disponible en el corte, la proyección a la tabla `predicciones` y los enlaces a la cartera original, la ficha de la versión y los resultados observados.
+4. **Fiabilidad** en `/predicciones/<juego>/fiabilidad`: el rendimiento observado y su incertidumbre por línea y tipo de evaluación, más la evaluación de la receta en su informe del laboratorio. `?hasta=<sorteo>` limita la evidencia a la que existía en ese corte.
+
+**Fuertes y débiles** (la clasificación del modelo para ese objetivo; no son garantías ni causas):
+- **Números:** 10 en cada extremo, con la probabilidad emitida, la uniforme, la diferencia y la razón. En Baloto y Revancha las marginales suman 5 y la uniforme es 5/43.
+- **Superbalota:** en su propia sección (16 clases que suman 1).
+- **ColorLoto:**
+  - pares número-color, con la probabilidad por balota (suma 1) y la multiplicidad esperada en 6 balotas (6 × p);
+  - aparte, los 7 números y los colores de la paleta, cada uno con su denominador. Nunca se listan 10 números en un universo de 7.
+- **Empates:** si cortan un extremo, se dice.
+
+**Explicación** (versionada e inmutable):
+- el método: familia, versión de la receta, variables, periodo y corte de entrenamiento y transformación de salida;
+- los valores de las variables de cada candidato, calculados con las funciones causales del motor y solo con los sorteos hasta el corte;
+- las importancias o coeficientes **globales** del estimador persistido de una versión registrada, leídos en el proceso trabajador con la carga restringida, sin reajustar nada.
+
+Lo que no hay se dice expresamente: el boosting no expone importancias, las recetas que se reajustan al generar no conservan su estimador, y la uniforme y las frecuencias no tienen estimador. No se inventan contribuciones por candidato.
+
+**Fiabilidad observada** (contrato `fase4-fiabilidad-1`). Tres cantidades separadas:
+1. la probabilidad emitida;
+2. el rendimiento observado: Δ Log Loss y Δ Brier frente a la uniforme del mismo artefacto y objetivo, y aciertos observados menos esperados en los extremos;
+3. la incertidumbre: intervalo del 95 % por **bootstrap de bloques móviles** sobre la serie de sorteos, con bloque ceil(n^(1/3)) y 2000 remuestras.
+
+Reglas del contrato:
+- la unidad es el sorteo, y juegos, líneas, tipos y componentes van por separado;
+- en ColorLoto se usa la multiplicidad sobre 6 balotas;
+- cada estado se declara con su motivo: `estimable` (desde 30 sorteos), `muestra_insuficiente`, `sin_resultados`, `sin_base`, `excluidas`, `sin_datos`, `no_disponible` y `fallo_de_calculo`;
+- el umbral de 30 solo decide si se calcula el intervalo: no es una validación;
+- el diagnóstico de calibración de Producto 6 sigue siendo descriptivo.
+
+Fuentes: Künsch (1989), Hall, Horowitz y Jing (1995), Diebold y Mariano (1995) y Gneiting y Raftery (2007), con sus DOI en la página.
+
+**Comando** (mismo caso de uso; desde `backend`):
+
+```powershell
+python -m scripts.predicciones indice
+python -m scripts.predicciones consultar --juego BALOTO [--cartera <clave>]
+python -m scripts.predicciones generar --juego BALOTO [--cinco]          # escribe (cartera y explicación)
+python -m scripts.predicciones explicar --cartera <clave>                # escribe (explicación)
+python -m scripts.predicciones fiabilidad --juego BALOTO [--linea <procedencia:linea>] [--hasta <sorteo>]
+python -m scripts.predicciones ejecucion --id <identificador>
+python -m scripts.predicciones rutas
+```
+
+Códigos de salida:
+- 0: éxito;
+- 2: uso o identificador no válidos;
+- 3: base o almacén no disponibles;
+- 4: sin configuración;
+- 5: resultado parcial;
+- 6: otra ejecución en curso;
+- 7: versión incompatible, sin sorteos o fallo del trabajador;
+- 8: artefacto alterado.
+
+API de solo lectura: `GET /api/predicciones`, `GET /api/predicciones/{codigo}[?cartera=]` y `GET /api/predicciones/{codigo}/fiabilidad[?linea=&hasta=]`.
+
+**Tabla `predicciones`: decisión formal.** Queda reservada y no se escribe. La fuente canónica es el almacén inmutable: la cartera de Producto 5 y su explicación. Escribir también en PostgreSQL crearía un segundo registro sin una transacción común. La página, la API y el comando muestran la proyección a sus columnas, con `nivel_confianza` vacío a propósito.
+
+**Garantías y límites:**
+- Las explicaciones se guardan en `DIRECTORIO_PREDICCIONES_MODELOS` (por defecto `storage/predicciones`, ignorado por Git):
+  - ruta `explicaciones/<JUEGO>/<16 hex de la cartera>-<clave>.json`, en JSON canónico;
+  - publicación atómica con el publicador compartido, idempotente;
+  - un archivo alterado se informa y nunca se sobrescribe.
+- **Presupuesto de rutas:** la ruta más larga es la carpeta del almacén + 117 caracteres, y el temporal es más corto que el destino. En el worktree de Windows queda muy por debajo de 259.
+- Los artefactos, almacenes, esquemas, secuencias, configuraciones y versiones anteriores no cambian.
+- La fiabilidad no corrige la selección de un modelo después de ver una comparación ni los cambios de régimen. Con muestras pequeñas, la cobertura real puede quedar por debajo de la nominal.
+- No hay recalibración. Si se propone, será otra versión, ajustada solo con el pasado y nunca aplicada a predicciones ya emitidas.
+
+**Verificación histórica en Linux de la v2, informada por Claude** (Cloud, Python 3.11.15, scikit-learn 1.9.1, fixtures sintéticas; no son resultados de esta sesión ni acreditan Windows): Fase 4 `73 passed` (fiabilidad 23, explicación 16, caso de uso 14, almacén 9 y web, API y comando 11), también con el límite de 259 caracteres de Windows simulado (carpeta de pytest de 61 y `%TEMP%` de 34: 0 rutas rechazadas); Fase 3 `81 passed`; Productos 1 a 6 (`85`, `39`, `66`, `94`, `96` y `73 passed`), lista de Productos 1 a 3 del script `229 passed` y Fase 5 `94 passed`; selección de Windows ejecutada en Linux (95 entradas) `2288 passed`; una suite completa `6533 passed`; OpenSSL `SUPERADOS 7/7` en modo `exigir` sobre la selección y sobre la suite; demostración sintética 8/8; `pip check` limpio; espacios limpios, incluidos los archivos nuevos; revisión visual con Bootstrap real (Chromium de Playwright, 1366 y 390 px; PDF en Carta vertical y horizontal, A4 vertical y Legal vertical) sin desbordamiento horizontal; parche comprobado en una extracción limpia (aplicar, revertir y contenido final idéntico). La primera suite completa dio `9 failed`: 8 por una regla de arquitectura (solo `modelo.py` importa scikit-learn en `application/ml`) y 1 por la lista de páginas imprimibles. Se corrigieron moviendo la lectura del estimador a `modelo.py` y añadiendo `predicciones/` a esa lista, y después todo pasó. **v2:** una auditoría encontró que, si el lanzador del hilo fallaba, el registro propio del centro quedaba `en_curso`, sin fecha de finalización, y la página de estado seguía consultando. La regresión nueva por el POST real con un lanzador que falla falló sobre la v1 y pasa con la corrección; las cifras de este párrafo son las de la v2. La página de la ejecución interrumpida y la respuesta 500 se revisaron de nuevo a 1366 y 390 px, sin desbordamiento horizontal; las demás plantillas no cambiaron desde la revisión visual y los PDF de la v1.
+
+**Validación real en Windows de la v2 (evidencia del operador, no ejecutada por Claude; Python 3.14.6):** la primera ejecución de Fase 4 en consola normal dio `72 passed, 1 skipped` por el enlace simbólico; la batería elevada dio `73 passed`. Uvicorn se inició después en consola normal. Selección de Windows `2288 passed`, OpenSSL `SUPERADOS 7/7` en modo `exigir` y `pip check` limpio. **La generación web real posterior falló.** Fue con Baloto, la versión registrada v1 y el corte 2720, en la ejecución `20261013T135713Z-dc2deb60`. Carteras publicó la cartera `adce8ea7…` y, al registrar el juego terminado, `os.replace` lanzó `PermissionError [WinError 5]`; no quedó identificado el actor que bloqueó la sustitución. El hilo murió y los dos registros quedaron `en_curso`. La página mostraba «Interrumpido» con «cartera: en curso» y seguía consultando cada 2 s. Los tres archivos descritos por el operador (dos registros definitivos y el temporal) se conservan como evidencia; el temporal no se promociona.
+
+**v3 (corrección):**
+- El registro de ejecuciones compartido (Productos 3 y 5, laboratorio y centro) mantiene el temporal completo, `fsync` y el reemplazo atómico. Reintenta de forma acotada (10 s en total) solo los bloqueos transitorios de Windows (WinError 5, 32 y 33). Un error permanente se propaga al primer intento, y nunca se escribe sobre el JSON definitivo.
+- El centro toma su propio cerrojo de ejecución hasta terminar la explicación. Ante una excepción de Carteras, cierra su registro como `fallo` y valida en el almacén la cartera ya publicada. Una generación sin trabajador se muestra interrumpida, sin escribir, y la página deja de consultar. Mientras la explicación sigue activa, no se declara interrumpida.
+- Repetir la misma entrada reutiliza la cartera y completa su explicación sin reentrenar.
+
+**Verificación histórica en Linux de la v3, informada por Claude** (mismo entorno; no son resultados de esta sesión ni acreditan Windows): Fase 4 `96 passed`. La v3 añade 23 pruebas: 14 de publicación del registro y 9 de recuperación. El resultado se mantiene con el límite de 259 caracteres de Windows simulado (0 rutas rechazadas). Fase 3 `81 passed`; Productos 1 a 6 (`85`, `39`, `66`, `94`, `96` y `73 passed`), incluidos los consumidores del registro compartido; lista de Productos 1 a 3 del script `229 passed`; Fase 5 `94 passed`. Selección de Windows ejecutada en Linux (97 entradas): `2311 passed`. Una suite completa: `6556 passed`. OpenSSL `SUPERADOS 7/7` en modo `exigir` sobre la selección y sobre la suite; demostración sintética 8/8; `pip check` limpio; espacios limpios, incluidos los archivos nuevos. Los tres estados nuevos de la página de una generación se revisaron a 1366 y 390 px, sin desbordamiento horizontal. La cadena base → v2 → incremental se comprobó en una extracción limpia (aplicar, revertir, contenido y espacios). Antes de corregir, las simulaciones del registro fallaban sobre la v2. Una sonda con el constructor de la v2 y un solo WinError 5 simulado reprodujo el fallo de Windows: `PermissionError` al primer intento, definitivo en `construccion` y temporal huérfano. Además, 7 de las 8 pruebas iniciales de recuperación fallaban por comportamiento. En Linux, las pruebas de bloqueo real y de concurrencia real comprueban la semántica POSIX: el reemplazo no se bloquea (0 reintentos). En Windows exigen el bloqueo y el reintento reales, y su resultado está pendiente: no se atribuye a Windows nada ejecutado solo en Linux.
+
+**v3.1 (corrección de la carrera de finalización):** la consulta del método real `CentroDePredicciones.ejecucion` observa una sola vez si el trabajador mantiene su cerrojo. Si lo observó vivo, `en_curso` sigue siendo una instantánea válida hasta el siguiente polling. Si lo observó libre, relee el registro antes de derivar una interrupción y conserva un cierre persistido como `exito`. Una regresión determinista, sin sleeps, reproduce la publicación de `exito` y la liberación del cerrojo entre las dos comprobaciones de la v3; esa secuencia no puede devolver `interrumpida`. Se conservan la lectura pura, el cierre ante fallos, la explicación activa y la reutilización de artefactos. El incremental v3.1 se aplica directamente sobre la v2; no requiere aplicar la v3 original.
+
+**Procedimiento histórico de v3.1 (superado por la evidencia nativa v3.3 y el cierre local v3.4 anteriores):** la batería de Fase 4 y la selección que incluyen el caso de enlace simbólico se validaban en consola elevada en el Windows del operador. Las demás baterías y Uvicorn se ejecutan en consola normal. Repetir `generar`, aunque reutilice cartera y explicación, escribe registros de ejecución y crea o usa cerrojos; no es una consulta de solo lectura. En aquella entrega seguían pendientes su validación nativa, recorrido real e impresión; el cierre local v3.4 anterior registra los resultados posteriores. Actions continúa pendiente.
+
+**Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado actual:** implementación y validación local v3.4 completadas, con cierre documental preparado. El PR final y su CI, la suite completa nativa Windows y la acreditación prospectiva siguen separados y pendientes.
+
+**Pendiente:**
+- aplicar el cierre documental en Windows y que Daniel realice commit, push y PR de la entrega completa; sin repetir la validación local ya terminada;
+- GitHub Actions, con el PR;
+- la suite completa en Windows;
+- la evidencia estadística: muestras prospectivas suficientes por línea.
 
 ---
 

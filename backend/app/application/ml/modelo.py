@@ -510,3 +510,83 @@ def componentes_de_inferencia(estimador) -> list[dict]:
                 salida.insert(len(salida) - (1 if salida and salida[-1]["paso"] == "calibracion" else 0),
                               {"paso": "estimador", "clase": type(paso).__name__, "detalle": nombre})
     return salida
+
+
+# =====================================================================
+# Fase 4: lectura (sin reajustar) de importancias y coeficientes globales
+# de un modelo registrado. Las funciones anteriores no cambian.
+# =====================================================================
+
+def _columnas_de_salida(ct, nombres: Sequence[str]) -> list[tuple[str, str]] | None:
+    """(variable, columna transformada) en el orden de salida de un
+    ColumnTransformer ajustado, o None si no se puede asociar con seguridad."""
+    from numbers import Integral
+
+    indices = getattr(ct, "output_indices_", None)
+    if indices is None:
+        return None
+    salida: list[tuple[str, str, int]] = []
+    for nombre, trans, columnas in ct.transformers_:
+        tramo = indices.get(nombre)
+        if tramo is None or (isinstance(trans, str) and trans == "drop"):
+            continue
+        columnas = list(range(len(nombres)))[columnas] if isinstance(columnas, slice) else list(columnas)
+        cuantas = tramo.stop - tramo.start
+        if cuantas == 0:
+            continue
+        if any(not isinstance(c, Integral) or not 0 <= c < len(nombres) for c in columnas):
+            return None
+        if isinstance(trans, OneHotEncoder):
+            etiquetas = [(nombres[c], f"{nombres[c]}={_categoria(cat)}")
+                         for c, cats in zip(columnas, trans.categories_) for cat in cats]
+        elif cuantas == len(columnas):
+            etiquetas = [(nombres[c], nombres[c]) for c in columnas]
+        else:
+            return None
+        if len(etiquetas) != cuantas:
+            return None
+        salida.extend((v, e, tramo.start + j) for j, (v, e) in enumerate(etiquetas))
+    salida.sort(key=lambda t: t[2])
+    if [t[2] for t in salida] != list(range(len(salida))):
+        return None
+    return [(v, e) for v, e, _ in salida]
+
+
+def _categoria(valor) -> str:
+    try:
+        f = float(valor)
+    except (TypeError, ValueError):
+        return str(valor)
+    return str(int(f)) if f.is_integer() else repr(f)
+
+
+def valores_globales_por_columna(estimador, nombres: Sequence[str]) -> dict:
+    """Fase 4 (solo lectura; nunca reajusta ni evalua): importancias globales
+    (`feature_importances_`) o coeficientes (`coef_`) del estimador final de un
+    modelo registrado YA cargado, con la variable de cada columna
+    transformada. Devuelve `{"motivo": ...}` si la estructura no permite
+    asociarlos con seguridad. La agregacion por variable y los textos estan
+    en `predicciones_explicacion`."""
+    base, calibrado = estimador, False
+    if isinstance(base, CalibratedClassifierCV):
+        clasificadores = getattr(base, "calibrated_classifiers_", [])
+        if len(clasificadores) != 1:
+            return {"motivo": "la calibración tiene varios clasificadores base: no hay un único estimador"}
+        base, calibrado = clasificadores[0].estimator, True
+    if not isinstance(base, Pipeline) or "variables" not in base.named_steps or "estimador" not in base.named_steps:
+        return {"motivo": "estructura del estimador no reconocida (p. ej. la receta de AE-36): no se asocian "
+                          "valores a variables"}
+    final = base.named_steps["estimador"]
+    clase = type(final).__name__
+    columnas = _columnas_de_salida(base.named_steps["variables"], nombres)
+    if columnas is None:
+        return {"motivo": "no se pudo asociar cada columna transformada a su variable", "estimador": clase}
+    if hasattr(final, "feature_importances_"):
+        tipo, crudos = "importancia_por_reduccion_de_impureza", final.feature_importances_
+    elif hasattr(final, "coef_"):
+        tipo, crudos = "coeficiente", final.coef_
+    else:
+        return {"motivo": None, "estimador": clase, "sin_valores": True}
+    valores = [float(v) for v in (crudos.ravel() if hasattr(crudos, "ravel") else crudos)]
+    return {"motivo": None, "estimador": clase, "calibrado": calibrado, "tipo": tipo, "columnas": columnas,
+            "valores": valores}

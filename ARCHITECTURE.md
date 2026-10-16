@@ -18,12 +18,13 @@ Este documento explica cómo está construido el sistema, con suficiente detalle
 12. [Visualizaciones web de estadísticas](#visualizaciones-web-de-estadísticas)
 13. [Fase 5: estadísticas descriptivas completas](#fase-5-estadísticas-descriptivas-completas)
 14. [Fase 3: modelos entrenados y versionados](#fase-3-modelos-entrenados-y-versionados)
-15. [Flujo de una petición web (HTMX)](#flujo-de-una-petición-web-htmx)
-16. [API REST](#api-rest)
-17. [Base de datos](#base-de-datos)
-18. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
+15. [Fase 4: predicciones explicables y fiabilidad observada](#fase-4-predicciones-explicables-y-fiabilidad-observada)
+16. [Flujo de una petición web (HTMX)](#flujo-de-una-petición-web-htmx)
+17. [API REST](#api-rest)
+18. [Base de datos](#base-de-datos)
+19. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
 
-Estado de las fases 1–9, historial de los Productos 1–6 y orden de las próximas entregas (3 → 4 → 6 → 7 → 8 → 9): ver ROADMAP.md, «Estado por fase».
+Estado de las fases 1–9, historial de los Productos 1–6 y orden de las próximas entregas (4 → 6 → 7 → 8 → 9; la Fase 3 quedó cerrada con el PR #92): ver ROADMAP.md, «Estado por fase».
 
 ---
 
@@ -6030,6 +6031,7 @@ Prueba de ausencia de fuga: alterar todos los sorteos desde el primer objetivo d
 - **Ejecuciones:**
   - La web responde en seguida con un identificador y el trabajo sigue en un hilo. Cada juego usa su propia sesión de base de datos.
   - El progreso queda en `storage/operacion/ejecuciones/<id>.json`, separado de los artefactos, sin credenciales ni HTML.
+    - Cada estado se escribe en un temporal completo (`flush` y `fsync`). POSIX publica con `os.replace`; Windows v3.3 usa `SetFileInformationByHandle(FileRenameInfoEx=22)` con reemplazo y semántica POSIX, sin volver a `MoveFileExW`. La v3.2 nativa demostró que compartir eliminación en el lector no bastaba con la primitiva anterior. El nuevo contrato permite sustituir el destino retenido por lectores que comparten `DELETE`; uno que lo niega puede bloquear. Los bloqueos admitidos (WinError 5, 32 o 33) se reintentan de forma acotada (10 s; los lectores, 2 s), sin atribuir un código a un actor concreto. Solo lectura, carpeta y errores permanentes se propagan sin espera. Un rechazo de capacidad es explícito y el error 87 no se presenta como prueba de falta de soporte. Si no se publica, se retira solo el temporal propio y queda el JSON previo íntegro. API, ABI y volumen sintético se registran en la focal nativa, todavía pendiente. Lo usan operación, laboratorio, Carteras y Predicciones.
   - Un cerrojo del sistema operativo por juego (`flock` / `msvcrt.locking`) impide dos ejecuciones simultáneas del mismo juego, aunque una venga de la web y otra del comando.
   - Cada ejecución mantiene además su propio cerrojo hasta terminar de escribir el cierre global. Sin ese cerrojo (proceso muerto, disco lleno al cerrar, hilo que no se pudo lanzar), la ejecución se muestra como `interrumpida` aunque sus juegos hubieran terminado.
     - Los juegos completados conservan su resultado, y nunca se anota un éxito no registrado.
@@ -6498,7 +6500,7 @@ templates/descriptivas/                       ─ metrica.html, panel.html y par
 
 ## Fase 3: modelos entrenados y versionados
 
-**Estado: implementada y verificada en Linux con fixtures sintéticas. La v2 está validada por el operador en Windows nativo y recorrida con el histórico real de los cuatro juegos. Los ajustes de cierre (presentación y prueba de temporales) están pendientes de validar en Windows, y GitHub Actions todavía no ha ejecutado la Fase 3.** Completa la ingeniería de la Fase 3 sobre los Productos 4–6. No acredita ventaja predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`. Estado de todas las fases en ROADMAP.md («Estado por fase»).
+**Estado: implementada y validada; cerrada con el PR #92 (base `8a53108`).** La v2 está validada por el operador en Windows nativo y recorrida con el histórico real de los cuatro juegos; los ajustes de cierre se validaron después en Windows (Fase 3 `81 passed` sin `--basetemp`, selección `2215 passed`, OpenSSL 7/7 y PDF Legal vertical), y GitHub Actions la ejecutó en verde (47, 48 y 49). *Estado anterior: «ajustes de cierre pendientes de validar en Windows; GitHub Actions todavía no ha ejecutado la Fase 3».* Completa la ingeniería de la Fase 3 sobre los Productos 4–6. No acredita ventaja predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`. Estado de todas las fases en ROADMAP.md («Estado por fase»).
 
 ```
 application/ml/
@@ -6604,7 +6606,145 @@ AE-36 congela su `pipeline_calibrado`; los modelos nuevos, el estimador calibrad
   - Pruebas focales 69 (con la raíz corta de pytest; la primera pasada dio 1 fallo de esa prueba), Productos 1–6, selección `2203 passed`, demostración 7/7 y OpenSSL 7/7. La suite completa no se ejecutó.
   - Recorrido con el histórico real: cuatro versiones guardadas, recargadas en otro proceso con el control exacto y reutilizadas tras un reinicio de Uvicorn; 136 artefactos previos intactos.
   - PDF en Legal vertical (Chrome 155).
-- **Pendiente.** La validación en Windows de los ajustes de cierre, GitHub Actions, la suite completa en Windows, la impresión en Carta, A4 y horizontal en Windows y las familias futuras. Ninguna ventaja predictiva acreditada.
+- **Windows (operador, cierre).** Fase 3 `81 passed` sin `--basetemp`, selección `2215 passed`, OpenSSL 7/7 y las tres aclaraciones revisadas en PDF Legal vertical. La suite completa no se ejecutó en Windows.
+- **GitHub Actions.** Ejecución 47 (PR #92) en verde, con la suite completa en Linux y la selección en Windows; 48 y 49 sobre `8a53108`, también.
+- **Pendiente.** La suite completa en Windows, la impresión en Carta, A4 y horizontal en Windows y las familias futuras. Ninguna ventaja predictiva acreditada. (Antes del cierre también figuraban la validación en Windows de los ajustes de cierre y GitHub Actions.)
+
+---
+
+## Fase 4: predicciones explicables y fiabilidad observada
+
+**Cierre local v3.4 (16 de octubre de 2026, Colombia).** La implementación y la validación local están completadas con los alcances del resumen consolidado aportado. Daniel ejecutó Windows nativo; Codex Cloud ejecutó Linux con datos sintéticos; ChatGPT auditó los archivos y la evidencia entregada y registró su revisión previa de PDF y capturas, que no están incluidos en los ZIP de este cierre. Este cierre documental no vuelve a ejecutar esas verificaciones ni convierte una auditoría en pruebas nuevas.
+
+**Windows nativo v3.4, ejecutado por Daniel:** Windows 11 AMD64, Windows PowerShell 5.1, Python 3.14.6 y pytest 9.1.1. Focal **198 aprobadas**; regresiones: Fase 3 **81**, Producto 6 **73**, Producto 5 **96**, Producto 4 **94**, Fase 5 **94** y Productos 1–3 **229**. Demostración con datos sintéticos **8/8** y `pip check` correcto. ConEnlaces terminó con **217 aprobadas** en `fase4_sin_publicacion` y **2432** en `seleccion_windows_sin_publicacion` (100 entradas), sin fallos, errores ni omisiones; OpenSSL `exigir` **7/7** en el JUnit de esa selección. Consta el aviso conocido Starlette/httpx. Estas dos baterías son **reducidas**: excluyen las tres familias de publicación v3.3 y no equivalen a nuevas ejecuciones de toda Fase 4, de la selección completa ni de la suite completa Windows. Los grupos se solapan y no se suman. La bandera `validacion_completa: true` de `ConEnlaces/resumen.json` indica progreso del script; no acredita una ejecución completa nativa.
+
+**Publicación nativa conservada de v3.3:** Daniel validó **82 aprobadas** en NTFS con `SetFileInformationByHandle(FileRenameInfoEx)`, clase **22**, flags **3**. La prueba real completó **120 publicaciones** con lectores en hilos y otro proceso, sin lecturas parciales, y verificó el destino retenido por otro proceso. Los cinco archivos de ese mecanismo permanecen byte-idénticos en v3.4; es evidencia nativa de **v3.3**, no una ejecución nueva de v3.4.
+
+**Recorrido real y reproducción.** Daniel recuperó Baloto reutilizando la cartera publicada y completando su explicación en una ejecución nueva; conservó los registros fallidos y el temporal original, sin promocionarlos ni reescribirlos. Las cuatro emisiones de tres combinaciones y Baloto de cinco persistieron tras el reinicio, con integridad, reproducción exacta e importancias disponibles y páginas terminadas sin sondeo. Pedir cinco conservó en tres la configuración vigente; repetir Baloto de tres reutilizó cartera y explicación y añadió únicamente los dos registros de ejecución. La reproducción comprueba la huella del **vector fuente**, recalcula **rankings y variables** y los compara con la explicación guardada. La integridad de esta explicación cubre las importancias guardadas y la referencia SHA-256 del estimador. El cotejo directo del archivo del estimador se hace al emitir la explicación; la reproducción de una consulta GET **no lo abre ni lo carga, no ejecuta una nueva inferencia ni recalcula las importancias**.
+
+**Instantáneas distintas, consultas de solo lectura.** Los PDF y las primeras **seis consultas de API** corresponden a la base anterior: **219 archivos** intactos antes/después; ChatGPT contrastó además 68 medias y límites con los PDF. Antes del último bloque se añadieron **12 archivos**, conservando los 219 originales: nueve HTML, un registro de operación y dos archivos de un pronóstico de ColorLoto. El primer intento del ayudante de parámetros se detuvo por su guarda, con cero consultas y 231 archivos intactos; se corrigió solo el ayudante. Las últimas **60 consultas**, sobre la base actualizada, dieron **28 HTTP 200 y 32 HTTP 422 esperados** en API y web: parámetros vacíos equivalentes a ausentes, GET repetidos idénticos, corte y selección conservados y rechazos de valores inválidos. Sus tres inventarios de **231 archivos** coinciden, sin alterados, ausentes ni nuevos; se verificó la cadena **219 → 231 → 231** y la conservación de los tres archivos del fallo original. No se exige igualdad de cifras o pendientes entre fechas. ChatGPT auditó JSON, huellas, formularios extraídos e inventarios; el último ZIP no incluye cada cuerpo HTML completo.
+
+**Pantalla e impresión nativas revisadas.** Daniel produjo los PDF con Chrome 155/Windows y ChatGPT inspeccionó **27 PDF principales, 203 páginas**, en Carta vertical, Carta horizontal y A4 vertical: 15 predicciones (139 páginas) y 12 Fiabilidad (64). Las cinco predicciones conservan todas sus combinaciones en la primera página; se revisaron tablas, cabeceras, gráficas, avisos y trazas sin pérdidas ni solapamientos detectados. Un PDF de Fiabilidad Baloto uniforme, Carta vertical de **ocho páginas**, se revisó aparte y no se suma a los 27/203. Los multiconjuntos de cifras coinciden entre formatos como contraste auxiliar, sin validar el vector completo de API; las dimensiones del PDF no prueban la escala del diálogo. También se revisaron el formulario con corte 2719/línea uniforme y ColorLoto `pares`. La muestra estrecha Baloto de cinco, **390 × 648 píxeles CSS**, fue legible en los elementos inspeccionados, con desplazamiento horizontal de la tabla; es representativa, no exhaustiva de los cuatro juegos. Este cierre usa esa auditoría aportada y no vuelve a inspeccionar PDF ni capturas.
+
+**Linux sintético, ejecutado por Codex Cloud:** suite completa **6759 aprobadas**, selección filtrada **2514**, sin fallos, errores ni omisiones; OpenSSL `exigir` **7/7 en ambos JUnit**, demostración **8/8** y `pip check` correcto. Se registraron seis avisos en la suite y uno en la selección. La comparación sintética propia de **54 PDF**, 473 filas y 207 grupos pertenece a Cloud/Linux; no se atribuye a Daniel, a Windows real ni a pruebas ejecutadas por ChatGPT. La auditoría separada de ChatGPT comprobó paquete/manifiestos, aplicación y reversión, contenido/espacios del incremental, sintaxis y controles estadísticos directos sin repetir la suite completa.
+
+**v3.4** corrige el corte vacío y la selección persistente de Fiabilidad, el componente real de ColorLoto, la lectura numérica cerca de cero, el texto de MiLoto y el singular/plural, y la disposición de pantalla e impresión. Mantiene las probabilidades congeladas, las unidades por balota, las multiplicidades y las consultas de solo lectura. Añadir una línea sigue siendo aditivo y no modifica la configuración. La superbalota de `carteras:uniforme-v1` conserva su estrategia de frecuencia con suavizado de Laplace; el nombre de la línea no implica deltas nulos en todos sus componentes.
+
+**Siguiente paso: cierre exclusivamente documental.** Aplicar `aplicar-fase4-cierre.ps1` en Windows PowerShell 5.1, consola normal, siguiendo `fase4-guia-cierre-windows.md`; verifica código y manifiestos y aplica únicamente los cuatro documentos. No requiere repetir pruebas, demostraciones, entrenamiento, generación, recuperación ni consultas o revisión visual. Daniel realizará después commit, push y PR desde Windows. Permanecen **pendientes separados** GitHub Actions sobre el PR final, la **suite completa nativa Windows** y la **acreditación prospectiva** con muestras suficientes por línea y tipo. La implementación y validación local completadas no acreditan ventaja predictiva: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+
+**Estado: implementación y validación local v3.4 completadas; GitHub Actions del PR final, suite completa nativa Windows y acreditación prospectiva pendientes por separado.** Coordina lo existente y no duplica ningún motor: no entrena por su cuenta, no construye carteras ni evalúa con otro código. No acredita ventaja predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
+
+```
+application/ml/
+  predicciones_explicacion.py  rankings, combinaciones (papel), variables de los candidatos, importancias
+                               globales (agregadas por variable), metodo, cuerpo/componer/integro/reproducir,
+                               proyeccion_tabla. Sin scikit-learn
+  modelo.py                    + valores_globales_por_columna(): lectura del estimador cargado (calibracion,
+                               Pipeline, ColumnTransformer, importancias o coeficientes); sigue siendo el unico
+                               modulo de application/ml que importa scikit-learn
+  predicciones_fiabilidad.py   contrato estadistico (puro): series por sorteo, bootstrap de bloques moviles,
+                               estados, evaluar_emisiones (Producto 6) y evaluar_informe (laboratorio)
+application/use_cases/
+  predicciones.py              CentroDePredicciones (GenerarPredicciones): indice, consultar, fiabilidad,
+                               iniciar/ejecutar/ahora (generar), explicar, ejecucion
+  resultados.py                + emisiones(juego): lectura de todas las filas de Producto 6, sin filtros
+interfaces/predicciones_store.py               ExplicacionGuardada, ExplicacionIlegible, PrediccionesStore
+interfaces/ejecutor_laboratorio.py             + explicacion_registrada(artefacto, estimador)
+infrastructure/storage/predicciones_file_store.py   explicaciones/<JUEGO>/<cartera16>-<clave>.json
+infrastructure/laboratorio_trabajador.py       tarea explicacion_registrada (carga restringida + importancias)
+api/web/routers/predicciones.py, api/rest/routers/predicciones.py, scripts/predicciones.py
+templates/predicciones/                        indice, juego, fiabilidad, ejecucion, error, _macros
+```
+
+**Generar (`iniciar` → `ejecutar`).**
+1. Lee la configuración vigente de Producto 5 (`configuracion_vigente`). Sin ella, `sin_configuracion`; si está alterada, `alterado`.
+2. Traduce sus parámetros: modelo, perfil, cantidad, diversidad, semilla, `registrado` y la referencia `configuracion` (versión y línea). Con «cinco», la cantidad pasa a 5 y no se envía la referencia: es otra línea (`…-n5-…`) y la configuración no cambia.
+3. Llama a `CarterasDeModelos.iniciar("cartera", …)` y `ejecutar`. Comparte el cerrojo por juego (`EjecucionActivaError` si hay otro trabajo), el registro de progreso, la identidad y la reutilización. Una versión registrada pasa por las comprobaciones de la Fase 3 (`_registrado`, `compatibilidad`, `fuente_registrada`) sin reentrenar.
+4. Con la cartera terminada o reutilizada, `explicar`. El registro propio del centro (`storage/predicciones/operacion`) guarda los pasos: cartera, explicación y estado final (`exito`, `parcial` o `fallo`).
+
+**Explicar.** `cuerpo_de_explicacion(cartera, importancias, manifiesto)` se calcula solo con la cartera guardada:
+- su `historico` canónico, mediante `ca.instantanea_de`;
+- su vector fuente;
+- su línea.
+
+Las importancias de una versión registrada se leen así:
+1. el manifiesto, con el SHA-256 del estimador igual al de la cartera;
+2. `mr.compatibilidad`;
+3. `leer_estimador`;
+4. `EjecutorEnProceso.explicacion_registrada`: proceso trabajador, `mr.deserializar_estimador` (lista cerrada de clases) e `importancias_globales`.
+
+Sin estimador persistido, `importancias_sin_estimador()` da el motivo.
+
+`modelo.valores_globales_por_columna` (el único módulo de `application/ml` que importa scikit-learn) desciende de `CalibratedClassifierCV` (un único clasificador) al `Pipeline` (`variables` + `estimador`), y `importancias_globales` agrega el resultado por variable:
+- asocia cada columna transformada a su variable con `output_indices_` y `transformers_` del `ColumnTransformer`: el ordinal o el One-Hot de la identidad, y el resto numérico;
+- suma por variable y resume la identidad One-Hot (mínimo, máximo y media absoluta);
+- si la asociación no es segura, `no_disponible`.
+
+`feature_importances_` (MDI) o `coef_`; el boosting no expone ninguno y no se calcula permutación.
+
+**Identidad e integridad de la explicación** (`predicciones-explicacion/1`).
+- `clave` = SHA-256 canónico (AE-52) del cuerpo, sin `generacion` ni `sello`. La misma cartera con la misma versión del código da la misma clave.
+- `sello` cubre el resto.
+- `reproducir()` comprueba la huella del vector fuente de la cartera, recalcula rankings y variables y exige igualdad exacta con la explicación guardada, sin abrir ni cargar el estimador. La integridad de la explicación cubre las importancias guardadas y la referencia SHA-256 del estimador; el cotejo directo de los bytes del archivo del estimador se realiza al emitir la explicación, no en cada GET. La reproducción no vuelve a ejecutar inferencia ni recalcula las importancias.
+
+**Fiabilidad (`fase4-fiabilidad-1`).** `CentroDeResultados.emisiones(juego)` devuelve todas las filas de Producto 6, con su probabilidad congelada (`congelado`), su resultado, sus métricas, su tipo y su estado de admisión. Las reglas de admisión no cambian. `fiabilidad(juego, linea, hasta)` evalúa por separado:
+- la línea de carteras del modelo de la configuración;
+- la línea del laboratorio de su versión registrada;
+- una línea pedida;
+- la receta en su informe: el de procedencia de la versión, o el más reciente con el mismo perfil y la misma receta.
+
+`valores_de_emision` resume cada sorteo en una cifra por componente:
+- Δ Log Loss y Δ Brier frente a la uniforme del mismo artefacto;
+- aciertos observados menos esperados en los extremos. En ColorLoto, esperado = 6 × Σp y observado = multiplicidad.
+
+`bootstrap_por_bloques` remuestrea la serie ordenada por objetivo:
+- bloques de longitud `ceil(n^(1/3))` con inicio uniforme en `0..n-l`;
+- `np.random.Generator(PCG64)`;
+- semilla = SHA-256 de (versión, juego, línea, tipo, componente, huella de los objetivos incluidos, cifra);
+- 2000 remuestras y percentiles 2,5 y 97,5.
+
+Las filas sin tipo cuentan como exclusiones en los dos tipos, como en Producto 6.
+
+**Correcciones de consulta y presentación v3.4.** Web y API usan el contrato común de corte opcional: `hasta=` equivale a ausencia de límite; una cadena no vacía inválida, cero o un negativo siguen siendo errores. `linea_consultada` conserva la selección y `hasta` conserva el corte en el formulario. Pedir otra línea la añade a las de configuración, sin cambiar la configuración persistida ni filtrar exclusivamente por ella.
+
+La clasificación de la receta sigue el contrato serializado `multiconjunto_de_pares_numero_color`: ColorLoto se muestra como `pares`, con sus unidades por balota y multiplicidades. La clasificación lleva `fase4-componentes-receta-2`. Un contraste sintético de 47 objetivos verificó que sustituir también `numeros` por `pares` en la identidad de la semilla cambiaría la secuencia bootstrap y los dos intervalos de ColorLoto, aunque las medias y las series fuente no cambian; los tres juegos numéricos permanecieron iguales. Se mantiene `fase4-fiabilidad-1` y el token histórico `numeros` **solo en la semilla de receta de ColorLoto**, identificado en `identidad_remuestreo`. No se cambian remuestras, método global, informes guardados ni probabilidades congeladas. El contraste y las regresiones de compatibilidad distinguen datos, media, semilla e intervalo; no son un recálculo del histórico real.
+
+La lectura numérica usa un umbral absoluto de presentación `|media| <= 1e-12`: un residuo conserva su signo y se describe como próximo a cero, sin afirmar igualdad matemática ni significación estadística. Los valores originales y los límites del intervalo no cambian; incluir o excluir cero se decide con los límites originales. En pantalla e impresión todo valor no nulo de magnitud menor que `0.00005` se muestra con cinco cifras significativas en vez de redondearse a `0.00000`; los restantes usan cinco decimales. El criterio se aplica a las pérdidas y a observados menos esperados. La superbalota de `carteras:uniforme-v1` conserva su frecuencia con suavizado de Laplace, por lo que su nombre no implica deltas nulos.
+
+**Web, API y comando.**
+- Las rutas `/predicciones…` y `/api/predicciones…` no existían.
+- `/predicciones/ejecuciones/{id}` se declara antes de `/predicciones/{slug}`.
+- Los POST (`generar`, `explicar`) exigen `proteccion_local`: token local, cliente y `Host` locales, `Origin`/`Referer` propios.
+- `explicar` comprueba el juego antes de escribir.
+- La generación web corre en un hilo (`get_lanzador_de_predicciones`), con su página de progreso.
+- Si el hilo no se puede lanzar, `CentroDePredicciones.abortar` libera los cerrojos de Producto 5 y cierra los dos registros (el de Producto 5 y el propio del centro) como `interrumpida`, con su motivo y su fecha de finalización. La página de estado deja de consultar y se puede volver a generar.
+- **Recuperación (v3; carrera de finalización corregida en v3.1).**
+  - Cada generación toma su propio cerrojo de ejecución (`predicciones/operacion/cerrojos/ejecuciones/<id>.lock`) desde `iniciar` hasta el final de `ejecutar`, incluida la explicación. Que Carteras haya terminado y soltado sus cerrojos no significa que la generación haya muerto.
+  - Una excepción de Carteras, o de la explicación ya fuera de su propio manejo, cierra el registro del centro como `fallo`, con `codigo` (`almacen_no_disponible` o `fallo_inesperado`) y motivo. La cartera anotada en el progreso solo cuenta como publicada si existe en el almacén de Carteras, se verifica y es del juego. Nunca se promociona un temporal.
+  - `ejecucion` (lectura pura) muestra interrumpida una generación «en curso» cuyo cerrojo nadie tiene, y los juegos de Carteras que quedaron a medias como interrumpidos, con su cartera verificada si la hay. La plantilla solo consulta mientras el registro del centro sigue en curso con su trabajador.
+  - En v3.1, `ejecucion` observa una sola vez la vida del trabajador. Si estaba vivo, puede devolver la instantánea `en_curso` hasta el siguiente polling. Si estaba libre, relee el registro antes de derivar una interrupción; un cierre persistido válido conserva su estado. La regresión determinista del método real publica `exito` y libera el cerrojo entre las dos comprobaciones de la v3, sin sleeps: esa secuencia no debe devolver `interrumpida`.
+  - Repetir la misma entrada reutiliza la cartera por su identidad de Producto 5, antes de cargar el estimador, y completa la explicación sin reentrenar. La acción `generar` escribe registros en `carteras/operacion/ejecuciones` y `predicciones/operacion/ejecuciones`, y crea o usa los cerrojos de ambos flujos aunque reutilice los artefactos inmutables; las consultas GET siguen siendo puras.
+
+**Impresión.**
+- En v3.4, la sugerencia y las combinaciones aparecen junto al corte y objetivo, después del aviso experimental; la elección del operador y la trazabilidad completas siguen a continuación. La petición de cinco conserva las cinco combinaciones.
+- Las cifras SVG ocupan una columna reservada fuera de las barras y de la línea de referencia uniforme. Se conservan la referencia, los valores y las tablas equivalentes.
+- Las plantillas marcan `body.producto1-impresion` y usan solo clases `predicciones-*`. Las reglas `@media print` van todas prefijadas con `body.producto1-impresion`:
+  - las tarjetas largas se fragmentan (`predicciones-fragmentable`) y su altura sigue al contenido;
+  - las tarjetas dejan el flujo flex de Bootstrap al imprimir; grupos cortos mantienen título y contexto con el comienzo de su contenido, sin hacer indivisibles las tablas o tarjetas largas;
+  - cada gráfica de intervalos no se corta;
+  - las gráficas no pasan de 9 cm;
+  - la navegación interna y los desplegables no se imprimen, salvo su copia abierta;
+  - las tablas desplazables se imprimen completas, con la cabecera repetida.
+- Cada gráfica SVG va acompañada de su tabla.
+- Los colores de ColorLoto se escriben también como texto.
+- En pantalla, `svg.predicciones-grafica` tiene un ancho máximo y la página no desborda a 390 px.
+- Los metadatos de método reservan separación entre etiqueta y valor, admiten ajuste de línea y no tienen alturas rígidas.
+
+**Almacén** (`storage/predicciones`).
+- Publicación con `laboratorio_file_store._publicar`: temporal `.publicacion.<16 hex>.tmp` (33 caracteres) en la misma carpeta, `fsync` y enlace duro que falla si el destino existe.
+- Si dos escritores publican la misma clave, el segundo reutiliza el archivo del primero.
+- Un archivo alterado es `ExplicacionIlegible`, con motivo: `contenido_alterado`, `json_no_canonico`, `juego_no_coincide`, `cartera_no_coincide` o `nombre_o_tipo_de_archivo_no_admitido`. `guardar` lanza `FileExistsError` y no lo sobrescribe.
+- Ruta más larga: carpeta + 117 caracteres.
 
 ---
 
@@ -6651,6 +6791,8 @@ sequenceDiagram
 ```
 
 `api/web` y `api/rest` comparten exactamente los mismos casos de uso — reemplazar el frontend HTML por React en el futuro no requiere tocar `application/` ni `domain/`.
+
+Fase 4: `GET /api/predicciones`, `GET /api/predicciones/{codigo}[?cartera=]` y `GET /api/predicciones/{codigo}/fiabilidad[?linea=&hasta=]` (solo lectura) devuelven lo mismo que el caso de uso `CentroDePredicciones` que usan la web y el comando. 404: juego o cartera inexistentes; 409: artefacto alterado o sin configuración; 422: parámetro no válido. Generar y explicar no están en la API: se piden con un POST web protegido o con el comando.
 
 Fase 5: `GET /api/estadisticas/{codigo}/panel` y `GET /api/estadisticas/{codigo}/descriptivas/{metrica}` (solo lectura) devuelven el mismo contenido que `/estadisticas/{juego}/panel` y las páginas de cada métrica; `/api/estadisticas/{codigo}/resumen` (Producto 1) no cambia. 404: juego, métrica o combinación que no aplica (con su motivo); 422: parámetro inválido o ajeno a la métrica; 503: base no disponible.
 
@@ -6706,6 +6848,7 @@ erDiagram
 Tablas normalizadas (no `INTEGER[]`) para números y colores: permite indexar y consultar por número individual eficientemente a escala (necesario para el análisis de frecuencia de la Fase 3).
 
 **`modelos`, `metricas_modelo` y `predicciones` (esquema de la Fase 1).** Siguen sin escribirse.
+- **Decisión formal sobre `predicciones` (Fase 4).** Queda reservada y no se escribe. La fuente canónica de cada predicción es el almacén inmutable: la cartera de Producto 5 (vector fuente congelado y combinaciones) y su explicación (`storage/predicciones`). `predicciones_explicacion.proyeccion_tabla()` muestra sus columnas en la página, la API y el comando: `juego_id` como código (el UUID no se resuelve sin la base), `modelo_id` vacío (las versiones se identifican por su clave), `numeros_fuertes`/`numeros_debiles` (pares en ColorLoto) y `nivel_confianza` vacío a propósito: la fiabilidad se presenta como rendimiento observado e incertidumbre por separado.
 - Los modelos entrenados de la Fase 3 viven en el almacén del laboratorio (manifiesto sellado + estimador), como los informes y pronósticos inmutables de los Productos 3–6. Escribir además una fila en PostgreSQL crearía un segundo registro de la misma versión, sin una transacción común con los archivos.
 - La ficha y `GET /api/laboratorio/modelos/{clave}` muestran la proyección a sus columnas. `activo` queda sin valor: el modelo de la operación diaria lo elige la configuración de carteras.
 
@@ -6722,6 +6865,10 @@ Tablas normalizadas (no `INTEGER[]`) para números y colores: permite indexar y 
 | Temporal de publicación corto e independiente del destino (`.publicacion.<16 hex>.tmp`), un solo publicador para Productos 4–6 | `.<nombre final>.<16 hex>.tmp` | Si cabe el destino, cabe el temporal: en Windows sin rutas largas el nombre anterior hizo fallar la primera ejecución de la Fase 3 (temporales de 262 y 264 para destinos de 240 y 242) |
 | La ficha lee la clasificación del informe de procedencia guardado y la separa de la evaluación de su receta | Guardar el ganador en el manifiesto, o recalcularlo al mostrar la ficha | Los manifiestos ya publicados no cambian, y la ficha no puede presentar como propio el resultado de otro modelo ni reordenar el informe (cierre de la Fase 3) |
 | Compatibilidad sin el sistema operativo (se registra y se informa) | Bloquear la carga entre Linux y Windows | Lo que condiciona la carga del estimador son scikit-learn y las versiones menores de Python, NumPy y SciPy; el sistema sigue en la identidad, así que cada entorno de entrenamiento tiene su versión (Fase 3) |
+| Centro de predicciones que coordina Producto 5, Producto 6 y la Fase 3 | Un motor nuevo de generación, carteras o evaluación | La elección del operador sigue siendo la configuración de carteras; la misma configuración da la misma cartera por cualquier camino; nada se entrena dos veces (Fase 4) |
+| Tabla `predicciones` reservada; proyección de solo lectura | Escribir cada predicción también en PostgreSQL | Una sola fuente por predicción, inmutable y verificable, sin una transacción mixta base-archivos (Fase 4) |
+| Fiabilidad como tres cantidades (emitida, observada, incertidumbre) con bootstrap de bloques por sorteo | Un «nivel de confianza» único o etiquetas alta/media/baja | Los candidatos de un sorteo no son independientes y la serie de sorteos tiene dependencia temporal; un número único ocultaría la muestra, el método y sus límites (Fase 4) |
+| Importancias globales solo del estimador persistido, leídas con la carga restringida en el proceso trabajador | Reajustar el modelo o calcular importancias por permutación para explicar | Explicar no puede cambiar ni reentrenar lo emitido; la permutación exigiría volver a evaluar con datos (Fase 4) |
 | Parsers separados de conectores | Parseo embebido en el conector | Testeable sin red; permite reprocesar HTML guardado con el mismo código |
 | application/ nunca importa infrastructure/ | Logger de infraestructura importado directamente | logging.getLogger(nombre) es un registro global — se obtiene el mismo logger configurado sin la dependencia indebida |
 | Tablas normalizadas para números/colores | INTEGER[] de PostgreSQL | Necesario para consultas de frecuencia por número individual a escala (Fase 3) |

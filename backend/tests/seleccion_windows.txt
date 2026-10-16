@@ -88,3 +88,16 @@ tests/unit/test_fase3_registro.py
 tests/unit/test_fase3_integracion.py
 tests/unit/test_fase3_rutas.py
 tests/unit/test_fase3_presentacion.py
+tests/unit/test_fase4_fiabilidad.py
+tests/unit/test_fase4_explicacion.py
+tests/unit/test_fase4_predicciones.py
+tests/unit/test_fase4_almacen.py
+tests/unit/test_fase4_web.py
+tests/unit/test_fase4_publicacion_registro.py
+tests/unit/test_fase4_lectura_windows.py
+tests/unit/test_fase4_escritor_windows.py
+tests/unit/test_fase4_recuperacion.py
+tests/unit/test_fase4_formulario_fiabilidad.py
+tests/unit/test_fase4_semantica_fiabilidad.py
+tests/unit/test_fase4_textos_reglas.py
+tests/unit/test_fase4_presentacion.py

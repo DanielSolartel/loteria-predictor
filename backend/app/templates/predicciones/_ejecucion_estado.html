@@ -1,0 +1,31 @@
+{# e: {"cartera": ejecucion de Producto 5, "prediccion": registro propio (cartera y explicacion)}; ambos derivados en
+   lectura por el caso de uso: sin trabajador, «en curso» pasa a interrumpida. Solo se consulta de nuevo mientras la
+   generacion (registro propio) sigue en curso con su trabajador. #}
+{% set x = e.cartera or {} %}{% set p = e.prediccion or {} %}
+{% set en_curso = (p.estado == 'en_curso') if p else (x.estado == 'en_curso') %}
+<div id="estado-ejecucion" {% if en_curso %}hx-get="/predicciones/ejecuciones/{{ p.id or x.id }}/estado" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+    {% set colores = {'exito': 'alert-success', 'parcial': 'alert-warning', 'fallo': 'alert-danger', 'en_curso': 'alert-info', 'interrumpida': 'alert-danger'} %}
+    {% set estado = p.estado if p else x.estado %}
+    <div class="alert {{ colores.get(estado, 'alert-secondary') }} py-2">
+        <strong>{{ {'exito': 'Terminado.', 'parcial': 'Terminado en parte: la cartera está, pero la explicación necesita atención.', 'fallo': 'No se generó la predicción.', 'en_curso': 'En curso. Esta página se actualiza sola; puedes recargarla sin iniciar otro trabajo.', 'interrumpida': 'Interrumpido.'}.get(estado, estado) }}</strong>
+        {% if en_curso and p.fase %}<div class="small">{{ {'cartera': 'Generando la cartera con Carteras (Producto 5).', 'explicacion': 'Cartera lista; calculando la explicación.'}.get(p.fase, p.fase) }}</div>{% endif %}
+        {% if not en_curso and (p.mensaje or x.mensaje) %}<div class="small">{{ p.mensaje or x.mensaje }}</div>{% endif %}
+        <div class="small text-muted">iniciado {{ (p.iniciada_en or x.iniciada_en or '')[:19]|replace('T', ' ') }} UTC{% if p.finalizada_en %} · terminado {{ p.finalizada_en[:19]|replace('T', ' ') }} UTC{% endif %} · origen {{ p.origen or x.origen }}</div>
+    </div>
+    {% if p.solicitud %}<p class="small mb-2">Petición: {{ 'configuración vigente' if p.solicitud.cantidad == 'configuracion' else 'cinco combinaciones (sin cambiar la configuración)' }} · {{ p.solicitud.combinaciones }} combinaciones · configuración v{{ p.solicitud.configuracion.version }}</p>{% endif %}
+    {% for codigo, r in (x.juegos or {}).items() %}
+    <div class="card stat-card p-3 mb-2">
+        <h6>{{ nombres.get(codigo, codigo) }} · cartera: {{ {'terminado': 'publicada', 'reutilizado': 'ya existía (reutilizada)', 'en_curso': 'en curso', 'pendiente': 'pendiente', 'interrumpido': 'interrumpida'}.get(r.estado, r.estado|replace('_', ' ')) }}</h6>
+        {% if r.estado == 'en_curso' %}<p class="small mb-1">Fase: {{ {'obteniendo_datos': 'obteniendo el histórico (una lectura)', 'fuente': 'calculando el vector fuente', 'construccion': 'construyendo las combinaciones', 'inicio': 'iniciando'}.get(r.fase, r.fase) }}</p>{% endif %}
+        {% if r.mensaje %}<div class="alert alert-warning py-1 px-2 small mb-2">{{ r.mensaje }}</div>{% endif %}
+        {% if r.corte %}<p class="small mb-1">Corte {{ r.corte }}{% if r.objetivo %} · objetivo {{ r.objetivo }}{% endif %} · {{ r.sorteos }} sorteos</p>{% endif %}
+        {% if r.estado == 'interrumpido' %}
+        {% if r.cartera_verificada %}<p class="small mb-1">La cartera <code>{{ r.resultado[:16] }}…</code> se publicó y se verificó antes de la interrupción: repetir la misma entrada la reutiliza y completa la explicación.</p>
+        {% else %}<p class="small mb-1">El juego no terminó y no hay una cartera publicada y verificable para él: repetir la misma entrada vuelve a intentarlo.</p>{% endif %}
+        {% endif %}
+        {% set ex = p.explicacion %}
+        <p class="small mb-1">Explicación: {% if not ex %}{{ 'pendiente' if en_curso else 'no se generó' }}{% elif ex.estado in ('guardada', 'reutilizada') %}{{ ex.estado }} (<code>{{ ex.clave[:16] }}…</code>){% elif ex.estado == 'fallo' %}<span class="text-danger">fallo: {{ ex.motivo }}</span> — puedes pulsar «Explicar esta emisión» en la predicción{% else %}{{ ex.motivo }}{% endif %}</p>
+        {% if r.resultado and (r.estado in ('terminado', 'reutilizado') or r.cartera_verificada) %}<a class="btn btn-sm btn-primary" href="/predicciones/{{ slugs[codigo] }}?cartera={{ r.resultado }}">{{ 'Abrir la cartera publicada' if r.estado == 'interrumpido' else 'Abrir la predicción' }}</a>{% endif %}
+    </div>
+    {% endfor %}
+</div>

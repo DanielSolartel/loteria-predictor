@@ -1,0 +1,72 @@
+{# Macros del centro de predicciones (Fase 4). Solo clases `predicciones-*` para la impresion. #}
+
+{% macro aviso() -%}
+<div class="alert alert-warning py-2 small predicciones-aviso">
+    <strong>Experimental, no acreditado.</strong> Las predicciones describen lo que el modelo elegido estima con los sorteos hasta el corte. No son resultados garantizados, causas ni una recomendación de apuesta, y no acreditan ventaja frente al azar. Siguen el NO-GO de AE-39 y <code>AUTORIZA_EVALUACION = False</code>.
+</div>
+{%- endmacro %}
+
+{% macro candidato(c) -%}
+{% if c is string %}<span class="text-nowrap predicciones-par"><span class="color-swatch color-{{ c|lower }}" title="{{ c }}"></span>{{ c|lower }}</span>{% elif c is sequence %}<span class="text-nowrap predicciones-par"><span class="color-swatch color-{{ c[1]|lower }}" title="{{ c[1] }}"></span>{{ c[0] }} <span class="small">{{ c[1]|lower }}</span></span>{% else %}<span class="numero-bolita">{{ c }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro etiqueta(c) -%}{% if c is string %}{{ c|lower }}{% elif c is sequence %}{{ c[0] }} {{ c[1]|lower }}{% else %}{{ c }}{% endif %}{%- endmacro %}
+
+{% macro ranking(titulo, filas, grafica, unidad, multiplicidad=False, id='') -%}
+<div class="predicciones-ranking mb-3"{% if id %} id="{{ id }}"{% endif %}>
+    <div class="predicciones-inicio">
+    <div class="predicciones-cabecera">
+    <h6 class="mb-1">{{ titulo }}</h6>
+    <p class="small text-muted mb-1">{{ unidad }}. Emitida: probabilidad del modelo; uniforme: referencia; diferencia: emitida − uniforme; razón: emitida / uniforme{% if multiplicidad %}; en 6 balotas: multiplicidad esperada = 6 × emitida{% endif %}.</p>
+    </div>
+    {% if grafica and grafica.barras %}
+    <svg class="predicciones-grafica d-block mb-2" viewBox="0 0 {{ grafica.ancho }} {{ grafica.alto }}" width="100%" role="img" aria-label="{{ titulo }}: probabilidad emitida y referencia uniforme (valores en la tabla)">
+        {% for b in grafica.barras %}
+        <text x="{{ grafica.margen - 6 }}" y="{{ b.y + 11 }}" text-anchor="end" font-size="10">{{ b.etiqueta }}</text>
+        <rect x="{{ grafica.margen }}" y="{{ b.y }}" width="{{ b.ancho }}" height="{{ grafica.alto_fila - 5 }}" class="predicciones-barra"></rect>
+        <text x="{{ grafica.valor_x }}" y="{{ b.y + 11 }}" text-anchor="end" font-size="9" class="predicciones-valor">{{ '%.4f'|format(b.valor) }}</text>
+        {% endfor %}
+        <line x1="{{ grafica.uniforme_x }}" x2="{{ grafica.uniforme_x }}" y1="2" y2="{{ grafica.alto - 2 }}" class="predicciones-uniforme" stroke-dasharray="4 3"></line>
+    </svg>
+    <p class="small text-muted mb-1">Barra: probabilidad emitida. Línea discontinua: referencia uniforme.</p>
+    {% endif %}
+    </div>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th class="text-end">Pos.</th><th>Candidato</th><th class="text-end">Emitida</th><th class="text-end">Uniforme</th><th class="text-end">Diferencia</th><th class="text-end">Razón</th>{% if multiplicidad %}<th class="text-end">En 6 balotas</th>{% endif %}</tr></thead>
+        <tbody>{% for f in filas %}<tr><td class="text-end">{{ f.posicion }}</td><td>{{ candidato(f.candidato) }}</td>
+            <td class="text-end">{{ '%.6f'|format(f.probabilidad) }}</td><td class="text-end">{{ '%.6f'|format(f.uniforme) }}</td>
+            <td class="text-end">{{ '%+.6f'|format(f.diferencia) }}</td><td class="text-end">{{ '%.3f'|format(f.razon) if f.razon is not none else '—' }}</td>
+            {% if multiplicidad %}<td class="text-end">{{ '%.4f'|format(f.multiplicidad_esperada) }}</td>{% endif %}</tr>{% endfor %}</tbody>
+    </table></div>
+</div>
+{%- endmacro %}
+
+{% macro numero(v) -%}{{ formatear_cifra(v) }}{%- endmacro %}
+
+{% macro metricas(m, grafica, estados, cabecera='') -%}
+<div class="predicciones-inicio">
+{{ cabecera }}
+{% if grafica %}
+<svg class="predicciones-grafica d-block mb-1" viewBox="0 0 {{ grafica.ancho }} {{ grafica.alto }}" width="100%" role="img" aria-label="Medias e intervalos por cifra, cada una con su escala (valores en la tabla)">
+    {% for f in grafica.filas %}
+    <text x="{{ grafica.margen - 10 }}" y="{{ f.y + 4 }}" text-anchor="end" font-size="11">{{ f.etiqueta }}</text>
+    <line x1="{{ grafica.margen }}" x2="{{ grafica.derecha }}" y1="{{ f.y }}" y2="{{ f.y }}" class="predicciones-eje"></line>
+    <line x1="{{ grafica.cero }}" x2="{{ grafica.cero }}" y1="{{ f.y - 9 }}" y2="{{ f.y + 9 }}" class="predicciones-uniforme"></line>
+    <text x="{{ grafica.margen }}" y="{{ f.y + 15 }}" font-size="8" text-anchor="start">{{ '%+.3g'|format(-f.limite) }}</text>
+    <text x="{{ grafica.cero }}" y="{{ f.y + 15 }}" font-size="8" text-anchor="middle">0</text>
+    <text x="{{ grafica.derecha }}" y="{{ f.y + 15 }}" font-size="8" text-anchor="end">{{ '%+.3g'|format(f.limite) }}</text>
+    {% if f.x1 is not none %}<line x1="{{ f.x1 }}" x2="{{ f.x2 }}" y1="{{ f.y }}" y2="{{ f.y }}" class="predicciones-intervalo"></line>{% endif %}
+    <circle cx="{{ f.x }}" cy="{{ f.y }}" r="4" class="predicciones-punto"></circle>
+    {% endfor %}
+</svg>
+<p class="small text-muted mb-1">Punto: media por sorteo. Segmento: intervalo bootstrap por bloques (si la muestra lo permite). Marca vertical: 0 (igual que la referencia). Cada fila tiene su propia escala, rotulada en sus extremos.</p>
+{% endif %}
+</div>
+<div class="tabla-desplazable"><table class="table table-sm small mb-2">
+    <thead><tr><th>Cifra (por sorteo)</th><th>Estado</th><th class="text-end">Sorteos</th><th class="text-end">Media</th><th class="text-end text-nowrap">Intervalo 95&nbsp;%</th><th class="text-end">Bloque</th><th>Lectura o motivo</th></tr></thead>
+    <tbody>{% for k, x in m.items() %}<tr><td>{{ x.etiqueta }}</td><td>{{ estados.get(x.estado, x.estado) }}</td>
+        <td class="text-end">{{ x.n if x.n is defined and x.n is not none else '—' }}</td><td class="text-end text-nowrap">{{ numero(x.media) }}</td>
+        <td class="text-end text-nowrap">{% if x.intervalo %}[{{ numero(x.intervalo[0]) }}, {{ numero(x.intervalo[1]) }}]{% else %}—{% endif %}</td>
+        <td class="text-end">{{ x.bloque if x.bloque is defined else '—' }}</td><td>{{ x.lectura or x.motivo or '' }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{%- endmacro %}

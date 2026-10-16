@@ -205,6 +205,16 @@ class CentroDeResultados:
         return {"juegos": juegos, "estado_de_uso": ri.ESTADO_DE_USO, "nota_seguimiento": rp.NOTA_SEGUIMIENTO,
                 "nota": "Cifras de la consulta actual: cambian al cargar sorteos o al emitir nuevos artefactos."}
 
+    def emisiones(self, juego: str) -> dict:
+        """Fase 4 (solo lectura): base, lineas y TODAS las emisiones de las tres
+        procedencias, con sus probabilidades congeladas y su estado de
+        admision, sin filtros ni paginas. La usa la fiabilidad del centro de
+        predicciones; no cambia ninguna regla de admision de Producto 6."""
+        _validar_juego(juego)
+        completo, base = self._leer_base(juego)
+        lineas, filas, info, _ = self._reunir(juego, completo)
+        return {"base": base, "lineas": lineas, "filas": filas, "procedencias": info}
+
     # ------------------------------------------------------------------
     # Consulta
     # ------------------------------------------------------------------

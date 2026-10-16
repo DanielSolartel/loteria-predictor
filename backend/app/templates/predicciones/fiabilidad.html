@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% import "predicciones/_macros.html" as m %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Fiabilidad · {{ f.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Fiabilidad observada · {{ f.nombre }}</h3>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="/predicciones/{{ f.slug }}">Predicción</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/resultados/{{ f.slug }}">Resultados del juego</a>
+    </div>
+</div>
+{{ m.aviso() }}
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3">
+    <h5 class="predicciones-cabecera mb-1">Qué se mide y qué no</h5>
+    <ol class="small mb-2">
+        <li><strong>Probabilidad emitida</strong>: la que el modelo guardó en cada emisión (en la página de la predicción).</li>
+        <li><strong>Rendimiento observado</strong>: pérdidas frente a la uniforme del mismo artefacto y objetivo, y aciertos observados frente a los esperados por el propio modelo en sus candidatos más y menos probables.</li>
+        <li><strong>Incertidumbre</strong>: intervalo del 95 % de esas cifras por ser una muestra finita y dependiente.</li>
+    </ol>
+    <p class="small mb-1">{{ f.aviso }}</p>
+    <p class="small mb-1"><strong>Método ({{ metodo.version }}):</strong> unidad = {{ metodo.unidad }}; estimación = {{ metodo.estimacion }}; incertidumbre = {{ metodo.incertidumbre }}. Intervalo desde {{ metodo.minimo_para_intervalo }} sorteos. Supuestos: {{ metodo.supuestos }}. Extremos: {{ metodo.extremos.numeros }} números, {{ metodo.extremos.pares }} pares, {{ metodo.extremos.superbalota }} superbalotas.</p>
+    <details class="small predicciones-desplegable"><summary>Limitaciones y fuentes</summary>
+        <ul class="mb-1">{% for l in metodo.limitaciones %}<li>{{ l }}</li>{% endfor %}</ul>
+        <ul class="mb-0">{% for x in metodo.fuentes %}<li>{{ x.cita }}{% if x.doi %} doi:{{ x.doi }}{% endif %} — {{ x.uso }}.</li>{% endfor %}</ul>
+    </details>
+    <div class="predicciones-solo-impresion small"><ul class="mb-1">{% for l in metodo.limitaciones %}<li>{{ l }}</li>{% endfor %}</ul>
+        <ul class="mb-0">{% for x in metodo.fuentes %}<li>{{ x.cita }}{% if x.doi %} doi:{{ x.doi }}{% endif %} — {{ x.uso }}.</li>{% endfor %}</ul></div>
+    <form method="get" class="row g-2 align-items-end mt-2">
+        <div class="col-auto"><label class="form-label small mb-0" for="hasta">Evidencia hasta el sorteo</label><input class="form-control form-control-sm" id="hasta" name="hasta" type="number" min="1" value="{{ f.hasta or '' }}"></div>
+        <div class="col-auto"><label class="form-label small mb-0" for="linea">Otra línea de Resultados</label>
+            <select class="form-select form-select-sm" id="linea" name="linea"><option value=""{% if not f.linea_consultada %} selected{% endif %}>(las de la configuración)</option>{% for l in f.lineas_disponibles %}<option value="{{ l }}"{% if l == f.linea_consultada %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+        <div class="col-auto"><button class="btn btn-sm btn-outline-primary" type="submit">Consultar (no escribe)</button></div>
+    </form>
+    <p class="small mb-0 mt-2"><strong>Base:</strong> {% if f.base.estado == 'consultada' %}{{ f.base.sorteos }} {{ 'sorteo' if f.base.sorteos == 1 else 'sorteos' }}, último {{ f.base.ultimo_sorteo }}{% else %}<span class="text-danger">{{ f.base.motivo }}</span>{% endif %}{% if f.hasta %} · evidencia limitada a objetivos ≤ {{ f.hasta }}{% endif %}</p>
+</div>
+
+{% if not f.configuracion.artefacto %}<div class="alert alert-info">{{ f.configuracion.mensaje }}</div>{% endif %}
+
+{% for l in f.lineas %}{% set i = loop.index0 %}
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3">
+    {% set cabecera_linea %}
+    <h5 class="mb-1">{{ l.nombre }}</h5>
+    <p class="small text-muted mb-2"><code>{{ l.linea }}</code> · {{ l.papel }} · {{ l.estimador }}</p>
+    {% endset %}
+    {% for ev in l.evaluaciones %}
+    <div class="predicciones-evaluacion mb-3">
+        {% set cabecera_evaluacion %}
+        {% if loop.first %}{{ cabecera_linea }}{% endif %}
+        <h6 class="mb-1">{{ tipos.get(ev.tipo, ev.tipo) }} — {{ estados_fiabilidad.get(ev.estado, ev.estado) }}</h6>
+        <p class="small text-muted mb-1">{{ ev.descripcion }}{% if ev.motivo %} <strong>{{ ev.motivo }}.</strong>{% endif %}</p>
+        <p class="small mb-1">Emisiones {{ ev.muestra.emisiones }} · sorteos incluidos {{ ev.muestra.sorteos }}{% if ev.muestra.periodo %} ({{ ev.muestra.periodo[0] }}–{{ ev.muestra.periodo[1] }}){% endif %} · pendientes {{ ev.muestra.pendientes }}{% if ev.muestra.sin_base %} · sin base {{ ev.muestra.sin_base }}{% endif %}{% for x in ev.muestra.exclusiones %}{% if x.estado == 'excluido' %} · excluidas {{ x.emisiones }} ({{ x.motivo|replace('_', ' ') }}){% endif %}{% endfor %}</p>
+        {% endset %}
+        {% for comp, c in ev.componentes.items() %}
+        <div class="predicciones-diagnostico">
+            {% set cabecera_componente %}
+            {% if loop.first %}{{ cabecera_evaluacion }}{% endif %}
+            <p class="small fw-semibold mb-1">{{ componentes.get(comp, comp) }}{% if c.sorteos %} · {{ c.sorteos }} {{ 'sorteo' if c.sorteos == 1 else 'sorteos' }}{% endif %}</p>
+            {% endset %}
+            {% if c.metricas %}{{ m.metricas(c.metricas, graficas.get(i ~ '-' ~ ev.tipo ~ '-' ~ comp), estados_fiabilidad, cabecera_componente) }}
+            {% if c.extremos %}<p class="small mb-2">Totales: más probables {{ c.extremos.fuertes.observado }} observados frente a {{ '%.2f'|format(c.extremos.fuertes.esperado) }} esperados ({{ c.extremos.fuertes.candidatos_por_sorteo }} candidatos por sorteo{% if comp == 'pares' %}; multiplicidad en 6 balotas{% endif %}) · menos probables {{ c.extremos.debiles.observado }} frente a {{ '%.2f'|format(c.extremos.debiles.esperado) }}.</p>{% endif %}
+            {% else %}<div class="predicciones-inicio">{{ cabecera_componente }}<p class="small mb-2">{{ estados_fiabilidad.get(c.estado, c.estado) }}: {{ c.motivo }}</p></div>{% endif %}
+        </div>
+        {% else %}<div class="predicciones-inicio">{{ cabecera_evaluacion }}</div>{% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+{% set rc = f.receta %}
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3">
+    {% set cabecera_receta %}
+    <h5 class="mb-1">{{ tipos.evaluacion_de_receta }} — {{ estados_fiabilidad.get(rc.estado, rc.estado) }}</h5>
+    <p class="small text-muted mb-1">{{ rc.descripcion or '' }} {% if rc.origen %}Origen: {{ rc.origen }}.{% endif %}{% if rc.informe %} Informe <a href="/laboratorio/experimentos/{{ rc.informe }}"><code>{{ rc.informe[:16] }}…</code></a> (corte {{ rc.corte_del_informe }}).{% endif %}{% if rc.motivo %} <strong>{{ rc.motivo }}.</strong>{% endif %}</p>
+    <p class="small text-muted mb-1">La selección del modelo después de ver esta comparación no está corregida: el intervalo no cubre ese sesgo.</p>
+    {% if rc.muestra and rc.muestra.periodo %}<p class="small mb-1">{{ rc.muestra.sorteos }} objetivos ({{ rc.muestra.periodo[0] }}–{{ rc.muestra.periodo[1] }}) · excluidos de la muestra común: {{ rc.muestra.excluidos_de_la_muestra_comun }}</p>{% endif %}
+    {% endset %}
+    {% for comp, c in (rc.componentes or {}).items() %}
+    <div class="predicciones-diagnostico">
+        {% set cabecera_componente %}{% if loop.first %}{{ cabecera_receta }}{% endif %}<p class="small fw-semibold mb-1">{{ componentes.get(comp, comp) }}</p>{% endset %}
+        {% if c.metricas %}{{ m.metricas(c.metricas, graficas.get('receta-' ~ comp), estados_fiabilidad, cabecera_componente) }}{% else %}<div class="predicciones-inicio">{{ cabecera_componente }}<p class="small mb-2">{{ estados_fiabilidad.get(c.estado, c.estado) }}: {{ c.motivo }}</p></div>{% endif %}</div>
+    {% else %}<div class="predicciones-inicio">{{ cabecera_receta }}</div>{% endfor %}
+</div>
+{% endblock %}
