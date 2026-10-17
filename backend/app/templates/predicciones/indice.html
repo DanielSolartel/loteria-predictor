@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "predicciones/_macros.html" as m %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Centro de predicciones{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Centro de predicciones</h3>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="/carteras"><i class="bi bi-grid-3x3-gap me-1"></i>Configuración (carteras)</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/laboratorio/modelos"><i class="bi bi-diagram-3 me-1"></i>Versiones registradas</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/resultados"><i class="bi bi-clipboard-data me-1"></i>Resultados</a>
+    </div>
+</div>
+{{ m.aviso() }}
+<p class="small text-muted">Un único flujo para los cuatro juegos: usa la <strong>configuración elegida</strong> en Carteras (modelo, versión registrada, cantidad, diversidad y semilla), genera con ese mismo caso de uso, explica la clasificación y contrasta la fiabilidad con los resultados observados. Consultar no entrena, no importa y no escribe; solo los botones «Generar» escriben.</p>
+<div class="row g-3">
+{% for j in datos.juegos %}{% set c = j.configuracion.artefacto %}
+<div class="col-12 col-xl-6">
+    <div class="card stat-card predicciones-tarjeta p-3" id="juego-{{ j.slug }}">
+        <div class="predicciones-cabecera d-flex justify-content-between align-items-start gap-2">
+            <h5 class="mb-1">{{ j.nombre }}</h5>
+            {% if j.activa %}<span class="badge bg-info text-dark">trabajo en curso</span>{% endif %}
+        </div>
+        <p class="small mb-1"><strong>Base:</strong>
+            {% if j.base.estado == 'disponible' %}corte {{ j.base.corte }} ({{ j.base.sorteos }} sorteos, último del {{ j.base.ultima_fecha }}) · siguiente objetivo {{ j.base.objetivo }}{% if j.base.frescura %} · frescura: {{ j.base.frescura.estado|replace('_', ' ') }}{% endif %}
+            {% elif j.base.estado == 'sin_datos' %}<span class="text-warning">histórico vacío: no hay sorteos cargados</span>
+            {% elif j.base.estado == 'base_no_disponible' %}<span class="text-danger">base no disponible ({{ j.base.mensaje }}); lo guardado se sigue mostrando</span>
+            {% else %}<span class="text-danger">{{ j.base.estado|replace('_', ' ') }}: {{ j.base.mensaje }}</span>{% endif %}</p>
+        <p class="small mb-1"><strong>Configuración elegida:</strong>
+            {% if c %}v{{ c.version }} · <code>{{ c.modelo.id }}</code> v{{ c.modelo.version }}{% if c.modelo.registrado %} · versión registrada {{ c.modelo.registrado.numero }}{% endif %} · {{ c.cantidad }} combinaciones · {{ c.diversidad }} · semilla {{ c.semilla }}{% if c.perfil != 'predeterminado' %} · perfil {{ c.perfil }}{% endif %}
+            {% elif j.configuracion.estado == 'alterada' %}<span class="text-danger">{{ j.configuracion.mensaje }}</span>
+            {% else %}<span class="text-warning">sin configuración: elígela en <a href="/carteras/{{ j.slug }}">Carteras</a></span>{% endif %}</p>
+        {% if j.registrado %}<p class="small mb-1"><strong>Versión registrada:</strong> {{ j.registrado.numero }} (corte de entrenamiento {{ j.registrado.corte_de_entrenamiento }}) ·
+            {% if j.registrado.estado == 'compatible' %}<span class="text-success">compatible con este entorno</span>{% elif j.registrado.estado == 'incompatible' %}<span class="text-danger">incompatible: {{ j.registrado.motivos|join('; ') }}</span>{% else %}<span class="text-danger">{{ j.registrado.estado }}: {{ j.registrado.motivo }}</span>{% endif %}</p>{% endif %}
+        <p class="small mb-2"><strong>Última predicción:</strong>
+            {% if j.ultima %}objetivo {{ j.ultima.objetivo }} (corte {{ j.ultima.corte }}) · {{ j.ultima.combinaciones }} combinaciones · generada {{ (j.ultima.generado_en or '')[:19]|replace('T', ' ') }} UTC · {% if j.ultima.explicacion %}con explicación{% else %}<span class="text-warning">sin explicación</span>{% endif %}
+            {% else %}ninguna todavía{% endif %}</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-sm btn-primary" href="/predicciones/{{ j.slug }}">Abrir</a>
+            <a class="btn btn-sm btn-outline-primary" href="/predicciones/{{ j.slug }}/fiabilidad">Fiabilidad</a>
+            {% if c %}
+            <form method="post" action="/predicciones/{{ j.slug }}/generar" class="d-inline"><input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="cantidad" value="configuracion">
+                <button class="btn btn-sm btn-success" type="submit" title="Escribe una cartera (si la entrada es nueva) y su explicación">Generar con la configuración ({{ c.cantidad }})</button></form>
+            {% if c.cantidad != 5 %}<form method="post" action="/predicciones/{{ j.slug }}/generar" class="d-inline"><input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="cantidad" value="cinco">
+                <button class="btn btn-sm btn-outline-success" type="submit" title="Misma configuración con 5 combinaciones; no cambia la configuración">Generar cinco combinaciones</button></form>{% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

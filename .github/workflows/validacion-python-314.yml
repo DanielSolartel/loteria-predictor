@@ -62,6 +62,10 @@ jobs:
       # juegos, con procesos trabajadores reales (datos sinteticos, sin red ni base).
       - name: Demostracion de la Fase 3 (modelos registrados)
         run: python -m tests.demostracion_fase3
+      # Fase 4: generar con la configuracion, explicar (importancias en el proceso trabajador
+      # real) y fiabilidad observada con su intervalo (datos sinteticos, sin red ni base).
+      - name: Demostracion de la Fase 4 (predicciones explicables)
+        run: python -m tests.demostracion_fase4
 
   windows:
     name: Windows - seleccion de tests/seleccion_windows.txt
@@ -121,4 +125,10 @@ jobs:
           PYTHONIOENCODING: "utf-8"
         run: |
           python -m tests.demostracion_fase3
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Demostracion de la Fase 4 (predicciones explicables)
+        env:
+          PYTHONIOENCODING: "utf-8"
+        run: |
+          python -m tests.demostracion_fase4
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

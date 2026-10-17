@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     # inmutables de una consulta), separados de los almacenes de Productos 1-5.
     directorio_resultados_modelos: str = "storage/resultados"
 
+    # Fase 4: explicaciones inmutables de las predicciones (centro de
+    # predicciones), separadas de los almacenes de Productos 1-6. La
+    # prediccion en si es la cartera de Producto 5; aqui solo se guarda su
+    # explicacion versionada y el registro de sus pasos.
+    directorio_predicciones_modelos: str = "storage/predicciones"
+
 
 @lru_cache
 def get_settings() -> Settings:

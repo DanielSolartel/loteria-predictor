@@ -15,3 +15,5 @@ storage/carteras/*
 !storage/carteras/.gitkeep
 storage/resultados/*
 !storage/resultados/.gitkeep
+storage/predicciones/*
+!storage/predicciones/.gitkeep

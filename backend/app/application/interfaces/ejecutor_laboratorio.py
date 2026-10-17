@@ -48,3 +48,9 @@ class EjecutorDeLaboratorio(ABC):
         """Fase 3: cuerpo de `modelos_registrados.cuerpo_del_pronostico_registrado`
         con el estimador recargado (sin reentrenar) y la instantanea canonica."""
         raise NotImplementedError
+
+    def explicacion_registrada(self, artefacto: dict, estimador: bytes) -> dict:
+        """Fase 4: `predicciones_explicacion.importancias_globales` del estimador
+        de una version registrada, recargado con la carga restringida (sin
+        reentrenar ni evaluar). No escribe nada."""
+        raise NotImplementedError

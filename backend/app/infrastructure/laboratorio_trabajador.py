@@ -75,6 +75,13 @@ def _trabajador(cola, tarea: dict) -> None:
                                                   artefacto["estimador"]["bytes"])
             instantanea = lv.instantanea_desde_canonicos(artefacto["juego"], tarea["sorteos"])
             resultado = mr.cuerpo_del_pronostico_registrado(artefacto, estimador, instantanea)
+        elif tarea["tipo"] == "explicacion_registrada":  # Fase 4
+            from app.application.ml import predicciones_explicacion as pe
+
+            artefacto = tarea["artefacto"]
+            estimador = mr.deserializar_estimador(tarea["estimador"], artefacto["estimador"]["sha256"],
+                                                  artefacto["estimador"]["bytes"])
+            resultado = pe.importancias_globales(estimador, artefacto["identidad"]["variables"]["nombres"])
         elif tarea["tipo"] == "dormir":  # solo pruebas del tiempo maximo
             time.sleep(tarea["segundos"])
             resultado = None
@@ -139,6 +146,9 @@ class EjecutorEnProceso(EjecutorDeLaboratorio):
     def pronostico_registrado(self, artefacto, estimador, sorteos):
         return self._ejecutar({"tipo": "pronostico_registrado", "artefacto": artefacto, "estimador": estimador,
                                "sorteos": sorteos})
+
+    def explicacion_registrada(self, artefacto, estimador):
+        return self._ejecutar({"tipo": "explicacion_registrada", "artefacto": artefacto, "estimador": estimador})
 
     def ejecutar_tarea(self, tarea: dict, avance=None):
         """Solo pruebas: tareas de control (p. ej. `dormir`)."""

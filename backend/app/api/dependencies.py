@@ -42,6 +42,7 @@ from app.application.use_cases.carteras import CarterasDeModelos
 from app.application.use_cases.laboratorio import LaboratorioDeModelos, Lectura
 from app.application.use_cases.operacion_diaria import DependenciasDeJuego, OperacionDiaria
 from app.application.use_cases.panel_diario import ConsultarPanelDiario
+from app.application.use_cases.predicciones import CentroDePredicciones
 from app.application.use_cases.registrar_sorteo import RegistrarSorteo
 from app.application.use_cases.resultados import CentroDeResultados
 from app.application.use_cases.rendimiento import ConsultarRendimiento
@@ -70,6 +71,7 @@ from app.infrastructure.laboratorio_trabajador import EjecutorEnProceso
 from app.infrastructure.storage.carteras_file_store import CarterasFileStore
 from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore
 from app.infrastructure.storage.operacion_file_store import CerrojoPorJuego, RegistroEjecucionesArchivo
+from app.infrastructure.storage.predicciones_file_store import PrediccionesFileStore
 from app.infrastructure.storage.pronostico_experimental_file_store import PronosticoExperimentalFileStore
 from app.infrastructure.storage.resultados_file_store import ResultadosFileStore
 
@@ -504,3 +506,32 @@ def get_resultados(carteras: CarterasDeModelos = Depends(get_carteras)) -> Centr
                               CarterasFileStore(settings.directorio_carteras_modelos),
                               ResultadosFileStore(settings.directorio_resultados_modelos),
                               abrir_lectura_del_laboratorio, carteras_servicio=lambda: carteras)
+
+
+# ---------------------------------------------------------------------------
+# Fase 4: centro de predicciones
+# ---------------------------------------------------------------------------
+
+def get_predicciones(carteras: CarterasDeModelos = Depends(get_carteras)) -> CentroDePredicciones:
+    """Coordina los casos de uso existentes: genera con el de carteras (Producto 5,
+    configuracion vigente), lee resultados (Producto 6) y modelos registrados
+    (Fase 3) y guarda solo explicaciones (`DIRECTORIO_PREDICCIONES_MODELOS`). Las
+    importancias del estimador persistido se leen en el proceso trabajador del
+    laboratorio con la carga restringida."""
+    settings = get_settings()
+    directorio = settings.directorio_predicciones_modelos
+    return CentroDePredicciones(carteras, get_resultados(carteras), PrediccionesFileStore(directorio),
+                                LaboratorioFileStore(settings.directorio_laboratorio_modelos),
+                                EjecutorEnProceso(tiempo_maximo=settings.tiempo_maximo_trabajador_laboratorio),
+                                RegistroEjecucionesArchivo(f"{directorio}/operacion"),
+                                cerrojo=CerrojoPorJuego(f"{directorio}/operacion"))
+
+
+def _lanzar_predicciones_en_hilo(funcion, inicio) -> None:
+    """La generacion (cartera y explicacion) no se ejecuta en el hilo de la peticion web."""
+    threading.Thread(target=funcion, args=(inicio,), daemon=True,
+                     name=f"predicciones-{inicio.identificador}").start()
+
+
+def get_lanzador_de_predicciones():
+    return _lanzar_predicciones_en_hilo

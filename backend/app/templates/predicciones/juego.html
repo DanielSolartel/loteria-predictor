@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% import "predicciones/_macros.html" as m %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Predicción · {{ d.nombre }}{% endblock %}
+{% block content %}
+{% set c = d.configuracion.artefacto %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Predicción · {{ d.nombre }}</h3>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="/predicciones">Centro de predicciones</a>
+        <a class="btn btn-sm btn-outline-primary" href="/predicciones/{{ d.slug }}/fiabilidad">Fiabilidad</a>
+    </div>
+</div>
+{{ m.aviso() }}
+
+{% set eleccion_operador %}
+<div class="card stat-card predicciones-tarjeta p-3 mb-3">
+    <h5 class="predicciones-cabecera mb-2">Elección del operador y estado de los datos</h5>
+    <dl class="row small mb-0">
+        <dt class="col-sm-3">Configuración elegida</dt>
+        <dd class="col-sm-9">{% if c %}versión {{ c.version }} · <code>{{ c.modelo.id }}</code> v{{ c.modelo.version }}{% if c.modelo.registrado %} · versión registrada {{ c.modelo.registrado.numero }}{% endif %} · {{ c.cantidad }} combinaciones · diversidad {{ c.diversidad }} · semilla {{ c.semilla }} · perfil {{ c.perfil }} · <a href="/carteras/{{ d.slug }}">cambiarla en Carteras</a> (escribe una versión nueva)
+            {% elif d.configuracion.estado == 'alterada' %}<span class="text-danger">{{ d.configuracion.mensaje }}</span>
+            {% else %}<span class="text-warning">{{ d.configuracion.mensaje }}</span>{% endif %}</dd>
+        {% if d.registrado %}<dt class="col-sm-3">Versión registrada</dt>
+        <dd class="col-sm-9">{{ d.registrado.numero }} · clave <code class="text-break">{{ d.registrado.clave }}</code> · corte de entrenamiento {{ d.registrado.corte_de_entrenamiento }} ·
+            {% if d.registrado.estado == 'compatible' %}<span class="text-success">compatible con este entorno</span>{% elif d.registrado.estado == 'incompatible' %}<span class="text-danger">modelo incompatible: {{ d.registrado.motivos|join('; ') }}</span>{% else %}<span class="text-danger">{{ d.registrado.estado }}: {{ d.registrado.motivo }}</span>{% endif %}
+            · <a href="/laboratorio/modelo/{{ d.registrado.clave }}">ficha</a></dd>{% endif %}
+        <dt class="col-sm-3">Base</dt>
+        <dd class="col-sm-9">{% if d.base.estado == 'disponible' %}último sorteo cargado {{ d.base.corte }} ({{ d.base.ultima_fecha }}, {{ d.base.sorteos }} sorteos) · siguiente objetivo {{ d.base.objetivo }}{% if d.base.frescura %} · frescura: {{ d.base.frescura.estado|replace('_', ' ') }}{% if d.base.frescura.dias_desde_ultimo_sorteo is defined %} ({{ d.base.frescura.dias_desde_ultimo_sorteo }} días){% endif %}{% endif %}
+            {% elif d.base.estado == 'sin_datos' %}<span class="text-warning">histórico vacío: no hay sorteos cargados</span>
+            {% elif d.base.estado == 'base_no_disponible' %}<span class="text-danger">base no disponible ({{ d.base.mensaje }}): lo guardado se sigue mostrando</span>
+            {% else %}<span class="text-danger">{{ d.base.estado|replace('_', ' ') }}: {{ d.base.mensaje }}</span>{% endif %}</dd>
+    </dl>
+    {% if c %}<div class="d-flex flex-wrap gap-2 mt-2">
+        <form method="post" action="/predicciones/{{ d.slug }}/generar"><input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="cantidad" value="configuracion">
+            <button class="btn btn-sm btn-success" type="submit">Generar con la configuración ({{ c.cantidad }} combinaciones)</button></form>
+        {% if c.cantidad != 5 %}<form method="post" action="/predicciones/{{ d.slug }}/generar"><input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="cantidad" value="cinco">
+            <button class="btn btn-sm btn-outline-success" type="submit">Generar cinco combinaciones (sin cambiar la configuración)</button></form>{% endif %}
+    </div>
+    <p class="small text-muted mb-0 mt-1">Generar escribe una cartera de Producto 5 (si la entrada es nueva; si no, la reutiliza) y su explicación. Con una versión registrada se recarga el estimador sin reentrenar.</p>{% endif %}
+</div>
+
+{% endset %}
+
+{% if not p %}
+{{ eleccion_operador }}
+<div class="alert alert-info">{% if c %}Todavía no hay predicciones de esta configuración. Pulsa «Generar».{% else %}Elige primero una configuración en <a href="/carteras/{{ d.slug }}">Carteras</a>.{% endif %}</div>
+{% else %}
+{% set e = p.explicacion %}
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3" id="combinaciones">
+    <div class="predicciones-cabecera">
+    <h5 class="mb-1">Objetivo {{ p.objetivo }} · Combinaciones ({{ p.combinaciones|length }})</h5>
+    <p class="small mb-1"><strong>Datos hasta el sorteo {{ p.datos.corte }}</strong> · {{ p.modelo.nombre }}{% if p.peticion_de_cinco %} · petición explícita de cinco{% endif %}. Corte de entrenamiento: {% if p.linea_del_artefacto.registrado %}{{ (e.metodo.registrado.corte_de_entrenamiento if e else none) or (d.registrado.corte_de_entrenamiento if d.registrado else '—') }} (versión registrada congelada){% else %}{{ p.datos.corte }} (receta ajustada al generar){% endif %}.</p>
+    </div>
+    <p class="small text-muted mb-2">Construcción reproducible de Producto 5: semilla {{ p.parametros.semilla }}, diversidad {{ p.parametros.diversidad }}, {{ p.parametros.cantidad }} solicitadas ({{ p.construccion.estado }}: {{ p.construccion.obtenidas }} en {{ p.construccion.intentos }} intentos de {{ p.construccion.presupuesto_de_intentos }}). La primera es la sugerencia del modelo cuando la tiene; las demás son líneas muestreadas, que no heredan las probabilidades marginales del vector fuente. {{ p.construccion.aviso }}</p>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th class="text-end">Línea</th><th>Combinación</th><th>Papel y detalle</th>{% if p.observado.estado == 'observado' %}<th class="text-end">Aciertos observados</th>{% endif %}</tr></thead>
+        <tbody>{% for x in p.combinaciones %}<tr><td class="text-end">{{ x.linea }}</td>
+            <td>{% if x.pares %}{% for par in x.pares %}{{ m.candidato(par) }} {% endfor %}{% else %}{% for n in x.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}{% if x.superbalota is defined and x.superbalota is not none %} <span class="numero-bolita superbalota-bolita" title="superbalota">{{ x.superbalota }}</span>{% endif %}{% endif %}</td>
+            <td><strong>{{ x.papel }}</strong>: {{ x.detalle }}{% if x.probabilidades_de_sus_elementos %}<br><span class="text-muted">{{ x.unidad_de_los_elementos }}: {{ x.probabilidades_de_sus_elementos|map('round', 4)|join(', ') }}{% if x.probabilidad_de_su_superbalota is defined %} · superbalota (aparte, suman 1): {{ x.probabilidad_de_su_superbalota|round(4) }}{% endif %}</span>{% endif %}</td>
+            {% if p.observado.estado == 'observado' %}{% set a = p.observado.aciertos.por_linea[loop.index0] %}<td class="text-end">{{ a.aciertos }}{% if a.superbalota is defined %} · sb {{ 'sí' if a.superbalota else 'no' }}{% endif %}</td>{% endif %}</tr>{% endfor %}</tbody>
+    </table></div>
+</div>
+
+<div class="card stat-card predicciones-tarjeta p-3 mb-3">
+    <div class="predicciones-cabecera">
+    <h5 class="mb-1">Objetivo {{ p.objetivo }}{% if p.peticion_de_cinco %} <span class="badge bg-secondary">petición explícita de cinco</span>{% endif %}{% if p.de_la_configuracion %} <span class="badge bg-primary">línea de la configuración</span>{% endif %}</h5>
+    <p class="small mb-2">{{ p.modelo.nombre }} · línea <code class="text-break">{{ p.linea }}</code> · emisión {{ p.version_en_el_objetivo }} de {{ p.versiones_en_el_objetivo }} en este objetivo</p>
+    </div>
+    <dl class="row small mb-1">
+        <dt class="col-sm-3">Corte de entrada</dt><dd class="col-sm-9">{{ p.datos.corte }} ({{ p.datos.ultima_fecha }}, {{ p.datos.sorteos }} sorteos; huella <code class="text-break">{{ p.datos.sha256_historico[:16] }}…</code>)</dd>
+        <dt class="col-sm-3">Corte de entrenamiento</dt><dd class="col-sm-9">{% if p.linea_del_artefacto.registrado %}{{ (e.metodo.registrado.corte_de_entrenamiento if e else none) or (d.registrado.corte_de_entrenamiento if d.registrado else '—') }} (versión registrada congelada){% else %}{{ p.datos.corte }} (la receta se ajustó al generar con todo el histórico hasta el corte){% endif %}</dd>
+        <dt class="col-sm-3">Generación</dt><dd class="col-sm-9">{{ ((p.generacion or {}).generado_en or '')[:19]|replace('T', ' ') }} UTC · origen {{ (p.generacion or {}).origen }}{% if (p.generacion or {}).configuracion %} · configuración v{{ p.generacion.configuracion.version }}{% endif %} · {{ ((p.generacion or {}).clasificacion_temporal or {}).tipo|replace('_', ' ') if (p.generacion or {}).clasificacion_temporal else 'sin clasificación' }}</dd>
+        <dt class="col-sm-3">Integridad</dt><dd class="col-sm-9">cartera {{ p.integridad }}{% if e %} · explicación correcta{% if p.reproduccion %} · reproducción de rankings y variables: {{ 'exacta' if p.reproduccion.exacta else 'DISTINTA (' ~ p.reproduccion.distintos|join(', ') ~ ')' }}{% endif %}{% endif %}{% for i in p.explicaciones_ilegibles %} · <span class="text-danger">explicación {{ i.clave[:12] }} ilegible ({{ i.motivo }})</span>{% endfor %}</dd>
+        <dt class="col-sm-3">Frente a la base actual</dt><dd class="col-sm-9">{% set fb = p.frente_a_la_base %}{% if fb.estado == 'base_no_disponible' %}<span class="text-danger">base no disponible</span>{% else %}histórico hasta el corte: {{ fb.historico_hasta_el_corte|replace('_', ' ') }} · último sorteo actual {{ fb.ultimo_sorteo_actual }}{% if fb.base_avanzo %} · <span class="text-warning">desactualizada: la base avanzó {{ fb.nuevos_desde_el_corte }} sorteo(s) desde el corte</span>{% endif %}{% endif %}</dd>
+        <dt class="col-sm-3">Resultado del objetivo</dt><dd class="col-sm-9">{% set o = p.observado %}{% if o.estado == 'observado' %}observado el {{ o.fecha }}: {% if colores %}{% for par in o.resultado.pares %}{{ m.candidato(par) }} {% endfor %}{% else %}{% for n in o.resultado.numeros %}<span class="numero-bolita">{{ n }}</span>{% endfor %}{% if o.resultado.superbalota is not none %} superbalota <span class="numero-bolita superbalota-bolita">{{ o.resultado.superbalota }}</span>{% endif %}{% endif %} · máximo de la cartera: {{ o.aciertos.maximo }} ({{ o.aciertos.definicion }})
+            {% elif o.estado == 'pendiente' %}<span class="text-muted">resultado pendiente: {{ o.motivo }}</span>{% elif o.estado == 'sin_base' %}<span class="text-danger">sin base: no se sabe</span>{% else %}{{ o.estado|replace('_', ' ') }}: {{ o.motivo }}{% endif %}</dd>
+    </dl>
+    <nav class="small d-flex flex-wrap gap-3 predicciones-nav"><a href="#combinaciones">Combinaciones</a><a href="#fuertes-debiles">Fuertes y débiles</a><a href="#explicacion">Explicación</a><a href="#fiabilidad">Fiabilidad</a><a href="#resultados">Artefactos y resultados</a></nav>
+</div>
+
+{{ eleccion_operador }}
+
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3" id="fuertes-debiles">
+    <div class="predicciones-cabecera">
+    <h5 class="predicciones-cabecera mb-1">Fuertes y débiles</h5>
+    <p class="small text-muted mb-2">{{ p.rankings.aviso }} Objetivo {{ p.rankings.objetivo }}, con datos hasta el sorteo {{ p.rankings.corte }}.</p>
+    </div>
+    {% if colores %}{% set r = p.rankings.pares %}
+    <div class="row g-3"><div class="col-lg-6">{{ m.ranking('Pares más probables (' ~ r.por_extremo ~ ' de ' ~ r.denominador ~ ')', r.fuertes, graficas.fuertes, r.unidad, True, 'pares-fuertes') }}</div>
+    <div class="col-lg-6">{{ m.ranking('Pares menos probables (' ~ r.por_extremo ~ ' de ' ~ r.denominador ~ ')', r.debiles, graficas.debiles, r.unidad, True, 'pares-debiles') }}</div></div>
+    <p class="small text-muted">{{ r.nota }} Suma de las probabilidades: {{ '%.6f'|format(r.suma) }}.{% if r.nota_empates %} <strong>{{ r.nota_empates }}</strong>{% endif %}</p>
+    <div class="row g-3"><div class="col-lg-6">{{ m.ranking('Números por separado (' ~ p.rankings.numeros.denominador ~ ')', p.rankings.numeros.todos, graficas.numeros, p.rankings.numeros.unidad, True, 'numeros-colorloto') }}</div>
+    <div class="col-lg-6">{{ m.ranking('Colores por separado (' ~ p.rankings.colores.denominador ~ ')', p.rankings.colores.todos, graficas.colores, p.rankings.colores.unidad, True, 'colores-colorloto') }}</div></div>
+    {% if p.rankings.numeros.nota_empates or p.rankings.colores.nota_empates %}<p class="small text-muted"><strong>{{ p.rankings.numeros.nota_empates or p.rankings.colores.nota_empates }}</strong></p>{% endif %}
+    {% else %}{% set r = p.rankings.numeros %}
+    <div class="row g-3"><div class="col-lg-6">{{ m.ranking('Números más probables (' ~ r.por_extremo ~ ' de ' ~ r.universo ~ ')', r.fuertes, graficas.fuertes, r.unidad ~ '; ' ~ r.denominador, False, 'numeros-fuertes') }}</div>
+    <div class="col-lg-6">{{ m.ranking('Números menos probables (' ~ r.por_extremo ~ ' de ' ~ r.universo ~ ')', r.debiles, graficas.debiles, r.unidad ~ '; ' ~ r.denominador, False, 'numeros-debiles') }}</div></div>
+    {% if r.nota_empates %}<p class="small text-muted"><strong>{{ r.nota_empates }}</strong></p>{% endif %}
+    {% if p.rankings.superbalota %}{% set s = p.rankings.superbalota %}
+    <div class="predicciones-superbalota">{{ m.ranking('Superbalota (sección separada; ' ~ s.denominador ~ ')', s.todos, graficas.superbalota, s.unidad ~ '. ' ~ (s.nota or ''), False, 'superbalota') }}
+    <p class="small text-muted">Más probables: {% for f in s.fuertes %}{{ f.candidato }}{% if not loop.last %}, {% endif %}{% endfor %} · menos probables: {% for f in s.debiles %}{{ f.candidato }}{% if not loop.last %}, {% endif %}{% endfor %}.{% if s.nota_empates %} <strong>{{ s.nota_empates }}</strong>{% endif %}</p></div>{% endif %}
+    {% endif %}
+</div>
+
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3" id="explicacion">
+    <h5 class="predicciones-cabecera mb-1">Explicación</h5>
+    {% if not e %}
+    <p class="small mb-2">Esta emisión todavía no tiene explicación guardada (p. ej. una cartera generada antes de la Fase 4).</p>
+    <form method="post" action="/predicciones/{{ d.slug }}/explicar"><input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="cartera" value="{{ p.clave }}">
+        <button class="btn btn-sm btn-outline-primary" type="submit">Explicar esta emisión (escribe una explicación; no reentrena)</button></form>
+    {% else %}{% set mt = e.metodo %}
+    <p class="small text-muted mb-2">Explicación <code>{{ e.clave[:16] }}…</code> (versión {{ e.version }}), guardada {{ (e.generacion.generado_en or '')[:19]|replace('T', ' ') }} UTC.</p>
+    <dl class="predicciones-metodo small mb-2">
+        <dt class="col-sm-3">Familia y receta</dt><dd class="col-sm-9">{{ mt.nombre }} · familia {{ mt.familia }} · receta v{{ mt.version_de_la_receta }} · perfil {{ mt.perfil }} · salida {{ mt.salida|replace('_', ' ') }}</dd>
+        <dt class="col-sm-3">Variables</dt><dd class="col-sm-9">{{ mt.variables.version }}: {{ mt.variables.nombres|join(', ') }}</dd>
+        <dt class="col-sm-3">Transformación de salida</dt><dd class="col-sm-9">{{ mt.transformacion.tipo|replace('_', ' ') }}{% if mt.transformacion.detalle %}: {{ mt.transformacion.detalle }}{% endif %}</dd>
+        <dt class="col-sm-3">Entrenamiento</dt><dd class="col-sm-9">{{ mt.entrenamiento.estimador }}{% if mt.entrenamiento.periodo %} · periodo {{ mt.entrenamiento.periodo.primer_sorteo }}–{{ mt.entrenamiento.periodo.ultimo_sorteo }} ({{ mt.entrenamiento.periodo.primera_fecha }} a {{ mt.entrenamiento.periodo.ultima_fecha }}, {{ mt.entrenamiento.periodo.sorteos }} sorteos) · corte {{ mt.entrenamiento.corte_de_entrenamiento }}{% endif %}</dd>
+        {% if mt.pesos %}<dt class="col-sm-3">Pesos de la mezcla</dt><dd class="col-sm-9">{% for w in mt.pesos %}{{ w.componente }} {{ '%.1f'|format(w.peso) }}{% if not loop.last %} · {% endif %}{% endfor %}</dd>{% endif %}
+    </dl>
+    {% set imp = e.importancias %}
+    {% if imp.estado == 'disponible' %}
+    <div class="predicciones-cabecera">
+    <h6 class="mb-1">Importancias o coeficientes globales del estimador</h6>
+    <p class="small text-muted mb-1">{{ imp.descripcion }} Estimador {{ imp.estimador }}{% if imp.calibrado %} (bajo una calibración sigmoide){% endif %}. {{ imp.aviso }}</p>
+    </div>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-2"><thead><tr><th>Variable</th><th class="text-end">{{ 'Importancia' if imp.tipo != 'coeficiente' else 'Coeficiente' }}</th><th class="text-end">Columnas</th></tr></thead>
+        <tbody>{% for v in imp.valores %}<tr><td>{{ v.variable }}{% if v.es_identidad %} (identidad del candidato){% endif %}</td>
+            <td class="text-end">{% if v.valor is not none %}{{ '%.6f'|format(v.valor) }}{% else %}mín {{ '%.4f'|format(v.resumen.minimo) }} · máx {{ '%.4f'|format(v.resumen.maximo) }} · media |·| {{ '%.4f'|format(v.resumen.media_absoluta) }}{% endif %}</td><td class="text-end">{{ v.columnas }}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="predicciones-cabecera"><h6 class="mb-1">Importancias o coeficientes globales del estimador</h6>
+    <p class="small mb-2"><strong>No disponible:</strong> {{ imp.motivo }}</p></div>{% endif %}
+    <div class="predicciones-cabecera">
+    <h6 class="predicciones-cabecera">Por qué está cada candidato en su posición</h6>
+    <p class="small text-muted mb-1">Valor emitido, referencia, datos disponibles hasta el corte ({{ e.variables.calculado_hasta_sorteo }}) y método. {{ e.variables.nota }} No es una atribución por candidato: las importancias son globales.</p>
+    </div>
+    {% set va = e.variables %}{% set principal = p.rankings.pares if colores else p.rankings.numeros %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Extremo</th><th>Candidato</th><th class="text-end">Emitida</th><th class="text-end">Uniforme</th>{% for n in va.nombres %}<th class="text-end">{{ n|replace('_', ' ') }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for grupo, filas in (('fuerte', principal.fuertes), ('débil', principal.debiles)) %}{% for f in filas %}{% set clave = (f.candidato[0] ~ '|' ~ f.candidato[1]) if colores else (f.candidato|string) %}
+            <tr><td>{{ grupo }} {{ f.posicion }}</td><td>{{ m.candidato(f.candidato) }}</td><td class="text-end">{{ '%.5f'|format(f.probabilidad) }}</td><td class="text-end">{{ '%.5f'|format(f.uniforme) }}</td>
+            {% for x in va.por_candidato.get(clave, []) %}<td class="text-end">{{ '%.4g'|format(x) }}</td>{% endfor %}</tr>{% endfor %}{% endfor %}</tbody>
+    </table></div>
+    {% endif %}
+</div>
+
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3" id="fiabilidad">
+    <div class="predicciones-cabecera">
+    <h5 class="predicciones-cabecera mb-1">Fiabilidad disponible en el corte de esta predicción</h5>
+    <p class="small text-muted mb-2">Solo objetivos hasta el sorteo {{ p.datos.corte }}: la evidencia que existía al emitir. Probabilidad emitida (arriba), rendimiento observado e incertidumbre por separado; no hay puntuación de confianza. <a href="/predicciones/{{ d.slug }}/fiabilidad">Ver la fiabilidad con todos los resultados observados</a>.</p>
+    </div>
+    {% if fiabilidad and not fiabilidad.error %}
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Línea</th><th>Tipo</th><th>Estado</th><th class="text-end">Sorteos</th><th>Δ Log Loss por sorteo, modelo − uniforme (media e intervalo 95&nbsp;%; positivo = más pérdida que la uniforme)</th></tr></thead>
+        <tbody>{% for l in fiabilidad.lineas %}{% for ev in l.evaluaciones %}{% set comp = ev.componentes.get('pares') or ev.componentes.get('numeros') %}
+            <tr><td>{{ l.nombre }}<br><span class="text-muted">{{ l.estimador }}</span></td><td>{{ tipos.get(ev.tipo, ev.tipo) }}</td><td>{{ estados_fiabilidad.get(ev.estado, ev.estado) }}{% if ev.motivo %}: {{ ev.motivo }}{% endif %}</td><td class="text-end">{{ ev.muestra.sorteos }}</td>
+            <td>{% if comp and comp.metricas %}{% set x = comp.metricas.diferencia_log_loss %}{{ m.numero(x.media) }}{% if x.intervalo %}  [{{ m.numero(x.intervalo[0]) }}, {{ m.numero(x.intervalo[1]) }}]{% endif %}{% else %}—{% endif %}</td></tr>{% endfor %}{% endfor %}
+            {% set rc = fiabilidad.receta %}<tr><td>Receta en su informe<br><span class="text-muted">{{ rc.origen or '' }}</span></td><td>{{ tipos.evaluacion_de_receta }}</td><td>{{ estados_fiabilidad.get(rc.estado, rc.estado) }}{% if rc.motivo %}: {{ rc.motivo }}{% endif %}</td><td class="text-end">{{ (rc.muestra or {}).sorteos or 0 }}</td>
+            <td>{% set comp = (rc.componentes or {}).get('pares') or (rc.componentes or {}).get('numeros') %}{% if comp and comp.metricas %}{% set x = comp.metricas.diferencia_log_loss %}{{ m.numero(x.media) }}{% if x.intervalo %}  [{{ m.numero(x.intervalo[0]) }}, {{ m.numero(x.intervalo[1]) }}]{% endif %}{% else %}—{% endif %}</td></tr>
+        </tbody></table></div>
+    {% elif fiabilidad %}<p class="small text-danger">{{ fiabilidad.error }}</p>{% endif %}
+</div>
+
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3" id="resultados">
+    <h5 class="predicciones-cabecera mb-1">Artefactos originales y resultados observados</h5>
+    <ul class="small mb-2">
+        <li><a href="{{ p.enlaces.cartera }}">Cartera original (Producto 5)</a>: vector fuente, combinaciones, verificación y exportaciones.</li>
+        {% if p.enlaces.modelo_registrado %}<li><a href="{{ p.enlaces.modelo_registrado }}">Ficha de la versión registrada (Fase 3)</a>.</li>{% endif %}
+        <li><a href="{{ p.enlaces.resultados }}">Resultados observados de la línea del modelo</a> (Producto 6, procedencia carteras).</li>
+        <li><a href="{{ p.enlaces.seguimiento_carteras }}">Aciertos observados de las carteras</a>.</li>
+        <li><a href="{{ p.enlaces.configuracion }}">Configuración y carteras del juego</a>.</li>
+    </ul>
+    <div class="predicciones-cabecera">
+    <h6 class="predicciones-cabecera">Proyección a la tabla <code>predicciones</code> (no se escribe)</h6>
+    <p class="small text-muted mb-1">{{ p.proyeccion.decision }}</p>
+    </div>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th>Columna</th><th>Valor</th><th>Nota</th></tr></thead>
+        <tbody>{% for k, v in p.proyeccion.columnas.items() %}{% if k not in ('probabilidades', 'combinaciones') %}<tr><td><code>{{ k }}</code></td><td class="text-break">{% if v is none %}NULL{% elif v is sequence and v is not string %}{% for x in v %}{{ m.etiqueta(x) }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}{{ v }}{% endif %}</td><td>{{ p.proyeccion.notas.get(k, '') }}</td></tr>{% endif %}{% endfor %}
+            <tr><td><code>combinaciones</code></td><td>{{ p.proyeccion.columnas.combinaciones|length }} combinaciones (arriba)</td><td></td></tr>
+            <tr><td><code>probabilidades</code></td><td>{{ p.proyeccion.columnas.probabilidades|length }} candidatos (rankings y API)</td><td></td></tr></tbody></table></div>
+</div>
+
+{% if d.historial %}
+<div class="card stat-card predicciones-tarjeta predicciones-fragmentable p-3 mb-3" id="historial">
+    <h5 class="predicciones-cabecera mb-1">Emisiones del centro para esta configuración</h5>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0"><thead><tr><th class="text-end">Objetivo</th><th>Línea</th><th class="text-end">Combinaciones</th><th>Generada</th><th>Tipo</th><th>Explicación</th><th></th></tr></thead>
+        <tbody>{% for h in d.historial %}<tr{% if h.clave == p.clave %} class="table-active"{% endif %}><td class="text-end">{{ h.objetivo or '—' }}</td><td>{{ 'configuración' if h.linea_del_centro == 'configuracion' else 'cinco combinaciones' }}</td>
+            {% if h.ilegible %}<td colspan="4" class="text-danger">ilegible: {{ h.ilegible }}</td><td></td>{% else %}<td class="text-end">{{ h.combinaciones }}</td><td>{{ (h.generado_en or '')[:19]|replace('T', ' ') }}</td><td>{{ (h.tipo or 'sin clasificación')|replace('_', ' ') }}</td><td>{{ 'sí' if h.explicacion else 'no' }}</td>
+            <td><a href="/predicciones/{{ d.slug }}?cartera={{ h.clave }}">abrir</a></td>{% endif %}</tr>{% endfor %}</tbody></table></div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -127,6 +127,13 @@ class EjecutorEnEsteProceso(EjecutorDeLaboratorio):
         return mr.cuerpo_del_pronostico_registrado(artefacto, recargado,
                                                    lv.instantanea_desde_canonicos(artefacto["juego"], sorteos))
 
+    def explicacion_registrada(self, artefacto, estimador):
+        from app.application.ml import predicciones_explicacion as pe
+
+        recargado = mr.deserializar_estimador(estimador, artefacto["estimador"]["sha256"],
+                                              artefacto["estimador"]["bytes"])
+        return pe.importancias_globales(recargado, artefacto["identidad"]["variables"]["nombres"])
+
 
 class LaboratorioDeModelos:
     def __init__(self, almacen, registro, cerrojo, abrir_lectura: Callable[[], AbstractContextManager[Lectura]],
