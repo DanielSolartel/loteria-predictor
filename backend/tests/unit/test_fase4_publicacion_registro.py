@@ -18,6 +18,7 @@ no se atribuye a Windows."""
 from __future__ import annotations
 
 import errno
+import hashlib
 import json
 import os
 import platform
@@ -44,7 +45,12 @@ def _medicion(nombre: str, datos: dict) -> None:
     carpeta = os.environ.get("FASE4_EVIDENCIA")
     if carpeta:
         Path(carpeta).mkdir(parents=True, exist_ok=True)
-        (Path(carpeta) / f"{nombre}.json").write_text(json.dumps(datos, sort_keys=True), encoding="utf-8")
+        # Longitud fija incluso con IDs parametrizados largos. Se conserva
+        # todo el contenido y la correspondencia exacta, sin un índice mutable.
+        archivo = "m-" + hashlib.sha256(nombre.encode("utf-8")).hexdigest() + ".json"
+        assert "_medicion" not in datos
+        completo = {**datos, "_medicion": {"nombre": nombre, "prueba": os.environ.get("PYTEST_CURRENT_TEST")}}
+        (Path(carpeta) / archivo).write_text(json.dumps(completo, sort_keys=True), encoding="utf-8")
 
 
 def _soporte_publicacion(carpeta: Path) -> dict:

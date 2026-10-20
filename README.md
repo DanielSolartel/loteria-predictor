@@ -8,21 +8,25 @@ Plataforma de análisis estadístico y adquisición de datos para MiLoto, Baloto
 
 ## Estado del proyecto
 
-Estado por fase tras la entrega «Fase 4 — predicciones explicables y fiabilidad observada». La finalización técnica y la evidencia de ventaja predictiva son estados distintos: ninguna fase acredita ventaja frente al azar. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO de AE-39 vigente y `AUTORIZA_EVALUACION = False`. Detalle, evidencia y pendientes en [ROADMAP.md](./ROADMAP.md) («Estado por fase»).
+Consolidación técnica de las fases 1–5 sobre `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`: las cinco familias ML están implementadas y su validación local está completada. Daniel ejecutó la suite completa **nativa Windows sin filtro: 7.015 aprobadas, cero fallos, errores u omisiones**, y el recorrido real de los cuatro juegos; ChatGPT auditó las evidencias y la impresión. La focal nativa previa (109 aprobadas) se solapa con la completa y no se suma. Los resultados Cloud/Linux conservan sus versiones y recuentos propios. Quedan la aplicación/verificación de este cierre documental en PowerShell 5.1 y Actions del futuro PR; la acreditación prospectiva sigue su cauce separado. Ninguna finalización técnica acredita ventaja frente al azar: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. Detalle y fuentes: [validación local ML v3.2](backend/docs/ml_cinco_familias.md#validación-local-completada-de-ml-v32).
 
-| Fase | Implementación | Validación | Pendiente |
-|---|---|---|---|
-| 1. Dominio + MVP HTML/HTMX | ✅ Completa | Windows; GitHub Actions | — |
-| 2. Adquisición automática de datos | ✅ Completa | Windows; GitHub Actions | — |
-| 3. Machine Learning | 🟢 Ingeniería implementada y validada: Random Forest y Extra Trees, selección de parámetros separada, métricas frente a la uniforme y registro de modelos entrenados y versionados que se recargan sin reentrenar — ver [Fase 3](#machine-learning-modelos-entrenados-y-versionados-fase-3) | Linux con fixtures sintéticas. Windows (operador, Python 3.14.6): la v2 con el histórico real y, al cierre, Fase 3 `81 passed`, selección `2215 passed` y OpenSSL 7/7, con las aclaraciones revisadas en PDF Legal vertical. GitHub Actions: ejecuciones 47 (PR #92), 48 y 49 en verde | Suite completa en Windows; PDF en Carta, A4 y horizontal en Windows; XGBoost, LightGBM, redes, bayesianos y Markov como extensiones futuras |
-| 4. Predicciones | 🟢 Implementación y validación local v3.4 completadas: predicciones de los cuatro juegos, explicación y fiabilidad observada — ver [Fase 4](#predicciones-explicables-y-fiabilidad-observada-fase-4) | Linux sintético por Codex Cloud; Windows nativo por Daniel, con baterías reducidas identificadas; auditoría de archivos, PDF y capturas por ChatGPT; publicación nativa v3.3 conservada | Aplicación del cierre documental y commit/push/PR por Daniel; GitHub Actions del PR final; suite completa nativa Windows; acreditación prospectiva |
-| 5. Estadísticas descriptivas | ✅ Completa — ver [Fase 5](#fase-5--estadísticas-descriptivas-completas) y `backend/docs/fase5_windows.md` | Windows con histórico real; GitHub Actions (ejecuciones 42 a 46) | — |
-| 6. Simulaciones | 🟡 Parcial: AE-49 a AE-51 y la simulación de carteras de Producto 5 | Windows; GitHub Actions | Escenarios por juego más allá de las carteras |
-| 7. API pública | 🔜 Hay una API REST interna de solo lectura | — | API pública versionada y autenticada |
-| 8. Frontend React | 🔜 | — | — |
-| 9. Despliegue | 🔜 | — | — |
+| Fase | Implementación | Validación y pendiente |
+|---|---|---|
+| 1. Dominio + MVP HTML/HTMX | Completa | Antecedentes Windows y GitHub Actions conservados |
+| 2. Adquisición automática de datos | Completa al invocarla | La operación desatendida se planifica en Fase 6; ninguna tarea se activa aquí |
+| 3. Machine Learning | Cinco familias añadidas: XGBoost, LightGBM, red neuronal, Bayes jerárquico y Markov; conserva seis candidatos anteriores por juego | Registro/recarga de 20 modelos nuevos, recorrido real e impresión nativa validados; aplicación del cierre documental y Actions del futuro PR pendientes |
+| 4. Predicciones | Centro de cuatro juegos, explicación y fiabilidad observada; integrado con las familias nuevas | Flujo explicado de las cinco familias, reutilización y persistencia tras reinicio validados en Windows; Actions del futuro PR pendiente, separado del antecedente PR #94 |
+| 5. Estadísticas descriptivas | Completa | Antecedentes Windows con histórico real y Actions conservados |
+| 6. Actualización y operación automática | Planificada, sin iniciar | Siguiente entrega tras aplicar/verificar el cierre documental y revisar/publicar la ampliación; validación local de fases 1–5 completada |
+| 7. Simulaciones | Parcial: AE-49–51 y Producto 5 | Conserva avances; ampliación futura |
+| 8. API pública | Planificada; existe API interna de solo lectura | Versionado, autenticación y límites pendientes |
+| 9. Frontend React | Planificada | Posterior a API pública |
+| 10. Despliegue | Planificada | Seguridad, operación y disponibilidad pendientes |
+| 11. Aplicación personal | Planificada | Depende de Fase 6 y capacidades pertinentes de fases 8–10 |
 
-**Próximas entregas, en orden: 4 → 6 → 7 → 8 → 9.** La Fase 3 quedó cerrada con el PR #92 (base de esta entrega: `8a53108`). GitHub Actions ejecuta el workflow en cada push y PR: la ejecución 47 (PR #92) terminó en verde con la suite completa en Linux y la selección en Windows, y las 48 (`main`) y 49 (`develop`) sobre `8a53108` también. La entrega de la Fase 4 aún no se ha ejecutado allí. (Antes, sobre `c7644c4`: ejecución 45, Linux `6379 passed` y Windows `2134 passed`, con OpenSSL 7/7 en ambos.)
+**Orden posterior al cierre: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Estas fases futuras solo se planifican. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. API pública, React y Despliegue pasan de 7/8/9 a 8/9/10. Los Productos 1–6 son entregas vinculadas a fases, no fases pendientes; no se renombran archivos, rutas, pruebas ni artefactos históricos.
+
+**Base y CI previas, según la información aportada por Daniel:** PR #94 fusionado (implementación `c73e29cc3476c8ade377d205d6eaf38c374ac19b`), `origin/main` y `origin/develop` sincronizadas en `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`; árbol `e4aaa33ecdef1eea1b7162dcba3c0349ef7d6cd0`. Actions `38982578601`: trabajo Linux completo `117246604306` y Windows selección `117246604151` en verde. Es evidencia previa aportada, sin inventar recuentos ni atribuirle esta ampliación. El cierre documental Fase 4 ya se aplicó y verificó en PowerShell 5.1, con índice intacto y limpieza completada. La publicación de esta nueva entrega y sus checks quedan para Daniel.
 
 **Historial de productos**, vinculados a sus fases (detalle al final de este documento y en el ROADMAP):
 
@@ -32,7 +36,7 @@ Estado por fase tras la entrega «Fase 4 — predicciones explicables y fiabilid
 | Producto 2 | Pronóstico experimental de MiLoto y ColorLoto y comparación con resultados observados de los cuatro juegos (`/pronosticos`) | 4 | 🧪 Experimental, no acreditado; validado en Windows; GitHub Actions en verde — ver `backend/docs/producto2_windows.md` |
 | Producto 3 | Panel diario (`/operacion`), actualización y generación por juego, y seguimiento del rendimiento (`/rendimiento`) | 2 y 4 | 🧪 Experimental, no acreditado; validado en Windows con histórico real; GitHub Actions en verde — ver `backend/docs/producto3_windows.md` |
 | Producto 4 | Laboratorio de modelos (`/laboratorio`): entrenar y comparar modelos nuevos por juego y generar con el elegido | 3 (y 4) | 🧪 Experimental, no acreditado; validado en Windows con histórico real e impresión en Carta vertical; GitHub Actions en verde — ver `backend/docs/producto4_windows.md` |
-| Producto 5 | Modelo combinado con pesos aprendidos del pasado, carteras de combinaciones por modelo y simulación Monte Carlo frente a la uniforme (`/carteras`) | 3, 4 y 6 | 🧪 Experimental, no acreditado; validado en Windows con histórico real; GitHub Actions en verde — ver `backend/docs/producto5_windows.md` |
+| Producto 5 | Modelo combinado con pesos aprendidos del pasado, carteras de combinaciones por modelo y simulación Monte Carlo frente a la uniforme (`/carteras`) | 3, 4 y 7 (antes 6) | 🧪 Experimental, no acreditado; validado en Windows con histórico real; GitHub Actions en verde — ver `backend/docs/producto5_windows.md` |
 | Producto 6 | Centro de resultados y evaluación continua de modelos (`/resultados`): pronósticos ya emitidos de las tres procedencias frente a los sorteos reales, comparación sobre la muestra común, calibración e informes verificables | 4 (y 3) | 🧪 Experimental, no acreditado; validado en Windows con histórico real; GitHub Actions en verde — ver `backend/docs/producto6_windows.md` |
 
 Para el diseño técnico completo (capas, diagramas de flujo, decisiones de arquitectura, motor estadístico) ver [ARCHITECTURE.md](./ARCHITECTURE.md).
@@ -146,7 +150,7 @@ La auditoría sobre `9fab331` encontró terminadas las 43 visualizaciones anteri
 
 ## Machine Learning: modelos entrenados y versionados (Fase 3)
 
-**Estado: implementada y validada; cerrada con el PR #92 (base `8a53108`).** La v2 está validada por el operador en Windows nativo (Python 3.14.6) y recorrida con el histórico real de los cuatro juegos, y los ajustes de cierre se validaron después en Windows (ver «Cierre», abajo). GitHub Actions la ejecutó en verde (ejecuciones 47, 48 y 49). Guía: `backend/docs/fase3_windows.md`. *Estado anterior, al entregar los ajustes de cierre: «implementada; v2 validada en Windows; ajustes de cierre pendientes de validar en Windows; GitHub Actions todavía no ha ejecutado la Fase 3».* Es finalización técnica, no evidencia predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
+**Antecedente histórico: ingeniería original cerrada con el PR #92 (base `8a53108`).** La v2 está validada por el operador en Windows nativo (Python 3.14.6) y recorrida con el histórico real de los cuatro juegos, y los ajustes de cierre se validaron después en Windows (ver «Cierre», abajo). GitHub Actions la ejecutó en verde (ejecuciones 47, 48 y 49). Guía: `backend/docs/fase3_windows.md`. *Estado anterior, al entregar los ajustes de cierre: «implementada; v2 validada en Windows; ajustes de cierre pendientes de validar en Windows; GitHub Actions todavía no ha ejecutado la Fase 3».* Es finalización técnica, no evidencia predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
 
 **Informe frente a modelo registrado.**
 - Un informe del laboratorio (Producto 4) guarda la receta, el histórico y las métricas de una comparación. Se reproduce reentrenando.
@@ -154,7 +158,7 @@ La auditoría sobre `9fab331` encontró terminadas las 43 visualizaciones anteri
 - Cada versión procede de un informe: su corte explícito, su histórico y la evaluación de esa receta frente a la uniforme.
 
 **Flujo en la web** (`/laboratorio`):
-1. Comparar los candidatos de un juego (ahora 6 por juego, con Random Forest y Extra Trees).
+1. Comparar los candidatos de un juego (once por juego; seis históricos más las cinco familias de esta ampliación).
 2. En el informe, «Entrenar y guardar versión»; la página de progreso muestra las fases: leyendo el informe, entrenando y publicando.
 3. Abrir la ficha (`/laboratorio/modelo/<clave>`). Muestra el entrenamiento, las variables, los componentes, los parámetros elegidos, la evaluación de **esta receta** frente a la uniforme, el pronóstico de control y la procedencia. Aparte, con su nombre, muestra la lectura general del informe de procedencia: su clasificación guardada, con esta receta marcada, y quién tuvo la menor pérdida (otro modelo, la uniforme o un empate), sin recalcular ni reordenar.
 4. «Verificar»: integridad, compatibilidad, carga restringida y pronóstico de control.
@@ -171,13 +175,18 @@ La auditoría sobre `9fab331` encontró terminadas las 43 visualizaciones anteri
 **Comando** (mismos casos de uso; desde `backend`):
 
 ```powershell
-python -m scripts.laboratorio_modelos comparar --juego BALOTO --corte <sorteo cargado>
-python -m scripts.laboratorio_modelos entrenar --experimento <clave del informe> --modelo random_forest_clasificador
+# Acciones manuales: comparar/entrenar/generar/configurar escriben artefactos.
+$corte = Read-Host 'Corte cargado de BALOTO'
+python -m scripts.laboratorio_modelos comparar --juego BALOTO --corte $corte
+$informe = Read-Host 'Clave del informe que acabas de comprobar'
+python -m scripts.laboratorio_modelos entrenar --experimento $informe --modelo xgboost_binario
+$modelo = Read-Host 'Clave de la version registrada'
 python -m scripts.laboratorio_modelos modelos --juego BALOTO
-python -m scripts.laboratorio_modelos modelo --clave <clave del modelo>
-python -m scripts.laboratorio_modelos verificar --modelo <clave del modelo>
-python -m scripts.laboratorio_modelos generar-con-modelo --clave <clave del modelo> [--corte <sorteo>]
-python -m scripts.carteras_modelos configurar --juego BALOTO --modelo random_forest_clasificador --registrado <clave>
+python -m scripts.laboratorio_modelos modelo --clave $modelo
+python -m scripts.laboratorio_modelos verificar --modelo $modelo
+# Solo si decides emitir un pronostico y elegir esta version:
+python -m scripts.laboratorio_modelos generar-con-modelo --clave $modelo
+python -m scripts.carteras_modelos configurar --juego BALOTO --modelo xgboost_binario --registrado $modelo
 ```
 
 API de solo lectura: `GET /api/laboratorio/modelos[?juego=]` y `GET /api/laboratorio/modelos/{clave}`. Ningún GET carga un estimador ni escribe.
@@ -256,11 +265,27 @@ Es una sola observación retrospectiva por juego: no acredita anterioridad prosp
 - **GitHub Actions:** ejecución 47 (PR #92) en verde, con la suite completa en Linux y la selección en Windows; 48 (`main`) y 49 (`develop`) sobre `8a53108`, también en verde.
 - **No ejecutado en Windows:** la suite completa. El PDF en Carta, A4 y horizontal solo se revisó en Linux.
 
-**Pendiente:**
-- la suite completa en Windows, que no se ha ejecutado;
-- la impresión en Carta, A4 y horizontal en Windows.
+**Pendientes de aquel cierre histórico:** la suite completa Windows y la impresión en Carta/A4/horizontal no se habían ejecutado entonces. Quedaron resueltos en la ampliación ML v3.2 descrita a continuación; las cifras y formatos anteriores conservan su alcance original.
 
-XGBoost, LightGBM, redes, modelos bayesianos y Markov siguen como familias futuras.
+### Ampliación ML de cinco familias y consolidación de fases 1–5
+
+La entrega v2 corrige la comprobación del estado interno frente a su receta y acorta las carpetas propias de validación para el presupuesto Win32. Las regresiones usan la entrada pública de carga y huellas recalculadas; las comprobaciones portables de rutas no equivalen a ejecutar Windows. Sus resultados nuevos y JUnit se entregan separados de la v1, sin repetir la revisión visual o PDF.
+
+Se incorporan XGBoost y LightGBM reales en CPU, una MLP regularizada, un modelo bayesiano jerárquico y una cadena de Markov explícita. Cada uno tiene una representación binaria para Baloto, Revancha y MiLoto, y una de conteos de pares número-color para ColorLoto. El catálogo conserva los seis candidatos históricos y añade cinco por juego: once por juego, 44 entradas juego-candidato. Las recetas e identidades anteriores se conservan; `FAMILIAS_FUTURAS` ya no enumera estas familias. La comprobación del catálogo y los entrenamientos reales se acreditan con la evidencia de la entrega, no con el número escrito en esta página.
+
+El flujo común es comparar → entrenar/registrar → recargar en proceso nuevo sin `fit` → elegir explícitamente en Carteras → emitir Predicciones explicadas → consultar Resultados y Fiabilidad. No se elige ganador ni se cambia configuración por comparar. Las versiones nuevas guardan preparación, parámetros, calibración cuando aplica, posterior o transiciones y entorno en un envoltorio JSON versionado: XGBoost en JSON nativo, LightGBM en texto nativo y MLP en matrices JSON. La compatibilidad y procedencia se verifican antes de abrir un motor nativo. Los `.pkl` históricos mantienen su lector restringido y su contrato de compatibilidad.
+
+El Bayes numérico integra una posterior jerárquica con cuadratura y diagnóstico; ColorLoto usa una jerarquía conjugada color → número con predictiva integrada. La transformación común de cardinalidad o normalización se distingue de esa predictiva. Markov estima transiciones por candidato de orden uno con suavizado Dirichlet: cambia el estado conocido de entrada, permanecen congeladas las transiciones. Una nueva observación no actualiza en secreto un modelo registrado. Los detalles, límites y fuentes primarias están en [la documentación de métodos](backend/docs/ml_cinco_familias.md).
+
+XGBoost/LightGBM publican ganancia total de particiones, sin convertirla en coeficientes ni causalidad. La red y los modelos sin una importancia global comparable muestran el motivo. Reproducir una explicación guardada comprueba el vector fuente y recalcula rankings y variables; un GET no vuelve a inferir ni recalcula importancias.
+
+**Validación local ML v3.2 completada.** Daniel utilizó `C:\GitHub\loteria-predictor-ml-cierre` y el entorno independiente `C:\GitHub\venvs\loteria-ml-cierre\Scripts\python.exe` (Windows 11 AMD64, PowerShell 5.1, Python 3.14.6). La suite completa de `backend/tests`, sin `seleccion_windows.txt`, terminó con **7.015 aprobadas y cero fallos, errores u omisiones**, con seis avisos de deprecación registrados; diagnóstico numérico correcto, OpenSSL `exigir` **7/7**, demostración sintética **20/20**, `pip check` correcto y 29 mediciones conservadas. La focal nativa previa dio **109 aprobadas**; se solapa y no se suma. Estas cifras son Windows, no una nueva ejecución Linux.
+
+El recorrido real verificó once candidatos por juego, **20 versiones nuevas** recargadas en proceso nuevo y **40 pronósticos de estimadores congelados** (dos cortes por modelo, no sorteos independientes), más cinco carteras y explicaciones que persistieron tras reiniciar. Daniel eligió explícitamente la configuración; comparar no la cambia. ChatGPT auditó los registros y la impresión: **36 PDF, 600 páginas**, de doce páginas web en Carta vertical, Carta horizontal y A4 vertical. La revisión visual fue representativa y se apoyó en controles de contenido sobre todos los PDF; no se afirma lectura manual ampliada individual de las 600 páginas. Detalles, cortes y fuentes: [validación local ML v3.2](backend/docs/ml_cinco_familias.md#validación-local-completada-de-ml-v32).
+
+El nuevo cierre es exclusivamente documental: `ml-guia-cierre-documental-windows.md` describe su aplicación/verificación pendiente en PowerShell 5.1, sin repetir pruebas de producto. Actions del futuro PR y acreditación prospectiva permanecen separados. Fase 6 queda como siguiente entrega planificada, sin iniciarla.
+
+
 
 *Lista anterior, al entregar los ajustes de cierre: la validación en Windows de esos ajustes y GitHub Actions (ambas cumplidas con el cierre), la suite completa en Windows y la impresión en Carta, A4 y horizontal en Windows.*
 
@@ -268,7 +293,7 @@ XGBoost, LightGBM, redes, modelos bayesianos y Markov siguen como familias futur
 
 ## Predicciones explicables y fiabilidad observada (Fase 4)
 
-**Estado: implementación y validación local v3.4 completadas; cierre documental preparado para Windows** (guía: `backend/docs/fase4_windows.md`). Es finalización técnica, no evidencia predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`. Ninguna cifra es un nivel de confianza.
+**Estado: Fase 4 implementada y validada localmente, también con las cinco familias ML v3.2.** Su cierre anterior se fusionó mediante PR #94; la evidencia Fase 4 v3.4 siguiente es histórica y no acredita por sí sola las nuevas familias. El flujo real, la persistencia y la impresión ML tienen su [validación propia](backend/docs/ml_cinco_familias.md#validación-local-completada-de-ml-v32). Aplicación del nuevo cierre documental y Actions del futuro PR pendientes; acreditación prospectiva separada. Guía histórica: `backend/docs/fase4_windows.md`.
 
 **Cierre local v3.4 (16 de octubre de 2026, Colombia).** La implementación y la validación local están completadas con los alcances del resumen consolidado aportado. Daniel ejecutó Windows nativo; Codex Cloud ejecutó Linux con datos sintéticos; ChatGPT auditó los archivos y la evidencia entregada y registró su revisión previa de PDF y capturas, que no están incluidos en los ZIP de este cierre. Este cierre documental no vuelve a ejecutar esas verificaciones ni convierte una auditoría en pruebas nuevas.
 
@@ -286,7 +311,7 @@ XGBoost, LightGBM, redes, modelos bayesianos y Markov siguen como familias futur
 
 **v3.4** corrige el corte vacío y la selección persistente de Fiabilidad, el componente real de ColorLoto, la lectura numérica cerca de cero, el texto de MiLoto y el singular/plural, y la disposición de pantalla e impresión. Mantiene las probabilidades congeladas, las unidades por balota, las multiplicidades y las consultas de solo lectura. Añadir una línea sigue siendo aditivo y no modifica la configuración. La superbalota de `carteras:uniforme-v1` conserva su estrategia de frecuencia con suavizado de Laplace; el nombre de la línea no implica deltas nulos en todos sus componentes.
 
-**Siguiente paso: cierre exclusivamente documental.** Aplicar `aplicar-fase4-cierre.ps1` en Windows PowerShell 5.1, consola normal, siguiendo `fase4-guia-cierre-windows.md`; verifica código y manifiestos y aplica únicamente los cuatro documentos. No requiere repetir pruebas, demostraciones, entrenamiento, generación, recuperación ni consultas o revisión visual. Daniel realizará después commit, push y PR desde Windows. Permanecen **pendientes separados** GitHub Actions sobre el PR final, la **suite completa nativa Windows** y la **acreditación prospectiva** con muestras suficientes por línea y tipo. La implementación y validación local completadas no acreditan ventaja predictiva: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+**Cierre documental anterior completado (PR #94).** Daniel informa que el cierre se aplicó y verificó con PowerShell 5.1, sin reescribir el aplicador, conservando el índice y limpiando sus temporales; después se fusionó PR #94. La base vigente es `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`, árbol `e4aaa33ecdef1eea1b7162dcba3c0349ef7d6cd0`. Sus checks Actions `38982578601` fueron Linux suite completa (`117246604306`) y Windows selección (`117246604151`), ambos en verde según lo aportado por Daniel. No se inventan recuentos ni se acredita suite completa Windows. La ampliación ML v3.2 tiene su propia validación local completada: suite completa nativa Windows y recorrido real, auditados por ChatGPT; véase la sección vigente de cinco familias. Quedan la aplicación/verificación del nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; la acreditación prospectiva permanece separada. Se conservan `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 
 **Un solo flujo para los cuatro juegos** (`/predicciones`, en la navegación como «Centro de predicciones»):
 1. **Elegir** el modelo en `/carteras/<juego>`: receta o versión registrada, cantidad, diversidad y semilla. Es la configuración de Producto 5, la única elección del operador, y el centro nunca la cambia ni elige otro modelo por su cuenta.
@@ -311,7 +336,7 @@ XGBoost, LightGBM, redes, modelos bayesianos y Markov siguen como familias futur
 - los valores de las variables de cada candidato, calculados con las funciones causales del motor y solo con los sorteos hasta el corte;
 - las importancias o coeficientes **globales** del estimador persistido de una versión registrada, leídos en el proceso trabajador con la carga restringida, sin reajustar nada.
 
-Lo que no hay se dice expresamente: el boosting no expone importancias, las recetas que se reajustan al generar no conservan su estimador, y la uniforme y las frecuencias no tienen estimador. No se inventan contribuciones por candidato.
+Lo que no hay se dice expresamente: HistGradientBoosting no expone importancias; XGBoost y LightGBM ofrecen ganancia total de particiones, con su unidad y alcance propios. La MLP no ofrece una importancia global comparable; Bayes y Markov describen sus parámetros, sin inventar importancias. Las recetas que se reajustan al generar no conservan su estimador; uniforme y frecuencias no tienen estimador. No se inventan contribuciones por candidato.
 
 **Fiabilidad observada** (contrato `fase4-fiabilidad-1`). Tres cantidades separadas:
 1. la probabilidad emitida;
@@ -331,11 +356,15 @@ Fuentes: Künsch (1989), Hall, Horowitz y Jing (1995), Diebold y Mariano (1995) 
 
 ```powershell
 python -m scripts.predicciones indice
-python -m scripts.predicciones consultar --juego BALOTO [--cartera <clave>]
-python -m scripts.predicciones generar --juego BALOTO [--cinco]          # escribe (cartera y explicación)
-python -m scripts.predicciones explicar --cartera <clave>                # escribe (explicación)
-python -m scripts.predicciones fiabilidad --juego BALOTO [--linea <procedencia:linea>] [--hasta <sorteo>]
-python -m scripts.predicciones ejecucion --id <identificador>
+python -m scripts.predicciones consultar --juego BALOTO
+python -m scripts.predicciones fiabilidad --juego BALOTO
+python -m scripts.predicciones rutas
+# Acciones manuales que escriben cartera/explicacion:
+python -m scripts.predicciones generar --juego BALOTO
+$cartera = Read-Host 'Clave de la cartera publicada'
+python -m scripts.predicciones explicar --cartera $cartera
+$ejecucion = Read-Host 'Identificador de la ejecucion'
+python -m scripts.predicciones ejecucion --id $ejecucion
 python -m scripts.predicciones rutas
 ```
 
@@ -376,15 +405,14 @@ API de solo lectura: `GET /api/predicciones`, `GET /api/predicciones/{codigo}[?c
 
 **v3.1 (corrección de la carrera de finalización):** la consulta del método real `CentroDePredicciones.ejecucion` observa una sola vez si el trabajador mantiene su cerrojo. Si lo observó vivo, `en_curso` sigue siendo una instantánea válida hasta el siguiente polling. Si lo observó libre, relee el registro antes de derivar una interrupción y conserva un cierre persistido como `exito`. Una regresión determinista, sin sleeps, reproduce la publicación de `exito` y la liberación del cerrojo entre las dos comprobaciones de la v3; esa secuencia no puede devolver `interrumpida`. Se conservan la lectura pura, el cierre ante fallos, la explicación activa y la reutilización de artefactos. El incremental v3.1 se aplica directamente sobre la v2; no requiere aplicar la v3 original.
 
-**Procedimiento histórico de v3.1 (superado por la evidencia nativa v3.3 y el cierre local v3.4 anteriores):** la batería de Fase 4 y la selección que incluyen el caso de enlace simbólico se validaban en consola elevada en el Windows del operador. Las demás baterías y Uvicorn se ejecutan en consola normal. Repetir `generar`, aunque reutilice cartera y explicación, escribe registros de ejecución y crea o usa cerrojos; no es una consulta de solo lectura. En aquella entrega seguían pendientes su validación nativa, recorrido real e impresión; el cierre local v3.4 anterior registra los resultados posteriores. Actions continúa pendiente.
+**Procedimiento histórico de v3.1 (superado por la evidencia nativa v3.3 y el cierre local v3.4 anteriores):** la batería de Fase 4 y la selección que incluyen el caso de enlace simbólico se validaban en consola elevada en el Windows del operador. Las demás baterías y Uvicorn se ejecutan en consola normal. Repetir `generar`, aunque reutilice cartera y explicación, escribe registros de ejecución y crea o usa cerrojos; no es una consulta de solo lectura. En aquella entrega seguían pendientes su validación nativa, recorrido real e impresión; el cierre local v3.4 anterior registra los resultados posteriores. Actions de esa entrega se completó después con PR #94; los checks del futuro PR ML permanecen separados y pendientes.
 
-**Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado actual:** implementación y validación local v3.4 completadas, con cierre documental preparado. El PR final y su CI, la suite completa nativa Windows y la acreditación prospectiva siguen separados y pendientes.
+**Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado vigente:** implementación, validación local v3.4 y cierre documental fusionados en PR #94. La ampliación ML v3.2 tiene suite completa nativa Windows y recorrido real completados con evidencia propia. Quedan aplicación/verificación del nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; acreditación prospectiva separada.
 
-**Pendiente:**
-- aplicar el cierre documental en Windows y que Daniel realice commit, push y PR de la entrega completa; sin repetir la validación local ya terminada;
-- GitHub Actions, con el PR;
-- la suite completa en Windows;
-- la evidencia estadística: muestras prospectivas suficientes por línea.
+**Pendientes vigentes separados:**
+- aplicar/verificar este cierre documental en PowerShell 5.1; la implementación, suite completa nativa, recorrido e impresión ML v3.2 ya están validados localmente;
+- revisión y publicación manual por Daniel, con Actions del futuro PR;
+- acreditación prospectiva: muestras suficientes por línea y tipo, por su cauce propio.
 
 ---
 

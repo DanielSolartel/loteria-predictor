@@ -27,8 +27,8 @@ BOSQUES = {"BALOTO": ("random_forest_clasificador", "extra_trees_clasificador"),
 def test_catalogo_ampliado_conserva_las_entradas_anteriores_y_la_uniforme():
     for codigo, bosques in BOSQUES.items():
         ids = [e.id for e in lm.candidatos_del_juego(codigo)]
-        assert ids[-2:] == list(bosques)  # al final: el orden anterior no cambia
-        assert ids[:-2] == list(ce.CANDIDATOS_DE_COMPARACION[codigo])
+        assert ids[4:6] == list(bosques)  # al final: el orden anterior no cambia
+        assert ids[:4] == list(ce.CANDIDATOS_DE_COMPARACION[codigo])
         assert any(lm.CATALOGO[i].familia == "uniforme" for i in ids)
         assert any(lm.CATALOGO[i].familia == "estrategia_actual" for i in ids)
     for i in ("random_forest_clasificador", "extra_trees_clasificador", "random_forest_poisson", "extra_trees_poisson"):
@@ -40,11 +40,13 @@ def test_catalogo_ampliado_conserva_las_entradas_anteriores_y_la_uniforme():
     assert lm.CATALOGO["extra_trees_clasificador"].parametros["bootstrap"] is False
 
 
-def test_las_familias_futuras_no_se_declaran_implementadas():
-    assert set(lm.FAMILIAS_FUTURAS) == {"xgboost", "lightgbm", "redes_neuronales", "bayesianos", "markov"}
-    familias = {e.familia for e in lm.CATALOGO.values()} | {e.id for e in lm.CATALOGO.values()}
-    assert not familias & set(lm.FAMILIAS_FUTURAS)
-    assert all("extension futura" in texto for texto in lm.FAMILIAS_FUTURAS.values())
+def test_las_cinco_familias_se_anaden_a_los_seis_candidatos_anteriores():
+    assert not lm.FAMILIAS_FUTURAS
+    assert set(lm.FAMILIAS_ML_AMPLIADAS) == {"xgboost", "lightgbm", "redes_neuronales", "bayesianos", "markov"}
+    for juego in lv.JUEGOS:
+        entradas = lm.candidatos_del_juego(juego)
+        assert len(entradas) == 11
+        assert {e.familia for e in entradas[6:]} == set(lm.FAMILIAS_ML_AMPLIADAS)
 
 
 @pytest.mark.parametrize("codigo,n", [("BALOTO", 110), ("MILOTO", 87), ("COLORLOTO", 90)])

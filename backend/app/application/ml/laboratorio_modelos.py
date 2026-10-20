@@ -270,18 +270,56 @@ CATALOGO = MappingProxyType({e.id: e for e in (
         "normaliza a una distribucion de pares.", _NORM),
 )})
 
-FAMILIAS_FUTURAS = MappingProxyType({
-    "xgboost": "Gradient boosting de XGBoost: extension futura (dependencia nueva; HistGradientBoosting cubre el "
-               "boosting de arboles).",
-    "lightgbm": "LightGBM: extension futura (dependencia nueva).",
-    "redes_neuronales": "Redes neuronales: extension futura; con unos cientos de sorteos por juego el riesgo de "
-                        "sobreajuste es alto.",
-    "bayesianos": "Modelos bayesianos jerarquicos: extension futura (la multinomial suavizada de ColorLoto es una "
-                  "estimacion puntual Dirichlet, no un modelo bayesiano completo).",
-    "markov": "Cadenas de Markov sobre transiciones entre sorteos: extension futura.",
-})
-"""Familias del ROADMAP que NO estan implementadas. Se listan para no
-declararlas hechas; no forman parte del catalogo ni de ninguna comparacion."""
+FAMILIAS_ML_AMPLIADAS = ("xgboost", "lightgbm", "redes_neuronales", "bayesianos", "markov")
+"""Familias adicionales implementadas; las recetas previas conservan su identidad."""
+FAMILIAS_FUTURAS = MappingProxyType({})
+
+
+def _entradas_ml_ampliadas():
+    for familia, nombre, ids, parametros, explicacion in (
+        ("xgboost", "XGBoost CPU", ("xgboost_binario", "xgboost_poisson"),
+         {"num_boost_round": 60, "max_depth": 3, "learning_rate": 0.08,
+          "regularizacion_L2": 5.0, "min_hoja": 20, "n_jobs": 1, "semilla": SEMILLA},
+         "XGBoost real en CPU; arboles regularizados de profundidad fija, sin seleccion ni parada sobre el futuro."),
+        ("lightgbm", "LightGBM CPU", ("lightgbm_binario", "lightgbm_poisson"),
+         {"num_boost_round": 60, "max_depth": 3, "learning_rate": 0.08,
+          "regularizacion_L2": 5.0, "min_hoja": 20, "n_jobs": 1, "semilla": SEMILLA},
+         "LightGBM real en CPU; perdida binaria o Poisson y presupuesto fijo, sin parada temprana aleatoria."),
+        ("redes_neuronales", "Red neuronal MLP", ("red_neuronal_binaria", "red_neuronal_poisson"),
+         {"hidden_layer_sizes": [12], "alpha": 10.0, "solver": "lbfgs", "max_iter": 600,
+          "max_fun": 20000, "tol": 1e-4, "early_stopping": False, "semilla": SEMILLA},
+         "Red entrenable pequena y regularizada; one-hot y escalado aprendidos solo en el bloque base."),
+        ("bayesianos", "Bayes jerarquico", ("bayes_jerarquico_binario", "bayes_jerarquico_pares"),
+         {"kappa": 20.0, "prior_mu": "Beta(5, N-5); N es el universo del juego", "tolerancia": 1e-9, "max_nodos": 512},
+         "Jerarquia probabilistica explicita: posterior beta-binomial integrada por cuadratura en numeros; "
+         "jerarquia Dirichlet color y numero condicional, conjugada exacta, en ColorLoto. Posterior congelado."),
+        ("markov", "Markov de orden uno", ("markov_apariciones", "markov_pares"),
+         {"orden": 1, "fuerza": 10.0},
+         "Transiciones dirigidas entre ausencia/aparicion (numeros) o conteos 0..6 (pares); "
+         "suavizado Dirichlet hacia la referencia y transiciones congeladas."),
+    ):
+        for colores, identificador in zip((False, True), ids):
+            parametros_entrada = dict(parametros)
+            if familia == "bayesianos" and colores:
+                parametros_entrada = {"prior_colores": 1.0, "prior_numeros": 1.0, "reserva_otros": True}
+            vars_ = (_VARS_COL if colores else _VARS_NUM)
+            if familia == "bayesianos":
+                vars_ = "identidad y conteos de apariciones anteriores al corte; jerarquia congelada"
+            elif familia == "markov":
+                vars_ = "identidad, conteo previo (columna 5) y conteo objetivo para estimar transiciones"
+            transformacion = (_NORM if colores else _CARD)
+            if familia in ("bayesianos", "markov"):
+                transformacion = ("intensidades predictivas normalizadas por objetivo; distinta de la predictiva "
+                                  "conjunta integrada y sin actualizacion del posterior" if colores else
+                                  "media predictiva sin calibracion; ajuste comun de cardinalidad a suma 5")
+            yield EntradaCatalogo(identificador, "ml-1", nombre + (" (pares)" if colores else " (aparicion)"),
+                "modelo_nuevo", familia, ("COLORLOTO",) if colores else NUMERICOS,
+                "distribucion_de_pares" if colores else "marginales_de_aparicion", vars_,
+                MappingProxyType(parametros_entrada), MappingProxyType(_REQ_NUEVO_CONTEO if colores or familia in
+                    ("bayesianos", "markov") else _REQ_NUEVO_BINARIO), explicacion, transformacion)
+
+
+CATALOGO = MappingProxyType({**CATALOGO, **{e.id: e for e in _entradas_ml_ampliadas()}})
 
 
 def candidatos_del_juego(codigo: str) -> list[EntradaCatalogo]:
@@ -295,6 +333,10 @@ def parametros_de(entrada: EntradaCatalogo, perfil: str) -> dict:
     if perfil == "reducido" and entrada.familia == "bosques":
         parametros["n_estimators"] = 10
         parametros["rejilla"] = {"max_depth": [4, 8], "min_samples_leaf": [20]}
+    if perfil == "reducido" and entrada.familia in ("xgboost", "lightgbm"):
+        parametros["num_boost_round"] = 12
+    if perfil == "reducido" and entrada.familia == "redes_neuronales":
+        parametros.update({"hidden_layer_sizes": [6], "max_iter": 300})
     return parametros
 
 
@@ -459,6 +501,8 @@ def ajustar_candidato(entrada: EntradaCatalogo, instantanea: lv.Instantanea, var
                         {"estado": "conteos fijados al inicio del bloque", "sorteos_previos": len(previos)})
     if entrada.id == "actual_logistica_ae36":
         return _ajustar_ae36(entrada, instantanea, variables, posicion_de_corte)
+    if entrada.familia in FAMILIAS_ML_AMPLIADAS:
+        return _ajustar_ml_ampliado(entrada, instantanea, variables, posicion_de_corte, perfil)
     return _ajustar_nuevo(entrada, instantanea, variables, posicion_de_corte, perfil)
 
 
@@ -502,7 +546,9 @@ def inferir(estimador, salida: str, filas: lv.Filas, cantidad: int) -> np.ndarra
     La usan la evaluacion, los pronosticos y los modelos registrados
     recargados (Fase 3), asi que las tres aplican la misma transformacion."""
     if salida == "distribucion_de_pares":
-        return _por_objetivo(filas, normalizar_intensidades)(estimador.predict(filas.X))
+        crudas = (estimador.predict_para_objetivos(filas.X, filas.posiciones)
+                  if hasattr(estimador, "predict_para_objetivos") else estimador.predict(filas.X))
+        return _por_objetivo(filas, normalizar_intensidades)(crudas)
     indice = list(estimador.classes_).index(1)
     crudas = estimador.predict_proba(filas.X)[:, indice]
     return _por_objetivo(filas, lambda v: ajustar_cardinalidad(v, cantidad))(crudas)
@@ -619,3 +665,57 @@ def probabilidades_superbalota(previos: Sequence, rango: tuple[int, int]) -> dic
             conteo[r.superbalota] += 1
             vistos += 1
     return {c: (conteo[c] + 1) / (vistos + len(conteo)) for c in clases}
+
+
+def _ajustar_ml_ampliado(entrada, instantanea, variables, posicion_de_corte, perfil):
+    """Ajuste de las cinco familias; ninguna rama modifica las recetas previas."""
+    posiciones = list(range(lv.CALENTAMIENTO, posicion_de_corte))
+    minimo = entrada.requisitos["objetivos_de_ajuste"]
+    if len(posiciones) < minimo:
+        raise CandidatoNoDisponible("muestra_insuficiente", f"se necesitan {minimo} objetivos; hay {len(posiciones)}")
+    probabilistico = entrada.familia in ("bayesianos", "markov")
+    colores = instantanea.reglas.colores
+    # El soporte conocido al corte incluye las seis observaciones de cada sorteo
+    # de ajuste. Nunca incluye colores observados despues del corte.
+    filas = (variables.filas(posiciones, paleta=instantanea.paleta(posicion_de_corte))
+             if colores and probabilistico else variables.de_ajuste(posicion_de_corte))
+    objetivos = sorted(set(filas.objetivos.tolist()))
+    parametros = parametros_de(entrada, perfil)
+    detalle = {"objetivos_de_ajuste": [objetivos[0], objetivos[-1], len(objetivos)],
+               "seleccion": "ninguna; hiperparametros fijados antes de evaluar"}
+    base, calibracion = objetivos, []
+    en_calibracion = None
+    if not colores and not probabilistico:
+        base, calibracion = division_de_calibracion(objetivos)
+        if len(base) < entrada.requisitos["objetivos_base"]:
+            raise CandidatoNoDisponible("muestra_insuficiente", "bloque base por debajo del minimo")
+        en_calibracion = np.isin(filas.objetivos, calibracion)
+        for mascara in (en_calibracion, ~en_calibracion):
+            if len(set(filas.y[mascara].tolist())) < 2:
+                raise CandidatoNoDisponible("clase_insuficiente", "base o calibracion sin las dos clases")
+        detalle.update({"objetivos_base": [base[0], base[-1], len(base)],
+                        "objetivos_de_calibracion": [calibracion[0], calibracion[-1], len(calibracion)]})
+    if OBSERVADOR_DE_AJUSTE is not None:
+        OBSERVADOR_DE_AJUSTE(entrada.id, posicion_de_corte, base, calibracion, filas)
+    try:
+        if probabilistico:
+            from app.application.ml.laboratorio_bayes_markov import ajustar_bayes_markov
+            estimador = ajustar_bayes_markov(entrada.id, filas.X, filas.y, reglas=instantanea.reglas,
+                                            candidatos=filas.candidatos, parametros=parametros)
+        else:
+            from app.application.ml.laboratorio_boosts_redes import ajustar_boost_red
+            receta = entrada.como_dict(perfil)
+            if en_calibracion is None:
+                estimador = ajustar_boost_red(receta, filas.X, filas.y)
+            else:
+                estimador = ajustar_boost_red(receta, filas.X[~en_calibracion], filas.y[~en_calibracion],
+                    X_calibracion=filas.X[en_calibracion], y_calibracion=filas.y[en_calibracion])
+    except CandidatoNoDisponible:
+        raise
+    except (ValueError, RuntimeError, ArithmeticError) as error:
+        estado = getattr(error, "estado", "no_converge" if type(error).__name__ == "InferenciaNoConvergente" else "fallo_de_ajuste")
+        raise CandidatoNoDisponible(estado, str(error)[:300]) from error
+    if hasattr(estimador, "diagnostico"):
+        detalle["diagnostico"] = estimador.diagnostico
+    return Ajustado(entrada, lambda f: inferir(estimador, entrada.salida, f, instantanea.reglas.cantidad),
+                    detalle, estimador, parametros)

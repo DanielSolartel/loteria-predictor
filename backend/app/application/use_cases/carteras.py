@@ -99,8 +99,7 @@ class EjecutorCarterasEnEsteProceso(EjecutorDeCarteras):
         return ca.cuerpo_de_simulacion(identidad, elegida, uniforme, avance=avance)
 
     def fuente_registrada(self, artefacto, estimador, instantanea, avance=None):
-        recargado = mr.deserializar_estimador(estimador, artefacto["estimador"]["sha256"],
-                                              artefacto["estimador"]["bytes"])
+        recargado = mr.cargar_estimador(artefacto, estimador)
         return mr.fuente_registrada(artefacto, recargado, instantanea)
 
 

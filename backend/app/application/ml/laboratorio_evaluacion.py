@@ -173,7 +173,8 @@ def _unir(lista: list[lv.Filas]) -> lv.Filas:
                     np.concatenate([f.y for f in lista]))
 
 
-def metricas_por_objetivo(instantanea: lv.Instantanea, filas: lv.Filas, p: np.ndarray) -> dict[int, dict]:
+def metricas_por_objetivo(instantanea: lv.Instantanea, filas: lv.Filas, p: np.ndarray, *,
+                          canonizar_pares: bool = False) -> dict[int, dict]:
     """{objetivo: metricas} con las probabilidades `p` de cada fila."""
     salida = {}
     for posicion in sorted(set(filas.posiciones.tolist())):
@@ -181,7 +182,7 @@ def metricas_por_objetivo(instantanea: lv.Instantanea, filas: lv.Filas, p: np.nd
         objetivo = instantanea.sorteos[posicion]
         if instantanea.reglas.colores:
             dist = {tuple(c): float(v) for c, v in zip((filas.candidatos[i] for i in np.flatnonzero(m)), p[m])}
-            met = pcl.metricas_de_objetivo(dist, objetivo.pares)
+            met = pcl.metricas_de_objetivo(dist, sorted(objetivo.pares) if canonizar_pares else objetivo.pares)
             salida[objetivo.numero_sorteo] = {"log_loss": met["log_loss_por_balota"], "brier": met["brier_por_balota"],
                                               "log_loss_multiconjunto": met["log_loss_multiconjunto"],
                                               "aciertos": met["coincidencias_de_pares_por_sorteo"],
@@ -309,7 +310,8 @@ def evaluar(instantanea: lv.Instantanea, entradas: list[lm.EntradaCatalogo], pro
                 bloques.append({"indice": b["indice"], "estado": error.estado, "motivo": error.motivo,
                                 "objetivos": b["objetivos"]})
                 continue
-            met = metricas_por_objetivo(instantanea, f, p)
+            met = metricas_por_objetivo(instantanea, f, p,
+                canonizar_pares=entrada.familia in lm.FAMILIAS_ML_AMPLIADAS)
             por_objetivo.update(met)
             filas_eval.append(f)
             probs_eval.append(p)

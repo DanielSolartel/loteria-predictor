@@ -190,8 +190,9 @@ def test_catalogo_rotula_referencias_y_modelos_nuevos():
     for codigo in lv.JUEGOS:
         entradas = lm.candidatos_del_juego(codigo)
         # Fase 3: los dos modelos nuevos de Producto 4 siguen; se anaden dos bosques
-        assert sum(e.tipo == "modelo_nuevo" and e.familia != "bosques" for e in entradas) == 2
+        assert sum(e.tipo == "modelo_nuevo" and e.familia not in {"bosques", *lm.FAMILIAS_ML_AMPLIADAS} for e in entradas) == 2
         assert sum(e.familia == "bosques" for e in entradas) == 2
+        assert all(sum(e.familia == f for e in entradas) == 1 for f in lm.FAMILIAS_ML_AMPLIADAS)
         assert sum(e.familia == "uniforme" for e in entradas) == 1
         assert sum(e.familia == "estrategia_actual" for e in entradas) == 1
         for e in entradas:

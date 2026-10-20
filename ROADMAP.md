@@ -1,27 +1,26 @@
 # Roadmap del proyecto
 
-## Estado por fase (actualizado en la entrega «Fase 4 — predicciones explicables y fiabilidad observada»)
+## Estado por fase (consolidación ML sobre PR #94)
 
-Este resumen no sustituye a las secciones de cada fase, que conservan su historia y su evidencia. Dos estados distintos, siempre por separado:
+Consolidación técnica de las fases 1–5 sobre `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`: las cinco familias ML están implementadas y su validación local está completada. Daniel ejecutó la suite completa **nativa Windows sin filtro: 7.015 aprobadas, cero fallos, errores u omisiones**, y el recorrido real de los cuatro juegos; ChatGPT auditó las evidencias y la impresión. La focal nativa previa (109 aprobadas) se solapa con la completa y no se suma. Los resultados Cloud/Linux conservan sus versiones y recuentos propios. Quedan la aplicación/verificación de este cierre documental en PowerShell 5.1 y Actions del futuro PR; la acreditación prospectiva sigue su cauce separado. Ninguna finalización técnica acredita ventaja frente al azar: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. Detalle y fuentes: [validación local ML v3.2](backend/docs/ml_cinco_familias.md#validación-local-completada-de-ml-v32).
 
-- **finalización técnica**: la capacidad está implementada y verificada en un entorno concreto;
-- **evidencia de ventaja predictiva**: no existe para ninguna fase. Los pronósticos siguen `experimental_no_acreditado`, con el NO-GO de AE-39 vigente y `AUTORIZA_EVALUACION = False`.
+| Fase | Implementación | Validación y pendiente |
+|---|---|---|
+| 1. Dominio + MVP HTML/HTMX | Completa | Antecedentes Windows y GitHub Actions conservados |
+| 2. Adquisición automática de datos | Completa al invocarla | La operación desatendida se planifica en Fase 6; ninguna tarea se activa aquí |
+| 3. Machine Learning | Cinco familias añadidas: XGBoost, LightGBM, red neuronal, Bayes jerárquico y Markov; conserva seis candidatos anteriores por juego | Registro/recarga de 20 modelos nuevos, recorrido real e impresión nativa validados; aplicación del cierre documental y Actions del futuro PR pendientes |
+| 4. Predicciones | Centro de cuatro juegos, explicación y fiabilidad observada; integrado con las familias nuevas | Flujo explicado de las cinco familias, reutilización y persistencia tras reinicio validados en Windows; Actions del futuro PR pendiente, separado del antecedente PR #94 |
+| 5. Estadísticas descriptivas | Completa | Antecedentes Windows con histórico real y Actions conservados |
+| 6. Actualización y operación automática | Planificada, sin iniciar | Siguiente entrega tras aplicar/verificar el cierre documental y revisar/publicar la ampliación; validación local de fases 1–5 completada |
+| 7. Simulaciones | Parcial: AE-49–51 y Producto 5 | Conserva avances; ampliación futura |
+| 8. API pública | Planificada; existe API interna de solo lectura | Versionado, autenticación y límites pendientes |
+| 9. Frontend React | Planificada | Posterior a API pública |
+| 10. Despliegue | Planificada | Seguridad, operación y disponibilidad pendientes |
+| 11. Aplicación personal | Planificada | Depende de Fase 6 y capacidades pertinentes de fases 8–10 |
 
-| Fase | Implementación | Validación | Pendiente concreto |
-|---|---|---|---|
-| 1. Dominio + MVP HTML | ✅ Completa | Windows con PostgreSQL real; GitHub Actions | — |
-| 2. Adquisición automática de datos | ✅ Completa | Windows con PostgreSQL real; GitHub Actions | — |
-| 3. Machine Learning | 🟢 Ingeniería implementada y validada: variables causales, evaluación temporal común (walk-forward), catálogo de 6 candidatos por juego con Random Forest y Extra Trees, selección de parámetros separada de la evaluación final, métricas principales y secundarias frente a la uniforme y registro de modelos entrenados y versionados que se recargan sin reentrenar ([detalle](#-fase-3--machine-learning-ingeniería-implementada-y-validada-en-windows-y-github-actions-sin-ventaja-predictiva-acreditada)) | Linux (Cloud) con fixtures sintéticas. Windows (operador, Python 3.14.6): la v2 con el histórico real de los cuatro juegos y, al cierre, Fase 3 `81 passed` sin `--basetemp`, selección `2215 passed`, OpenSSL `SUPERADOS 7/7` y las tres aclaraciones de presentación revisadas en PDF Legal vertical. GitHub Actions: ejecución 47 (PR #92) con la suite completa en Linux y la selección en Windows, en verde; tras el merge, 48 (`main`) y 49 (`develop`) sobre `8a53108`, también en verde | Suite completa en Windows (no ejecutada); PDF en Carta, A4 y horizontal en Windows (no revisados). XGBoost, LightGBM, redes neuronales, modelos bayesianos y Markov: extensiones futuras, no implementadas |
-| 4. Predicciones | 🟢 Implementación y validación local v3.4 completadas: centro de los cuatro juegos, explicación y fiabilidad observada ([detalle](#-fase-4--predicciones-implementación-y-validación-local-v34-completadas-sin-ventaja-predictiva-acreditada)) | Codex Cloud: Linux sintético; Daniel: Windows nativo y baterías reducidas identificadas; ChatGPT: auditoría de archivos/PDF/capturas; publicación v3.3 conservada | Aplicación del cierre documental y commit/push/PR por Daniel; Actions del PR final; suite completa nativa Windows; acreditación prospectiva |
-| 5. Estadísticas descriptivas | ✅ Completa | Windows con histórico real; GitHub Actions (ejecuciones 42 a 46) | — |
-| 6. Simulaciones | 🟡 Parcial: AE-49 a AE-51 (referencia Monte Carlo bajo azar uniforme) y la simulación Monte Carlo de carteras de Producto 5 | Windows y GitHub Actions | Simulaciones de escenarios por juego más allá de las carteras; panel de simulaciones (hoy «Próximamente») |
-| 7. API pública | 🔜 Hay una API REST interna de solo lectura por producto | — | API pública versionada, autenticación y límites |
-| 8. Frontend React | 🔜 | — | Todo |
-| 9. Despliegue | 🔜 | — | Todo |
+**Orden posterior al cierre: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Estas fases futuras solo se planifican. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. API pública, React y Despliegue pasan de 7/8/9 a 8/9/10. Los Productos 1–6 son entregas vinculadas a fases, no fases pendientes; no se renombran archivos, rutas, pruebas ni artefactos históricos.
 
-**Orden de las próximas entregas: 4 → 6 → 7 → 8 → 9.** La Fase 3 quedó cerrada con el PR #92. Primero, la validación en Windows de la Fase 4 y su PR; después Simulaciones, API pública, Frontend React y Despliegue. Esta entrega no empieza ninguna de ellas. (Orden anterior, en la entrega de la Fase 3: 3 → 4 → 6 → 7 → 8 → 9.)
-
-**GitHub Actions.** El workflow `validacion-python-314.yml` ya se ejecuta en cada push a `main`/`develop` y en cada PR. Fase 3: la ejecución 47 (PR #92, `9b9d916`) dio en verde sus dos trabajos, «Linux - suite completa» y «Windows - seleccion de tests/seleccion_windows.txt»; tras el merge, las ejecuciones 48 (`main`) y 49 (`develop`) sobre `8a53108`, la base de esta entrega, también terminaron en verde. Estado leído de la API de GitHub; los recuentos de esas ejecuciones no se copian aquí. La entrega de la Fase 4 todavía no se ha ejecutado en Actions. (Antes, sobre `c7644c4`: ejecución 45, Linux `6379 passed` y Windows `2134 passed`, con OpenSSL `SUPERADOS 7/7` en ambos.)
+**Base y CI previas, según la información aportada por Daniel:** PR #94 fusionado (implementación `c73e29cc3476c8ade377d205d6eaf38c374ac19b`), `origin/main` y `origin/develop` sincronizadas en `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`; árbol `e4aaa33ecdef1eea1b7162dcba3c0349ef7d6cd0`. Actions `38982578601`: trabajo Linux completo `117246604306` y Windows selección `117246604151` en verde. Es evidencia previa aportada, sin inventar recuentos ni atribuirle esta ampliación. El cierre documental Fase 4 ya se aplicó y verificó en PowerShell 5.1, con índice intacto y limpieza completada. La publicación de esta nueva entrega y sus checks quedan para Daniel.
 
 ### Historial de productos (Productos 1–6)
 
@@ -33,7 +32,7 @@ Entregas orientadas al usuario, hechas sin abrir otra etapa AE. Su detalle y su 
 | 2 | Pronósticos de MiLoto y ColorLoto y resultados observados de los cuatro juegos | 4 | Validado en Windows; GitHub Actions en verde |
 | 3 | Panel diario (`/operacion`), actualización incremental, generación por juego y rendimiento (`/rendimiento`); publicación atómica (#83) | 2 y 4 | Validado en Windows; GitHub Actions en verde |
 | 4 | Laboratorio de modelos (`/laboratorio`): variables causales, evaluación temporal común, comparación frente a la uniforme y pronóstico con el modelo elegido | 3 (y 4) | Validado en Windows; GitHub Actions en verde |
-| 5 | Modelo combinado, carteras reproducibles, simulación Monte Carlo y configuración versionada por juego (`/carteras`) | 3, 4 y 6 | Validado en Windows; GitHub Actions en verde |
+| 5 | Modelo combinado, carteras reproducibles, simulación Monte Carlo y configuración versionada por juego (`/carteras`) | 3, 4 y 7 (antes 6) | Validado en Windows; GitHub Actions en verde |
 | 6 | Centro de resultados (`/resultados`): pronósticos emitidos frente a los sorteos reales, muestra común, calibración, informes verificables y «usar esta configuración» | 4 (y 3) | Validado en Windows; GitHub Actions en verde |
 
 La entrega «Fase 3 — modelos versionados» no es un Producto 7: completa la ingeniería de la Fase 3 sobre lo construido en los Productos 4–6 (ver la sección de la Fase 3). La entrega «Fase 4 — predicciones explicables y fiabilidad observada» tampoco: completa la Fase 4 sobre los Productos 1–6 y la Fase 3.
@@ -85,7 +84,23 @@ La entrega «Fase 3 — modelos versionados» no es un Producto 7: completa la i
 
 ---
 
-## 🟢 Fase 3 — Machine Learning (ingeniería implementada y validada en Windows y GitHub Actions; sin ventaja predictiva acreditada)
+## 🟢 Fase 3 — Machine Learning (cinco familias implementadas y validadas localmente; sin ventaja predictiva acreditada)
+
+### Ampliación ML de cinco familias y consolidación de fases 1–5
+
+Se incorporan XGBoost y LightGBM reales en CPU, una MLP regularizada, un modelo bayesiano jerárquico y una cadena de Markov explícita. Cada uno tiene una representación binaria para Baloto, Revancha y MiLoto, y una de conteos de pares número-color para ColorLoto. El catálogo conserva los seis candidatos históricos y añade cinco por juego: once por juego, 44 entradas juego-candidato. Las recetas e identidades anteriores se conservan; `FAMILIAS_FUTURAS` ya no enumera estas familias. La comprobación del catálogo y los entrenamientos reales se acreditan con la evidencia de la entrega, no con el número escrito en esta página.
+
+El flujo común es comparar → entrenar/registrar → recargar en proceso nuevo sin `fit` → elegir explícitamente en Carteras → emitir Predicciones explicadas → consultar Resultados y Fiabilidad. No se elige ganador ni se cambia configuración por comparar. Las versiones nuevas guardan preparación, parámetros, calibración cuando aplica, posterior o transiciones y entorno en un envoltorio JSON versionado: XGBoost en JSON nativo, LightGBM en texto nativo y MLP en matrices JSON. La compatibilidad y procedencia se verifican antes de abrir un motor nativo. Los `.pkl` históricos mantienen su lector restringido y su contrato de compatibilidad.
+
+El Bayes numérico integra una posterior jerárquica con cuadratura y diagnóstico; ColorLoto usa una jerarquía conjugada color → número con predictiva integrada. La transformación común de cardinalidad o normalización se distingue de esa predictiva. Markov estima transiciones por candidato de orden uno con suavizado Dirichlet: cambia el estado conocido de entrada, permanecen congeladas las transiciones. Una nueva observación no actualiza en secreto un modelo registrado. Los detalles, límites y fuentes primarias están en [la documentación de métodos](backend/docs/ml_cinco_familias.md).
+
+XGBoost/LightGBM publican ganancia total de particiones, sin convertirla en coeficientes ni causalidad. La red y los modelos sin una importancia global comparable muestran el motivo. Reproducir una explicación guardada comprueba el vector fuente y recalcula rankings y variables; un GET no vuelve a inferir ni recalcula importancias.
+
+**Validación local ML v3.2 completada.** Daniel utilizó `C:\GitHub\loteria-predictor-ml-cierre` y el entorno independiente `C:\GitHub\venvs\loteria-ml-cierre\Scripts\python.exe` (Windows 11 AMD64, PowerShell 5.1, Python 3.14.6). La suite completa de `backend/tests`, sin `seleccion_windows.txt`, terminó con **7.015 aprobadas y cero fallos, errores u omisiones**, con seis avisos de deprecación registrados; diagnóstico numérico correcto, OpenSSL `exigir` **7/7**, demostración sintética **20/20**, `pip check` correcto y 29 mediciones conservadas. La focal nativa previa dio **109 aprobadas**; se solapa y no se suma. Estas cifras son Windows, no una nueva ejecución Linux.
+
+El recorrido real verificó once candidatos por juego, **20 versiones nuevas** recargadas en proceso nuevo y **40 pronósticos de estimadores congelados** (dos cortes por modelo, no sorteos independientes), más cinco carteras y explicaciones que persistieron tras reiniciar. Daniel eligió explícitamente la configuración; comparar no la cambia. ChatGPT auditó los registros y la impresión: **36 PDF, 600 páginas**, de doce páginas web en Carta vertical, Carta horizontal y A4 vertical. La revisión visual fue representativa y se apoyó en controles de contenido sobre todos los PDF; no se afirma lectura manual ampliada individual de las 600 páginas. Detalles, cortes y fuentes: [validación local ML v3.2](backend/docs/ml_cinco_familias.md#validación-local-completada-de-ml-v32).
+
+El nuevo cierre es exclusivamente documental: `ml-guia-cierre-documental-windows.md` describe su aplicación/verificación pendiente en PowerShell 5.1, sin repetir pruebas de producto. Actions del futuro PR y acreditación prospectiva permanecen separados. Fase 6 queda como siguiente entrega planificada, sin iniciarla.
 
 > Encabezados anteriores: «🟢 Fase 3 — Machine Learning (ingeniería implementada; v2 validada en Windows con histórico real; ajustes de cierre pendientes de validar; sin ventaja predictiva acreditada)» (cierre), «🟢 Fase 3 — Machine Learning (ingeniería implementada en Linux; validación en Windows pendiente; sin ventaja predictiva acreditada)» (entregas v1 y v2) y «🟡 Fase 3 — Machine Learning (gate de calidad superado, GO CONDICIONAL)». El gate y la decisión GO CONDICIONAL de AE-35 siguen descritos abajo.
 
@@ -116,7 +131,7 @@ La entrega «Fase 3 — modelos versionados» no es un Producto 7: completa la i
 | Modelos entrenados y versionados | Identidad determinista (receta, datos, entrenamiento y entorno); misma entrada → misma versión; cambio → versión nueva; nada se sobrescribe | ✅ |
 | Métricas registradas y consultables | Manifiesto, ficha web, API (`GET /api/laboratorio/modelos…`) y comando | ✅ |
 | Sin sobreajuste demostrable en validación fuera de muestra | Evaluación fuera de muestra con selección de parámetros separada de la evaluación final y de la calibración; ninguna elección automática del «mejor» modelo | Protocolo implementado. No es una afirmación de ventaja: con los datos reales, la uniforme no ha sido superada de forma acreditada |
-| Familias del objetivo | Random Forest ✅ y Extra Trees ✅ (nuevas), además de la logística regularizada, el gradient boosting de árboles (HistGradientBoosting), Poisson y las referencias. XGBoost, LightGBM, redes neuronales, modelos bayesianos y Markov | 🔜 Extensiones futuras, no implementadas ni declaradas (`laboratorio_modelos.FAMILIAS_FUTURAS`) |
+| Familias del objetivo | Se conservan seis candidatos por juego; se añaden XGBoost real CPU, LightGBM real CPU, MLP regularizada, Bayes jerárquico y Markov explícito en los cuatro juegos | ML v3.2 validada localmente en Windows y recorrida con histórico real; evidencia propia, separada de los antecedentes |
 
 **Qué añade:**
 - **Catálogo (6 candidatos por juego).** Random Forest y Extra Trees:
@@ -236,11 +251,7 @@ La entrega «Fase 3 — modelos versionados» no es un Producto 7: completa la i
 - **GitHub Actions:** la ejecución 47 (PR #92) terminó en verde con la suite completa en Linux y la selección en Windows; las 48 (`main`) y 49 (`develop`) sobre `8a53108`, también.
 - **No ejecutado o no revisado en Windows:** la suite completa; el PDF en Carta, A4 y horizontal. Esas impresiones solo se revisaron en Linux y no se atribuyen a Windows.
 
-**Pendiente (tras el cierre):**
-- la suite completa en Windows, que no se ha ejecutado;
-- la impresión en Carta, A4 y horizontal en Windows;
-- las familias futuras (XGBoost, LightGBM, redes neuronales, modelos bayesianos y Markov), que siguen identificadas como futuras;
-- la evidencia predictiva, que sigue sin existir.
+**Pendientes de aquel cierre histórico:** la suite completa Windows, la impresión Carta/A4/horizontal y la validación/recorrido de las cinco familias se resolvieron después con ML v3.2, según la sección vigente de esta fase. La evidencia predictiva sigue sin acreditarse; no se transforma en éxito científico la finalización técnica.
 
 > Lista anterior, al entregar los ajustes de cierre: la validación en Windows de esos ajustes (`aplicar-fase3-cierre.ps1`), la ejecución en GitHub Actions con el PR, la suite completa en Windows, la impresión en Carta, A4 y horizontal en Windows, las familias futuras y la evidencia predictiva. Las dos primeras quedaron cumplidas con el cierre.
 
@@ -264,7 +275,7 @@ La entrega «Fase 3 — modelos versionados» no es un Producto 7: completa la i
 
 **v3.4** corrige el corte vacío y la selección persistente de Fiabilidad, el componente real de ColorLoto, la lectura numérica cerca de cero, el texto de MiLoto y el singular/plural, y la disposición de pantalla e impresión. Mantiene las probabilidades congeladas, las unidades por balota, las multiplicidades y las consultas de solo lectura. Añadir una línea sigue siendo aditivo y no modifica la configuración. La superbalota de `carteras:uniforme-v1` conserva su estrategia de frecuencia con suavizado de Laplace; el nombre de la línea no implica deltas nulos en todos sus componentes.
 
-**Siguiente paso: cierre exclusivamente documental.** Aplicar `aplicar-fase4-cierre.ps1` en Windows PowerShell 5.1, consola normal, siguiendo `fase4-guia-cierre-windows.md`; verifica código y manifiestos y aplica únicamente los cuatro documentos. No requiere repetir pruebas, demostraciones, entrenamiento, generación, recuperación ni consultas o revisión visual. Daniel realizará después commit, push y PR desde Windows. Permanecen **pendientes separados** GitHub Actions sobre el PR final, la **suite completa nativa Windows** y la **acreditación prospectiva** con muestras suficientes por línea y tipo. La implementación y validación local completadas no acreditan ventaja predictiva: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+**Cierre documental anterior completado (PR #94).** Daniel informa que el cierre se aplicó y verificó con PowerShell 5.1, sin reescribir el aplicador, conservando el índice y limpiando sus temporales; después se fusionó PR #94. La base vigente es `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`, árbol `e4aaa33ecdef1eea1b7162dcba3c0349ef7d6cd0`. Sus checks Actions `38982578601` fueron Linux suite completa (`117246604306`) y Windows selección (`117246604151`), ambos en verde según lo aportado por Daniel. No se inventan recuentos ni se acredita suite completa Windows. La ampliación ML v3.2 tiene su propia validación local completada: suite completa nativa Windows y recorrido real, auditados por ChatGPT; véase la sección vigente de cinco familias. Quedan la aplicación/verificación del nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; la acreditación prospectiva permanece separada. Se conservan `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 
 > Encabezado anterior: «🟡 Fase 4 — Predicciones (parcial: pronósticos experimentales de los Productos 1–6 y, desde la Fase 3, con modelos registrados)». El avance y las etapas anteriores siguen abajo sin cambios.
 
@@ -377,15 +388,14 @@ La entrega «Fase 3 — modelos versionados» no es un Producto 7: completa la i
 
 **v3.1 (corrección de la carrera de finalización):** la consulta del método real `CentroDePredicciones.ejecucion` observa una sola vez si el trabajador mantiene su cerrojo. Si lo observó vivo, `en_curso` sigue siendo una instantánea válida hasta el siguiente polling. Si lo observó libre, relee el registro antes de derivar una interrupción y conserva un cierre persistido como `exito`. Una regresión determinista, sin sleeps, reproduce la publicación de `exito` y la liberación del cerrojo entre las dos comprobaciones de la v3; esa secuencia no puede devolver `interrumpida`. Se conservan la lectura pura, el cierre ante fallos, la explicación activa y la reutilización de artefactos. El incremental v3.1 se aplica directamente sobre la v2; no requiere aplicar la v3 original.
 
-**Procedimiento histórico de v3.1:** la batería de Fase 4 y la selección que incluyen el caso de enlace simbólico se validaban en consola elevada en el Windows del operador. Las demás baterías y Uvicorn se ejecutan en consola normal. Repetir `generar`, aunque reutilice cartera y explicación, escribe registros de ejecución y crea o usa cerrojos; no es una consulta de solo lectura. En aquella entrega seguían pendientes validación nativa, recorrido real e impresión; el cierre local v3.4 anterior registra los resultados posteriores. Actions continúa pendiente.
+**Procedimiento histórico de v3.1:** la batería de Fase 4 y la selección que incluyen el caso de enlace simbólico se validaban en consola elevada en el Windows del operador. Las demás baterías y Uvicorn se ejecutan en consola normal. Repetir `generar`, aunque reutilice cartera y explicación, escribe registros de ejecución y crea o usa cerrojos; no es una consulta de solo lectura. En aquella entrega seguían pendientes validación nativa, recorrido real e impresión; el cierre local v3.4 anterior registra los resultados posteriores. Actions de esa entrega se completó después con PR #94; los checks de la ampliación ML nueva tienen su propia evidencia.
 
-**Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado actual:** implementación y validación local v3.4 completadas, con cierre documental preparado. El PR final y su CI, la suite completa nativa Windows y la acreditación prospectiva siguen separados y pendientes.
+**Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado vigente:** la implementación y validación local v3.4 y el cierre documental culminaron con PR #94. La ampliación ML v3.2 tiene suite completa nativa Windows y recorrido real completados con evidencia propia. Quedan aplicación/verificación del nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; acreditación prospectiva separada.
 
-**Pendiente:**
-- aplicar el cierre documental en Windows y que Daniel realice commit, push y PR de la entrega completa; sin repetir la validación local ya terminada;
-- la ejecución en GitHub Actions, con el PR;
-- la suite completa en Windows;
-- la evidencia estadística: muestras prospectivas suficientes por línea y tipo. Hasta entonces ninguna cifra acredita ventaja ni es un nivel de confianza.
+**Pendientes vigentes separados:**
+- aplicar/verificar este cierre documental en PowerShell 5.1; la implementación, suite completa nativa, recorrido e impresión ML v3.2 ya están validados localmente;
+- revisión y publicación manual por Daniel, con Actions del futuro PR;
+- acreditación prospectiva: muestras suficientes por línea y tipo, por su cauce propio. Ninguna cifra retrospectiva acredita ventaja ni es un nivel de confianza.
 
 
 **Etapa AE-52 -registro prospectivo de ML (preparación de una evaluación prospectiva), validada:** primera etapa para poder evaluar una estrategia de ML de forma prospectiva, como exige el NO-GO de AE-39: una evaluación prerregistrada antes de observar los sorteos posteriores a ese prerregistro. AE-52 **no genera predicciones**, no entrena ni carga modelos, no evalúa resultados y **no modifica el NO-GO**. Tampoco activa recomendaciones, apuestas ni predicciones para usuarios. **AE-52 no acumula evidencia prospectiva**: el único registro real que admite es un borrador sin salidas, y ningún sorteo cuenta todavía para ningún mínimo.
@@ -4138,7 +4148,21 @@ No se entrenó ni evaluó ML, no se leyeron números ganadores y no se generaron
 
 ---
 
-## 🟡 Fase 6 — Simulaciones (parcial: AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada; Producto 5: simulación Monte Carlo de carteras)
+## 🔜 Fase 6 — Actualización y operación automática (planificada, sin iniciar)
+
+**Objetivo:** operación desatendida de los cuatro juegos construida sobre adquisición y operación existentes. Hoy la sincronización se automatiza al invocarla; no hay tarea operativa activada ni programador interno en Uvicorn. La guía de Producto 3 es una base de instalación, no una instalación realizada.
+
+**Dependencias:** fases 1–5 implementadas y validadas localmente, incluidas las cinco familias ML, suite completa nativa Windows y recorrido real. Antes de iniciar la siguiente entrega quedan aplicar/verificar el cierre documental y revisar/publicar la ampliación con Actions del futuro PR. La acreditación prospectiva conserva su cauce separado. No exige API pública, React ni despliegue para funcionar localmente. Fase 6 sigue planificada y no se inicia con esta entrega.
+
+**Entregables planificados:** tarea o servicio Windows independiente de la interfaz; calendario por juego en `America/Bogota` con horarios oficiales y ventanas reales de publicación que se verificarán al implementarlo; reintentos moderados, recuperación tras cortes, alertas y reconciliación de resultados corregidos o antiguos. No se inventan aquí días u horas. El servicio deberá funcionar al cerrar la interfaz; una instalación local no se actualiza con el equipo apagado. La disponibilidad continua exigirá un servicio disponible.
+
+**Secuencia prevista:** detectar y validar novedades mediante consultas controladas a la fuente → asociarlas por juego y sorteo a emisiones anteriores → actualizar comparaciones → preparar la siguiente emisión cuando corresponda con la versión y configuración elegidas. Reutilizar sincronización incremental, validación, Resultados, Carteras y Predicciones, auditando el enlace con la CLI antigua de Producto 3; automatizar esa CLI sin comprobar su configuración no acredita la integración actual.
+
+**Criterios de aceptación:** novedades procesadas sin pulsar «Sincronizar ahora»; calendario y zona comprobados; sorteo celebrado distinguido de resultado publicado; excepciones y publicaciones tardías recuperadas; identidades, fechas, cortes y emisiones conservados; sin duplicados ni carreras; ninguna generación posterior presentada como predicción previa; consulta manual y recuperación controlada, última actualización, resultado esperado pendiente y retraso visibles. No se eligen ni reentrenan modelos ni cambian configuraciones automáticamente. Una política futura de reajuste deberá ser explícita y diferenciada del registro congelado. Seguridad y despliegue posteriores conservarán estas garantías.
+
+---
+
+## 🟡 Fase 7 — Simulaciones (antes Fase 6; parcial: AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada; Producto 5: simulación Monte Carlo de carteras)
 
 **Objetivo:** simulaciones Monte Carlo para estimar el comportamiento esperado bajo el modelo de azar uniforme, y contrastarlo contra los patrones detectados en la Fase 5.
 
@@ -4373,11 +4397,11 @@ No se entrenó ni evaluó ML y no se generaron predicciones. Claude no leyó nú
 
 ---
 
-## 🔜 Fase 7 — API pública
+## 🔜 Fase 8 — API pública
 
 **Objetivo:** exponer una API REST pública, documentada y con límites de uso, para que terceros puedan consumir estadísticas y predicciones.
 
-**Dependencias:** Fases 3-6.
+**Dependencias:** capacidades de fases 1–5 y operación de Fase 6; la ampliación de Simulaciones (Fase 7) conserva su orden de prioridad, sin convertirla en requisito técnico para cada endpoint.
 
 **Entregables:**
 - Autenticación (API keys o similar) — ausente hoy, ver limitaciones de seguridad en el informe de auditoría.
@@ -4389,11 +4413,11 @@ No se entrenó ni evaluó ML y no se generaron predicciones. Claude no leyó nú
 
 ---
 
-## 🔜 Fase 8 — Frontend React
+## 🔜 Fase 9 — Frontend React
 
 **Objetivo:** reemplazar o complementar el frontend Jinja2+HTMX por una aplicación React/Next.js más rica para visualización de estadísticas, modelos y predicciones.
 
-**Dependencias:** Fase 7.
+**Dependencias:** Fase 8 (API pública).
 
 **Entregables:**
 - Aplicación React/Next.js consumiendo `api/rest/`.
@@ -4403,7 +4427,7 @@ No se entrenó ni evaluó ML y no se generaron predicciones. Claude no leyó nú
 
 ---
 
-## 🔜 Fase 9 — Despliegue
+## 🔜 Fase 10 — Despliegue
 
 **Objetivo:** llevar el sistema a un entorno de producción real, con las prácticas de seguridad y operación que un MVP interno no necesita pero un sistema público sí.
 
@@ -4421,9 +4445,21 @@ No se entrenó ni evaluó ML y no se generaron predicciones. Claude no leyó nú
 
 ---
 
+## 🔜 Fase 11 — Aplicación personal de escritorio y/o móvil (planificada)
+
+**Objetivo:** consulta sencilla de combinaciones experimentales por juego y sorteo, con vigencia de datos y último resultado/aciertos. Informes, métricas, modelos y trazas estarán en una vista avanzada; datos actualizados, atrasados y resultados pendientes se distinguirán sin convertir cifras en garantías.
+
+**Dependencias:** operación automática de Fase 6 y las capacidades de API, interfaz y despliegue pertinentes de fases 8–10. No duplicará lógica ML en cada cliente.
+
+**Entregables planificados:** decisión de plataforma —escritorio, teléfono o ambos; cliente nativo, PWA o empaquetado— sustentada en uso, accesibilidad, actualización, funcionamiento sin conexión, mantenimiento y servicios disponibles; diseño de vistas principal y avanzada; cliente que consuma los mismos contratos del backend. No se elige ni implementa plataforma en esta entrega.
+
+**Criterios de aceptación:** cada combinación identifica juego, objetivo y vigencia; el estado pendiente/atrasado es visible; concordancia con el backend y sus modelos/configuraciones; acceso a informes y trazas; cierre de interfaz no detiene la operación independiente; pruebas de uso y seguridad en las plataformas elegidas. Ninguna promesa de actualización local con el equipo apagado ni de ventaja predictiva.
+
+---
+
 ## Siguiente decisión recomendada
 
-> **Actualización (entrega «Fase 4 — predicciones explicables y fiabilidad observada»):** la Fase 3 quedó cerrada con el PR #92 y el orden vigente es **4 → 6 → 7 → 8 → 9** (ver «Estado por fase»).
+> **Orden vigente tras cerrar ML y comprobaciones nativas:** **6 Operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal**. Solo planificación. El orden 4 → 6 → 7 → 8 → 9 de la entrega Fase 4 se conserva aquí como antecedente superado; no se renumera indiscriminadamente la historia.
 
 > **Actualización (entrega «Fase 3 — modelos versionados»):** el orden vigente de las próximas entregas era **3 → 4 → 6 → 7 → 8 → 9** (ver «Estado por fase» al principio). Lo que sigue se conserva como registro histórico.
 

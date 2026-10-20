@@ -101,3 +101,13 @@ tests/unit/test_fase4_formulario_fiabilidad.py
 tests/unit/test_fase4_semantica_fiabilidad.py
 tests/unit/test_fase4_textos_reglas.py
 tests/unit/test_fase4_presentacion.py
+tests/unit/test_ml_bayes_markov.py
+tests/unit/test_ml_boosts_redes.py
+tests/unit/test_ml_cinco_flujo.py
+tests/unit/test_ml_cinco_temporal.py
+tests/unit/test_ml_recursos_publicacion.py
+tests/unit/test_ml_registro.py
+
+tests/unit/test_ml_coherencia.py
+tests/unit/test_ml_rutas.py
+tests/unit/test_ml_incidencias_windows.py

@@ -80,6 +80,22 @@ def entorno() -> dict:
             "scipy": _version("scipy"), "scikit-learn": _version("scikit-learn")}
 
 
+def entorno_ml(entradas=()) -> dict:
+    """Solo las nuevas recetas incluyen sus bibliotecas pertinentes.
+    entorno() permanece intacto para preservar las identidades historicas.
+    Leer metadata no importa bibliotecas nativas ni modifica sus hilos.
+    """
+    actual = entorno()
+    familias = {e.familia for e in entradas}
+    if "xgboost" in familias:
+        actual["xgboost"] = _version("xgboost-cpu")
+        if actual["xgboost"] == "desconocida":
+            actual["xgboost"] = _version("xgboost")
+    if "lightgbm" in familias:
+        actual["lightgbm"] = _version("lightgbm")
+    return actual
+
+
 def huella(objeto: dict) -> str:
     try:
         return hash_entrada(serializar_entrada(objeto))
@@ -112,7 +128,7 @@ def identidad_del_experimento(instantanea: lv.Instantanea, entradas: Sequence[lm
             "transformaciones": {"cardinalidad": {"epsilon": lm.EPSILON, "tolerancia": lm.TOLERANCIA_CARDINALIDAD,
                                                   "metodo": "desplazamiento comun de logits por biseccion"},
                                  "poisson": {"delta": lm.DELTA_POISSON, "metodo": "normalizacion de intensidades"}},
-            "semilla": lm.SEMILLA, "hilos": lm.HILOS, "entorno": entorno()}
+            "semilla": lm.SEMILLA, "hilos": lm.HILOS, "entorno": entorno_ml(entradas)}
 
 
 def clave_del_experimento(identidad: dict) -> str:
@@ -208,7 +224,7 @@ def identidad_del_pronostico(informe: dict, entrada: lm.EntradaCatalogo) -> dict
             "modelo": {"id": entrada.id, "version": entrada.version, "parametros": lm.parametros_de(entrada, perfil)},
             "ajuste": "todos los objetivos disponibles de la instantanea del experimento",
             "transformaciones": informe["identidad"]["transformaciones"], "semilla": lm.SEMILLA,
-            "entorno": entorno()}
+            "entorno": entorno_ml((entrada,))}
 
 
 def _r(valor: float, d: int) -> float:
