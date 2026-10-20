@@ -6500,7 +6500,9 @@ templates/descriptivas/                       ─ metrica.html, panel.html y par
 
 ## Fase 3: modelos entrenados y versionados
 
-**Estado: implementada y validada; cerrada con el PR #92 (base `8a53108`).** La v2 está validada por el operador en Windows nativo y recorrida con el histórico real de los cuatro juegos; los ajustes de cierre se validaron después en Windows (Fase 3 `81 passed` sin `--basetemp`, selección `2215 passed`, OpenSSL 7/7 y PDF Legal vertical), y GitHub Actions la ejecutó en verde (47, 48 y 49). *Estado anterior: «ajustes de cierre pendientes de validar en Windows; GitHub Actions todavía no ha ejecutado la Fase 3».* Completa la ingeniería de la Fase 3 sobre los Productos 4–6. No acredita ventaja predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`. Estado de todas las fases en ROADMAP.md («Estado por fase»).
+**Consolidación vigente:** base `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6` (PR #94); fases 1–5 implementadas y validadas localmente, con cinco familias reales en los cuatro juegos. Daniel ejecutó Windows nativo: suite completa sin selección **7.015 aprobadas, cero fallos, errores u omisiones**; focal previa **109**, solapada; OpenSSL `exigir` **7/7**, demostración sintética **20/20** y `pip check` correcto. Registró 20 modelos, comprobó 40 pronósticos congelados y cinco carteras/explicaciones persistentes tras reiniciar. ChatGPT auditó los registros y 36 PDF de 600 páginas con revisión visual representativa y controles de contenido sobre todos los PDF, sin afirmar lectura manual ampliada individual de cada página. El contrato, los cortes y las fuentes propios están en [ml_cinco_familias.md](backend/docs/ml_cinco_familias.md#validación-local-completada-de-ml-v32). Los párrafos de v1/v2/cierre siguientes son historia de sus propios formatos y validaciones; sus resultados Linux y Actions no se trasladan a las nuevas familias.
+
+**Antecedente histórico: ingeniería original cerrada con el PR #92 (base `8a53108`).** La v2 está validada por el operador en Windows nativo y recorrida con el histórico real de los cuatro juegos; los ajustes de cierre se validaron después en Windows (Fase 3 `81 passed` sin `--basetemp`, selección `2215 passed`, OpenSSL 7/7 y PDF Legal vertical), y GitHub Actions la ejecutó en verde (47, 48 y 49). *Estado anterior: «ajustes de cierre pendientes de validar en Windows; GitHub Actions todavía no ha ejecutado la Fase 3».* Completa la ingeniería de la Fase 3 sobre los Productos 4–6. No acredita ventaja predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`. Estado de todas las fases en ROADMAP.md («Estado por fase»).
 
 ```
 application/ml/
@@ -6608,7 +6610,7 @@ AE-36 congela su `pipeline_calibrado`; los modelos nuevos, el estimador calibrad
   - PDF en Legal vertical (Chrome 155).
 - **Windows (operador, cierre).** Fase 3 `81 passed` sin `--basetemp`, selección `2215 passed`, OpenSSL 7/7 y las tres aclaraciones revisadas en PDF Legal vertical. La suite completa no se ejecutó en Windows.
 - **GitHub Actions.** Ejecución 47 (PR #92) en verde, con la suite completa en Linux y la selección en Windows; 48 y 49 sobre `8a53108`, también.
-- **Pendiente.** La suite completa en Windows, la impresión en Carta, A4 y horizontal en Windows y las familias futuras. Ninguna ventaja predictiva acreditada. (Antes del cierre también figuraban la validación en Windows de los ajustes de cierre y GitHub Actions.)
+- **Estado vigente ML v3.2.** Suite completa nativa Windows, recorrido de las nuevas familias e impresión Carta vertical/horizontal y A4 completados con evidencia propia. Quedan aplicación/verificación del cierre documental en PowerShell 5.1 y Actions del futuro PR; acreditación prospectiva separada. Ninguna ventaja predictiva acreditada.
 
 ---
 
@@ -6630,9 +6632,9 @@ AE-36 congela su `pipeline_calibrado`; los modelos nuevos, el estimador calibrad
 
 **v3.4** corrige el corte vacío y la selección persistente de Fiabilidad, el componente real de ColorLoto, la lectura numérica cerca de cero, el texto de MiLoto y el singular/plural, y la disposición de pantalla e impresión. Mantiene las probabilidades congeladas, las unidades por balota, las multiplicidades y las consultas de solo lectura. Añadir una línea sigue siendo aditivo y no modifica la configuración. La superbalota de `carteras:uniforme-v1` conserva su estrategia de frecuencia con suavizado de Laplace; el nombre de la línea no implica deltas nulos en todos sus componentes.
 
-**Siguiente paso: cierre exclusivamente documental.** Aplicar `aplicar-fase4-cierre.ps1` en Windows PowerShell 5.1, consola normal, siguiendo `fase4-guia-cierre-windows.md`; verifica código y manifiestos y aplica únicamente los cuatro documentos. No requiere repetir pruebas, demostraciones, entrenamiento, generación, recuperación ni consultas o revisión visual. Daniel realizará después commit, push y PR desde Windows. Permanecen **pendientes separados** GitHub Actions sobre el PR final, la **suite completa nativa Windows** y la **acreditación prospectiva** con muestras suficientes por línea y tipo. La implementación y validación local completadas no acreditan ventaja predictiva: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+**Cierre documental anterior completado (PR #94).** Daniel informa que el cierre se aplicó y verificó con PowerShell 5.1, sin reescribir el aplicador, conservando el índice y limpiando sus temporales; después se fusionó PR #94. La base vigente es `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`, árbol `e4aaa33ecdef1eea1b7162dcba3c0349ef7d6cd0`. Sus checks Actions `38982578601` fueron Linux suite completa (`117246604306`) y Windows selección (`117246604151`), ambos en verde según lo aportado por Daniel. No se inventan recuentos ni se acredita suite completa Windows. La ampliación ML v3.2 tiene su propia validación local completada: suite completa nativa Windows y recorrido real, auditados por ChatGPT; véase la sección vigente de cinco familias. Quedan la aplicación/verificación del nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; la acreditación prospectiva permanece separada. Se conservan `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 
-**Estado: implementación y validación local v3.4 completadas; GitHub Actions del PR final, suite completa nativa Windows y acreditación prospectiva pendientes por separado.** Coordina lo existente y no duplica ningún motor: no entrena por su cuenta, no construye carteras ni evalúa con otro código. No acredita ventaja predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
+**Estado vigente: implementación y validación local completadas, incluida ML v3.2 y su suite completa nativa Windows. Aplicación/verificación del nuevo cierre documental en PowerShell 5.1, Actions del futuro PR y acreditación prospectiva pendientes por separado.** Coordina lo existente y no duplica ningún motor: no entrena por su cuenta, no construye carteras ni evalúa con otro código. No acredita ventaja predictiva: siguen el NO-GO de AE-39, `experimental_no_acreditado` y `AUTORIZA_EVALUACION = False`.
 
 ```
 application/ml/
@@ -6795,6 +6797,14 @@ sequenceDiagram
 Fase 4: `GET /api/predicciones`, `GET /api/predicciones/{codigo}[?cartera=]` y `GET /api/predicciones/{codigo}/fiabilidad[?linea=&hasta=]` (solo lectura) devuelven lo mismo que el caso de uso `CentroDePredicciones` que usan la web y el comando. 404: juego o cartera inexistentes; 409: artefacto alterado o sin configuración; 422: parámetro no válido. Generar y explicar no están en la API: se piden con un POST web protegido o con el comando.
 
 Fase 5: `GET /api/estadisticas/{codigo}/panel` y `GET /api/estadisticas/{codigo}/descriptivas/{metrica}` (solo lectura) devuelven el mismo contenido que `/estadisticas/{juego}/panel` y las páginas de cada métrica; `/api/estadisticas/{codigo}/resumen` (Producto 1) no cambia. 404: juego, métrica o combinación que no aplica (con su motivo); 422: parámetro inválido o ajeno a la métrica; 503: base no disponible.
+
+---
+
+## Orden futuro y límite de esta entrega
+
+La consolidación de fases 1–5 y las cinco familias ML preceden a **6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal**. Solo se planifican: no se activa programador en Uvicorn, servicio, tarea de Windows, cliente nuevo ni ampliación de simulaciones. Fases 1–5 mantienen numeración. Las antiguas fases 6/7/8/9 corresponden ahora a 7/8/9/10; las referencias AE y nombres de archivos, pruebas y artefactos son históricos y permanecen. Objetivos, dependencias, entregables y aceptación de fases 6 y 11: [ROADMAP.md](ROADMAP.md).
+
+Fase 6 coordinará casos de uso existentes desde una tarea/servicio separado de la interfaz: fuente → validación → vinculación con emisiones previas → comparación → emisión siguiente con versión/configuración explícita. Conserva juegos, cortes, cronología e idempotencia; no incluye selección ni reentrenamiento automático. Calendarios y disponibilidad se verificarán al implementarla. Fase 11 consumirá los servicios pertinentes sin replicar ML; plataforma y empaquetado siguen pendientes. La disponibilidad local requiere equipo encendido y servicio activo.
 
 ---
 

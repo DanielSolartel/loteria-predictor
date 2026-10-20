@@ -72,7 +72,12 @@ def test_particion_por_sorteo_y_orden_base_calibracion_bloque(espia):
     informe, _ = le.evaluar(instantanea, lm.candidatos_del_juego("MILOTO"), le.Protocolo())
     bloques = informe["muestra_comun"]["bloques"]
     binarios = [r for r in espia if r["calibracion"]]
-    por_bloque = sum(e.tipo == "modelo_nuevo" for e in lm.candidatos_del_juego("MILOTO"))  # 2 + 2 bosques (Fase 3)
+    por_bloque = sum(e.tipo == "modelo_nuevo" and e.familia not in ("bayesianos", "markov")
+                     for e in lm.candidatos_del_juego("MILOTO"))  # 2 + 2 bosques (Fase 3)
+    sin_calibracion = [r for r in espia if not r["calibracion"]]
+    assert {r["modelo"] for r in sin_calibracion} == {"bayes_jerarquico_binario", "markov_apariciones"}
+    assert len(sin_calibracion) == 2 * len(bloques)
+    assert all(max(r["objetivos"]) < instantanea.sorteos[r["corte"]].numero_sorteo for r in sin_calibracion)
     assert len(binarios) == por_bloque * len(bloques)  # cada modelo binario, una vez por bloque
     for r, b in zip(sorted(binarios, key=lambda r: r["corte"]), [b for b in bloques for _ in range(por_bloque)]):
         assert set(r["base"]).isdisjoint(r["calibracion"])

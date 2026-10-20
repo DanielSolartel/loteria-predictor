@@ -34,7 +34,7 @@ TIEMPO_MAXIMO_PREDETERMINADO = 300.0
 
 def _trabajador(cola, tarea: dict) -> None:
     """Punto de entrada del proceso hijo (importable: requisito de `spawn`)."""
-    from threadpoolctl import threadpool_limits
+    from app.infrastructure.recursos_ml import limitar_trabajador
 
     from app.application.ml import carteras_artefactos as ca
     from app.application.ml import carteras_construccion as cc
@@ -44,7 +44,7 @@ def _trabajador(cola, tarea: dict) -> None:
     from app.application.ml import laboratorio_variables as lv
     from app.application.ml import modelos_registrados as mr
 
-    limite = threadpool_limits(limits=lm.HILOS)  # solo este proceso dedicado
+    limite = limitar_trabajador(lm.HILOS)  # solo este proceso dedicado
     avance = (lambda fase, **datos: cola.put(("avance", fase, datos)))
     try:
         if tarea["tipo"] == "comparar":
@@ -55,8 +55,7 @@ def _trabajador(cola, tarea: dict) -> None:
             resultado = ce.fuente(instantanea, tarea["modelo"], tarea["perfil"], avance=avance)
         elif tarea["tipo"] == "fuente_registrada":  # Fase 3: modelo congelado, sin reentrenar
             artefacto = tarea["artefacto"]
-            estimador = mr.deserializar_estimador(tarea["estimador"], artefacto["estimador"]["sha256"],
-                                                  artefacto["estimador"]["bytes"])
+            estimador = mr.cargar_estimador(artefacto, tarea["estimador"])
             instantanea = lv.instantanea_desde_canonicos(tarea["juego"], tarea["sorteos"])
             resultado = mr.fuente_registrada(artefacto, estimador, instantanea)
         elif tarea["tipo"] == "simular":
@@ -82,7 +81,7 @@ def _trabajador(cola, tarea: dict) -> None:
     except BaseException as error:  # error inesperado: se informa, el padre decide
         cola.put(("fallo", f"{type(error).__name__}: {error}"[:500]))
     finally:
-        limite.restore_original_limits()
+        limite.close()
 
 
 class EjecutorCarterasEnProceso(EjecutorDeCarteras):

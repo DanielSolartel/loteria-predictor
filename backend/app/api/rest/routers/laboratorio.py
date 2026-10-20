@@ -71,7 +71,8 @@ def pronostico(clave: str, lab: LaboratorioDeModelos = Depends(get_laboratorio))
 @router.get("/modelos")
 def modelos(juego: str | None = Query(default=None), lab: LaboratorioDeModelos = Depends(get_laboratorio)) -> dict:
     codigos = [_juego(juego)] if juego else list(JUEGOS)
-    return {"juegos": {c: lab.modelos(c) for c in codigos}, "familias_futuras": lab.catalogo()["familias_futuras"]}
+    return {"juegos": {c: lab.modelos(c) for c in codigos}, "familias_futuras": lab.catalogo()["familias_futuras"],
+            "familias_implementadas": lab.catalogo()["familias_implementadas"]}
 
 
 @router.get("/modelos/{clave}")

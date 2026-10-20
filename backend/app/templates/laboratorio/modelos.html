@@ -43,10 +43,13 @@
         {% for x in d.reservas_sin_modelo %}{{ x.modelo }} v{{ x.numero }} ({{ 'publicación interrumpida o en curso' if x.estado == 'sin_publicar' else 'la misma entrada se publicó con otro número' }}){% if not loop.last %}; {% endif %}{% endfor %}. No son modelos válidos.</div>{% endif %}
 </div>
 {% endfor %}
+{% if catalogo.familias_futuras %}
 <details class="card stat-card p-3 mb-3 small laboratorio-desplegable"><summary><strong>Familias del roadmap que aún no existen</strong></summary>
     <ul class="mb-0 mt-2">{% for k, v in catalogo.familias_futuras.items() %}<li>{{ v }}</li>{% endfor %}</ul>
 </details>
 <div class="card stat-card p-3 mb-3 small laboratorio-solo-impresion"><strong>Familias del roadmap que aún no existen</strong>
     <ul class="mb-0 mt-2">{% for k, v in catalogo.familias_futuras.items() %}<li>{{ v }}</li>{% endfor %}</ul>
 </div>
+{% endif %}
+<div class="card stat-card p-3 mb-3 small"><strong>Familias adicionales disponibles</strong><p class="mb-0">XGBoost, LightGBM, redes neuronales, Bayes jerárquico y Markov. Versiones congeladas, experimentales y no acreditadas.</p></div>
 {% endblock %}

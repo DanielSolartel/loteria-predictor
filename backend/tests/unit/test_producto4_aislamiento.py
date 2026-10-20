@@ -122,13 +122,17 @@ def test_los_errores_esperados_llegan_desde_el_trabajador(tmp_path):
 
 
 def test_el_trabajador_y_el_proceso_actual_dan_el_mismo_informe(tmp_path):
-    """Mismo entorno: la misma instantanea da el mismo cuerpo en el trabajador
-    (con HILOS fijado alli) que en este proceso de pruebas."""
+    """Igualdad exacta con recursos equivalentes, sin alterar los del padre.
+
+    La referencia llama directamente al evaluador en otro proceso de prueba:
+    no reutiliza el ejecutor que se está contrastando ni cambia sus recetas.
+    """
+    from tests.ml_reproducibilidad import referencia_local
     instantanea = lv.validar_instantanea("COLORLOTO", f4.historico("COLORLOTO", 90))
     entradas = lm.candidatos_del_juego("COLORLOTO")
     avances = []
     en_trabajador, _ = EjecutorEnProceso().evaluar(instantanea, entradas, REDUCIDO,
                                                    avance=lambda fase, **d: avances.append((fase, d["candidato"])))
-    local, _ = le.evaluar(instantanea, entradas, REDUCIDO)
+    local = referencia_local(instantanea, entradas, REDUCIDO, lm.HILOS)
     assert en_trabajador == local
     assert ("modelo", "hgb_poisson") in avances  # el progreso llega desde el trabajador

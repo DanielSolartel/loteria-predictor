@@ -91,7 +91,7 @@ _RESERVA = re.compile(r"^(\d{1,9})-(\d{6})\.secuencia$")
 _TEMPORAL_ACTUAL = re.compile(r"^\.publicacion\.[0-9a-f]{16}\.tmp$")
 _TEMPORAL_ANTERIOR = re.compile(r"^\..+\.[0-9a-f]{16}\.tmp$")
 _MODELO = re.compile(r"^([0-9a-f]{64})\.json$")
-_ESTIMADOR = re.compile(r"^([0-9a-f]{64})\.pkl$")
+_ESTIMADOR = re.compile(r"^([0-9a-f]{64})\.(?:pkl|mljson)$")
 _ID_MODELO = re.compile(r"^[a-z0-9_]{1,40}$")
 _VERSION = re.compile(r"^([a-z0-9_]{1,40})-(\d{6})\.version$")
 
@@ -327,8 +327,8 @@ class LaboratorioFileStore(LaboratorioStore):
             raise ValueError(f"juego no admitido: {juego!r}")
         return self.directorio / "modelos" / juego
 
-    def _publicar_estimador(self, carpeta: Path, digesto: str, contenido: bytes) -> None:
-        ruta = carpeta / f"{digesto}.pkl"
+    def _publicar_estimador(self, carpeta: Path, digesto: str, contenido: bytes, extension: str = ".pkl") -> None:
+        ruta = carpeta / f"{digesto}{extension}"
         try:
             if not ruta.exists():
                 self._publicar(carpeta, ruta, contenido)
@@ -371,7 +371,7 @@ class LaboratorioFileStore(LaboratorioStore):
         if ruta.exists():
             raise FileExistsError(str(ruta))
         carpeta.mkdir(parents=True, exist_ok=True)
-        self._publicar_estimador(carpeta / "estimadores", digesto, estimador)
+        self._publicar_estimador(carpeta / "estimadores", digesto, estimador, mr.extension_estimador(artefacto))
         numero = self._reservar_numero(carpeta, modelo, clave)
         sellado = mr.con_numero(artefacto, numero)
         self._publicar(carpeta, ruta, serializar_entrada(sellado), carpeta / f"{modelo}-{numero:06d}.version")
@@ -404,7 +404,11 @@ class LaboratorioFileStore(LaboratorioStore):
                 reserva.read_text(encoding="ascii", errors="replace").strip() != identificador:
             return IlegibleModelo(identificador, juego, "numero_no_reservado_para_esta_clave", modelo, numero)
         digesto = artefacto["estimador"]["sha256"]
-        objeto = ruta.parent / "estimadores" / f"{digesto}.pkl"
+        try:
+            extension = mr.extension_estimador(artefacto)
+        except (mr.ModeloRegistradoError, KeyError, TypeError):
+            return IlegibleModelo(identificador, juego, "formato_del_estimador_no_admitido", modelo, numero)
+        objeto = ruta.parent / "estimadores" / f"{digesto}{extension}"
         if not _CLAVE.fullmatch(digesto) or objeto.is_symlink() or not objeto.is_file():
             return IlegibleModelo(identificador, juego, "estimador_ausente", modelo, numero)
         contenido = objeto.read_bytes()
@@ -441,7 +445,7 @@ class LaboratorioFileStore(LaboratorioStore):
         digesto = guardado.artefacto["estimador"]["sha256"]
         if not _CLAVE.fullmatch(digesto):
             raise ValueError("SHA-256 del estimador no valido")
-        return (self._modelos(guardado.juego) / "estimadores" / f"{digesto}.pkl").read_bytes()
+        return (self._modelos(guardado.juego) / "estimadores" / f"{digesto}{mr.extension_estimador(guardado.artefacto)}").read_bytes()
 
     def reservas_sin_modelo(self, juego: str) -> list[ReservaSinModelo]:
         carpeta = self._modelos(juego)
@@ -473,7 +477,7 @@ class LaboratorioFileStore(LaboratorioStore):
                 citados = {e.artefacto["estimador"]["sha256"] for e in self.modelos(carpeta.name)
                            if isinstance(e, GuardadoModelo)}
                 salida += [str(p.relative_to(self.directorio)) for p in sorted((carpeta / "estimadores").iterdir())
-                           if _ESTIMADOR.fullmatch(p.name) and p.name[:-4] not in citados]
+                           if _ESTIMADOR.fullmatch(p.name) and p.stem not in citados]
         return salida + self.temporales()
 
 

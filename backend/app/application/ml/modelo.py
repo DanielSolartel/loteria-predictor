@@ -489,6 +489,9 @@ def componentes_de_inferencia(estimador) -> list[dict]:
     """Descripcion legible de los componentes de inferencia serializados de
     un modelo registrado (Fase 3): preparacion de variables, estimador y
     calibracion."""
+    if hasattr(estimador, "componentes_de_inferencia"):
+        return estimador.componentes_de_inferencia()
+
     salida = []
     base = estimador
     if isinstance(estimador, CalibratedClassifierCV):
@@ -567,6 +570,9 @@ def valores_globales_por_columna(estimador, nombres: Sequence[str]) -> dict:
     transformada. Devuelve `{"motivo": ...}` si la estructura no permite
     asociarlos con seguridad. La agregacion por variable y los textos estan
     en `predicciones_explicacion`."""
+    if hasattr(estimador, "valores_globales"):
+        return estimador.valores_globales(nombres)
+
     base, calibrado = estimador, False
     if isinstance(base, CalibratedClassifierCV):
         clasificadores = getattr(base, "calibrated_classifiers_", [])
@@ -590,3 +596,25 @@ def valores_globales_por_columna(estimador, nombres: Sequence[str]) -> dict:
     valores = [float(v) for v in (crudos.ravel() if hasattr(crudos, "ravel") else crudos)]
     return {"motivo": None, "estimador": clase, "calibrado": calibrado, "tipo": tipo, "columnas": columnas,
             "valores": valores}
+
+
+# Cinco familias: las construcciones sklearn permanecen en esta frontera.
+def preparar_variables_ml_adicionales(X):
+    """Devuelve estado one-hot/escalado ajustado exclusivamente sobre BASE."""
+    from sklearn.preprocessing import StandardScaler
+
+    identidad = OneHotEncoder(handle_unknown="ignore", sparse_output=False).fit(X[:, :1])
+    escala = StandardScaler().fit(X[:, 1:])
+    return identidad.categories_[0].copy(), escala.mean_.copy(), escala.scale_.copy()
+
+
+def construir_red_ml_adicional(binario: bool, parametros: dict):
+    """Construye una MLP real; ajustar y congelar corresponde al coordinador."""
+    from sklearn.neural_network import MLPClassifier, MLPRegressor
+
+    return MLPClassifier(**parametros) if binario else MLPRegressor(loss="poisson", **parametros)
+
+
+def construir_calibrador_ml_adicional(semilla: int):
+    """Sigmoide explícita sobre un bloque cronológico separado de BASE."""
+    return LogisticRegression(C=1e6, solver="lbfgs", max_iter=1000, random_state=semilla)

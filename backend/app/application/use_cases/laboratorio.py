@@ -122,16 +122,14 @@ class EjecutorEnEsteProceso(EjecutorDeLaboratorio):
         return mr.control_recargado(artefacto, estimador, informe)
 
     def pronostico_registrado(self, artefacto, estimador, sorteos):
-        recargado = mr.deserializar_estimador(estimador, artefacto["estimador"]["sha256"],
-                                              artefacto["estimador"]["bytes"])
+        recargado = mr.cargar_estimador(artefacto, estimador)
         return mr.cuerpo_del_pronostico_registrado(artefacto, recargado,
                                                    lv.instantanea_desde_canonicos(artefacto["juego"], sorteos))
 
     def explicacion_registrada(self, artefacto, estimador):
         from app.application.ml import predicciones_explicacion as pe
 
-        recargado = mr.deserializar_estimador(estimador, artefacto["estimador"]["sha256"],
-                                              artefacto["estimador"]["bytes"])
+        recargado = mr.cargar_estimador(artefacto, estimador)
         return pe.importancias_globales(recargado, artefacto["identidad"]["variables"]["nombres"])
 
 
@@ -173,7 +171,8 @@ class LaboratorioDeModelos:
                                for e in lm.candidatos_del_juego(j)] for j in JUEGOS},
                 "variables": lv.VERSION_VARIABLES, "protocolo": le.Protocolo(perfil=perfil).como_dict(),
                 "implementacion": la.VERSION_IMPLEMENTACION, "registro": mr.VERSION_REGISTRO,
-                "familias_futuras": dict(lm.FAMILIAS_FUTURAS)}
+                "familias_futuras": dict(lm.FAMILIAS_FUTURAS),
+                "familias_implementadas": list(lm.FAMILIAS_ML_AMPLIADAS)}
 
     def diagnostico(self, juego: str, protocolo: le.Protocolo | None = None) -> dict:
         _validar_juego(juego)
@@ -487,10 +486,10 @@ class LaboratorioDeModelos:
         informe = guardado.artefacto
         salida = {"experimento": clave, "integridad": "correcta", "entorno_guardado": informe["identidad"]["entorno"],
                   "entorno_actual": la.entorno()}
-        salida["mismo_entorno"] = salida["entorno_guardado"] == salida["entorno_actual"]
         try:
             instantanea = la.instantanea_del_experimento(informe)
             entradas = la.entradas_del_experimento(informe)
+            salida["entorno_actual"] = la.entorno_ml(entradas)
             inicio = time.perf_counter()
             evaluacion, _ = self._ejecutor.evaluar(instantanea, entradas, la.protocolo_del_experimento(informe))
             recalculado = la.cuerpo_del_experimento(instantanea, informe["identidad"], evaluacion)
@@ -499,6 +498,7 @@ class LaboratorioDeModelos:
         except (la.ArtefactoLaboratorioError, lv.HistoricoNoValidoError, le.MuestraInsuficienteError,
                 TrabajadorFallidoError) as error:
             salida["reproduccion"] = {"estado": "no_reproducible", "motivo": str(error)}
+        salida["mismo_entorno"] = salida["entorno_guardado"] == salida["entorno_actual"]
         salida["base_actual"] = self.estado_frente_a_la_base(informe)
         return salida
 
@@ -510,8 +510,10 @@ class LaboratorioDeModelos:
             return {"pronostico": clave, "integridad": "alterado", "motivo": guardado.motivo,
                     "reproduccion": None, "base_actual": None}
         artefacto = guardado.artefacto
+        entrada_actual = lm.CATALOGO.get(artefacto["identidad"]["modelo"]["id"])
+        entorno_actual = la.entorno_ml((entrada_actual,) if entrada_actual is not None else ())
         salida = {"pronostico": clave, "integridad": "correcta",
-                  "mismo_entorno": artefacto["identidad"]["entorno"] == la.entorno()}
+                  "mismo_entorno": artefacto["identidad"]["entorno"] == entorno_actual}
         if "modelo_registrado" in artefacto["identidad"]:
             salida["reproduccion"] = self._reproducir_pronostico_registrado(artefacto)
             completo = self._historico_o_none(artefacto["juego"])

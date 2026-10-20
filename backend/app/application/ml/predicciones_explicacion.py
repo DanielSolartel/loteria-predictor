@@ -273,6 +273,10 @@ def importancias_globales(estimador, nombres_de_variables: Sequence[str]) -> dic
     if tipo == "importancia_por_reduccion_de_impureza":
         descripcion = ("Reducción media de impureza aportada por cada variable en los árboles del bosque "
                        "(suma 1). Global, sin signo.")
+    elif tipo == "ganancia_total_de_particiones":
+        descripcion = ("Ganancia total de las particiones sobre cada variable preparada. Unidades de reducción "
+                       "del objetivo del boosting; no está normalizada, no suma 1 y no es un coeficiente lineal. "
+                       "Global, sin signo; no atribuye causalidad.")
     else:
         descripcion = ("Coeficientes del modelo lineal sobre las variables ya preparadas (numéricas estandarizadas; "
                        "identidad en One-Hot). Escala de la función de enlace antes de la calibración y de la "

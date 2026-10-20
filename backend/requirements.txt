@@ -16,3 +16,7 @@ rfc3161-client==1.0.9
 
 pytest>=8.3
 pytest-cov>=5.0
+
+# Cinco familias: binarios CPU Linux/Windows AMD64.
+xgboost-cpu==3.4.1
+lightgbm==4.7.0

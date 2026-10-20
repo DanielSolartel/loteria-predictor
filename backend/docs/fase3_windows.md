@@ -1,14 +1,8 @@
 # Fase 3 en Windows: modelos entrenados, versionados y reutilizables
 
-**Estado:**
+**Antecedente histórico:** la entrega original Fase 3 culminó en PR #92; Daniel validó en Windows sus ajustes de cierre (81 focales, selección 2215, OpenSSL 7/7 y PDF Legal vertical), según la evidencia ya registrada en README/ROADMAP. Las ejecuciones Actions 47, 48 y 49 fueron verdes. PR #94 incorporó después Fase 4 y su cierre: Actions `38982578601` pasó Linux completo y Windows selección, según lo aportado por Daniel. No equivale a suite completa Windows.
 
-- **Ingeniería:** implementada y validada en Linux.
-- **v2:** validada por el operador en Windows nativo (Python 3.14.6). Con esta
-  guía se hizo el recorrido con el histórico real de los cuatro juegos; las
-  cifras están en «Validación».
-- **Ajustes de cierre** (tres aclaraciones de presentación y la prueba de
-  temporales): verificados en Linux y **pendientes de validar en Windows**.
-- **GitHub Actions:** todavía no ha ejecutado la Fase 3.
+**Estado vigente ML v3.2:** cinco familias reales implementadas y validadas localmente en los cuatro juegos sobre base `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`. Daniel utilizó `C:\GitHub\loteria-predictor-ml-cierre` y `C:\GitHub\venvs\loteria-ml-cierre\Scripts\python.exe`: suite completa nativa sin selección **7.015 aprobadas, cero fallos, errores u omisiones**, focal previa **109** solapada, OpenSSL `exigir` **7/7**, demostración **20/20** y `pip check` correcto. El recorrido real registró 20 modelos, 40 pronósticos congelados y cinco carteras/explicaciones persistentes tras reiniciar. ChatGPT auditó las evidencias y la impresión indicada abajo. Véanse [métodos y validación local](ml_cinco_familias.md#validación-local-completada-de-ml-v32). Solo quedan aplicar/verificar el nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; la acreditación prospectiva permanece separada. La guía histórica siguiente conserva el entorno anterior como referencia; no es una orden para regenerar, reentrenar ni repetir baterías aprobadas.
 
 Completar la ingeniería no acredita ventaja predictiva: los pronósticos siguen
 `experimental_no_acreditado`, con el NO-GO vigente y
@@ -632,8 +626,7 @@ SHA-256 no se corten. Imprimir no entrena ni escribe.
     candidatos y 60 objetivos comunes;
   - PDF en Legal vertical (612×1008, Chrome 155), sin solapamientos. Carta, A4
     y horizontal no se validaron en Windows.
-- **Ajustes de cierre** (incremental aparte; verificados en Linux, **pendientes
-  de validar en Windows**). La revisión encontró tres ambigüedades de
+- **Ajustes de cierre históricos** (después validados en Windows y fusionados en PR #92). La revisión encontró tres ambigüedades de
   presentación, que el incremental corrige:
   - la ficha distingue la evaluación de su receta de la lectura general del
     informe de procedencia. En Baloto, corte 2714: Logística AE-36 0.35942
@@ -644,6 +637,19 @@ SHA-256 no se corten. Imprimir no entrena ni escribe.
   Además, la prueba de temporales usa su propia carpeta de raíz corta y ya no
   depende de `--basetemp`. No cambian modelos, probabilidades, la API ni los
   artefactos.
-- **GitHub Actions:** todavía no ha ejecutado la Fase 3. El flujo
-  `validacion-python-314.yml` añade el paso de su demostración en Linux y en
-  Windows.
+- **GitHub Actions histórico actualizado:** Fase 3 pasó las ejecuciones 47, 48 y 49; PR #94 pasó después Linux completo y Windows selección. La ampliación ML v3.2 no hereda esos checks: su suite completa nativa Windows y recorrido real tienen evidencia propia ya completada; Actions del futuro PR permanece pendiente.
+
+
+## Matriz nativa de impresión y ampliación ML validada
+
+Daniel completó el recorrido real de las cinco familias con decisiones explícitas de entrenamiento, registro y configuración. Repetir una entrada reutilizó su versión; los cinco casos web persistieron tras reiniciar, con respuestas de API idénticas y sin nuevas escrituras. La consulta histórica XGBoost conserva su validez aunque Baloto tenga después Markov como selección vigente.
+
+| Página por cada uno de los cuatro juegos | Carta vertical | Carta horizontal | A4 vertical |
+|---|---|---|---|
+| Informe del laboratorio con once candidatos y objetivos comunes | Exportada y auditada | Exportada y auditada | Exportada y auditada |
+| Ficha de versión de una familia nueva, componentes, contrato e importancias/motivo | Exportada y auditada | Exportada y auditada | Exportada y auditada |
+| Predicción de esa versión: combinaciones, explicación, multiplicidad y advertencias | Exportada y auditada | Exportada y auditada | Exportada y auditada |
+
+Fuente válida: `ml-impresion-v2-2a99ebfc.zip`. Daniel exportó doce páginas web con Brave, perfil temporal propio y únicamente GET; verificó medio `print` antes de cada uno de los **36 PDF, 600 páginas**. ChatGPT auditó sus huellas y contenido: 9.474 apariciones de filas con multiplicidades, renderizado de todos los PDF y controles de páginas vacías, cajas fuera del papel y solapes. La inspección visual de hojas de contacto y páginas ampliadas fue representativa: no hubo lectura manual ampliada individual de las 600 páginas. No se repite esa revisión en este cierre documental.
+
+El primer exportador externo mantuvo por error el medio `screen`; ese lote no acredita impresión y fue sustituido por la v2 sin cambiar el producto. Las capturas de 390 px pertenecen al lote anterior y no son capturas nuevas de la v2. Los inventarios antes/después de la exportación conservaron 442 archivos y siete orígenes; son la instantánea de ese recorrido, no una guarda fija del aplicador. La [validación local consolidada](ml_cinco_familias.md#validación-local-completada-de-ml-v32) distingue impresión, pruebas nativas y antecedentes Linux. Aplicar este cierre no repite pruebas, entrenamiento, emisiones ni PDF.

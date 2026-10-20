@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import pickle
 from collections.abc import Sequence
 
@@ -71,6 +72,26 @@ from app.application.ml.pronostico_experimental import ESTADO_DE_USO
 ESQUEMA_MODELO = "laboratorio-modelo/1"
 VERSION_REGISTRO = "fase3-1"
 FORMATO_DEL_ESTIMADOR = "pickle-protocolo-5-restringido"
+FORMATO_ML = "json-nativo-ml-cinco-familias/1"
+VERSION_REGISTRO_ML = "ml-cinco-familias-1"
+ESQUEMA_ESTIMADOR_ML = "ml-cinco-familias/1"
+
+
+def es_ml_ampliado(entrada) -> bool:
+    return entrada.familia in lm.FAMILIAS_ML_AMPLIADAS
+
+
+def formato_de(entrada) -> str:
+    return FORMATO_ML if es_ml_ampliado(entrada) else FORMATO_DEL_ESTIMADOR
+
+
+def extension_estimador(artefacto: dict) -> str:
+    formato = artefacto["estimador"]["formato"]
+    if formato == FORMATO_DEL_ESTIMADOR:
+        return ".pkl"
+    if formato == FORMATO_ML:
+        return ".mljson"
+    raise ModeloRegistradoError("incompatible", "formato de estimador desconocido")
 VOLATILES_MODELO = ("huella_de_reproduccion", "publicacion", "sello")
 CONTRATO_DE_INFERENCIA = (
     "Corte de entrada C >= corte de entrenamiento. Las variables del objetivo C + 1 se calculan solo con los "
@@ -104,6 +125,9 @@ def huella(objeto: dict) -> str:
 def _transformacion(entrada: lm.EntradaCatalogo) -> dict:
     if entrada.id == "actual_logistica_ae36":
         return {"tipo": "ninguna", "detalle": "probabilidades originales de la receta de AE-36"}
+    if entrada.salida == "distribucion_de_pares" and entrada.familia in ("bayesianos", "markov"):
+        return {"tipo": "normalizacion_de_predictiva", "delta": lm.DELTA_POISSON,
+                "detalle": "intensidades predictivas normalizadas por objetivo; no es predictiva conjunta integrada"}
     if entrada.salida == "distribucion_de_pares":
         return {"tipo": "normalizacion_de_poisson", "delta": lm.DELTA_POISSON,
                 "detalle": "p = (lambda + delta) / suma por objetivo"}
@@ -126,6 +150,10 @@ def _entrenamiento(entrada: lm.EntradaCatalogo) -> dict:
     if entrada.id == "actual_logistica_ae36":
         return {"objetivos": "todos los objetivos de la instantanea tras el calentamiento de AE-36",
                 "calibracion": "sigmoide con PredefinedSplit (ultimo 20 % de los objetivos)", "seleccion": "ninguna"}
+    if entrada.familia in ("bayesianos", "markov"):
+        return {"objetivos": f"todos los objetivos anteriores al corte desde la posicion {lv.CALENTAMIENTO}",
+                "seleccion": "ninguna; hiperparametros fijados previamente", "calibracion": "ninguna",
+                "paleta": "soporte observado antes del corte de ajuste; congelado despues"}
     salida = {"objetivos": f"todos los objetivos de la instantanea desde la posicion {lv.CALENTAMIENTO}",
               "seleccion": lm.SELECCION_DESCRIPCION if "rejilla" in entrada.parametros else "ninguna"}
     salida["calibracion"] = ("ninguna (conteos Poisson normalizados)" if entrada.salida == "distribucion_de_pares" else
@@ -136,7 +164,7 @@ def _entrenamiento(entrada: lm.EntradaCatalogo) -> dict:
 def identidad_del_modelo(informe: dict, entrada: lm.EntradaCatalogo) -> dict:
     datos = informe["datos"]
     perfil = informe["identidad"]["protocolo"]["perfil"]
-    return {"esquema": ESQUEMA_MODELO, "registro": VERSION_REGISTRO, "juego": informe["juego"],
+    return {"esquema": ESQUEMA_MODELO, "registro": VERSION_REGISTRO_ML if es_ml_ampliado(entrada) else VERSION_REGISTRO, "juego": informe["juego"],
             "reglas": informe["identidad"]["reglas"], "paleta_del_corte": informe["identidad"]["paleta_del_corte"],
             "corte": datos["corte"], "sha256_historico": datos["sha256_historico"],
             "periodo": {"primer_sorteo": datos["primer_sorteo"], "primera_fecha": datos["primera_fecha"],
@@ -146,8 +174,8 @@ def identidad_del_modelo(informe: dict, entrada: lm.EntradaCatalogo) -> dict:
             "modelo": {"id": entrada.id, "version": entrada.version, "tipo": entrada.tipo, "familia": entrada.familia,
                        "salida": entrada.salida, "parametros": lm.parametros_de(entrada, perfil)},
             "perfil": perfil, "entrenamiento": _entrenamiento(entrada), "transformacion": _transformacion(entrada),
-            "semilla": lm.SEMILLA, "hilos": lm.HILOS, "formato_del_estimador": FORMATO_DEL_ESTIMADOR,
-            "entorno": la.entorno()}
+            "semilla": lm.SEMILLA, "hilos": lm.HILOS, "formato_del_estimador": formato_de(entrada),
+            "entorno": la.entorno_ml((entrada,))}
 
 
 def _evaluacion_asociada(informe: dict, modelo: str) -> dict:
@@ -184,7 +212,7 @@ def cuerpo_del_modelo(informe: dict, entrada: lm.EntradaCatalogo, identidad: dic
             "entrenamiento": {"detalle": entrenado["detalle"], "parametros_ajustados": entrenado["parametros"]},
             "componentes": entrenado["componentes"], "contrato_de_inferencia": CONTRATO_DE_INFERENCIA,
             "estimador": {"sha256": entrenado["sha256"], "bytes": entrenado["bytes"],
-                          "formato": FORMATO_DEL_ESTIMADOR, "clase": entrenado["clase"]},
+                          "formato": formato_de(entrada), "clase": entrenado["clase"]},
             "control": entrenado["control"],
             "procedencia": {"experimento": informe["clave"], "evaluacion": _evaluacion_asociada(informe, entrada.id)}}
 
@@ -281,6 +309,67 @@ def deserializar_estimador(contenido: bytes, sha256_esperado: str, bytes_esperad
         raise ModeloRegistradoError("estimador_no_admitido", str(error)[:300]) from error
 
 
+def _envoltura_ml(estimador, identidad: dict, experimento: str) -> dict:
+    return {"esquema": ESQUEMA_ESTIMADOR_ML, "identidad_sha256": huella(identidad),
+            "experimento": experimento, "modelo": identidad["modelo"], "entorno": identidad["entorno"],
+            "estimador": estimador.to_dict()}
+
+
+def _cargar_ml(contenido: bytes, identidad: dict, experimento: str):
+    try:
+        datos = json.loads(contenido.decode("utf-8"))
+        # canonical bytes reject duplicate keys, NaN, trailing ambiguities and external objects
+        if la.serializar_entrada(datos) != contenido:
+            raise ValueError("JSON no canonico")
+        esperado = {"esquema": ESQUEMA_ESTIMADOR_ML, "identidad_sha256": huella(identidad),
+                    "experimento": experimento, "modelo": identidad["modelo"], "entorno": identidad["entorno"]}
+        if set(datos) != {*esperado, "estimador"} or any(datos[k] != v for k, v in esperado.items()):
+            raise ValueError("envoltura, receta, entorno o procedencia no coinciden")
+        if not isinstance(datos["estimador"], dict):
+            raise ValueError("estado del estimador no es un objeto")
+        candidato_id = datos["estimador"].get("candidato_id")
+        if candidato_id is not None and candidato_id != identidad["modelo"]["id"]:
+            raise ValueError("identidad interna del estimador no coincide con la receta")
+        familia = identidad["modelo"]["familia"]
+        clases_bm = {"bayes_jerarquico_binario": "BayesJerarquicoBinario", "bayes_jerarquico_pares": "BayesJerarquicoPares",
+                     "markov_apariciones": "MarkovApariciones", "markov_pares": "MarkovPares"}
+        if identidad["modelo"]["id"] in clases_bm and datos["estimador"].get("clase") != clases_bm[identidad["modelo"]["id"]]:
+            raise ValueError("clase probabilistica no coincide con la receta")
+        if familia in ("xgboost", "lightgbm", "redes_neuronales"):
+            from app.application.ml.laboratorio_boosts_redes import deserializar_boost_red, validar_receta
+            validar_receta(datos["estimador"], identidad["modelo"], identidad)
+            estimador = deserializar_boost_red(datos["estimador"])
+        elif familia in ("bayesianos", "markov"):
+            from app.application.ml.laboratorio_bayes_markov import deserializar_bayes_markov, validar_receta
+            validar_receta(datos["estimador"], identidad["modelo"], identidad)
+            estimador = deserializar_bayes_markov(datos["estimador"])
+        else:
+            raise ValueError("familia no admitida por el formato nuevo")
+        return estimador
+    except (UnicodeError, ValueError, TypeError, KeyError, AttributeError, ImportError, RuntimeError) as error:
+        raise ModeloRegistradoError("estimador_no_admitido", str(error)[:300]) from error
+
+
+def cargar_estimador(artefacto: dict, contenido: bytes):
+    """Manifiesto, receta, entorno, procedencia e integridad ANTES de cargar.
+    El JSON nuevo nunca pasa por pickle y el cargador historico no se amplia.
+    """
+    if not integro(artefacto):
+        raise ModeloRegistradoError("alterado", "manifiesto sin integridad coherente")
+    compatible = compatibilidad(artefacto)
+    if not compatible["compatible"]:
+        raise ModeloRegistradoError("incompatible", "; ".join(compatible["motivos"]))
+    try:
+        estimador = artefacto["estimador"]
+        if len(contenido) != estimador["bytes"] or sha256(contenido) != estimador["sha256"]:
+            raise ModeloRegistradoError("alterado", "bytes o SHA-256 del estimador no coinciden")
+        if estimador["formato"] == FORMATO_ML:
+            return _cargar_ml(contenido, artefacto["identidad"], artefacto["procedencia"]["experimento"])
+        return deserializar_estimador(contenido, estimador["sha256"], estimador["bytes"])
+    except (KeyError, TypeError) as error:
+        raise ModeloRegistradoError("incompatible", "manifiesto incompleto") from error
+
+
 def componentes_de(estimador) -> list[dict]:
     """Descripcion legible de los componentes de inferencia serializados
     (la inspeccion de clases de scikit-learn vive en `modelo.py`)."""
@@ -332,7 +421,10 @@ def control_de(candidatos: Sequence, p: np.ndarray) -> dict:
 def control_recargado(artefacto: dict, contenido: bytes, informe: dict) -> dict:
     """Recarga el estimador (comprobando SHA-256 y la lista cerrada) y recalcula
     el pronostico de control con la instantanea del informe de procedencia."""
-    estimador = deserializar_estimador(contenido, artefacto["estimador"]["sha256"], artefacto["estimador"]["bytes"])
+    estimador = cargar_estimador(artefacto, contenido)
+    if artefacto["identidad"].get("registro") == VERSION_REGISTRO_ML:
+        if not la.integro(informe) or informe.get("clave") != artefacto["procedencia"]["experimento"]:
+            raise ModeloRegistradoError("incompatible", "el informe de procedencia no coincide")
     instantanea = la.instantanea_del_experimento(informe)
     candidatos, p = predecir_congelado(estimador, artefacto["identidad"], instantanea)
     return {"objetivo": instantanea.corte + 1, **control_de(candidatos, p), "clase": type(estimador).__name__}
@@ -352,15 +444,20 @@ def entrenar(informe: dict, entrada: lm.EntradaCatalogo) -> dict:
     estimador = _estimador_a_congelar(entrada, ajustado)
     identidad = identidad_del_modelo(informe, entrada)
     candidatos, p = predecir_congelado(estimador, identidad, instantanea)
-    contenido = serializar_estimador(estimador)
+    if es_ml_ampliado(entrada):
+        contenido = la.serializar_entrada(_envoltura_ml(estimador, identidad, informe["clave"]))
+        recargado = _cargar_ml(contenido, identidad, informe["clave"])
+    else:
+        contenido = serializar_estimador(estimador)
+        recargado = deserializar_estimador(contenido, sha256(contenido), len(contenido))
     digesto = sha256(contenido)
-    recargado = deserializar_estimador(contenido, digesto, len(contenido))
     candidatos_r, p_r = predecir_congelado(recargado, identidad, instantanea)
     control = control_de(candidatos, p)
     if control_de(candidatos_r, p_r) != control:
         raise ModeloRegistradoError("no_reproduce", "el estimador recargado no reproduce el pronostico de control")
     return {"contenido": contenido, "sha256": digesto, "bytes": len(contenido), "clase": type(estimador).__name__,
-            "detalle": ajustado.detalle, "parametros": ajustado.parametros,
+            "detalle": ajustado.detalle, "parametros": (getattr(estimador, "parametros", ajustado.parametros)
+                if es_ml_ampliado(entrada) else ajustado.parametros),
             "componentes": componentes_de(estimador), "control": {"objetivo": instantanea.corte + 1, **control}}
 
 
@@ -375,8 +472,15 @@ def _menor(version: str) -> str:
 def compatibilidad(artefacto: dict) -> dict:
     """Comprueba, SIN deserializar, si este codigo y este entorno pueden cargar
     el estimador. Devuelve los motivos de incompatibilidad, si los hay."""
-    identidad = artefacto["identidad"]
-    guardado, actual = identidad["entorno"], la.entorno()
+    try:
+        identidad = artefacto["identidad"]
+        entrada = lm.CATALOGO.get(identidad["modelo"]["id"])
+        if entrada is not None and es_ml_ampliado(entrada):
+            return _compatibilidad_ml(artefacto, entrada)
+        guardado, actual = identidad["entorno"], la.entorno()
+    except (KeyError, TypeError, AttributeError):
+        return {"compatible": False, "motivos": ["manifiesto incompleto"], "entorno_guardado": {},
+                "entorno_actual": la.entorno(), "mismo_entorno": False, "politica": "manifiesto completo"}
     motivos = []
     if identidad.get("registro") != VERSION_REGISTRO:
         motivos.append(f"registro {identidad.get('registro')} distinto de {VERSION_REGISTRO}")
@@ -400,6 +504,75 @@ def compatibilidad(artefacto: dict) -> dict:
             "mismo_entorno": guardado == actual,
             "politica": "misma version de scikit-learn y mismas versiones menores de Python, NumPy y SciPy; el "
                         "sistema operativo solo se informa"}
+
+
+def _compatibilidad_ml(artefacto: dict, entrada) -> dict:
+    actual = la.entorno_ml((entrada,))
+    guardado = {}
+    motivos = []
+    try:
+        identidad = artefacto["identidad"]
+        guardado = identidad["entorno"]
+        if identidad["registro"] != VERSION_REGISTRO_ML:
+            motivos.append("version del registro nuevo no admitida")
+        if identidad["formato_del_estimador"] != FORMATO_ML or artefacto["estimador"]["formato"] != FORMATO_ML:
+            motivos.append("formato del estimador nuevo no admitido")
+        for paquete, version in actual.items():
+            if paquete != "sistema" and guardado.get(paquete) != version:
+                motivos.append(f"{paquete}: {guardado.get(paquete)} frente a {version}; se requiere version exacta")
+        if set(guardado) != set(actual):
+            motivos.append("inventario de entorno incompleto o ajeno")
+        if identidad["modelo"] != {"id": entrada.id, "version": entrada.version, "tipo": entrada.tipo,
+                "familia": entrada.familia, "salida": entrada.salida,
+                "parametros": lm.parametros_de(entrada, identidad["perfil"])}:
+            motivos.append("receta nueva no coincide con el catalogo versionado")
+        if identidad["variables"] != _variables(entrada, artefacto["juego"] == "COLORLOTO"):
+            motivos.append("contrato de variables no coincide")
+        if identidad["transformacion"] != _transformacion(entrada) or identidad["entrenamiento"] != _entrenamiento(entrada):
+            motivos.append("transformacion o entrenamiento no coinciden")
+        if artefacto["juego"] not in entrada.juegos or identidad["juego"] != artefacto["juego"]:
+            motivos.append("juego no admitido por la receta")
+        if artefacto["modelo"] != entrada.como_dict(identidad["perfil"]):
+            motivos.append("descripcion de modelo no coincide con el catalogo")
+        if not isinstance(artefacto["procedencia"]["experimento"], str) or len(artefacto["procedencia"]["experimento"]) != 64:
+            motivos.append("procedencia no valida")
+        if artefacto["esquema"] != ESQUEMA_MODELO or identidad["esquema"] != ESQUEMA_MODELO:
+            motivos.append("esquema de manifiesto no admitido")
+        if identidad["reglas"] != lv.REGLAS[artefacto["juego"]].como_dict():
+            motivos.append("reglas del juego incompatibles")
+        if identidad["semilla"] != lm.SEMILLA or identidad["hilos"] != lm.HILOS:
+            motivos.append("presupuesto o semilla incompatibles")
+        datos = artefacto["datos"]
+        if datos["corte"] != identidad["corte"] or datos["sha256_historico"] != identidad["sha256_historico"]:
+            motivos.append("datos y periodo de identidad no coinciden")
+        if any(datos[k] != v for k, v in identidad["periodo"].items()):
+            motivos.append("intervalo de entrenamiento incoherente")
+        if not isinstance(identidad["paleta_del_corte"], list):
+            motivos.append("paleta del corte incompleta")
+        entrenamiento = artefacto["entrenamiento"]
+        if not isinstance(entrenamiento["detalle"], dict) or not isinstance(entrenamiento["parametros_ajustados"], dict):
+            motivos.append("detalle del entrenamiento incompleto")
+        componentes = artefacto["componentes"]
+        if not isinstance(componentes, list) or not componentes or any(
+                not isinstance(c, dict) or not all(k in c for k in ("paso", "clase", "detalle")) for c in componentes):
+            motivos.append("componentes de inferencia incompletos")
+        control = artefacto["control"]
+        if control["objetivo"] != identidad["corte"] + 1 or not isinstance(control["candidatos"], int) or control["candidatos"] < 1:
+            motivos.append("objetivo o candidatos de control incompatibles")
+        if len(control["sha256_probabilidades"]) != 64 or not isinstance(control["primeros"], list):
+            motivos.append("control incompleto")
+        if artefacto["procedencia"]["evaluacion"]["experimento"] != artefacto["procedencia"]["experimento"]:
+            motivos.append("evaluacion y procedencia distintas")
+        if artefacto["estado_de_uso"] != ESTADO_DE_USO or artefacto["contexto"]["AUTORIZA_EVALUACION"] is not False:
+            motivos.append("estado experimental incompatible")
+        for clave in ("sha256", "bytes", "clase"):
+            artefacto["estimador"][clave]
+    except (KeyError, TypeError, AttributeError, ValueError):
+        motivos.append("manifiesto incompleto")
+    return {"compatible": not motivos, "motivos": motivos, "entorno_guardado": guardado,
+            "entorno_actual": actual, "mismo_entorno": guardado == actual,
+            "politica": "versiones exactas de Python, NumPy, SciPy, scikit-learn y biblioteca nativa pertinente; "
+                        "plataforma informativa, sin promesa de identidad entre plataformas"}
 
 
 # ---------------------------------------------------------------------------
@@ -442,7 +615,8 @@ def identidad_del_pronostico_registrado(artefacto: dict, instantanea: lv.Instant
                                   "sha256_estimador": artefacto["estimador"]["sha256"],
                                   "corte_de_entrenamiento": identidad["corte"]},
             "ajuste": "ninguno: modelo registrado congelado (contrato de inferencia de la Fase 3)",
-            "transformacion": identidad["transformacion"], "semilla": lm.SEMILLA, "entorno": la.entorno()}
+            "transformacion": identidad["transformacion"], "semilla": lm.SEMILLA,
+            "entorno": la.entorno_ml((lm.CATALOGO[m["id"]],))}
 
 
 def cuerpo_del_pronostico_registrado(artefacto: dict, estimador, instantanea: lv.Instantanea,

@@ -64,7 +64,7 @@ def test_flujo_web_comparar_entrenar_ficha_verificar_generar_y_resultados(entorn
     seguimiento = c.get("/laboratorio/baloto/seguimiento?linea=random_forest_clasificador-v1-reg1-reducido")
     assert seguimiento.status_code == 200
     listado = c.get("/laboratorio/modelos?juego=baloto").text
-    assert "v1" in listado and "compatible" in listado and "Familias del roadmap que aún no existen" in listado
+    assert "v1" in listado and "compatible" in listado and "Familias adicionales disponibles" in listado
 
 
 def test_los_get_son_de_solo_lectura(entorno):

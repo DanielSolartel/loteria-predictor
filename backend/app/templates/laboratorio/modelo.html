@@ -83,7 +83,7 @@
         <dt class="col-sm-4">Parámetros ajustados</dt><dd class="col-sm-8">{% for k, v in a.entrenamiento.parametros_ajustados.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
         <dt class="col-sm-4">Perfil · semilla · hilos</dt><dd class="col-sm-8">{{ ident.perfil }} · {{ ident.semilla }} · {{ ident.hilos }}</dd>
     </dl>
-    {% if det.seleccion %}{% set sel = det.seleccion %}
+    {% if det.seleccion is mapping %}{% set sel = det.seleccion %}
     <div class="tabla-desplazable"><table class="table table-sm small mb-0"><caption class="small">Selección interna: ajuste con {{ sel.objetivos_de_seleccion[0] }}–{{ sel.objetivos_de_seleccion[1] }}, validación con {{ sel.objetivos_de_validacion[0] }}–{{ sel.objetivos_de_validacion[1] }} ({{ sel.criterio }}); {% if etapas.calibrado %}siempre antes de la calibración y del corte{% else %}siempre antes del corte; este modelo no tiene calibración: sus intensidades se transforman en probabilidades con código versionado{% endif %}.</caption>
         <thead><tr><th>Punto de la rejilla</th><th class="text-end">Pérdida de validación</th><th>Estado</th></tr></thead><tbody>
         {% for p in sel.puntos %}<tr><td>{% for k, v in p.parametros.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}{% if p.parametros == sel.elegidos %} <span class="badge bg-primary">elegido</span>{% endif %}</td><td class="text-end">{{ '%.6f'|format(p.log_loss) if p.log_loss is not none else '—' }}</td><td>{{ p.estado|replace('_', ' ') }}</td></tr>{% endfor %}

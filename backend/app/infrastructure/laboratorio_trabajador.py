@@ -48,7 +48,7 @@ TIEMPO_MAXIMO_PREDETERMINADO = 1800.0
 
 def _trabajador(cola, tarea: dict) -> None:
     """Punto de entrada del proceso hijo (importable: requisito de `spawn`)."""
-    from threadpoolctl import threadpool_limits
+    from app.infrastructure.recursos_ml import limitar_trabajador
 
     from app.application.ml import laboratorio_artefactos as la
     from app.application.ml import laboratorio_evaluacion as le
@@ -56,7 +56,7 @@ def _trabajador(cola, tarea: dict) -> None:
     from app.application.ml import laboratorio_variables as lv
     from app.application.ml import modelos_registrados as mr
 
-    limite = threadpool_limits(limits=lm.HILOS)  # solo este proceso dedicado
+    limite = limitar_trabajador(lm.HILOS)  # solo este proceso dedicado
     try:
         if tarea["tipo"] == "evaluar":
             instantanea = lv.instantanea_desde_canonicos(tarea["juego"], tarea["sorteos"])
@@ -71,16 +71,14 @@ def _trabajador(cola, tarea: dict) -> None:
             resultado = mr.control_recargado(tarea["artefacto"], tarea["estimador"], tarea["informe"])
         elif tarea["tipo"] == "pronostico_registrado":
             artefacto = tarea["artefacto"]
-            estimador = mr.deserializar_estimador(tarea["estimador"], artefacto["estimador"]["sha256"],
-                                                  artefacto["estimador"]["bytes"])
+            estimador = mr.cargar_estimador(artefacto, tarea["estimador"])
             instantanea = lv.instantanea_desde_canonicos(artefacto["juego"], tarea["sorteos"])
             resultado = mr.cuerpo_del_pronostico_registrado(artefacto, estimador, instantanea)
         elif tarea["tipo"] == "explicacion_registrada":  # Fase 4
             from app.application.ml import predicciones_explicacion as pe
 
             artefacto = tarea["artefacto"]
-            estimador = mr.deserializar_estimador(tarea["estimador"], artefacto["estimador"]["sha256"],
-                                                  artefacto["estimador"]["bytes"])
+            estimador = mr.cargar_estimador(artefacto, tarea["estimador"])
             resultado = pe.importancias_globales(estimador, artefacto["identidad"]["variables"]["nombres"])
         elif tarea["tipo"] == "dormir":  # solo pruebas del tiempo maximo
             time.sleep(tarea["segundos"])
@@ -101,7 +99,7 @@ def _trabajador(cola, tarea: dict) -> None:
     except BaseException as error:  # error inesperado: se informa, el padre decide
         cola.put(("fallo", f"{type(error).__name__}: {error}"[:500]))
     finally:
-        limite.restore_original_limits()
+        limite.close()
 
 
 class EjecutorEnProceso(EjecutorDeLaboratorio):

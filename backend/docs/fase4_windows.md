@@ -1,5 +1,9 @@
 # Fase 4 en Windows: predicciones explicables y fiabilidad observada
 
+**Antecedente histórico sobre PR #94:** el cierre documental anterior ya se aplicó y verificó en PowerShell 5.1; Daniel informó índice intacto y limpieza completada. PR #94 fue fusionado y `origin/main`/`origin/develop` sincronizadas en `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`, árbol `e4aaa33ecdef1eea1b7162dcba3c0349ef7d6cd0`. Actions `38982578601`: Linux completo `117246604306` y Windows selección `117246604151`, ambos verdes según su información, sin recuentos inventados. Ese check no fue una suite completa Windows; la suite nativa nueva ML v3.2 se documenta a continuación.
+
+**Estado vigente ML v3.2:** implementación y validación local completadas en `C:\GitHub\loteria-predictor-ml-cierre`. Daniel ejecutó la suite completa nativa Windows sin selección (**7.015 aprobadas, cero fallos, errores u omisiones**), la focal previa (**109**, solapada), OpenSSL `exigir` **7/7**, demostración sintética **20/20** y `pip check`; operó el recorrido real de las cinco familias. Se verificaron 20 modelos, 40 pronósticos congelados y cinco carteras/explicaciones con persistencia tras reiniciar. La reproducción de una explicación guardada comprueba vector fuente, rankings y variables: no es una nueva inferencia ni un recálculo de importancias. ChatGPT auditó las evidencias y la impresión (36 PDF, 600 páginas, revisión visual representativa más controles de contenido sobre todos los PDF, sin lectura manual ampliada individual de cada página). Fuentes y límites: [validación local de cinco familias](ml_cinco_familias.md#validación-local-completada-de-ml-v32). Quedan aplicación/verificación del nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; acreditación prospectiva separada. No se repiten histórico, recuperación, baterías, emisiones ni PDF. Los antecedentes Fase 4 v3.4 siguientes mantienen su alcance propio.
+
 **Cierre local v3.4 (16 de octubre de 2026, Colombia).** La implementación y la validación local están completadas con los alcances del resumen consolidado aportado. Daniel ejecutó Windows nativo; Codex Cloud ejecutó Linux con datos sintéticos; ChatGPT auditó los archivos y la evidencia entregada y registró su revisión previa de PDF y capturas, que no están incluidos en los ZIP de este cierre. Este cierre documental no vuelve a ejecutar esas verificaciones ni convierte una auditoría en pruebas nuevas.
 
 **Windows nativo v3.4, ejecutado por Daniel:** Windows 11 AMD64, Windows PowerShell 5.1, Python 3.14.6 y pytest 9.1.1. Focal **198 aprobadas**; regresiones: Fase 3 **81**, Producto 6 **73**, Producto 5 **96**, Producto 4 **94**, Fase 5 **94** y Productos 1–3 **229**. Demostración con datos sintéticos **8/8** y `pip check` correcto. ConEnlaces terminó con **217 aprobadas** en `fase4_sin_publicacion` y **2432** en `seleccion_windows_sin_publicacion` (100 entradas), sin fallos, errores ni omisiones; OpenSSL `exigir` **7/7** en el JUnit de esa selección. Consta el aviso conocido Starlette/httpx. Estas dos baterías son **reducidas**: excluyen las tres familias de publicación v3.3 y no equivalen a nuevas ejecuciones de toda Fase 4, de la selección completa ni de la suite completa Windows. Los grupos se solapan y no se suman. La bandera `validacion_completa: true` de `ConEnlaces/resumen.json` indica progreso del script; no acredita una ejecución completa nativa.
@@ -16,7 +20,7 @@
 
 **v3.4** corrige el corte vacío y la selección persistente de Fiabilidad, el componente real de ColorLoto, la lectura numérica cerca de cero, el texto de MiLoto y el singular/plural, y la disposición de pantalla e impresión. Mantiene las probabilidades congeladas, las unidades por balota, las multiplicidades y las consultas de solo lectura. Añadir una línea sigue siendo aditivo y no modifica la configuración. La superbalota de `carteras:uniforme-v1` conserva su estrategia de frecuencia con suavizado de Laplace; el nombre de la línea no implica deltas nulos en todos sus componentes.
 
-**Siguiente paso: cierre exclusivamente documental.** Aplicar `aplicar-fase4-cierre.ps1` en Windows PowerShell 5.1, consola normal, siguiendo `fase4-guia-cierre-windows.md`; verifica código y manifiestos y aplica únicamente los cuatro documentos. No requiere repetir pruebas, demostraciones, entrenamiento, generación, recuperación ni consultas o revisión visual. Daniel realizará después commit, push y PR desde Windows. Permanecen **pendientes separados** GitHub Actions sobre el PR final, la **suite completa nativa Windows** y la **acreditación prospectiva** con muestras suficientes por línea y tipo. La implementación y validación local completadas no acreditan ventaja predictiva: siguen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+**Cierre documental anterior completado (PR #94).** Daniel informa que el cierre se aplicó y verificó con PowerShell 5.1, sin reescribir el aplicador, conservando el índice y limpiando sus temporales; después se fusionó PR #94. La base vigente es `90e6ab06b2a188fde9416fb0aac9e7366b7b04a6`, árbol `e4aaa33ecdef1eea1b7162dcba3c0349ef7d6cd0`. Sus checks Actions `38982578601` fueron Linux suite completa (`117246604306`) y Windows selección (`117246604151`), ambos en verde según lo aportado por Daniel. No se inventan recuentos ni se acredita suite completa Windows. La ampliación ML v3.2 tiene su propia validación local completada: suite completa nativa Windows y recorrido real, auditados por ChatGPT; véase la sección vigente de cinco familias. Quedan la aplicación/verificación del nuevo cierre documental en PowerShell 5.1 y Actions del futuro PR; la acreditación prospectiva permanece separada. Se conservan `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 
 Esta guía usa el equipo del operador:
 
@@ -25,7 +29,7 @@ Esta guía usa el equipo del operador:
 - intérprete: `$env:LOCALAPPDATA\loteria-predictor-venvs\ae68\Scripts\python.exe`;
 - puerto sugerido: **8007** (la Fase 3 puede seguir en 8006).
 
-El cierre vigente se aplica con `aplicar-fase4-cierre.ps1` y se documenta en
+El cierre histórico se aplicó con `aplicar-fase4-cierre.ps1` y se documentó en
 `fase4-guia-cierre-windows.md`; su manifiesto compara los 52 archivos antes y
 después y conserva los otros 48 byte a byte. No consulta la app ni los almacenes.
 Los paquetes anteriores se conservan intactos. La cadena histórica y sus
@@ -258,25 +262,11 @@ Fuentes primarias:
 - [CreateFileW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew).
 - [Semántica de FileRenameInfoEx y handles existentes (eryksun)](https://discuss.python.org/t/adding-atomicwrite-in-stdlib/11899/16).
 
-### Cierre documental actual: aplicar y devolver su comprobación
+### Cierre documental anterior: completado
 
-La implementación, las baterías locales y la revisión visual v3.4 descritas
-arriba ya terminaron. Usa únicamente `aplicar-fase4-cierre.ps1`, desde una
-**consola normal de Windows PowerShell 5.1**, siguiendo el inicio completo de
-`fase4-guia-cierre-windows.md`. Ese aplicador acepta v3.4 exacta o el cierre ya
-aplicado, comprueba base, rama, índice y contenido de los 52 archivos, compara
-LF/CRLF solo en memoria y aplica únicamente los cuatro documentos. Rechaza
-cambios ajenos antes de modificar y conserva el índice real y las variables
-de entorno. No abre `.env`, no lee almacenes reales ni consulta la aplicación,
-y no ejecuta pytest ni demostraciones.
+El procedimiento `aplicar-fase4-cierre.ps1` se conserva en las entregas históricas y ya fue aplicado y verificado por Daniel con PowerShell 5.1, consola normal; índice intacto y limpieza completada. PR #94 y sus checks previos terminaron. No se vuelve a aplicar ese incremental sobre la ampliación ML. Los recuentos 219/231 son instantáneas históricas, nunca guardas de código ni del aplicador.
 
-Devuelve su comprobación documental; Daniel realizará después commit, push y
-PR desde Windows. Las ejecuciones nuevas de GitHub Actions sobre ese PR, la
-suite completa nativa Windows y la acreditación prospectiva permanecen
-pendientes separados. No se repiten para este cierre las baterías Focal,
-Regresiones o ConEnlaces, la publicación nativa v3.3 ni las consultas, PDF o
-capturas ya auditados. Los recuentos 219/231 describen instantáneas históricas
-de datos; no son guardas del aplicador.
+La continuación documental es `aplicar-ml-cierre-documental.ps1`, con `ml-guia-cierre-documental-windows.md`, sobre el worktree ML v3.2 ya validado; conserva los anteriores. Solo aplica/verifica documentos y no consulta la app ni ejecuta baterías. La suite completa nativa Windows, el recorrido y la impresión ML están completados; quedan la aplicación/verificación de este cierre en PowerShell 5.1 y Actions del futuro PR, con acreditación prospectiva separada. Uvicorn permanece en consola normal.
 
 `continuar-fase4-windows-v3.4.ps1` fue el procedimiento de validación anterior:
 Focal y Regresiones en consola normal, ConEnlaces con el permiso de enlace
@@ -800,9 +790,9 @@ revisión no se atribuye a Windows. Imprimir no escribe.
 
 ## Validación
 
-El estado vigente y sus límites están en «Cierre local v3.4», al principio de
-este documento. La documentación de cierre incorpora evidencia existente y no
-declara nuevas ejecuciones del producto:
+El cierre histórico v3.4 y sus límites se conservan al principio; el estado
+vigente incluye PR #94 y la ampliación ML, cuya evidencia es independiente.
+Los grupos siguientes son antecedentes, no nuevas ejecuciones del producto:
 
 - **Codex Cloud, Linux sintético v3.4:** suite completa 6759 y selección
   filtrada 2514 aprobadas; OpenSSL `exigir` 7/7 en ambos JUnit, demostración
@@ -833,8 +823,10 @@ declara nuevas ejecuciones del producto:
   fallidas. La corrección nativa fue v3.3. Esos intentos y temporales no se
   reescriben ni se presentan como éxitos. Las pruebas sintéticas de Claude
   v2/v3 siguen con esa atribución en README/ROADMAP.
-- **Pendientes separados:** aplicar el cierre documental en Windows;
-  commit/push/PR por Daniel y GitHub Actions sobre ese PR final; suite completa
-  nativa Windows; acreditación prospectiva. Esta última requiere evidencia
-  suficiente por línea y tipo. Siguen `experimental_no_acreditado`, AE-39
-  NO-GO y `AUTORIZA_EVALUACION = False`.
+- **Pendientes vigentes separados:** aplicación/verificación de este cierre
+  documental en PowerShell 5.1; revisión y publicación manual por Daniel con
+  Actions del futuro PR; acreditación prospectiva por su cauce propio. La
+  implementación, suite completa nativa Windows, recorrido e impresión ML v3.2
+  están validados localmente. PR #94 y su cierre anterior ya terminaron. La
+  acreditación requiere evidencia suficiente por línea y tipo. Siguen
+  `experimental_no_acreditado`, AE-39 NO-GO y `AUTORIZA_EVALUACION = False`.

@@ -100,7 +100,10 @@ def test_solo_se_registran_modelos_con_parametros_aprendidos():
     registrables = {e.id for e in lm.CATALOGO.values() if lm.registrable(e)}
     assert registrables == {"actual_logistica_ae36", "logistica_regularizada", "hgb_clasificador",
                             "random_forest_clasificador", "extra_trees_clasificador", "poisson_regularizado",
-                            "hgb_poisson", "random_forest_poisson", "extra_trees_poisson"}
+                            "hgb_poisson", "random_forest_poisson", "extra_trees_poisson",
+                            "xgboost_binario", "lightgbm_binario", "red_neuronal_binaria", "bayes_jerarquico_binario",
+                            "markov_apariciones", "xgboost_poisson", "lightgbm_poisson", "red_neuronal_poisson",
+                            "bayes_jerarquico_pares", "markov_pares"}
     with pytest.raises(mr.ModeloRegistradoError) as error:
         mr.entrenar(_informe("MILOTO", 87), lm.CATALOGO["actual_frecuencia_contraida"])
     assert error.value.estado == "no_registrable"
