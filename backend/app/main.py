@@ -27,6 +27,7 @@ from app.api.rest.routers import producto as rest_producto
 from app.api.rest.routers import resultados as rest_resultados
 from app.api.rest.routers import sorteos as rest_sorteos
 from app.api.web.routers import carteras as web_carteras
+from app.api.web.routers import automatizacion as web_automatizacion
 from app.api.web.routers import colores as web_colores
 from app.api.web.routers import dashboard as web_dashboard
 from app.api.web.routers import estadisticas as web_estadisticas
@@ -46,6 +47,7 @@ from app.application.exceptions import (
     JuegoNoEncontradoError,
     JuegoNoSoportadoError,
     JuegoSinSuperbalotaError,
+    OperacionConcurrenteError,
     ResultadoHistoricoInconsistenteError,
     SorteoDuplicadoError,
     SorteoInvalidoError,
@@ -67,6 +69,7 @@ app.include_router(web_estadisticas.router)
 # Fase 5: despues del router anterior, para que sus rutas literales de ColorLoto conserven la prioridad.
 app.include_router(web_estadisticas_descriptivas.router)
 app.include_router(web_operacion.router)
+app.include_router(web_automatizacion.router)
 app.include_router(web_laboratorio.router)
 app.include_router(web_carteras.router)
 app.include_router(web_resultados.router)
@@ -91,6 +94,7 @@ _STATUS_POR_EXCEPCION = {
     JuegoSinSuperbalotaError: 422,
     SorteoNoEncontradoError: 404,
     SorteoDuplicadoError: 409,
+    OperacionConcurrenteError: 409,
     SorteoInvalidoError: 422,
     ColorNoVigenteError: 422,
     ConectorNoDisponibleError: 502,

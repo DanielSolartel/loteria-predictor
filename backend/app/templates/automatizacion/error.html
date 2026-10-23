@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion automatizacion-pagina"{% endblock %}
+{% block extra_head %}<link href="/static/css/automatizacion.css" rel="stylesheet">{% endblock %}
+{% block title %}Automatización: revisión necesaria{% endblock %}
+{% block content %}
+<h1 class="h3">Actualización automática</h1>
+<div class="alert alert-danger" role="alert">{{ mensaje }}</div>
+<a href="/automatizacion">Volver al seguimiento</a>
+{% endblock %}

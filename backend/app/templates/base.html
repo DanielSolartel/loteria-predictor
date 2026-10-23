@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js"></script>
+    {% block extra_head %}{% endblock %}
 </head>
 <body{% block clase_body %}{% endblock %}>
     <nav class="navbar navbar-dark topbar sticky-top">
@@ -18,6 +19,7 @@
             <span class="navbar-text text-white-50 small">
                 <i class="bi bi-database-fill me-1"></i>{{ estado_db|default("Desconectado") }}
             </span>
+            <a class="btn btn-sm btn-outline-light d-md-none" href="/automatizacion">Automatización</a>
         </div>
     </nav>
 
@@ -77,6 +79,11 @@
                 <li class="nav-item">
                     <a class="nav-link {% if active_page == 'operacion' %}active{% endif %}" href="/operacion">
                         <i class="bi bi-calendar-check me-2"></i>Panel diario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_page == 'automatizacion' %}active{% endif %}" href="/automatizacion">
+                        <i class="bi bi-arrow-repeat me-2"></i>Actualización automática
                     </a>
                 </li>
                 <li class="nav-item">

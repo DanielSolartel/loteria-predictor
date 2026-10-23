@@ -17,3 +17,4 @@ storage/resultados/*
 !storage/resultados/.gitkeep
 storage/predicciones/*
 !storage/predicciones/.gitkeep
+storage/automatizacion/

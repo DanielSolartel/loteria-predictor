@@ -1,0 +1,18 @@
+{% macro momento(valor) -%}
+{{ valor|fecha_operativa }}
+{%- endmacro %}
+
+{% macro pasos(lista, estados) -%}
+{% if lista %}
+<ol class="auto-pasos">
+{% for paso in lista %}
+    <li><strong>{{ paso.get('paso') or paso.get('nombre') or 'Paso' }}</strong>
+        {% if paso.get('estado') %}<span>{{ estados.get(paso.estado, paso.estado|replace('_', ' ')) }}</span>{% endif %}
+        {% if paso.get('en') %}<time datetime="{{ paso.en }}">{{ paso.en|fecha_operativa }}</time>{% endif %}
+        {% if paso.get('motivo') or paso.get('mensaje') %}<p>{{ paso.get('motivo') or paso.get('mensaje') }}</p>{% endif %}
+        {% if paso.get('resultado') %}<pre>{{ paso.resultado|tojson(indent=2) }}</pre>{% endif %}
+    </li>
+{% endfor %}
+</ol>
+{% else %}<p class="text-muted small mb-0">No hay pasos guardados.</p>{% endif %}
+{%- endmacro %}

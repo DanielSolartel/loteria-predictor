@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% from "automatizacion/_macros.html" import momento, pasos %}
+{% block clase_body %} class="producto1-impresion automatizacion-pagina"{% endblock %}
+{% block extra_head %}<link href="/static/css/automatizacion.css" rel="stylesheet">{% endblock %}
+{% block title %}Actualización automática{% endblock %}
+{% block content %}
+{% set estado = panel.get('estado', 'sin_configurar') %}
+<header class="auto-cabecera mb-3">
+    <div><p class="text-muted small mb-1">Operación de los cuatro juegos</p><h1 class="h3 mb-0">Actualización automática</h1></div>
+    <span class="auto-estado" data-estado="{{ estado }}">{{ estados.get(estado, estado|replace('_', ' ')) }}</span>
+</header>
+<p class="auto-contexto">La tarea de Windows puede comprobar resultados con la interfaz cerrada mientras la sesión y el equipo estén disponibles.
+    Este panel consulta lo guardado: abrirlo no sincroniza ni genera predicciones.</p>
+<div class="alert alert-warning py-2 small auto-aviso-cientifico">
+    <strong>Experimental, no acreditado.</strong> La automatización no acredita ventaja predictiva. AE-39 NO-GO;
+    <code>AUTORIZA_EVALUACION = False</code>.
+</div>
+
+<section class="card stat-card p-3 mb-3 auto-controles" aria-labelledby="auto-control-titulo">
+    <h2 class="h6" id="auto-control-titulo">Control del seguimiento</h2>
+    <p class="small text-muted">Pausar conserva los modelos, las predicciones y el historial. Reanudar no instala ni habilita la tarea de Windows.
+        La comprobación puntual ejecuta un ciclo con sus límites actuales; no activa una programación.</p>
+    <div class="auto-acciones">
+        {% for accion, etiqueta in [('pausar', 'Pausar seguimiento'), ('reanudar', 'Reanudar seguimiento'), ('comprobar', 'Comprobar ahora'), ('recuperar', 'Recuperar interrupciones')] %}
+        <form method="post" action="/automatizacion/{{ accion }}">
+            <input type="hidden" name="token_local" value="{{ token_local }}">
+            <input type="hidden" name="juego" value="todos">
+            <button class="btn btn-sm {{ 'btn-primary' if accion == 'comprobar' else 'btn-outline-primary' }}">{{ etiqueta }}</button>
+        </form>
+        {% endfor %}
+        <a class="btn btn-sm btn-outline-secondary" href="/automatizacion">Actualizar estado</a>
+    </div>
+    <p class="small text-muted mb-0 mt-2">La instalación y activación de la tarea se realizan de forma explícita en el equipo.
+        Su estado en Windows no se deduce de que este seguimiento esté habilitado.</p>
+</section>
+
+{% if panel.get('rutas_verificadas') is sameas false %}
+<div class="alert alert-danger" role="status">Las rutas operativas aún no coinciden con los destinos esperados. Revisa la configuración antes de activar la tarea.</div>
+{% endif %}
+{% if panel.get('avisos') %}
+<section class="auto-avisos mb-3" aria-labelledby="auto-avisos-titulo">
+    <h2 class="h5" id="auto-avisos-titulo">Avisos guardados</h2>
+    {% for aviso in panel.avisos %}<div class="alert alert-warning py-2">
+        {% if aviso is mapping %}{{ aviso.get('mensaje') or aviso.get('motivo') or aviso.get('estado') or 'Revisa el detalle de la ejecución.' }}{% else %}{{ aviso }}{% endif %}
+    </div>{% endfor %}
+</section>
+{% endif %}
+
+<section class="auto-juegos" aria-label="Estado por juego">
+{% for juego in panel.get('juegos', []) %}
+{% set codigo = juego.get('codigo') or juego.get('juego') %}
+{% set estado_juego = juego.get('estado', 'sin_ejecutar') %}
+<article class="card stat-card p-3 auto-juego" data-juego="{{ codigo }}">
+    <header class="auto-cabecera mb-2"><h2 class="h5 mb-0">{{ nombres.get(codigo, codigo) }}</h2>
+        <span class="auto-estado" data-estado="{{ estado_juego }}">{{ estados.get(estado_juego, estado_juego|replace('_', ' ')) }}</span></header>
+    {% if juego.get('motivo') or juego.get('mensaje') %}<p class="auto-motivo" role="status">{{ juego.get('motivo') or juego.get('mensaje') }}</p>{% endif %}
+    <dl class="auto-datos">
+        <dt>Último sorteo cargado</dt><dd>{{ juego.get('ultimo_sorteo') or 'Sin registrar' }}</dd>
+        <dt>Última comprobación</dt><dd>{{ momento(juego.get('ultima_comprobacion')) }}</dd>
+        <dt>Última actualización</dt><dd>{{ momento(juego.get('ultima_actualizacion')) }}</dd>
+        <dt>Siguiente evento previsto</dt><dd>{{ momento(juego.get('proximo_evento')) }}</dd>
+        <dt>Próxima consulta</dt><dd>{{ momento(juego.get('proxima_consulta')) }}</dd>
+        {% if juego.get('objetivo') %}<dt>Objetivo de la emisión</dt><dd>{{ juego.objetivo }}</dd>{% endif %}
+    </dl>
+    {% set conf = juego.get('configuracion_modelo') or juego.get('configuracion') or {} %}
+    {% set modelo = conf.get('modelo') or {} %}
+    {% set registrado = modelo.get('registrado') or conf.get('registrado') or {} %}
+    <div class="auto-version small">
+        <strong>Configuración del ciclo</strong>
+        {% if conf %}<div>{{ modelo.get('id') or conf.get('modelo_id') or conf.get('id') or 'Modelo elegido' }}
+            {% if registrado.get('numero') %} · versión {{ registrado.numero }}{% endif %}</div>
+            {% if registrado.get('clave') %}<code class="auto-huella">{{ registrado.clave }}</code>{% endif %}
+            {% if conf.get('cantidad') %}<div>{{ conf.cantidad }} combinaciones</div>{% endif %}
+        {% else %}<div>Sin versión registrada en este estado. El ciclo debe indicar el bloqueo; no elige un sustituto.</div>{% endif %}
+    </div>
+    {% set ejecucion_id = juego.get('ejecucion') or juego.get('ejecucion_id') %}
+    {% if ejecucion_id is mapping %}{% set ejecucion_id = ejecucion_id.get('id') %}{% endif %}
+    {% if ejecucion_id %}<p class="small mt-2"><a href="/automatizacion/ejecuciones/{{ ejecucion_id }}">Ver ejecución y pasos</a></p>{% endif %}
+    {{ pasos(juego.get('pasos', []), estados) }}
+    <div class="auto-acciones auto-acciones-juego mt-3">
+        <form method="post" action="/automatizacion/comprobar"><input type="hidden" name="token_local" value="{{ token_local }}">
+            <input type="hidden" name="juego" value="{{ codigo }}"><button class="btn btn-sm btn-outline-primary">Comprobar {{ nombres.get(codigo, codigo) }}</button></form>
+        <a class="btn btn-sm btn-outline-secondary" href="/predicciones/{{ {'BALOTO':'baloto','BALOTO_REVANCHA':'baloto-revancha','MILOTO':'miloto','COLORLOTO':'colorloto'}.get(codigo, '') }}">Predicciones guardadas</a>
+    </div>
+</article>
+{% else %}<p class="text-muted">Todavía no hay estados por juego. Prepara y verifica la configuración operativa antes de activar el seguimiento.</p>{% endfor %}
+</section>
+
+<section class="mt-4" aria-labelledby="auto-historial-titulo">
+    <h2 class="h5" id="auto-historial-titulo">Historial de ejecuciones</h2>
+    <p class="small text-muted">Una interrupción conserva lo ya publicado. Recuperar actualiza el registro; no reescribe emisiones ni borra temporales históricos.</p>
+    <ol class="auto-historial">
+    {% for ejecucion in panel.get('ejecuciones', []) %}<li>
+        <a href="/automatizacion/ejecuciones/{{ ejecucion.id }}">{{ momento(ejecucion.get('iniciada_en')) }}</a>
+        <span>{{ estados.get(ejecucion.get('estado'), ejecucion.get('estado', '')|replace('_', ' ')) }}</span>
+    </li>{% else %}<li class="text-muted">Sin ejecuciones guardadas.</li>{% endfor %}
+    </ol>
+</section>
+
+{% if panel.get('revisiones') %}<section class="mt-4" aria-labelledby="auto-revisiones-titulo">
+    <h2 class="h5" id="auto-revisiones-titulo">Resultados pendientes de revisión</h2>
+    <p class="small">Una diferencia con la fuente se conserva como revisión. No cambia automáticamente el resultado ni las predicciones originales.</p>
+    <ul class="auto-revisiones">{% for revision in panel.revisiones %}<li>
+        <strong>{{ nombres.get(revision.get('juego'), revision.get('juego')) }} · sorteo {{ revision.get('numero_sorteo') }}</strong>
+        <span>{{ estados.get(revision.get('estado'), revision.get('estado', 'pendiente')|replace('_', ' ')) }}</span>
+        {% if revision.get('clave') %}<code class="auto-huella">{{ revision.clave }}</code>{% endif %}
+    </li>{% endfor %}</ul>
+    <a href="/sorteos">Consultar los sorteos antes de revisar una corrección</a>
+</section>{% endif %}
+<p class="small text-muted mt-3">Momentos mostrados en Bogotá con su offset; si falta la zona IANA se conserva el dato original y se indica.
+    La ausencia de un resultado en la base local no demuestra que el sorteo todavía sea futuro.</p>
+{% endblock %}

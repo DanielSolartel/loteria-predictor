@@ -79,6 +79,8 @@ class Inicio:
     tipo: str
     juegos: tuple[str, ...] = field(default_factory=tuple)
     parametros: dict = field(default_factory=dict)
+    # Guardia operativa inyectada; no forma parte del artefacto ni su receta.
+    guardia_publicacion: Callable[[], None] | None = field(default=None, repr=False)
 
 
 def _ahora() -> datetime:
@@ -223,7 +225,8 @@ class CarterasDeModelos:
     # Trabajos en segundo plano
     # ------------------------------------------------------------------
 
-    def iniciar(self, tipo: str, juegos: Iterable[str], parametros: dict | None = None, origen: str = "web") -> Inicio:
+    def iniciar(self, tipo: str, juegos: Iterable[str], parametros: dict | None = None, origen: str = "web", *,
+                guardia_publicacion: Callable[[], None] | None = None) -> Inicio:
         if tipo not in TIPOS_DE_TRABAJO:
             raise CarterasError("no_valido", f"trabajo no admitido: {tipo!r}")
         juegos = tuple(dict.fromkeys(juegos))
@@ -265,14 +268,15 @@ class CarterasDeModelos:
         except BaseException:
             cerrojos.liberar()
             raise
-        return Inicio(ejecucion, cerrojos, tipo, juegos, parametros)
+        return Inicio(ejecucion, cerrojos, tipo, juegos, parametros, guardia_publicacion)
 
     def ejecutar(self, inicio: Inicio) -> dict:
         ejecucion = inicio.ejecucion
         try:
             for juego in inicio.juegos:
                 ejecucion["fase"] = "trabajando"
-                ejecucion["juegos"][juego] = self._procesar_juego(ejecucion, juego, inicio.tipo, inicio.parametros)
+                ejecucion["juegos"][juego] = self._procesar_juego(
+                    ejecucion, juego, inicio.tipo, inicio.parametros, inicio.guardia_publicacion)
                 inicio.cerrojos.liberar(juego)
                 self._registro.guardar(ejecucion)
             estados = Counter(r["estado"] for r in ejecucion["juegos"].values())
@@ -301,7 +305,8 @@ class CarterasDeModelos:
             r.pop(k, None)
         return r
 
-    def _procesar_juego(self, ejecucion: dict, juego: str, tipo: str, parametros: dict) -> dict:
+    def _procesar_juego(self, ejecucion: dict, juego: str, tipo: str, parametros: dict,
+                        guardia_publicacion: Callable[[], None] | None = None) -> dict:
         r = {"juego": juego, "estado": "en_curso", "fase": "inicio", "inicio": self._reloj().isoformat(), "fin": None,
              "resultado": None, "mensaje": None}
         avance = (lambda fase, **d: self._avance(ejecucion, r, fase, **d))
@@ -321,7 +326,7 @@ class CarterasDeModelos:
                 if c["modelo"].get("registrado"):
                     parametros["registrado"] = c["modelo"]["registrado"]["clave"]
                 r["configuracion"] = parametros["configuracion"]
-            return self._generar_juego(ejecucion, r, juego, parametros, avance)
+            return self._generar_juego(ejecucion, r, juego, parametros, avance, guardia_publicacion)
         except ce.MuestraInsuficienteCarteras as error:
             return self._cerrar(r, "muestra_insuficiente", str(error))
         except TiempoAgotadoError as error:
@@ -388,14 +393,15 @@ class CarterasDeModelos:
             extra["objetivo"] = existente.objetivo
         return self._cerrar(r, "reutilizado" if reutilizado else "terminado", None, **extra)
 
-    def _generar_juego(self, ejecucion, r, juego, parametros, avance) -> dict:
+    def _generar_juego(self, ejecucion, r, juego, parametros, avance, guardia_publicacion=None) -> dict:
         completo = self._leer(r, juego, avance)
         instantanea = self._instantanea(juego, completo, parametros.get("corte"))
-        resultado = self._publicar_cartera(instantanea, completo, parametros, ejecucion, r, avance)
+        resultado = self._publicar_cartera(instantanea, completo, parametros, ejecucion, r, avance,
+                                          guardia_publicacion=guardia_publicacion)
         return resultado
 
     def _publicar_cartera(self, instantanea: lv.Instantanea, completo: list | None, parametros: dict,
-                          ejecucion: dict | None, r: dict, avance) -> dict:
+                          ejecucion: dict | None, r: dict, avance, *, guardia_publicacion=None) -> dict:
         juego = instantanea.codigo
         modelo = parametros["modelo"]
         perfil = parametros.get("perfil", "predeterminado")
@@ -436,6 +442,10 @@ class CarterasDeModelos:
             ultima = max(completo, key=lambda x: x.numero_sorteo).fecha
             generacion["frescura"] = evaluar_frescura(ultima, ahora.date())
         artefacto = ca.componer(cuerpo, "generacion", generacion)
+        # Fase 6 vuelve a contrastar el reloj y la base justo antes de escribir.
+        # Las llamadas manuales conservan su contrato y no reciben esta guardia.
+        if guardia_publicacion is not None:
+            guardia_publicacion()
         try:
             guardado = self._almacen.guardar_cartera(artefacto)
         except FileExistsError:
