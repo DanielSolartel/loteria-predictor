@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     # explicacion versionada y el registro de sus pasos.
     directorio_predicciones_modelos: str = "storage/predicciones"
 
+    # Fase 6: control explícito, separado de los modelos elegidos. Construir la
+    # aplicación no crea esta configuración ni activa el Programador de tareas.
+    directorio_automatizacion: str = "storage/automatizacion"
+    archivo_operacion_automatica: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

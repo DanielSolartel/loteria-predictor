@@ -1,0 +1,36 @@
+/* Fase 6: estilos limitados al panel nuevo; las páginas anteriores conservan su impresión. */
+.automatizacion-pagina .auto-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem; }
+.automatizacion-pagina .auto-contexto { max-width: 75ch; }
+.automatizacion-pagina .auto-estado { display: inline-block; border: 1px solid #b6b0ce; border-radius: .4rem; background: #f0edfc; color: #322a63; padding: .25rem .55rem; font-size: .85rem; font-weight: 600; max-width: 100%; overflow-wrap: anywhere; }
+.automatizacion-pagina .auto-estado[data-estado="fallo"], .automatizacion-pagina .auto-estado[data-estado="error"], .automatizacion-pagina .auto-estado[data-estado="bloqueado"] { background: #fff1f1; border-color: #d48b8b; color: #842029; }
+.automatizacion-pagina .auto-estado[data-estado="ok"], .automatizacion-pagina .auto-estado[data-estado="exito"], .automatizacion-pagina .auto-estado[data-estado="correcto"] { background: #eaf5ef; border-color: #92b9a4; color: #135331; }
+.automatizacion-pagina .auto-acciones { display: flex; flex-wrap: wrap; align-items: start; gap: .6rem; }
+.automatizacion-pagina .auto-acciones form { margin: 0; }
+.automatizacion-pagina .auto-juegos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.automatizacion-pagina .auto-juego { min-width: 0; }
+.automatizacion-pagina .auto-datos { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: .35rem .75rem; margin: .8rem 0; font-size: .9rem; }
+.automatizacion-pagina .auto-datos dt, .automatizacion-pagina .auto-datos dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.automatizacion-pagina .auto-version { border-top: 1px solid #e3e3ee; border-bottom: 1px solid #e3e3ee; padding: .65rem 0; }
+.automatizacion-pagina .auto-huella { display: block; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+.automatizacion-pagina .auto-motivo { background: #fff6df; border-left: .2rem solid #997319; padding: .5rem .65rem; font-size: .9rem; }
+.automatizacion-pagina .auto-pasos { padding-left: 1.25rem; margin: .8rem 0 0; font-size: .9rem; }
+.automatizacion-pagina .auto-pasos li { margin-bottom: .65rem; overflow-wrap: anywhere; }
+.automatizacion-pagina .auto-pasos time { display: block; color: #555; font-size: .8rem; }
+.automatizacion-pagina .auto-pasos p { margin-bottom: .25rem; }
+.automatizacion-pagina .auto-pasos pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; margin: .25rem 0; }
+.automatizacion-pagina .auto-historial, .automatizacion-pagina .auto-revisiones { padding-left: 1.3rem; }
+.automatizacion-pagina .auto-historial li, .automatizacion-pagina .auto-revisiones li { margin: .65rem 0; overflow-wrap: anywhere; }
+.automatizacion-pagina .auto-historial span, .automatizacion-pagina .auto-revisiones span { display: block; font-size: .9rem; }
+@media screen and (max-width: 767.98px) {
+    .automatizacion-pagina .auto-juegos { grid-template-columns: minmax(0, 1fr); }
+    .automatizacion-pagina .content-area { min-width: 0; padding: 1rem !important; }
+    .automatizacion-pagina .auto-acciones .btn { white-space: normal; text-align: left; }
+}
+@media print {
+    body.automatizacion-pagina .auto-controles, body.automatizacion-pagina .auto-acciones { display: none !important; }
+    body.automatizacion-pagina .auto-juegos { display: block; }
+    body.automatizacion-pagina .auto-juego { display: block; break-inside: auto; page-break-inside: auto; margin: 0 0 .4cm; box-shadow: none; }
+    body.automatizacion-pagina .auto-cabecera { break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+    body.automatizacion-pagina .auto-pasos li { break-inside: avoid; }
+    body.automatizacion-pagina .auto-estado { background: transparent; color: #111; }
+}

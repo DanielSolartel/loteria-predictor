@@ -45,6 +45,7 @@ Siguen `experimental_no_acreditado`, el NO-GO de AE-39 y
 from __future__ import annotations
 
 import errno
+import copy
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -185,15 +186,33 @@ class CentroDePredicciones:
     # Generar (escribe: cartera de Producto 5 y explicacion)
     # ------------------------------------------------------------------
 
-    def iniciar(self, juego: str, cantidad: str = "configuracion", origen: str = "web") -> InicioPrediccion:
+    def iniciar(self, juego: str, cantidad: str = "configuracion", origen: str = "web", *,
+                configuracion_congelada: dict | None = None,
+                guardia_publicacion: Callable[[], None] | None = None) -> InicioPrediccion:
         _validar_juego(juego)
-        conf = self._configuracion(juego)
+        if configuracion_congelada is None:
+            conf = self._configuracion(juego)
+        else:
+            # Se admite una version elegida y guardada anteriormente aunque el
+            # usuario haya seleccionado otra despues de iniciar el ciclo.
+            congelada = copy.deepcopy(configuracion_congelada)
+            if congelada.get("juego") != juego or not ca.integro(congelada):
+                raise PrediccionesError("alterado", "La configuracion congelada no es integra o pertenece a otro juego")
+            versiones = self._carteras.configuraciones(juego)
+            coincide = any(getattr(g, "artefacto", None) == congelada for g in versiones)
+            if not coincide:
+                raise PrediccionesError("alterado", "La configuracion congelada no coincide con una version guardada")
+            conf = {"estado": "vigente", "artefacto": congelada, "mensaje": None}
         if conf["estado"] != "vigente":
             raise PrediccionesError("sin_configuracion" if conf["estado"] == "sin_configuracion" else "alterado",
                                     conf["mensaje"])
         parametros = self._parametros(conf["artefacto"], cantidad)
         try:
-            inicio = self._carteras.iniciar("cartera", [juego], parametros, origen)
+            if guardia_publicacion is None:
+                inicio = self._carteras.iniciar("cartera", [juego], parametros, origen)
+            else:
+                inicio = self._carteras.iniciar("cartera", [juego], parametros, origen,
+                                                guardia_publicacion=guardia_publicacion)
         except CarterasError as error:
             raise PrediccionesError(error.codigo, str(error)) from error
         try:

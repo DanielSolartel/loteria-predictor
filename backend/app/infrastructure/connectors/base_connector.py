@@ -47,7 +47,14 @@ _HEADERS = {
 
 
 class ConectorFetchError(Exception):
-    """Se agotaron los reintentos al pedir una URL."""
+    """Fallo de obtención; conserva HTTP en memoria para planificar la espera.
+
+    La respuesta no se serializa como parte de los registros operativos.
+    ``response`` es opcional para conservar los constructores históricos.
+    """
+    def __init__(self, mensaje: str, *, response=None):
+        super().__init__(mensaje)
+        self.response = response
 
 
 class BaseConnector(DrawSourceConnector):
@@ -112,28 +119,55 @@ class BaseConnector(DrawSourceConnector):
             except requests.exceptions.HTTPError as e:
                 status = e.response.status_code if e.response is not None else None
                 self._logger.error("[ERROR_HTTP] Código %s en %s", status, url)
-                if status is not None and 400 <= status < 500:
-                    raise ConectorFetchError(f"Error HTTP {status} en {url}") from e
+                # El planificador debe respetar la espera pedida por el
+                # proveedor. Dormir el backoff local y reintentar aquí podría
+                # volver a consultar antes de Retry-After.
+                espera_proveedor = (e.response.headers.get("Retry-After")
+                                     if e.response is not None else None)
+                if (status is not None and 400 <= status < 500) or (
+                        status == 503 and espera_proveedor is not None):
+                    raise ConectorFetchError(f"Error HTTP {status} en {url}", response=e.response) from e
                 ultimo_error = e
                 time.sleep(self._pausa * (2**intento))
 
         raise ConectorFetchError(
-            f"Se agotaron los {self._max_reintentos} reintentos para {url}: {ultimo_error}"
-        )
+            f"Se agotaron los {self._max_reintentos} reintentos para {url}: {ultimo_error}",
+            response=getattr(ultimo_error, "response", None),
+        ) from ultimo_error
 
     # ------------------------------------------------------------------
     # Implementación compartida del puerto
     # ------------------------------------------------------------------
     def fetch_draws(self, ultimo_conocido: int | None = None, max_paginas: int | None = None) -> list[DrawSummary]:
+        return self._descubrir(ultimo_conocido, max_paginas, pagina_inicial=1)
+
+    def fetch_draws_desde(self, pagina_inicial: int, max_paginas: int = 3) -> list[DrawSummary]:
+        """Recuperación acotada de Fase 6 sin releer todo el prefijo.
+
+        Reutiliza exactamente el descubrimiento y el parser existentes. El
+        ejecutor conserva el cursor entre ciclos y consulta aparte el frente
+        actual para no perder novedades mientras recupera un hueco antiguo.
+        """
+        if type(pagina_inicial) is not int or type(max_paginas) is not int or \
+                pagina_inicial < 1 or not 1 <= max_paginas <= 10:
+            raise ValueError("La recuperación requiere página positiva y 1..10 páginas por ventana")
+        if pagina_inicial > self._max_paginas_absoluto:
+            raise ValueError("El cursor excede el techo de seguridad del conector")
+        return self._descubrir(None, max_paginas, pagina_inicial=pagina_inicial)
+
+    def _descubrir(self, ultimo_conocido, max_paginas, *, pagina_inicial):
         resumenes: list[DrawSummary] = []
-        pagina = 1
+        pagina = pagina_inicial
         paginas_leidas = 0
-        limite = min(max_paginas or self._max_paginas_absoluto, self._max_paginas_absoluto)
+        cantidad = max_paginas or self._max_paginas_absoluto
+        limite = min(pagina_inicial + cantidad - 1, self._max_paginas_absoluto)
+        self._hay_mas_paginas = False
 
         while pagina <= limite:
             html = self._get(self._url_listado(pagina))
             paginas_leidas += 1
             pagina_resumenes, hay_siguiente = self._parsear_pagina_listado(html)
+            self._hay_mas_paginas = hay_siguiente
 
             if not pagina_resumenes:
                 self._logger.info("Página %d sin sorteos reconocibles; se detiene el descubrimiento.", pagina)

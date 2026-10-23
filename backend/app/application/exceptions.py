@@ -32,6 +32,10 @@ class DominioError(Exception):
     """Base de todas las excepciones de dominio/aplicación."""
 
 
+class OperacionConcurrenteError(DominioError):
+    """Otra operacion mantiene el recurso del juego; no se cambia el dato."""
+
+
 class JuegoNoEncontradoError(DominioError):
     def __init__(self, codigo_o_id: str):
         super().__init__(f"Juego no encontrado: {codigo_o_id}")

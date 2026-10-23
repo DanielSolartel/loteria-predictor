@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "automatizacion/_macros.html" import momento, pasos %}
+{% block clase_body %} class="producto1-impresion automatizacion-pagina"{% endblock %}
+{% block extra_head %}<link href="/static/css/automatizacion.css" rel="stylesheet">{% endblock %}
+{% block title %}Ejecución automática{% endblock %}
+{% block content %}
+<header class="auto-cabecera"><h1 class="h3">Ejecución de actualización automática</h1>
+    <span class="auto-estado">{{ estados.get(ejecucion.get('estado'), ejecucion.get('estado', '')|replace('_', ' ')) }}</span></header>
+<p class="auto-huella">{{ ejecucion.id }}</p>
+<p class="auto-controles"><a href="/automatizacion">Volver al seguimiento</a> · <a href="/automatizacion/ejecuciones/{{ ejecucion.id }}">Actualizar estado</a></p>
+<dl class="auto-datos"><dt>Inicio</dt><dd>{{ momento(ejecucion.get('iniciada_en')) }}</dd>
+    <dt>Finalización</dt><dd>{{ momento(ejecucion.get('finalizada_en')) }}</dd>
+    <dt>Origen</dt><dd>{{ ejecucion.get('origen') or 'Sin registrar' }}</dd></dl>
+{% if ejecucion.get('mensaje') or ejecucion.get('motivo') %}<p class="alert alert-warning">{{ ejecucion.get('mensaje') or ejecucion.get('motivo') }}</p>{% endif %}
+{% set juegos = ejecucion.get('juegos') or {} %}
+{% if juegos is mapping %}{% set filas = juegos.items() %}{% else %}{% set filas = [] %}{% endif %}
+{% for codigo, juego in filas %}<section class="card stat-card p-3 mb-3 auto-juego">
+    <header class="auto-cabecera"><h2 class="h5">{{ nombres.get(codigo, codigo) }}</h2>
+        <span class="auto-estado">{{ estados.get(juego.get('estado'), juego.get('estado', '')|replace('_', ' ')) }}</span></header>
+    {% if juego.get('motivo') or juego.get('mensaje') %}<p role="status">{{ juego.get('motivo') or juego.get('mensaje') }}</p>{% endif %}
+    {{ pasos(juego.get('pasos', []), estados) }}
+</section>{% else %}{{ pasos(ejecucion.get('pasos', []), estados) }}{% endfor %}
+<p class="small text-muted">Consulta de solo lectura. Los resultados y emisiones previos se conservan; una interrupción no equivale a una ejecución completada.</p>
+{% endblock %}

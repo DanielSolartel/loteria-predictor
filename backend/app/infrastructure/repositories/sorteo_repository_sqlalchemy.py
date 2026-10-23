@@ -28,6 +28,7 @@ from app.infrastructure.db.models import (
     SorteoORM,
     SorteoSuperbalotaORM,
 )
+from app.infrastructure.operacion_advisory import proteger_escritura
 
 
 def _to_entity(orm: SorteoORM) -> Sorteo:
@@ -57,6 +58,7 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
         self._session = session
 
     def guardar(self, sorteo: Sorteo) -> Sorteo:
+        proteger_escritura(self._session, sorteo.juego_id)
         orm = SorteoORM(
             juego_id=sorteo.juego_id,
             numero_sorteo=sorteo.numero_sorteo,
@@ -196,7 +198,7 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
         )
 
     def actualizar(self, sorteo: Sorteo) -> Sorteo:
-
+        proteger_escritura(self._session, sorteo.juego_id)
         orm = self._session.get(SorteoORM, sorteo.id)
         if orm is None:
             raise SorteoNoEncontradoError(str(sorteo.id))
@@ -210,6 +212,11 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
         # posición a posición -es más simple y el volumen por sorteo
         # es pequeño (5-6 elementos), así que el costo es despreciable.
         orm.numeros.clear()
+        orm.colores_numeros.clear()
+        # DELETE debe preceder a INSERT: las posiciones son únicas dentro
+        # del sorteo. Todo permanece en la misma transacción, sin commit;
+        # un resultado nuevo inválido sigue restituyendo el anterior.
+        self._session.flush()
         for posicion, numero in enumerate(sorteo.resultado.numeros, start=1):
             orm.numeros.append(SorteoNumeroORM(numero=numero, posicion=posicion))
 
@@ -221,7 +228,6 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
         elif orm.superbalota:
             self._session.delete(orm.superbalota)
 
-        orm.colores_numeros.clear()
         for posicion, par in enumerate(sorteo.resultado.pares, start=1):
             color_orm = self._session.scalar(
                 select(ColorORM).where(
@@ -243,5 +249,6 @@ class SorteoRepositorySQLAlchemy(SorteoRepository):
         orm = self._session.get(SorteoORM, sorteo_id)
         if orm is None:
             raise SorteoNoEncontradoError(str(sorteo_id))
+        proteger_escritura(self._session, orm.juego_id)
         self._session.delete(orm)
         self._session.flush()
