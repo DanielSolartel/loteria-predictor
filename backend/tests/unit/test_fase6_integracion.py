@@ -12,10 +12,11 @@ from dataclasses import asdict, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import UUID
 
 import pytest
-from sqlalchemy import JSON, MetaData, create_engine
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON, MetaData, Uuid, create_engine
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
@@ -33,9 +34,12 @@ from app.domain.value_objects.color import Color, ColorNumberPair
 from app.domain.value_objects.combination import Combination
 from app.infrastructure.connectors.base_connector import BaseConnector
 from app.infrastructure.db.base import Base
-from app.infrastructure.db.models import ColorORM, JuegoORM
+from app.infrastructure.db.models import ColorORM, JuegoORM, SorteoNumeroORM, SorteoORM
 from app.infrastructure.operacion_advisory import proteger_ciclo, proteger_escritura
 from app.infrastructure.operacion_automatica_adaptador import AdaptadorOperacion, BloqueoOperacion
+from app.infrastructure.repositories.resultados_historicos_repository_sqlalchemy import (
+    ResultadosHistoricosRepositorySQLAlchemy,
+)
 from app.infrastructure.repositories.sorteo_repository_sqlalchemy import SorteoRepositorySQLAlchemy
 from app.infrastructure.storage.automatizacion_file_store import AlmacenAutomatizacion
 from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore
@@ -93,11 +97,8 @@ def _registrar_modelo(store, codigo, completo):
     return entrada.id, guardado.identificador
 
 
-def entorno(raiz, codigo="BALOTO", *, registrar=True):
-    e = f4.entorno(raiz / "f", {j: 120 for j in JUEGOS})
-    engine = create_engine("sqlite+pysqlite:///" + str(raiz / "datos.sqlite"), poolclass=NullPool)
-    # Mismos nombres, columnas y repositorios de producción. La variante
-    # JSON solo adapta el DDL del fixture a SQLite, sin tocar el esquema PG.
+def _metadatos_sqlite():
+    """Adapta solo el DDL del fixture; conserva el mapeo ORM de producción."""
     meta = MetaData()
     for tabla in Base.metadata.sorted_tables:
         tabla.to_metadata(meta)
@@ -105,6 +106,18 @@ def entorno(raiz, codigo="BALOTO", *, registrar=True):
         for columna in tabla.columns:
             if isinstance(columna.type, JSONB):
                 columna.type = JSON()
+            elif isinstance(columna.type, PGUUID):
+                # SQLite da afinidad NUMERIC al nombre UUID: un hexadecimal
+                # decimal o con exponente pierde precisión o pasa a infinito.
+                # CHAR(32) conserva el texto que enlaza y lee el ORM real.
+                columna.type = Uuid(native_uuid=False)
+    return meta
+
+
+def entorno(raiz, codigo="BALOTO", *, registrar=True):
+    e = f4.entorno(raiz / "f", {j: 120 for j in JUEGOS})
+    engine = create_engine("sqlite+pysqlite:///" + str(raiz / "datos.sqlite"), poolclass=NullPool)
+    meta = _metadatos_sqlite()
     meta.create_all(engine)
     with Session(engine) as session:
         for j in e.juegos.listar_activos():
@@ -152,6 +165,40 @@ def entorno(raiz, codigo="BALOTO", *, registrar=True):
     return SimpleNamespace(e=e, engine=engine, ajustes=ajustes, reloj=reloj, registro=registro,
                            conector=conector, adaptador=ad, servicios=servicios, modelo=modelo, clave=clave,
                            raiz=raiz, codigo=codigo)
+
+
+@pytest.mark.parametrize("identificador", [
+    UUID("12345678-1234-4123-8123-123456789012"),
+    UUID("12345678-1234-4123-8123-12345678e003"),
+    UUID("12345678-1234-4123-8123-12345678e999"),
+], ids=["decimal", "exponente", "desbordamiento"])
+def test_sqlite_conserva_uuid_numericos_en_claves_y_relaciones(tmp_path, identificador):
+    engine = create_engine("sqlite+pysqlite:///" + str(tmp_path / "uuid.sqlite"), poolclass=NullPool)
+    _metadatos_sqlite().create_all(engine)
+    juego = replace(fx.juego("MILOTO"), id=identificador)
+    resultado = fx.historico_numerico("MILOTO", 1, primero=1)[0]
+    with Session(engine) as session:
+        session.add(JuegoORM(**asdict(juego)))
+        session.add(SorteoORM(
+            id=identificador, juego_id=juego.id, numero_sorteo=resultado.numero_sorteo,
+            fecha=resultado.fecha, dia_semana=resultado.dia_semana,
+            numeros=[SorteoNumeroORM(
+                id=identificador if posicion == 1 else UUID(f"abcdefab-cdef-4abc-8def-abcdefabcde{posicion}"),
+                numero=numero, posicion=posicion,
+            ) for posicion, numero in enumerate(resultado.numeros, start=1)],
+        ))
+        session.commit()
+    # Una sesión nueva obliga a leer SQLite, sin reutilizar objetos en memoria.
+    with Session(engine) as session:
+        assert session.get(JuegoORM, identificador).id == identificador
+        sorteo = session.get(SorteoORM, identificador)
+        assert sorteo.id == sorteo.juego_id == identificador
+        primero = next(n for n in sorteo.numeros if n.posicion == 1)
+        assert primero.id == primero.sorteo_id == identificador
+        assert ResultadosHistoricosRepositorySQLAlchemy(session).listar_resultados_numericos(juego.id) == [resultado]
+    with engine.connect() as conexion:
+        fila = conexion.exec_driver_sql("SELECT id, juego_id, typeof(id), typeof(juego_id) FROM sorteos").one()
+        assert tuple(fila) == (identificador.hex, identificador.hex, "text", "text")
 
 
 @pytest.mark.parametrize("juego", JUEGOS)
