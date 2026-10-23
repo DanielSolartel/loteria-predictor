@@ -113,6 +113,14 @@ body {
     overflow-y: auto;
 }
 
+/* Estadisticas antiguas: permitir que el contenedor flex se ajuste al movil.
+   Las tablas conservan el desplazamiento interno de .table-responsive. */
+@media screen and (max-width: 767.98px) {
+    .content-area.estadisticas-contenido {
+        min-width: 0;
+    }
+}
+
 /* Paginas de producto en pantalla estrecha (movil): el area de contenido
    puede encoger por debajo del ancho de su contenido y las tablas anchas se
    desplazan en horizontal dentro de su tarjeta, sin desbordar la pagina.
