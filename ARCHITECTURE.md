@@ -25,7 +25,7 @@ Este documento explica cómo está construido el sistema, con suficiente detalle
 19. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
 20. [Fase 6: actualización y operación automática](#fase-6-actualización-y-operación-automática)
 
-Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026; Fase 6 se integró en PR #96 (Actions `39939306600`) y la limpieza histórica conserva su pendiente separado. Base de Fase 7: PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`); ver [Fase 7: simulaciones](#fase-7-simulaciones). [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md). La validación local de Fase 7 en Windows, PostgreSQL aislado y Brave está completada; [cierre del operador](backend/docs/fase7_validacion_operador_2026-10-24.md), con publicación manual y sus Actions pendientes.
+Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026; Fase 6 se integró en PR #96 (Actions `39939306600`) y la limpieza histórica conserva su pendiente separado. Base de Fase 7: PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`); ver [Fase 7: simulaciones](#fase-7-simulaciones). [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md). La validación local de Fase 7 en Windows, PostgreSQL aislado y Brave está completada; [cierre del operador](backend/docs/fase7_validacion_operador_2026-10-24.md), integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`), base de la Fase 8; ver [Fase 8: API pública](#fase-8-api-pública).
 
 ---
 
@@ -6866,7 +6866,7 @@ El protocolo de esta entrega termina en aplicar v3.3 sobre v3.2 exacta → prueb
 
 ## Orden futuro y límite de esta entrega
 
-**6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 está activada y su prueba operativa con MiLoto/ColorLoto está verificada; fases 7–11 conservan su planificación propia. Las referencias originales 6/7/8/9 pasan a 7/8/9/10 sin renombrar evidencia o código históricos. Fase 11 consumirá servicios pertinentes sin duplicar ML; plataforma y empaquetado siguen pendientes. Objetivos y aceptación: [ROADMAP.md](ROADMAP.md).
+**6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 está activada y su prueba operativa con MiLoto/ColorLoto está verificada; Fase 7 está integrada (PR #98) y la Fase 8 (v2) implementada en Linux con validación nativa pendiente; fases 9–11 conservan su planificación propia. Las referencias originales 6/7/8/9 pasan a 7/8/9/10 sin renombrar evidencia o código históricos. Fase 11 consumirá servicios pertinentes sin duplicar ML; plataforma y empaquetado siguen pendientes. Objetivos y aceptación: [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -6972,3 +6972,21 @@ Flujo: `iniciar` (cerrojo del juego y registro) → hilo (`get_lanzador_de_simul
 
 
 Validación local completada: selección Windows consolidada de 3183 pruebas únicas, medición de veinte puntos y PostgreSQL 16.14 en un contenedor Linux propio con nueve controles. El ajuste de presentación se revalidó en Windows con 52 pruebas dirigidas, sonda 8/8 y 15 capturas de Brave. Estos resultados mantienen su procedencia y solapamientos en el [informe del operador](backend/docs/fase7_validacion_operador_2026-10-24.md); no se atribuyen al ajuste suites completas ni nuevas mediciones.
+
+## Fase 8: API pública
+
+Composición propia, separada de `app/main.py`: `app/api/publica/aplicacion.py`. Único arranque soportado: `uvicorn app.api.publica.aplicacion:app --host 127.0.0.1 --port 8010 --no-access-log --no-proxy-headers` (sin registro de acceso de Uvicorn, que escribiría las consultas, y sin confiar en `X-Forwarded-For` hasta la Fase 10). Monta solo rutas GET bajo `/api/v1`, la documentación y la salud; no incluye la web, los estáticos ni ningún router REST interno. Al vivir en `app/api/`, la cubren las salvaguardas existentes que revisan ese árbol.
+
+| Pieza | Responsabilidad |
+|---|---|
+| `publica/configuracion.py` | lee `API_PUBLICA_*` una vez; claves como huellas SHA-256; configuración ausente o no válida ⇒ API cerrada; CORS o límites no válidos ⇒ no arranca |
+| `publica/seguridad.py` | `X-API-Key` comparada en tiempo constante; dependencia `acceso(coste)` que autentica y después descuenta la cuota por clave |
+| `publica/limites.py` | cubeta de fichas segura entre hilos, **por proceso**, con identidades acotadas |
+| `publica/monitoreo.py` | middleware: límite por IP, `X-Request-ID`, `Cache-Control: no-store`, conversión de fallos inesperados en un 500 sanitizado (sin que lleguen al servidor), contadores y latencia por plantilla de ruta y método estándar (los demás, `OTRO`) y registro sin secretos |
+| `publica/errores.py`, `publica/esquemas.py` | formato de error único y contratos públicos (pydantic) con ejemplos |
+| `publica/dependencias.py` | sesión propia de solo lectura (`SET TRANSACTION READ ONLY` en PostgreSQL, siempre ROLLBACK) y construcción de los casos de uso existentes |
+| `publica/rutas.py` | endpoints: proyectan la salida de `ListarJuegos`, `ObtenerJuego`, `ListarSorteos`, `ConsultarResumenJuego`, `ConsultarEstadisticasDescriptivas`, `CentroDePredicciones.consultar` y `SimulacionesFase7.listar/obtener` |
+
+El estado de cuotas y monitoreo vive en `app.state` del proceso, separado de la base, los históricos, los modelos y los almacenes. Detalle: [backend/docs/fase8_api_publica.md](backend/docs/fase8_api_publica.md).
+
+**Validación técnica local de la v2 (24 de octubre de 2026):** las 92 pruebas y cuatro sondas pasaron en Windows; PostgreSQL 16.14 aislado verificó el cableado predeterminado, la transacción de solo lectura, la conservación de filas y almacenes, los límites concurrentes y el proceso Uvicorn real con el arranque soportado. El contenedor operativo conservó ID, arranque, volumen y configuración. Publicación manual y CI del PR pendientes. [Registro del operador](backend/docs/fase8_validacion_operador_2026-10-24.md).
