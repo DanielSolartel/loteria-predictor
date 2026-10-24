@@ -1,0 +1,30 @@
+{# e: ejecucion de una simulacion de la Fase 7 #}
+<div id="estado-ejecucion" {% if e.estado == 'en_curso' %}hx-get="/simulaciones/ejecuciones/{{ e.id }}/estado" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+    {% set colores = {'exito': 'alert-success', 'fallo': 'alert-danger', 'en_curso': 'alert-info', 'interrumpida': 'alert-danger'} %}
+    {% set textos = {'exito': 'Terminada.', 'fallo': 'No terminó: revisa el motivo.', 'en_curso': 'En curso. Esta página se actualiza sola; también puedes recargarla o abrirla en otra pestaña sin iniciar otra simulación.', 'interrumpida': 'Interrumpida.'} %}
+    <div class="alert {{ colores.get(e.estado, 'alert-secondary') }} py-2">
+        <strong>{{ textos.get(e.estado, e.estado) }}</strong>{% if e.mensaje %}<div class="small">{{ e.mensaje }}</div>{% endif %}
+        <div class="small text-muted">{{ '{:,}'.format(e.parametros.iteraciones)|replace(',', '.') }} iteraciones · semilla {{ e.parametros.semilla }}{% if e.parametros.corte %} · corte pedido {{ e.parametros.corte }}{% endif %} · iniciada {{ (e.iniciada_en or '')[:19]|replace('T', ' ') }} UTC{% if e.finalizada_en %} · terminada {{ e.finalizada_en[:19]|replace('T', ' ') }} UTC{% endif %} · origen: {{ e.origen }}</div>
+    </div>
+    {% for codigo in (e.orden or e.juegos.keys()|list) %}{% set r = e.juegos[codigo] %}
+    {# La interrupcion se deriva en lectura sin reescribir el registro: un juego que se quedo pendiente o en curso se
+       presenta interrumpido; uno ya cerrado conserva su estado. #}
+    {% set interrumpido = e.estado == 'interrumpida' and r.estado in ('pendiente', 'en_curso') %}
+    {% set estado_juego = 'interrumpido' if interrumpido else r.estado %}
+    <div class="card stat-card p-3" id="progreso-{{ codigo|lower }}">
+        <div class="d-flex justify-content-between"><h6>{{ nombres.get(codigo, codigo) }}</h6>
+            {% set b = estados.get(estado_juego, ('bg-secondary', estado_juego)) %}<span class="badge {{ b[0] }}">{{ b[1] }}</span></div>
+        {% if interrumpido and r.fase == 'simulando' and r.de %}
+            <p class="small text-muted mb-1">Último avance registrado antes de la interrupción: {{ '{:,}'.format(r.hechas or 0)|replace(',', '.') }} de {{ '{:,}'.format(r.de)|replace(',', '.') }} ({{ ((r.hechas or 0) * 100 / r.de)|round(1)|string|replace('.', ',') }} %).</p>
+        {% endif %}
+        {% if estado_juego == 'en_curso' %}
+            {% set pct = ((r.hechas or 0) * 100 / r.de)|round(1) if r.fase == 'simulando' and r.de else none %}
+            <p class="small mb-1">{{ fases.get(r.fase, r.fase) }}{% if pct is not none %}: {{ '{:,}'.format(r.hechas or 0)|replace(',', '.') }} de {{ '{:,}'.format(r.de)|replace(',', '.') }} ({{ pct|string|replace('.', ',') }} %){% endif %}</p>
+            {% if pct is not none %}<div class="progress mb-2" role="progressbar" aria-label="Iteraciones simuladas" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ pct }}%"></div></div>{% endif %}
+        {% endif %}
+        {% if r.mensaje %}<div class="alert alert-warning py-1 px-2 small mb-2">{{ r.mensaje }}</div>{% endif %}
+        {% if r.corte %}<p class="small mb-1">Corte {{ r.corte }} · {{ r.sorteos }} sorteos{% if r.clave %} · clave <code>{{ r.clave[:16] }}…</code>{% endif %}</p>{% endif %}
+        {% if r.resultado and r.estado in ('terminado', 'reutilizado') %}<p class="small mb-0"><a href="/simulaciones/resultados/{{ r.resultado }}">abrir el resultado</a></p>{% endif %}
+    </div>
+    {% endfor %}
+</div>

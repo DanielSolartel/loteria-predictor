@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Simulaciones{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Simulaciones bajo el mecanismo uniforme</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/estadisticas"><i class="bi bi-bar-chart-line me-1"></i>Estadísticas (Fase 5)</a>
+</div>
+{% include "simulaciones/_aviso.html" %}
+<div class="card stat-card p-3 mb-3">
+    <h6 class="mb-1">Cómo funciona</h6>
+    <p class="small text-muted mb-1">Se lee una vez el histórico hasta el corte, se simulan tantos históricos como iteraciones con las reglas del juego y la misma numeración (huecos incluidos) y se compara cada estadística observada con su distribución simulada: percentil, p-valor bilateral con corrección +1 y Bonferroni dentro del juego. Corre en segundo plano; abrir esta página no simula nada.</p>
+    <p class="small text-muted mb-0">El resultado completo se guarda en la tabla <code>simulaciones</code> (fuente canónica). La misma identidad —histórico, corte, reglas, algoritmo, versión de NumPy, semilla e iteraciones— reutiliza la fila existente sin volver a simular; el tamaño de lote no cambia el resultado. Con 100 iteraciones el p-valor mínimo ajustado no puede bajar de 0,05.</p>
+    {% if not db_conectada %}<div class="small text-danger mt-2">Sin conexión a la base de datos: no se pueden leer ni lanzar simulaciones.</div>{% endif %}
+</div>
+<div class="row g-3 mb-3">
+{% for d in juegos %}
+    <div class="col-xl-6"><div class="card stat-card p-3 h-100" id="juego-{{ d.slug }}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="mb-0">{{ d.nombre }}</h5>
+            {% set badge = {'disponible': ('bg-success', 'Datos disponibles'), 'base_no_disponible': ('bg-danger', 'Base no disponible'), 'sin_datos': ('bg-secondary', 'Sin datos'), 'historico_no_valido': ('bg-danger', 'Histórico no válido'), 'muestra_insuficiente': ('bg-warning text-dark', 'Muestra insuficiente')}.get(d.estado, ('bg-secondary', d.estado)) %}
+            <span class="badge {{ badge[0] }}">{{ badge[1] }}</span>
+        </div>
+        {% if d.mensaje %}<div class="small text-muted mb-2">{{ d.mensaje }}</div>{% endif %}
+        {% if d.activa %}<div class="alert alert-info py-1 px-2 small mb-2">Simulación en curso: <a href="/simulaciones/ejecuciones/{{ d.activa }}">ver progreso</a>.</div>{% endif %}
+        {% if d.datos %}
+        <dl class="row small mb-2">
+            <dt class="col-4">Corte</dt><dd class="col-8">sorteo {{ d.corte }} ({{ d.datos.ultima_fecha }}) · {{ d.datos.sorteos }} sorteos desde el {{ d.datos.primer_sorteo }} · {{ d.datos.transiciones }} transiciones N−1→N{% if d.datos.huecos %} · {{ d.datos.huecos }} huecos{% endif %}<br><span class="{% if d.frescura.estado == 'desactualizado' %}text-danger{% else %}text-muted{% endif %}">{{ d.frescura.mensaje }}</span></dd>
+            <dt class="col-4">Mecanismo</dt><dd class="col-8">{{ d.mecanismo }}</dd>
+            <dt class="col-4">Estadísticas</dt><dd class="col-8">{% for e in catalogo.juegos[d.juego].estadisticas %}<code>{{ e.nombre }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+        </dl>
+        <form method="post" action="/simulaciones/simular" class="row g-2 align-items-end mb-2">
+            <input type="hidden" name="token_local" value="{{ token_local }}"><input type="hidden" name="juego" value="{{ d.slug }}">
+            <div class="col-sm-4"><label class="form-label small mb-0" for="iteraciones-{{ d.slug }}">Iteraciones</label>
+                <select class="form-select form-select-sm" id="iteraciones-{{ d.slug }}" name="iteraciones">{% for i in iteraciones_admitidas %}<option value="{{ i }}" {% if i == iteraciones_predeterminadas %}selected{% endif %}>{{ '{:,}'.format(i)|replace(',', '.') }}</option>{% endfor %}</select></div>
+            <div class="col-sm-3"><label class="form-label small mb-0" for="semilla-{{ d.slug }}">Semilla</label>
+                <input class="form-control form-control-sm" id="semilla-{{ d.slug }}" name="semilla" inputmode="numeric" value="{{ semilla_predeterminada }}"></div>
+            <div class="col-sm-3"><label class="form-label small mb-0" for="corte-{{ d.slug }}">Corte (opcional)</label>
+                <input class="form-control form-control-sm" id="corte-{{ d.slug }}" name="corte" inputmode="numeric" placeholder="{{ d.corte }}"></div>
+            <div class="col-sm-2"><button class="btn btn-sm btn-primary w-100" {% if not db_conectada or d.activa %}disabled{% endif %}><i class="bi bi-play-fill"></i> Simular</button></div>
+        </form>
+        <p class="small text-muted mb-2">{{ d.dobles_por_iteracion }} uniformes por iteración. 100.000 y 1.000.000 iteraciones pueden tardar minutos; el progreso se ve por lotes.</p>
+        {% endif %}
+        <h6 class="small mb-1">Simulaciones guardadas</h6>
+        {% if d.simulaciones %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+            <thead><tr><th>Publicada (UTC)</th><th>Corte</th><th>Iteraciones</th><th>Semilla</th><th>Umbral</th><th>Integridad</th></tr></thead><tbody>
+            {% for s in d.simulaciones %}<tr><td><a href="/simulaciones/resultados/{{ s.id }}">{{ (s.ejecutado_en or '')[:19]|replace('T', ' ') }}</a></td><td>{{ s.corte }}</td><td>{{ '{:,}'.format(s.iteraciones)|replace(',', '.') }}</td><td>{{ s.semilla }}</td>
+                <td>{% if s.alguna_supera_umbral_exploratorio %}<span class="badge bg-warning text-dark">alguna supera</span>{% elif s.alguna_supera_umbral_exploratorio is not none %}ninguna{% endif %}</td>
+                <td>{% if s.integridad == 'verificada' %}verificada{% else %}<span class="text-danger">alterada</span>{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>{% else %}<p class="small text-muted mb-0">Ninguna todavía.</p>{% endif %}
+    </div></div>
+{% endfor %}
+</div>
+<div class="card stat-card impresion-fragmentable p-3">
+    <h6>Trabajos recientes</h6>
+    {% if ejecuciones %}<div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Inicio (UTC)</th><th>Juego</th><th>Iteraciones</th><th>Estado</th><th>Origen</th></tr></thead><tbody>
+        {% for x in ejecuciones %}{% if x %}<tr><td><a href="/simulaciones/ejecuciones/{{ x.id }}">{{ (x.iniciada_en or '')[:19]|replace('T', ' ') }}</a></td>
+            <td>{{ nombres.get(x.parametros.juego, x.parametros.juego) }}</td><td>{{ '{:,}'.format(x.parametros.iteraciones)|replace(',', '.') }}</td><td>{{ x.estado|replace('_', ' ') }}</td><td>{{ x.origen }}</td></tr>{% endif %}{% endfor %}
+    </tbody></table></div>{% else %}<p class="small text-muted mb-0">Todavía no hay trabajos.</p>{% endif %}
+</div>
+{% endblock %}

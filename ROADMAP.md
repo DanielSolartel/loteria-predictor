@@ -1,12 +1,12 @@
 # Roadmap del proyecto
 
-## Estado por fase (Fase 6 sobre PR #95)
+## Estado por fase (Fase 7 sobre PR #97, `605afe8`)
 
 Las fases 1–5, incluidas las cinco familias ML, están integradas en PR #95, base `2ac4d110b7d721e544f5588e9754230eef28184d` (árbol `37380b32906dbc0ded73112d8bbd4f1d50659993`, 691 archivos públicos). El cierre documental ML se aplicó y verificó en PowerShell 5.1, con índice conservado. Actions `39387775447` aprobó Linux completo y Windows selección para esa base. Son antecedentes de PR #95, no resultados de Fase 6.
 
 Daniel ejecutó previamente ML v3.2 en Windows nativo: **7.015 aprobadas**, sin fallos, errores ni omisiones, recorrido real de cuatro juegos y evidencia de impresión auditada por ChatGPT. La focal anterior se solapa y no se suma. Los resultados Cloud/Linux conservan su versión y recuento propios. Detalle: [validación local ML](backend/docs/ml_cinco_familias.md#validación-local-completada-de-ml-v32).
 
-**Fase 6 v3.4 — validación operativa del 23 de octubre de 2026:** tarea Windows y núcleo habilitados. MiLoto incorporó automáticamente el #628 y guardó la cartera/explicación para el #629; ColorLoto incorporó el #229 y guardó las del #230. Histórico canónico previo y selecciones conservados; doce copias HTML anteriores de MiLoto sí cambiaron al reconciliar. Quedan publicación manual, Actions del futuro PR y revisión separada de restos históricos. [Evidencias, alcance y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md).
+**Fase 6 v3.4 — validación operativa del 23 de octubre de 2026:** tarea Windows y núcleo habilitados. MiLoto incorporó automáticamente el #628 y guardó la cartera/explicación para el #629; ColorLoto incorporó el #229 y guardó las del #230. Histórico canónico previo y selecciones conservados; doce copias HTML anteriores de MiLoto sí cambiaron al reconciliar. La publicación manual y Actions se completaron después en PR #96 (merge `fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`); queda la revisión separada de restos históricos. [Evidencias, alcance y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md).
 
 **Antecedente conservado de la entrega v3.3 (estado e instrucciones anteriores a la activación real):** operación con destinos reales sin activar. Daniel completó en Windows nativo la v3.1: **7.243 aprobadas**, cero fallos, errores u omisiones; OpenSSL `exigir` 7/7, demostración sintética de cuatro juegos y `pip check` limpio. Las **47 dirigidas Linux de v3.2** conservan su evidencia propia. Son antecedentes de esas versiones, no resultados v3.3, y no se suman grupos solapados. El ensayo nativo v3.2 ya superó el error de codificación: `Instalar` registró la tarea y falló después en `Assert-TareaPropia`. La tarea `LP6-f03df678192ac201` permanece `Disabled`, con `Enabled=false`; no hubo activación ni disparo. El ZIP del ensayo conserva planes; el segundo ZIP aporta el XML realmente exportado y CIM. De los 14 campos comparados, coinciden 11: Windows omite `RunLevel` y `WakeToRun` y expresa el usuario del desencadenador de sesión como cuenta local, mientras el plan usa SID. CIM informa `Limited` (0) y `WakeToRun=false`. La v3.3 compara la semántica de la exportación: admite solo valores predeterminados documentados expresamente y resuelve las identidades mediante mecanismos nativos para comparar el SID esperado. Una omisión no autorizada, privilegio elevado, valor explícito incompatible o usuario distinto/no resoluble se rechaza. No usa nombre corto, sufijos ni excepciones por usuario. Revisa también vinculación, campos críticos, acciones y desencadenadores para conservar el rechazo de tareas ajenas o alteradas. El XML exportado se archiva antes de validarlo, incluso cuando falla la comprobación posterior al registro, y se distingue del plan y del diagnóstico. Se conservan el contrato UTF-16LE con BOM, la captura binaria con decodificación estricta y las garantías de limpieza v3.2. La nueva evidencia Linux usa PowerShell real y simulaciones explícitas del Programador y la resolución nativa; no acredita Windows PowerShell 5.1, COM/MSXML, permisos o NTFS nativos. El protocolo de esta entrega termina en aplicar v3.3 sobre v3.2 exacta → pruebas dirigidas en PowerShell 5.1 → devolver evidencia y detenerse. Conservar el worktree y el Python existentes. El nuevo ensayo real del Programador será posterior a la revisión; esta guía no lo inicia ni incluye una orden para ejecutarlo ahora. No se repiten completa, ML, demostración o presentación/PDF por rutina. Operación con destinos reales, PostgreSQL, activación/novedad observada, publicación manual, Actions y acreditación prospectiva mantienen pendientes separados. Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. [Operación Fase 6](backend/docs/fase6_windows.md).
 
@@ -17,16 +17,16 @@ Daniel ejecutó previamente ML v3.2 en Windows nativo: **7.015 aprobadas**, sin 
 | 3. Machine Learning | Cinco familias añadidas: XGBoost, LightGBM, red neuronal, Bayes jerárquico y Markov; conserva seis candidatos anteriores por juego | Registro/recarga de 20 modelos nuevos, recorrido e impresión nativa validados; cierre documental aplicado y PR #95 con Actions aprobados |
 | 4. Predicciones | Centro de cuatro juegos, explicación y fiabilidad observada; integrado con las familias nuevas | Flujo de las cinco familias y persistencia validados en Windows; PR #95 con Actions aprobados, separado del antecedente PR #94 |
 | 5. Estadísticas descriptivas | Completa | Antecedentes Windows con histórico real y Actions conservados |
-| 6. Actualización y operación automática | Implementada y activada en Windows, v3.4 | Novedades automáticas de MiLoto y ColorLoto verificadas; publicación manual/Actions y limpieza histórica separados. [Detalle](backend/docs/fase6_validacion_operativa_2026-10-23.md) |
-| 7. Simulaciones | Parcial: AE-49–51 y Producto 5 | Conserva avances; ampliación futura |
+| 6. Actualización y operación automática | Implementada y activada en Windows, v3.4 | Novedades automáticas de MiLoto y ColorLoto verificadas; integrada en PR #96 (Actions `39939306600`); limpieza histórica separada. [Detalle](backend/docs/fase6_validacion_operativa_2026-10-23.md) |
+| 7. Simulaciones | Implementada sobre `605afe8`: cuatro juegos, 100 a 1.000.000 de iteraciones, estadísticas fijadas de Fase 5, tabla `simulaciones` y web/API interna/comando; v2 más F7-VIS-01 | Validación local Linux y Windows completada, PostgreSQL aislado y Brave verificados; publicación manual, revisión del PR y sus Actions pendientes. [Cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md) |
 | 8. API pública | Planificada; existe API interna de solo lectura | Versionado, autenticación y límites pendientes |
 | 9. Frontend React | Planificada | Posterior a API pública |
 | 10. Despliegue | Planificada | Seguridad, operación y disponibilidad pendientes |
 | 11. Aplicación personal | Planificada | Depende de Fase 6 y capacidades pertinentes de fases 8–10 |
 
-**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Esta entrega implementa Fase 6; las fases 7–11 solo conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
+**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Esta entrega implementa Fase 7 sobre ese merge; las fases 8–11 solo conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
 
-**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. Daniel conserva la revisión y publicación manual de esta entrega.
+**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge es la base exacta de Fase 7. Daniel conserva la revisión y publicación manual de esta entrega.
 
 ### Historial de productos (Productos 1–6)
 
@@ -399,7 +399,7 @@ El cierre ML fue exclusivamente documental y se aplicó/verificó en PowerShell 
 **Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado vigente:** la implementación y validación local v3.4 y el cierre documental culminaron con PR #94. La ampliación ML v3.2 tiene suite completa nativa Windows y recorrido real completados con evidencia propia. El cierre ML se aplicó/verificó y quedó integrado en PR #95 con Actions aprobados; acreditación prospectiva separada.
 
 **Pendientes vigentes separados:**
-- Fase 6: cierre documental, publicación manual y Actions de su futuro PR; la incorporación automática de novedades en MiLoto y ColorLoto ya está verificada;
+- Fase 7: publicación manual, revisión del PR y sus checks de Linux y Windows pendientes; validación local del operador completada ([cierre](backend/docs/fase7_validacion_operador_2026-10-24.md)). Fase 6 se integró en PR #96;
 - limpieza verificable de tareas/raíces históricas, pendiente separado que no queda acreditado por las capturas de observación;
 - acreditación prospectiva: muestras suficientes por línea y tipo, por su cauce propio. Ninguna cifra retrospectiva acredita ventaja ni es un nivel de confianza.
 
@@ -4154,7 +4154,7 @@ No se entrenó ni evaluó ML, no se leyeron números ganadores y no se generaron
 
 ---
 
-## 🟡 Fase 6 — Actualización y operación automática (prueba operativa real verificada; publicación pendiente)
+## ✅ Fase 6 — Actualización y operación automática (prueba operativa real verificada; integrada en PR #96)
 
 **Objetivo y base:** operación independiente de la interfaz para los cuatro juegos, sobre fases 1–5 integradas y cierre ML verificado en PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). No exige API pública, React ni despliegue. No convierte anterioridad operativa en acreditación prospectiva.
 
@@ -4170,11 +4170,11 @@ No se entrenó ni evaluó ML, no se leyeron números ganadores y no se generaron
 
 **Programación y estado de aceptación (2026-10-23):** instalación y activación explícitas de tarea Windows; núcleo habilitado y dos novedades reales incorporadas automáticamente, con siguientes carteras y explicaciones persistidas. Los modelos seleccionados y el histórico canónico anterior se conservan. La salvedad de los doce HTML y la atribución de las pruebas anteriores constan en la [validación operativa](backend/docs/fase6_validacion_operativa_2026-10-23.md).
 
-**Pendientes separados:** preparar el commit y la publicación manual; Actions y revisión del futuro PR; limpieza verificable de restos históricos; acreditación prospectiva por su cauce propio. Los protocolos v3.3 se conservan como antecedentes y no se repiten por rutina. La prueba operativa de novedad automática en MiLoto y ColorLoto ya está verificada. Las fases 7–11 mantienen su planificación y el issue #93 sigue separado.
+**Pendientes separados:** limpieza verificable de restos históricos; acreditación prospectiva por su cauce propio. *Actualización posterior (23-10-2026):* el commit, la publicación manual, la revisión y Actions se completaron en PR #96 (merge `fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`), y el issue #93 se cerró con PR #97. Los protocolos v3.3 se conservan como antecedentes y no se repiten por rutina. La prueba operativa de novedad automática en MiLoto y ColorLoto ya está verificada. Las fases 7–11 mantenían entonces su planificación; la Fase 7 se implementa después sobre `605afe8`.
 
 ---
 
-## 🟡 Fase 7 — Simulaciones (antes Fase 6; parcial: AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada; Producto 5: simulación Monte Carlo de carteras)
+## 🟡 Fase 7 — Simulaciones (antes Fase 6; entrega implementada y validada localmente en Linux y Windows, publicación pendiente; AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada; Producto 5: simulación Monte Carlo de carteras)
 
 **Objetivo:** simulaciones Monte Carlo para estimar el comportamiento esperado bajo el modelo de azar uniforme, y contrastarlo contra los patrones detectados en la Fase 5.
 
@@ -4406,6 +4406,22 @@ El operador auditó `sim-1.json` frente a su PostgreSQL:
 Con esta evidencia, **AE-51 queda validada como auditoría de una evidencia de AE-49 frente al histórico actual `2081..2705`**. El resultado sigue siendo exploratorio sobre datos reutilizados, no habilita predicciones, prerregistro ni evaluación y no modifica el NO-GO de AE-39.
 
 No se entrenó ni evaluó ML y no se generaron predicciones. Claude no leyó números ganadores reales; la auditoría del operador leyó el histórico `2081..2705` solo para calcular la huella y las estadísticas agregadas, y el informe no publica números ganadores. AE-39 sigue en NO-GO y los bloqueos de AE-40 a AE-50 no cambian.
+
+**Entrega de cierre de la Fase 7 (implementada y validada localmente sobre `605afe8`; publicación manual, revisión del PR y sus Actions pendientes):** completa las diferencias de la matriz de contextualización sin rehacer AE-49–51 ni Producto 5.
+
+| Requisito | Entregado |
+|---|---|
+| Iteraciones 100 / 1.000 / 10.000 / 100.000 / 1.000.000 | `fase7.motor`: exactamente esos cinco valores; motor NumPy vectorizado por lotes (≤ 2.000.000 uniformes por lote), acumulación en flujo, proceso trabajador con progreso y tiempo máximo; medición sintética en [fase7_simulaciones.md](backend/docs/fase7_simulaciones.md) |
+| Cuatro juegos y sus reglas | mecanismo de `laboratorio_variables.REGLAS`: superbalota aparte en Baloto y Revancha; ColorLoto con pares número-color con reemplazo y multiplicidad |
+| Simulado frente a observado (patrones de Fase 5) | 6 estadísticas en Baloto y Revancha, 5 en MiLoto y 5 en ColorLoto, fijadas y justificadas antes de observar resultados; lo observado sale de las funciones del motor de Fase 5 y se contrasta con la versión vectorizada; p bilateral +1, percentil y Bonferroni por juego |
+| Reproducible | identidad con semilla, corte, histórico (SHA-256), reglas, algoritmo, versión de NumPy e iteraciones; independiente del lote; huella de referencia igual con NumPy 2.4.6 y 2.5.4 en Linux y superada en Windows/NumPy 2.5.3 |
+| Persistido; tabla `simulaciones` | fuente canónica con las columnas actuales, **sin migración**; publicación transaccional de la fila completa con advisory propio de la clave; reutilización idempotente; integridad verificada al leer; exportaciones derivadas |
+| Comparación honesta | aviso exploratorio en web, API y comando; `umbral_alcanzable = false` con 100 iteraciones; referencias analíticas exactas |
+| Interfaces | web `/simulaciones`, API interna de solo lectura `/api/simulaciones`, comando `python -m scripts.simulaciones`, sobre el caso de uso `SimulacionesFase7` |
+
+AE-49–51 conservan su contrato (`2081..2705`, B = 10.000, revisión `0006`) y sus evidencias; Producto 5 conserva su almacén y su intervalo de 1.000 a 50.000. No se importaron ni migraron sus artefactos. **v2 (24-10-2026):** corrige los cuatro hallazgos de la auditoría de la v1: lectura y recuperación con cierre concurrente, comprobación del juego de la fila y tipos JSON (31 regresiones; motor, identidades y huella de referencia sin cambios). La verificación Linux y sus límites constan en [fase7_simulaciones.md](backend/docs/fase7_simulaciones.md#verificación-en-linux-cloud-de-esta-entrega); los pasos nativos, en [fase7_windows.md](backend/docs/fase7_windows.md).
+
+**Cierre local del operador (24-10-2026):** selección v2 consolidada de dos corridas (3183 pruebas únicas), OpenSSL 7/7, cuatro sondas 4/4, medición Windows 20/20 y nueve controles PostgreSQL aislados. F7-VIS-01 quedó corregido y revalidado con 52 pruebas dirigidas, sonda visual 8/8 y 15 capturas de Brave (228/228 criterios), revisadas por el auditor. Estas baterías se solapan y no se suman. [Evidencias, alcance y pendientes de publicación](backend/docs/fase7_validacion_operador_2026-10-24.md).
 
 ---
 

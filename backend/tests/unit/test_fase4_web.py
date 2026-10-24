@@ -273,7 +273,8 @@ def test_navegacion_y_rutas_sin_colisiones():
     assert web_propias.index("/predicciones/ejecuciones/{identificador}") < web_propias.index("/predicciones/{slug}")
     base = (APP / "templates" / "base.html").read_text(encoding="utf-8")
     assert 'href="/predicciones"' in base and "Centro de predicciones" in base
-    assert base.index("Centro de predicciones") < base.index("Próximamente")
+    # Fase 7: «Simulaciones» dejo de ser «Próximamente»; el centro sigue antes que ella en el menú.
+    assert base.index("Centro de predicciones") < base.index('href="/simulaciones"')
 
 
 def test_reglas_de_impresion_acotadas_a_las_paginas_del_centro():

@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     directorio_automatizacion: str = "storage/automatizacion"
     archivo_operacion_automatica: str = ""
 
+    # Fase 7: progreso y cerrojos de las simulaciones. El RESULTADO no se
+    # guarda aqui: su fuente canonica es la tabla `simulaciones`. Tiempo
+    # maximo, en segundos, de cada simulacion en su proceso trabajador.
+    directorio_simulaciones: str = "storage/simulaciones"
+    tiempo_maximo_trabajador_simulaciones: int = 3600
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -45,6 +45,7 @@ from app.application.use_cases.panel_diario import ConsultarPanelDiario
 from app.application.use_cases.predicciones import CentroDePredicciones
 from app.application.use_cases.registrar_sorteo import RegistrarSorteo
 from app.application.use_cases.resultados import CentroDeResultados
+from app.application.use_cases.simulaciones import LecturaSimulaciones, SimulacionesFase7
 from app.application.use_cases.rendimiento import ConsultarRendimiento
 from app.application.use_cases.reimportar_sorteo import ReimportarSorteo
 from app.application.use_cases.reprocesar_sorteos_desde_html import ReprocesarSorteosDesdeHtml
@@ -64,10 +65,12 @@ from app.infrastructure.repositories.resultados_historicos_repository_sqlalchemy
 from app.infrastructure.repositories.sincronizacion_repository_sqlalchemy import (
     SincronizacionRepositorySQLAlchemy,
 )
+from app.infrastructure.repositories.simulaciones_repository_sqlalchemy import SimulacionesRepositorySQLAlchemy
 from app.infrastructure.repositories.sorteo_repository_sqlalchemy import SorteoRepositorySQLAlchemy
 from app.infrastructure.storage.html_file_storage import HtmlFileStorage
 from app.infrastructure.carteras_trabajador import EjecutorCarterasEnProceso
 from app.infrastructure.laboratorio_trabajador import EjecutorEnProceso
+from app.infrastructure.simulaciones_trabajador import EjecutorSimulacionesEnProceso
 from app.infrastructure.storage.carteras_file_store import CarterasFileStore
 from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore
 from app.infrastructure.storage.operacion_file_store import CerrojoPorJuego, RegistroEjecucionesArchivo
@@ -535,3 +538,65 @@ def _lanzar_predicciones_en_hilo(funcion, inicio) -> None:
 
 def get_lanzador_de_predicciones():
     return _lanzar_predicciones_en_hilo
+
+
+# ---------------------------------------------------------------------------
+# Fase 7: simulaciones bajo el mecanismo uniforme
+# ---------------------------------------------------------------------------
+
+def _repositorios_de_simulaciones(session: Session) -> LecturaSimulaciones:
+    return LecturaSimulaciones(JuegoRepositorySQLAlchemy(session), ResultadosHistoricosRepositorySQLAlchemy(session),
+                               SimulacionesRepositorySQLAlchemy(session))
+
+
+@contextmanager
+def abrir_lectura_de_simulaciones():
+    """Lectura en su PROPIA sesion con una transaccion de solo lectura que
+    termina en ROLLBACK (historico y filas de `simulaciones`). Se cierra antes
+    de simular."""
+    session = db_session.SessionLocal()
+    try:
+        session.execute(text("SET TRANSACTION READ ONLY"))
+        yield _repositorios_de_simulaciones(session)
+        session.rollback()
+    except BaseException:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@contextmanager
+def abrir_publicacion_de_simulaciones():
+    """Publicacion de UNA fila completa en su propia transaccion: se confirma
+    al salir sin error (y libera el recurso advisory de la clave) o se deshace."""
+    session = db_session.SessionLocal()
+    try:
+        yield _repositorios_de_simulaciones(session)
+        session.commit()
+    except BaseException:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def get_simulaciones() -> SimulacionesFase7:
+    """Progreso y cerrojos propios (`DIRECTORIO_SIMULACIONES`); resultados en la
+    tabla `simulaciones`; simulacion en un proceso trabajador con tiempo
+    maximo (`TIEMPO_MAXIMO_TRABAJADOR_SIMULACIONES`)."""
+    settings = get_settings()
+    operacion = f"{settings.directorio_simulaciones}/operacion"
+    return SimulacionesFase7(RegistroEjecucionesArchivo(operacion), CerrojoPorJuego(operacion),
+                             abrir_lectura_de_simulaciones, abrir_publicacion_de_simulaciones,
+                             ejecutor=EjecutorSimulacionesEnProceso(settings.tiempo_maximo_trabajador_simulaciones))
+
+
+def _lanzar_simulacion_en_hilo(funcion, inicio) -> None:
+    """La simulacion no se ejecuta en el hilo de la peticion web."""
+    threading.Thread(target=funcion, args=(inicio,), daemon=True,
+                     name=f"simulaciones-{inicio.ejecucion['id']}").start()
+
+
+def get_lanzador_de_simulaciones():
+    return _lanzar_simulacion_en_hilo

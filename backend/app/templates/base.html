@@ -111,11 +111,10 @@
                         <i class="bi bi-lightbulb-fill me-2"></i>Centro de predicciones
                     </a>
                 </li>
-                <li class="nav-item mt-3">
-                    <span class="nav-link disabled text-muted small text-uppercase">Próximamente</span>
-                </li>
                 <li class="nav-item">
-                    <a class="nav-link disabled"><i class="bi bi-graph-up me-2"></i>Simulaciones</a>
+                    <a class="nav-link {% if active_page == 'simulaciones' %}active{% endif %}" href="/simulaciones">
+                        <i class="bi bi-graph-up me-2"></i>Simulaciones
+                    </a>
                 </li>
             </ul>
         </aside>

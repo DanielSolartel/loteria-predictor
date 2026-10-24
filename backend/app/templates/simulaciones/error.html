@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Simulaciones{% endblock %}
+{% block content %}
+<h3>Simulaciones</h3>
+<div class="alert alert-danger">{{ mensaje }}</div>
+{% if activas %}<ul class="small">{% for j, eid in activas.items() %}<li>{{ nombres.get(j, j) }}: {% if eid %}<a href="/simulaciones/ejecuciones/{{ eid }}">simulación en curso</a>{% else %}en curso{% endif %}</li>{% endfor %}</ul>{% endif %}
+<a class="btn btn-sm btn-outline-secondary" href="/simulaciones">Volver a simulaciones</a>
+{% endblock %}

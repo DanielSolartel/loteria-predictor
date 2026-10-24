@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Simulación de {{ nombres.get(p.juego, p.juego) }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Simulación de {{ nombres.get(p.juego, p.juego) }} · corte {{ p.corte }}</h3>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="/simulaciones/resultados/{{ f.id }}/exportar.csv"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/simulaciones/resultados/{{ f.id }}/exportar.json"><i class="bi bi-filetype-json me-1"></i>JSON</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/simulaciones">Simulaciones</a>
+    </div>
+</div>
+{% include "simulaciones/_aviso.html" %}
+<div class="card stat-card p-3 mb-3">
+    <dl class="row small mb-0">
+        <dt class="col-sm-3">Histórico</dt><dd class="col-sm-9">{{ p.historico.sorteos }} sorteos ({{ p.historico.primer_sorteo }}–{{ p.historico.ultimo_sorteo }}, {{ p.historico.primera_fecha }} a {{ p.historico.ultima_fecha }}) · {{ p.historico.transiciones }} transiciones N−1→N{% if p.historico.huecos %} · {{ p.historico.huecos }} huecos{% endif %}<br><span class="text-muted">SHA-256 <code class="text-break">{{ p.historico.sha256 }}</code></span></dd>
+        <dt class="col-sm-3">Mecanismo</dt><dd class="col-sm-9">{{ p.reglas.mecanismo }}{% if p.reglas.paleta %} · paleta: {{ p.reglas.paleta|join(', ') }}{% endif %}</dd>
+        <dt class="col-sm-3">Simulación</dt><dd class="col-sm-9">{{ '{:,}'.format(p.iteraciones)|replace(',', '.') }} iteraciones · semilla {{ p.semilla }} · {{ p.algoritmo.generador }} (NumPy {{ p.algoritmo.numpy }}) · motor <code>{{ p.version_motor }}</code></dd>
+        <dt class="col-sm-3">Familia</dt><dd class="col-sm-9">Bonferroni sobre {{ c.familia.tamano }} comparaciones de este juego, α = {{ c.familia.alpha }}. p mínimo alcanzable {{ c.familia.p_minimo_alcanzable }}{% if not c.familia.umbral_alcanzable %} — <strong>con estas iteraciones ninguna comparación puede superar el umbral ajustado</strong>{% endif %}.</dd>
+        <dt class="col-sm-3">Identidad</dt><dd class="col-sm-9"><code class="text-break">{{ p.clave }}</code> · integridad {{ f.integridad }} · publicada {{ (f.ejecutado_en or '')[:19]|replace('T', ' ') }} UTC · cálculo {{ f.duracion_ms }} ms (lote {{ x.lote }}, {{ x.lotes }} lotes; el lote no cambia el resultado)</dd>
+    </dl>
+</div>
+<div class="card stat-card impresion-fragmentable p-3 mb-3">
+    <h6>Observado frente a simulado</h6>
+    <div class="tabla-desplazable"><table class="table table-sm small mb-0">
+        <thead><tr><th>Estadística</th><th class="text-end">Observado</th><th class="text-end">Media simulada (desv.)</th><th class="text-end">Referencia exacta</th><th class="text-end">Percentil</th><th class="text-end">p empírico</th><th class="text-end">p Bonferroni</th><th>Umbral exploratorio</th></tr></thead>
+        <tbody>{% for e in c.estadisticas %}<tr>
+            <td><code>{{ e.nombre }}</code><div class="text-muted">{{ e.descripcion }}</div></td>
+            <td class="text-end">{{ '%.4f'|format(e.observado.valor) }}</td>
+            <td class="text-end">{{ '%.4f'|format(e.simulado.media) }} ({{ '%.4f'|format(e.simulado.desviacion) }})</td>
+            <td class="text-end">{% if e.referencia_analitica %}{{ '%.4f'|format(e.referencia_analitica.valor) }}{% else %}—{% endif %}</td>
+            <td class="text-end">{{ '%.3f'|format(e.percentil_observado.valor) }}</td>
+            <td class="text-end">{{ '%.4f'|format(e.p_valor_empirico.valor) }}</td>
+            <td class="text-end">{{ '%.4f'|format(e.p_valor_ajustado_bonferroni.valor) }}</td>
+            <td>{% if e.supera_umbral_exploratorio %}<span class="badge bg-warning text-dark">supera</span>{% else %}no supera{% endif %}</td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="small text-muted mt-2 mb-0">{{ c.familia.cobertura }} Valores exactos (fracciones) en la exportación JSON.</p>
+</div>
+<div class="card stat-card p-3">
+    <h6>Verificar</h6>
+    <p class="small text-muted">Comprueba la integridad de la fila y si el histórico actual hasta el corte coincide con el simulado. Reproducir la simulación completa: <code>python -m scripts.simulaciones verificar --id {{ f.id }} --reproducir</code>.</p>
+    <form method="post" action="/simulaciones/resultados/{{ f.id }}/verificar" class="m-0">
+        <input type="hidden" name="token_local" value="{{ token_local }}">
+        <button class="btn btn-sm btn-outline-primary" {% if not db_conectada %}disabled{% endif %}><i class="bi bi-shield-check me-1"></i>Verificar integridad y base</button>
+    </form>
+</div>
+{% endblock %}

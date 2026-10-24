@@ -76,3 +76,11 @@ Las cifras anteriores de pruebas conservan su versión y atribución. La suite c
 Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. La anterioridad operativa y la incorporación automática no constituyen acreditación prospectiva de ventaja. Las fases 7–11 continúan con su planificación propia.
 
 Los protocolos de las entregas anteriores se conservan como antecedentes. Sus instrucciones de aplicar, activar o ensayar no se repiten por rutina al preparar este commit. El recolector de observación existente fija HEAD, rama e índice previos; después de un commit puede rechazar su referencia antigua. Ese rechazo requiere actualizar la referencia mediante una nueva revisión, no forzar o alterar sus controles.
+
+## Adenda del 23 de octubre de 2026 (posterior a la publicación)
+
+Este registro se conserva como se redactó al prepararse la publicación manual. Después:
+- PR #96 se integró (merge `fcadea6a08e8e6b52386a9055be16bb1873b9a29`; Actions `39939306600`, `push`, aprobado);
+- PR #97 cerró el issue #93 (merge `605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge, informado correcto en Linux y Windows por el operador).
+
+Las frases «no acredita todavía un PR/merge» y «#93 pendiente» describen el estado de entonces. Sigue pendiente la limpieza verificable de restos históricos y la comprobación específica en Google Chrome de Windows del arreglo #93; el resto de salvedades no cambia.

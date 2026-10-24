@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Verificación de una simulación{% endblock %}
+{% block content %}
+<h3>Verificación de la simulación</h3>
+<div class="card stat-card p-3 mb-3">
+    <dl class="row small mb-0">
+        <dt class="col-sm-3">Integridad</dt><dd class="col-sm-9">{{ r.integridad }} (clave, huella del contenido e integridad de la fila)</dd>
+        <dt class="col-sm-3">Base actual</dt><dd class="col-sm-9">{% set b = r.base or {} %}
+            {% if b.estado == 'coincide' %}<span class="text-success">el histórico actual hasta el corte coincide con el simulado</span>
+            {% elif b.estado == 'difiere' %}<span class="text-danger">el histórico actual hasta el corte difiere del simulado</span> (guardado <code>{{ b.sha256_guardado[:16] }}…</code>, actual <code>{{ b.sha256_actual[:16] }}…</code>): la fila sigue describiendo el histórico con el que se simuló.
+            {% else %}<span class="text-danger">{{ b.estado|replace('_', ' ') }}</span>{% if b.mensaje %}: {{ b.mensaje }}{% endif %}{% endif %}</dd>
+        <dt class="col-sm-3">Reproducción</dt><dd class="col-sm-9">no solicitada desde la web: <code>python -m scripts.simulaciones verificar --id {{ r.id }} --reproducir</code></dd>
+    </dl>
+</div>
+<a class="btn btn-sm btn-outline-secondary" href="/simulaciones/resultados/{{ r.id }}">Volver al resultado</a>
+{% endblock %}
