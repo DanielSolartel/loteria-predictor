@@ -3,6 +3,7 @@ tests/unit/ml/test_semantica_omisiones_prospectivas.py
 tests/unit/ml/test_auditoria_diseno_prospectivo.py
 tests/unit/ml/test_diseno_regla_prospectiva.py
 tests/unit/simulaciones
+tests/unit/api_publica
 tests/unit/test_explorar_inferencia_prospectiva_script.py
 tests/unit/ml/test_especificacion_evaluacion_prospectiva.py
 tests/unit/ml/test_registro_prospectivo.py

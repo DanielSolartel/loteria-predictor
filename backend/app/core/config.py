@@ -66,6 +66,19 @@ class Settings(BaseSettings):
     directorio_simulaciones: str = "storage/simulaciones"
     tiempo_maximo_trabajador_simulaciones: int = 3600
 
+    # Fase 8: API publica de solo lectura (`app.api.publica.aplicacion:app`),
+    # separada de la aplicacion local. Sin claves predeterminadas: vacia o no
+    # valida, la API rechaza toda consulta protegida. Formato:
+    # `id:sha256:<64 hex>` separados por comas (huellas, nunca las claves).
+    api_publica_claves: str = ""
+    # Cubeta de fichas POR PROCESO: por clave valida y por direccion IP.
+    api_publica_fichas_por_minuto: int = 60
+    api_publica_fichas_por_minuto_ip: int = 120
+    api_publica_max_clientes_ip: int = 1024
+    # Origenes explicitos (coma); vacio = CORS deshabilitado. `*` no se admite.
+    api_publica_cors_origenes: str = ""
+    api_publica_documentacion: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,6 +1,6 @@
 # Roadmap del proyecto
 
-## Estado por fase (Fase 7 sobre PR #97, `605afe8`)
+## Estado por fase (Fase 8 v2 validada localmente sobre PR #98, `f15f513`)
 
 Las fases 1–5, incluidas las cinco familias ML, están integradas en PR #95, base `2ac4d110b7d721e544f5588e9754230eef28184d` (árbol `37380b32906dbc0ded73112d8bbd4f1d50659993`, 691 archivos públicos). El cierre documental ML se aplicó y verificó en PowerShell 5.1, con índice conservado. Actions `39387775447` aprobó Linux completo y Windows selección para esa base. Son antecedentes de PR #95, no resultados de Fase 6.
 
@@ -18,15 +18,15 @@ Daniel ejecutó previamente ML v3.2 en Windows nativo: **7.015 aprobadas**, sin 
 | 4. Predicciones | Centro de cuatro juegos, explicación y fiabilidad observada; integrado con las familias nuevas | Flujo de las cinco familias y persistencia validados en Windows; PR #95 con Actions aprobados, separado del antecedente PR #94 |
 | 5. Estadísticas descriptivas | Completa | Antecedentes Windows con histórico real y Actions conservados |
 | 6. Actualización y operación automática | Implementada y activada en Windows, v3.4 | Novedades automáticas de MiLoto y ColorLoto verificadas; integrada en PR #96 (Actions `39939306600`); limpieza histórica separada. [Detalle](backend/docs/fase6_validacion_operativa_2026-10-23.md) |
-| 7. Simulaciones | Implementada sobre `605afe8`: cuatro juegos, 100 a 1.000.000 de iteraciones, estadísticas fijadas de Fase 5, tabla `simulaciones` y web/API interna/comando; v2 más F7-VIS-01 | Validación local Linux y Windows completada, PostgreSQL aislado y Brave verificados; publicación manual, revisión del PR y sus Actions pendientes. [Cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md) |
-| 8. API pública | Planificada; existe API interna de solo lectura | Versionado, autenticación y límites pendientes |
+| 7. Simulaciones | Implementada sobre `605afe8`: cuatro juegos, 100 a 1.000.000 de iteraciones, estadísticas fijadas de Fase 5, tabla `simulaciones` y web/API interna/comando; v2 más F7-VIS-01 | Validación local Linux y Windows, PostgreSQL aislado y Brave completados; integrada en PR #98 (merge `f15f513`) con checks de Linux y Windows aprobados. [Cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md) |
+| 8. API pública | v2 implementada sobre `f15f513`: entrada separada `/api/v1` de solo lectura, claves por huella, límites por proceso, OpenAPI y monitoreo; cuatro hallazgos de la v1 corregidos | Linux y Windows validados localmente: 92 pruebas y cuatro sondas nativas; PostgreSQL 16.14 aislado, criterios A–F y A2 cumplidos. Publicación manual y CI del PR pendientes; despliegue en Fase 10. [Cierre local](backend/docs/fase8_validacion_operador_2026-10-24.md) |
 | 9. Frontend React | Planificada | Posterior a API pública |
 | 10. Despliegue | Planificada | Seguridad, operación y disponibilidad pendientes |
 | 11. Aplicación personal | Planificada | Depende de Fase 6 y capacidades pertinentes de fases 8–10 |
 
-**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Esta entrega implementa Fase 7 sobre ese merge; las fases 8–11 solo conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
+**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Fase 7 quedó integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`). La Fase 8 v2 está implementada y validada localmente sobre ese merge; faltan su publicación manual y el CI del PR. El siguiente trabajo de producto es Fase 9; las fases 9–11 conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
 
-**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge es la base exacta de Fase 7. Daniel conserva la revisión y publicación manual de esta entrega.
+**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge fue la base exacta de Fase 7. PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) integró Fase 7 y es la base exacta de Fase 8. Daniel conserva la revisión y publicación manual de esta entrega.
 
 ### Historial de productos (Productos 1–6)
 
@@ -399,7 +399,7 @@ El cierre ML fue exclusivamente documental y se aplicó/verificó en PowerShell 
 **Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado vigente:** la implementación y validación local v3.4 y el cierre documental culminaron con PR #94. La ampliación ML v3.2 tiene suite completa nativa Windows y recorrido real completados con evidencia propia. El cierre ML se aplicó/verificó y quedó integrado en PR #95 con Actions aprobados; acreditación prospectiva separada.
 
 **Pendientes vigentes separados:**
-- Fase 7: publicación manual, revisión del PR y sus checks de Linux y Windows pendientes; validación local del operador completada ([cierre](backend/docs/fase7_validacion_operador_2026-10-24.md)). Fase 6 se integró en PR #96;
+- Fase 8 (v2): validación nativa Windows, auditoría final, publicación manual (PR y checks) y despliegue (Fase 10) pendientes ([pasos](backend/docs/fase8_windows.md)). Fase 7 se integró en PR #98 ([cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md)); Fase 6, en PR #96;
 - limpieza verificable de tareas/raíces históricas, pendiente separado que no queda acreditado por las capturas de observación;
 - acreditación prospectiva: muestras suficientes por línea y tipo, por su cauce propio. Ninguna cifra retrospectiva acredita ventaja ni es un nivel de confianza.
 
@@ -4174,7 +4174,7 @@ No se entrenó ni evaluó ML, no se leyeron números ganadores y no se generaron
 
 ---
 
-## 🟡 Fase 7 — Simulaciones (antes Fase 6; entrega implementada y validada localmente en Linux y Windows, publicación pendiente; AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada; Producto 5: simulación Monte Carlo de carteras)
+## ✅ Fase 7 — Simulaciones (antes Fase 6; integrada en PR #98, merge `f15f513`, con checks de Linux y Windows aprobados; AE-49 exploratoria, validada; AE-50 verificación local, validada; AE-51 auditoría frente al histórico, validada; Producto 5: simulación Monte Carlo de carteras)
 
 **Objetivo:** simulaciones Monte Carlo para estimar el comportamiento esperado bajo el modelo de azar uniforme, y contrastarlo contra los patrones detectados en la Fase 5.
 
@@ -4407,7 +4407,7 @@ Con esta evidencia, **AE-51 queda validada como auditoría de una evidencia de A
 
 No se entrenó ni evaluó ML y no se generaron predicciones. Claude no leyó números ganadores reales; la auditoría del operador leyó el histórico `2081..2705` solo para calcular la huella y las estadísticas agregadas, y el informe no publica números ganadores. AE-39 sigue en NO-GO y los bloqueos de AE-40 a AE-50 no cambian.
 
-**Entrega de cierre de la Fase 7 (implementada y validada localmente sobre `605afe8`; publicación manual, revisión del PR y sus Actions pendientes):** completa las diferencias de la matriz de contextualización sin rehacer AE-49–51 ni Producto 5.
+**Entrega de cierre de la Fase 7 (implementada y validada localmente sobre `605afe8`; integrada en PR #98 con checks de Linux y Windows aprobados):** completa las diferencias de la matriz de contextualización sin rehacer AE-49–51 ni Producto 5.
 
 | Requisito | Entregado |
 |---|---|
@@ -4425,19 +4425,41 @@ AE-49–51 conservan su contrato (`2081..2705`, B = 10.000, revisión `0006`) y 
 
 ---
 
-## 🔜 Fase 8 — API pública
+## 🟡 Fase 8 — API pública (v2 validada en Linux y Windows; publicación manual y CI pendientes)
 
 **Objetivo:** exponer una API REST pública, documentada y con límites de uso, para que terceros puedan consumir estadísticas y predicciones.
 
 **Dependencias:** capacidades de fases 1–5 y operación de Fase 6; la ampliación de Simulaciones (Fase 7) conserva su orden de prioridad, sin convertirla en requisito técnico para cada endpoint.
 
 **Entregables:**
-- Autenticación (API keys o similar) — ausente hoy, ver limitaciones de seguridad en el informe de auditoría.
+- Autenticación con `X-API-Key` frente a huellas SHA-256 configuradas.
 - Rate limiting.
-- Documentación OpenAPI/Swagger ampliada (FastAPI ya la genera automáticamente en `/docs`, pero sin autenticación ni límites de uso todavía).
+- Documentación OpenAPI/Swagger en `/api/v1/docs`, con autenticación y límites de uso en la entrada pública.
 - Versionado de la API.
 
 **Criterios de finalización:** API pública con autenticación, límites de uso, y documentación completa, corriendo en un entorno con monitoreo básico.
+
+**Entrega de la Fase 8 (v2 sobre `f15f513`, validada localmente en Linux y Windows; publicación manual y CI pendientes; despliegue en Fase 10):**
+
+| Requisito | Entregado |
+|---|---|
+| Versionado | entrada propia `app.api.publica.aplicacion:app`, todas las rutas bajo `/api/v1`, solo GET; no monta la web, los estáticos ni los routers REST internos (sin ruta alternativa a POST/DELETE de `/api/sorteos`) |
+| Consultas | juegos, sorteos paginados (máximo 100), resumen, panel y métricas de Fase 5, predicciones guardadas (Fase 4, historial ≤ 50) y simulaciones guardadas (Fase 7, ≤ 50), con los casos de uso existentes y contratos públicos propios |
+| Autenticación | `X-API-Key` frente a huellas SHA-256 de `API_PUBLICA_CLAVES`; sin claves predeterminadas (configuración ausente o no válida: 503); generación, sustitución y revocación con `python -m scripts.api_publica_claves` |
+| Límites de uso | cubeta de fichas **por proceso**, por clave y por IP (memoria acotada); coste por consulta; 429 con `Retry-After` verificado con solicitudes simultáneas |
+| Documentación y monitoreo | OpenAPI/Swagger en `/api/v1/docs` con el esquema de clave, ejemplos y errores; `/api/v1/salud` sin clave; `/api/v1/estado` con solicitudes, latencia, límites y base, por plantilla de ruta y método estándar; CORS deshabilitado o con lista explícita |
+| Arranque soportado (v2) | `uvicorn app.api.publica.aplicacion:app --host 127.0.0.1 --port 8010 --no-access-log --no-proxy-headers`, el mismo en guía, ejemplos, prueba del proceso real y `tests/postgres_fase8.py` |
+
+**Correcciones de la v2** (auditoría de la v1; regresiones que fallan sobre la v1 y pasan sobre la v2):
+- **F8-SEC-01:** un fallo inesperado se convierte en el middleware propio en un 500 sanitizado con `X-Request-ID` y `no-store`; no llega a Uvicorn con su traza y su mensaje.
+- **F8-SEC-02:** el arranque soportado desactiva el registro de acceso de Uvicorn, que escribía una clave enviada por error en la URL. El registro propio sigue activo.
+- **F8-LIM-01:** el arranque soportado ignora `X-Forwarded-For`; desde un origen local ya no se elude la cuota por IP.
+- **F8-OBS-01:** el monitoreo y su registro agrupan los métodos no estándar en `OTRO`, que siguen recibiendo 405.
+- **Windows:** `tests/unit/api_publica` está en `tests/seleccion_windows.txt`; sus 92 pruebas y las cuatro sondas del auditor pasaron en Windows nativo. La selección amplia recolectó 3285 casos, incluidas las 92 de API; su ejecución completa queda pendiente para el CI del PR.
+
+**Cierre local auditado (24 de octubre de 2026):** PostgreSQL 16.14 aislado cumplió A–F y A2 con 1616 sorteos sintéticos; el contenedor de prueba y su temporal se eliminaron, y el contenedor operativo y los archivos protegidos se conservaron. [Registro y huellas](backend/docs/fase8_validacion_operador_2026-10-24.md).
+
+Matriz, decisiones y limitaciones: [fase8_api_publica.md](backend/docs/fase8_api_publica.md). Protocolo nativo: [fase8_windows.md](backend/docs/fase8_windows.md). El despliegue con HTTPS, los proxies fiables y el posible límite global son de la Fase 10.
 
 ---
 
