@@ -144,9 +144,11 @@ def test_solo_las_paginas_de_producto1_marcan_el_body(cliente, tmp_path):
         # Producto 3 anade sus paginas (panel diario y rendimiento) en `operacion/`, Producto 4 las del
         # laboratorio de modelos en `laboratorio/`, Producto 5 las de carteras y simulacion en `carteras/`,
         # Producto 6 las del centro de resultados en `resultados/`, la Fase 5 las estadisticas descriptivas
-        # nuevas y el panel en `descriptivas/`, Fase 4 en `predicciones/` y Fase 6 en `automatizacion/`.
+        # nuevas y el panel en `descriptivas/`, Fase 4 en `predicciones/`, Fase 6 en `automatizacion/` y Fase 7
+        # en `simulaciones/`.
         es_pagina_producto1 = ruta.parent.name in ("producto", "operacion", "laboratorio", "carteras", "resultados",
-                                                   "descriptivas", "predicciones", "automatizacion") and not ruta.name.startswith("_")
+                                                   "descriptivas", "predicciones", "automatizacion", "simulaciones") \
+            and not ruta.name.startswith("_")
         assert marcada == es_pagina_producto1, ruta
     for url in ("/estadisticas", "/estadisticas/baloto/resumen", "/estadisticas/colorloto/resumen", "/pronosticos",
                 "/operacion", "/rendimiento"):

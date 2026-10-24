@@ -37,6 +37,8 @@ El flujo web cubrió Baloto–XGBoost, Revancha–LightGBM, MiLoto–MLP, ColorL
 
 **Pendientes separados:** aplicación/verificación de este cierre documental en Windows PowerShell 5.1 (`ml-guia-cierre-documental-windows.md` de la entrega), revisión y publicación manual por Daniel con Actions del futuro PR, y acreditación prospectiva por su cauce propio. Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. No queda pendiente repetir la suite nativa, el recorrido ni la impresión ya completados.
 
+*Adenda del 23 de octubre de 2026:* la publicación manual y Actions de esta entrega se completaron en PR #95 (merge `2ac4d110b7d721e544f5588e9754230eef28184d`, Actions `39387775447`); la acreditación prospectiva sigue por su cauce propio.
+
 ## Datos, cortes y significado de la salida
 
 ### Continuación v3: evidencia Windows y comparación reproducible (antecedentes)

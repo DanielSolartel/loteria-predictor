@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block clase_body %} class="producto1-impresion"{% endblock %}
+{% block title %}Simulación en curso{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h3 class="mb-0">Simulación de {{ nombres.get(e.parametros.juego, e.parametros.juego) }}</h3>
+    <a class="btn btn-sm btn-outline-secondary" href="/simulaciones">Simulaciones</a>
+</div>
+{% include "simulaciones/_ejecucion_estado.html" %}
+{% endblock %}

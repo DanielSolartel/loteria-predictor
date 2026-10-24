@@ -25,7 +25,7 @@ Este documento explica cómo está construido el sistema, con suficiente detalle
 19. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
 20. [Fase 6: actualización y operación automática](#fase-6-actualización-y-operación-automática)
 
-Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026. Publicación manual, Actions del nuevo PR y limpieza histórica conservan pendientes separados. [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md).
+Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026; Fase 6 se integró en PR #96 (Actions `39939306600`) y la limpieza histórica conserva su pendiente separado. Base de Fase 7: PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`); ver [Fase 7: simulaciones](#fase-7-simulaciones). [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md). La validación local de Fase 7 en Windows, PostgreSQL aislado y Brave está completada; [cierre del operador](backend/docs/fase7_validacion_operador_2026-10-24.md), con publicación manual y sus Actions pendientes.
 
 ---
 
@@ -6848,7 +6848,7 @@ El ensayo Python del controlador configura UTF-8 sin BOM para stdout/stderr solo
 
 ### Validación y límites
 
-**Fase 6 v3.4 — validación operativa del 23 de octubre de 2026:** tarea Windows y núcleo habilitados. MiLoto incorporó automáticamente el #628 y guardó la cartera/explicación para el #629; ColorLoto incorporó el #229 y guardó las del #230. Histórico canónico previo y selecciones conservados; doce copias HTML anteriores de MiLoto sí cambiaron al reconciliar. Quedan publicación manual, Actions del futuro PR y revisión separada de restos históricos. [Evidencias, alcance y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md).
+**Fase 6 v3.4 — validación operativa del 23 de octubre de 2026:** tarea Windows y núcleo habilitados. MiLoto incorporó automáticamente el #628 y guardó la cartera/explicación para el #629; ColorLoto incorporó el #229 y guardó las del #230. Histórico canónico previo y selecciones conservados; doce copias HTML anteriores de MiLoto sí cambiaron al reconciliar. La publicación manual y Actions se completaron después en PR #96 (merge `fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`); queda la revisión separada de restos históricos. [Evidencias, alcance y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md).
 
 ### Antecedentes de validación y protocolos anteriores a la activación real
 
@@ -6949,3 +6949,26 @@ Tablas normalizadas (no `INTEGER[]`) para números y colores: permite indexar y 
 | Baloto y Revancha como juegos independientes (Opción A) | Una entidad Sorteo con dos resultados embebidos (Opción B) | Cero cambios de esquema, reutiliza el 100% del dominio ya construido, fiel a que son productos regulatoriamente distintos -ver sección dedicada arriba |
 | Dos índices únicos parciales en `estadisticas` | Un `UNIQUE` convencional sobre las 4 columnas | PostgreSQL nunca trata `NULL = NULL` como duplicado en un `UNIQUE` -el histórico completo (`hasta_numero_sorteo IS NULL`) habría podido duplicarse sin límite |
 | Upsert (`ON CONFLICT DO UPDATE`) al recalcular una identidad existente | `INSERT` incondicional en cada cálculo | Recalcular una estadística previamente invalidada debe reemplazar esa fila, no intentar crear una segunda -evita `UniqueViolation` bajo concurrencia real, no solo en el caso feliz |
+
+---
+
+## Fase 7: simulaciones
+
+Mismo patrón que Productos 4 y 5 y la Fase 4: un caso de uso común (`app/application/use_cases/simulaciones.py`, `SimulacionesFase7`) para web, API interna y comando; módulos puros en `app/application/fase7/` y adaptadores en infraestructura.
+
+| Capa | Pieza | Responsabilidad |
+|---|---|---|
+| Aplicación (puro) | `fase7/motor.py` | mecanismo por juego, estadísticas fijadas (motor de Fase 5 para lo observado y versión vectorizada contrastada), RNG `PCG64(SeedSequence([semilla, 7, juego]))` con consumo fijo por iteración, lotes acotados, p-valores +1, Bonferroni del motor |
+| Aplicación (puro) | `fase7/artefacto.py` | identidad y clave SHA-256 (serialización canónica de AE-52), resultado con huella de contenido e integridad, comprobación única de filas (`verificar_fila`: tipos, integridad y juego de `juego_id`) y exportaciones derivadas |
+| Aplicación | `use_cases/simulaciones.py` | trabajo en segundo plano: lectura `READ ONLY` del histórico hasta el corte, reutilización por clave, ejecutor, publicación y relectura verificada, estados, lectura del progreso que relee el registro con el cerrojo libre, recuperación bajo el cerrojo de la ejecución, verificación |
+| Puertos | `interfaces/simulaciones_repository.py`, `interfaces/ejecutor_simulaciones.py` | tabla `simulaciones` y proceso trabajador |
+| Infraestructura | `repositories/simulaciones_repository_sqlalchemy.py` | filas `SimulacionORM` ↔ `Simulacion`; publicar con `pg_advisory_xact_lock` sobre `loteria:simulaciones:<clave>` y `lock_timeout = 10s`, buscar e insertar en la misma transacción |
+| Infraestructura | `simulaciones_trabajador.py` | proceso `spawn` con tiempo máximo y progreso por cola; no escribe |
+| Infraestructura | `storage/operacion_file_store.py` (existente) | registro de progreso y cerrojos en `DIRECTORIO_SIMULACIONES/operacion`; no es fuente del resultado |
+| Entrada | `api/web/routers/simulaciones.py`, `api/rest/routers/simulaciones.py`, `scripts/simulaciones.py` | web con POST protegidos, API interna de solo lectura, comando |
+| Presentación | `templates/simulaciones/_ejecucion_estado.html` | F7-VIS-01: un juego pendiente o activo se presenta interrumpido cuando la ejecución global está interrumpida; último avance como dato histórico, sin barra activa ni escritura del registro; estados cerrados y enlaces conservados |
+
+Flujo: `iniciar` (cerrojo del juego y registro) → hilo (`get_lanzador_de_simulaciones`) → `ejecutar`: lectura de solo lectura (se cierra) → identidad → fila existente íntegra ⇒ reutilizar → trabajador (lotes, progreso) → transacción de publicación (advisory de la clave, búsqueda, inserción de la fila completa, commit) → relectura y verificación → cierre del registro, escrito antes de soltar el cerrojo de la ejecución. La tabla `simulaciones` es la fuente canónica sin cambio de esquema: identidad en `parametros`, resultado en `resultado_resumen`; `num_iteraciones`, `juego_id`, `ejecutado_en` y `duracion_ms` con su significado original. Detalle y justificación: [backend/docs/fase7_simulaciones.md](backend/docs/fase7_simulaciones.md).
+
+
+Validación local completada: selección Windows consolidada de 3183 pruebas únicas, medición de veinte puntos y PostgreSQL 16.14 en un contenedor Linux propio con nueve controles. El ajuste de presentación se revalidó en Windows con 52 pruebas dirigidas, sonda 8/8 y 15 capturas de Brave. Estos resultados mantienen su procedencia y solapamientos en el [informe del operador](backend/docs/fase7_validacion_operador_2026-10-24.md); no se atribuyen al ajuste suites completas ni nuevas mediciones.
