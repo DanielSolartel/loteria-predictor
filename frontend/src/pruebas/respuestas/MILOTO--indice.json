@@ -1,0 +1,56 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/estadisticas",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "MILOTO",
+  "resumen": "/api/v1/juegos/MILOTO/estadisticas/resumen",
+  "panel": "/api/v1/juegos/MILOTO/estadisticas/panel",
+  "metricas": [
+   {
+    "metrica": "frecuencia-numeros-por-anio",
+    "parametro": "anio"
+   },
+   {
+    "metrica": "frecuencia-numeros-por-mes",
+    "parametro": "mes"
+   },
+   {
+    "metrica": "frecuencia-numeros-por-dia-semana",
+    "parametro": "dia_semana"
+   },
+   {
+    "metrica": "intervalos-historicos-numeros",
+    "parametro": null
+   },
+   {
+    "metrica": "distribucion-sumas",
+    "parametro": null
+   },
+   {
+    "metrica": "distribucion-decenas",
+    "parametro": null
+   },
+   {
+    "metrica": "comparacion-frecuencia-numeros-por-ventana",
+    "parametro": "ventana"
+   },
+   {
+    "metrica": "pruebas-uniformidad",
+    "parametro": null
+   },
+   {
+    "metrica": "independencia-pares",
+    "parametro": null
+   },
+   {
+    "metrica": "independencia-trios",
+    "parametro": null
+   },
+   {
+    "metrica": "correlaciones",
+    "parametro": null
+   }
+  ]
+ }
+}

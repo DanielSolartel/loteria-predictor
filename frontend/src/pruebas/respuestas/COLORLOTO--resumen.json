@@ -1,0 +1,684 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/resumen",
+ "estado": 200,
+ "cuerpo": {
+  "codigo_juego": "COLORLOTO",
+  "nombre": "ColorLoto",
+  "total_sorteos": 45,
+  "reglas": {
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad_balotas": 6,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "permite_repeticion": true
+  },
+  "total_sorteos_sin_corte": 45,
+  "corte": {
+   "hasta_numero_sorteo": null,
+   "descripcion": "todo el histórico cargado"
+  },
+  "periodo": {
+   "primer_sorteo": 1,
+   "primera_fecha": "2024-08-06",
+   "ultimo_sorteo": 45,
+   "ultima_fecha": "2024-12-16"
+  },
+  "ultimo_sorteo_disponible": {
+   "numero_sorteo": 45,
+   "fecha": "2024-12-16"
+  },
+  "frescura": {
+   "estado": "desactualizado",
+   "dias_desde_el_ultimo_sorteo": 678,
+   "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+  },
+  "huecos": {
+   "cantidad": 0,
+   "primeros": [],
+   "cobertura": 100.0
+  },
+  "consultado_el": "2026-10-25",
+  "ultimo_resultado": {
+   "pares": [
+    [
+     2,
+     "BLANCO"
+    ],
+    [
+     5,
+     "ROJO"
+    ],
+    [
+     4,
+     "BLANCO"
+    ],
+    [
+     5,
+     "AMARILLO"
+    ],
+    [
+     2,
+     "ROJO"
+    ],
+    [
+     1,
+     "VERDE"
+    ]
+   ]
+  },
+  "estadisticas": {
+   "frecuencia_colores": {
+    "todas": [
+     {
+      "valor": "AMARILLO",
+      "apariciones": 37,
+      "frecuencia_relativa": 0.8222222222222222
+     },
+     {
+      "valor": "AZUL",
+      "apariciones": 44,
+      "frecuencia_relativa": 0.9777777777777777
+     },
+     {
+      "valor": "BLANCO",
+      "apariciones": 49,
+      "frecuencia_relativa": 1.0888888888888888
+     },
+     {
+      "valor": "NEGRO",
+      "apariciones": 37,
+      "frecuencia_relativa": 0.8222222222222222
+     },
+     {
+      "valor": "ROJO",
+      "apariciones": 53,
+      "frecuencia_relativa": 1.1777777777777778
+     },
+     {
+      "valor": "VERDE",
+      "apariciones": 50,
+      "frecuencia_relativa": 1.1111111111111112
+     }
+    ],
+    "mas_frecuentes": [
+     {
+      "valor": "ROJO",
+      "apariciones": 53,
+      "frecuencia_relativa": 1.1777777777777778
+     },
+     {
+      "valor": "VERDE",
+      "apariciones": 50,
+      "frecuencia_relativa": 1.1111111111111112
+     },
+     {
+      "valor": "BLANCO",
+      "apariciones": 49,
+      "frecuencia_relativa": 1.0888888888888888
+     },
+     {
+      "valor": "AZUL",
+      "apariciones": 44,
+      "frecuencia_relativa": 0.9777777777777777
+     },
+     {
+      "valor": "AMARILLO",
+      "apariciones": 37,
+      "frecuencia_relativa": 0.8222222222222222
+     },
+     {
+      "valor": "NEGRO",
+      "apariciones": 37,
+      "frecuencia_relativa": 0.8222222222222222
+     }
+    ],
+    "menos_frecuentes": [
+     {
+      "valor": "AMARILLO",
+      "apariciones": 37,
+      "frecuencia_relativa": 0.8222222222222222
+     },
+     {
+      "valor": "NEGRO",
+      "apariciones": 37,
+      "frecuencia_relativa": 0.8222222222222222
+     },
+     {
+      "valor": "AZUL",
+      "apariciones": 44,
+      "frecuencia_relativa": 0.9777777777777777
+     },
+     {
+      "valor": "BLANCO",
+      "apariciones": 49,
+      "frecuencia_relativa": 1.0888888888888888
+     },
+     {
+      "valor": "VERDE",
+      "apariciones": 50,
+      "frecuencia_relativa": 1.1111111111111112
+     },
+     {
+      "valor": "ROJO",
+      "apariciones": 53,
+      "frecuencia_relativa": 1.1777777777777778
+     }
+    ]
+   },
+   "frecuencia_numeros": {
+    "todas": [
+     {
+      "valor": "1",
+      "apariciones": 41,
+      "frecuencia_relativa": 0.9111111111111111
+     },
+     {
+      "valor": "2",
+      "apariciones": 39,
+      "frecuencia_relativa": 0.8666666666666667
+     },
+     {
+      "valor": "3",
+      "apariciones": 30,
+      "frecuencia_relativa": 0.6666666666666666
+     },
+     {
+      "valor": "4",
+      "apariciones": 46,
+      "frecuencia_relativa": 1.0222222222222221
+     },
+     {
+      "valor": "5",
+      "apariciones": 42,
+      "frecuencia_relativa": 0.9333333333333333
+     },
+     {
+      "valor": "6",
+      "apariciones": 41,
+      "frecuencia_relativa": 0.9111111111111111
+     },
+     {
+      "valor": "7",
+      "apariciones": 31,
+      "frecuencia_relativa": 0.6888888888888889
+     }
+    ],
+    "mas_frecuentes": [
+     {
+      "valor": "4",
+      "apariciones": 46,
+      "frecuencia_relativa": 1.0222222222222221
+     },
+     {
+      "valor": "5",
+      "apariciones": 42,
+      "frecuencia_relativa": 0.9333333333333333
+     },
+     {
+      "valor": "1",
+      "apariciones": 41,
+      "frecuencia_relativa": 0.9111111111111111
+     }
+    ],
+    "menos_frecuentes": [
+     {
+      "valor": "3",
+      "apariciones": 30,
+      "frecuencia_relativa": 0.6666666666666666
+     },
+     {
+      "valor": "7",
+      "apariciones": 31,
+      "frecuencia_relativa": 0.6888888888888889
+     },
+     {
+      "valor": "2",
+      "apariciones": 39,
+      "frecuencia_relativa": 0.8666666666666667
+     }
+    ]
+   },
+   "frecuencia_pares": {
+    "todas": [
+     {
+      "valor": "1-AMARILLO",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "1-AZUL",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.1111111111111111
+     },
+     {
+      "valor": "1-BLANCO",
+      "apariciones": 9,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "1-NEGRO",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "1-ROJO",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "1-VERDE",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.15555555555555556
+     },
+     {
+      "valor": "2-AMARILLO",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "2-AZUL",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "2-BLANCO",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "2-NEGRO",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "2-ROJO",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "2-VERDE",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.06666666666666667
+     },
+     {
+      "valor": "3-AMARILLO",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.08888888888888889
+     },
+     {
+      "valor": "3-AZUL",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "3-BLANCO",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.1111111111111111
+     },
+     {
+      "valor": "3-NEGRO",
+      "apariciones": 2,
+      "frecuencia_relativa": 0.044444444444444446
+     },
+     {
+      "valor": "3-ROJO",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.1111111111111111
+     },
+     {
+      "valor": "3-VERDE",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "4-AMARILLO",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.1111111111111111
+     },
+     {
+      "valor": "4-AZUL",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.15555555555555556
+     },
+     {
+      "valor": "4-BLANCO",
+      "apariciones": 10,
+      "frecuencia_relativa": 0.2222222222222222
+     },
+     {
+      "valor": "4-NEGRO",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "4-ROJO",
+      "apariciones": 9,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "4-VERDE",
+      "apariciones": 9,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "5-AMARILLO",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "5-AZUL",
+      "apariciones": 9,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "5-BLANCO",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.1111111111111111
+     },
+     {
+      "valor": "5-NEGRO",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.1111111111111111
+     },
+     {
+      "valor": "5-ROJO",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.08888888888888889
+     },
+     {
+      "valor": "5-VERDE",
+      "apariciones": 11,
+      "frecuencia_relativa": 0.24444444444444444
+     },
+     {
+      "valor": "6-AMARILLO",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.06666666666666667
+     },
+     {
+      "valor": "6-AZUL",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.15555555555555556
+     },
+     {
+      "valor": "6-BLANCO",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.08888888888888889
+     },
+     {
+      "valor": "6-NEGRO",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "6-ROJO",
+      "apariciones": 13,
+      "frecuencia_relativa": 0.28888888888888886
+     },
+     {
+      "valor": "6-VERDE",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "7-AMARILLO",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.1111111111111111
+     },
+     {
+      "valor": "7-AZUL",
+      "apariciones": 2,
+      "frecuencia_relativa": 0.044444444444444446
+     },
+     {
+      "valor": "7-BLANCO",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.17777777777777778
+     },
+     {
+      "valor": "7-NEGRO",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.08888888888888889
+     },
+     {
+      "valor": "7-ROJO",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     },
+     {
+      "valor": "7-VERDE",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.13333333333333333
+     }
+    ],
+    "mas_frecuentes": [
+     {
+      "valor": "6-ROJO",
+      "apariciones": 13,
+      "frecuencia_relativa": 0.28888888888888886
+     },
+     {
+      "valor": "5-VERDE",
+      "apariciones": 11,
+      "frecuencia_relativa": 0.24444444444444444
+     },
+     {
+      "valor": "4-BLANCO",
+      "apariciones": 10,
+      "frecuencia_relativa": 0.2222222222222222
+     },
+     {
+      "valor": "1-BLANCO",
+      "apariciones": 9,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "4-ROJO",
+      "apariciones": 9,
+      "frecuencia_relativa": 0.2
+     }
+    ],
+    "menos_frecuentes": [
+     {
+      "valor": "3-NEGRO",
+      "apariciones": 2,
+      "frecuencia_relativa": 0.044444444444444446
+     },
+     {
+      "valor": "7-AZUL",
+      "apariciones": 2,
+      "frecuencia_relativa": 0.044444444444444446
+     },
+     {
+      "valor": "2-VERDE",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.06666666666666667
+     },
+     {
+      "valor": "6-AMARILLO",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.06666666666666667
+     },
+     {
+      "valor": "3-AMARILLO",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.08888888888888889
+     }
+    ]
+   },
+   "atrasos_colores": {
+    "mayores": [
+     {
+      "valor": "NEGRO",
+      "atraso": 2,
+      "ultimo_sorteo": 43
+     },
+     {
+      "valor": "AZUL",
+      "atraso": 1,
+      "ultimo_sorteo": 44
+     },
+     {
+      "valor": "AMARILLO",
+      "atraso": 0,
+      "ultimo_sorteo": 45
+     },
+     {
+      "valor": "BLANCO",
+      "atraso": 0,
+      "ultimo_sorteo": 45
+     },
+     {
+      "valor": "ROJO",
+      "atraso": 0,
+      "ultimo_sorteo": 45
+     },
+     {
+      "valor": "VERDE",
+      "atraso": 0,
+      "ultimo_sorteo": 45
+     }
+    ],
+    "nunca_observados": []
+   },
+   "atrasos_numeros": {
+    "mayores": [
+     {
+      "valor": "3",
+      "atraso": 1,
+      "ultimo_sorteo": 44
+     },
+     {
+      "valor": "6",
+      "atraso": 1,
+      "ultimo_sorteo": 44
+     },
+     {
+      "valor": "7",
+      "atraso": 1,
+      "ultimo_sorteo": 44
+     }
+    ],
+    "nunca_observados": []
+   },
+   "pares_impares": [
+    {
+     "valor": "0",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    },
+    {
+     "valor": "1",
+     "sorteos": 8,
+     "frecuencia_relativa": 0.17777777777777778
+    },
+    {
+     "valor": "2",
+     "sorteos": 11,
+     "frecuencia_relativa": 0.24444444444444444
+    },
+    {
+     "valor": "3",
+     "sorteos": 16,
+     "frecuencia_relativa": 0.35555555555555557
+    },
+    {
+     "valor": "4",
+     "sorteos": 4,
+     "frecuencia_relativa": 0.08888888888888889
+    },
+    {
+     "valor": "5",
+     "sorteos": 4,
+     "frecuencia_relativa": 0.08888888888888889
+    },
+    {
+     "valor": "6",
+     "sorteos": 2,
+     "frecuencia_relativa": 0.044444444444444446
+    }
+   ],
+   "altos_bajos": [
+    {
+     "valor": "0",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    },
+    {
+     "valor": "1",
+     "sorteos": 6,
+     "frecuencia_relativa": 0.13333333333333333
+    },
+    {
+     "valor": "2",
+     "sorteos": 16,
+     "frecuencia_relativa": 0.35555555555555557
+    },
+    {
+     "valor": "3",
+     "sorteos": 20,
+     "frecuencia_relativa": 0.4444444444444444
+    },
+    {
+     "valor": "4",
+     "sorteos": 3,
+     "frecuencia_relativa": 0.06666666666666667
+    },
+    {
+     "valor": "5",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    },
+    {
+     "valor": "6",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    }
+   ],
+   "maximo_repeticion_color": [
+    {
+     "valor": "1",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    },
+    {
+     "valor": "2",
+     "sorteos": 30,
+     "frecuencia_relativa": 0.6666666666666666
+    },
+    {
+     "valor": "3",
+     "sorteos": 11,
+     "frecuencia_relativa": 0.24444444444444444
+    },
+    {
+     "valor": "4",
+     "sorteos": 4,
+     "frecuencia_relativa": 0.08888888888888889
+    },
+    {
+     "valor": "5",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    },
+    {
+     "valor": "6",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    }
+   ],
+   "colores_fuera_de_la_paleta_vigente": []
+  }
+ }
+}

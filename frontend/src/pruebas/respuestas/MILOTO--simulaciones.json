@@ -1,0 +1,38 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/simulaciones",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "MILOTO",
+  "limite": 20,
+  "estado_de_uso": "experimental_no_acreditado",
+  "simulaciones": [
+   {
+    "id": "30e4faf1-120f-45ee-b763-7c12b7431a6e",
+    "juego": "MILOTO",
+    "clave": "9c82f341aba267f55b4401139b2f244fc62ed78798d55f7ab71f056fad405835",
+    "corte": 569,
+    "iteraciones": 100,
+    "semilla": 20261025,
+    "ejecutado_en": "2026-10-25T00:37:42",
+    "duracion_ms": 3,
+    "integridad": "verificada",
+    "motivo": null,
+    "alguna_supera_umbral_exploratorio": false
+   },
+   {
+    "id": "a69d74a9-7edf-4f9b-8bac-9b8e453d345c",
+    "juego": "MILOTO",
+    "clave": "f037272732e6c63fab240c2998318d1d05485605ef731fab4f75163fdc3b4c1c",
+    "corte": 569,
+    "iteraciones": 100,
+    "semilla": 20261024,
+    "ejecutado_en": "2026-10-25T00:37:42",
+    "duracion_ms": 3,
+    "integridad": "verificada",
+    "motivo": null,
+    "alguna_supera_umbral_exploratorio": false
+   }
+  ]
+ }
+}

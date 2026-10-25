@@ -1,0 +1,464 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/estadisticas/resumen",
+ "estado": 200,
+ "cuerpo": {
+  "codigo_juego": "MILOTO",
+  "nombre": "MiLoto",
+  "total_sorteos": 40,
+  "reglas": {
+   "tipo": "numeros",
+   "rango": [
+    1,
+    39
+   ],
+   "cantidad_numeros": 5,
+   "superbalota": null
+  },
+  "total_sorteos_sin_corte": 40,
+  "corte": {
+   "hasta_numero_sorteo": null,
+   "descripcion": "todo el histórico cargado"
+  },
+  "periodo": {
+   "primer_sorteo": 530,
+   "primera_fecha": "2021-01-02",
+   "ultimo_sorteo": 569,
+   "ultima_fecha": "2021-04-29"
+  },
+  "ultimo_sorteo_disponible": {
+   "numero_sorteo": 569,
+   "fecha": "2021-04-29"
+  },
+  "frescura": {
+   "estado": "desactualizado",
+   "dias_desde_el_ultimo_sorteo": 2005,
+   "mensaje": "El último sorteo cargado es de hace 2005 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+  },
+  "huecos": {
+   "cantidad": 0,
+   "primeros": [],
+   "cobertura": 100.0
+  },
+  "consultado_el": "2026-10-25",
+  "ultimo_resultado": {
+   "numeros": [
+    6,
+    14,
+    29,
+    34,
+    35
+   ],
+   "superbalota": null
+  },
+  "estadisticas": {
+   "frecuencia_numeros": {
+    "todas": [
+     {
+      "valor": "1",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "2",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "3",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "4",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "5",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "6",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     },
+     {
+      "valor": "7",
+      "apariciones": 2,
+      "frecuencia_relativa": 0.05
+     },
+     {
+      "valor": "8",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     },
+     {
+      "valor": "9",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "10",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "11",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "12",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     },
+     {
+      "valor": "13",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "14",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "15",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "16",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "17",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "18",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.175
+     },
+     {
+      "valor": "19",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "20",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "21",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "22",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "23",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "24",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "25",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "26",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "27",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "28",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "29",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.175
+     },
+     {
+      "valor": "30",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "31",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "32",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "33",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "34",
+      "apariciones": 6,
+      "frecuencia_relativa": 0.15
+     },
+     {
+      "valor": "35",
+      "apariciones": 5,
+      "frecuencia_relativa": 0.125
+     },
+     {
+      "valor": "36",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.175
+     },
+     {
+      "valor": "37",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     },
+     {
+      "valor": "38",
+      "apariciones": 4,
+      "frecuencia_relativa": 0.1
+     },
+     {
+      "valor": "39",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.175
+     }
+    ],
+    "mas_frecuentes": [
+     {
+      "valor": "20",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "33",
+      "apariciones": 8,
+      "frecuencia_relativa": 0.2
+     },
+     {
+      "valor": "18",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.175
+     },
+     {
+      "valor": "29",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.175
+     },
+     {
+      "valor": "36",
+      "apariciones": 7,
+      "frecuencia_relativa": 0.175
+     }
+    ],
+    "menos_frecuentes": [
+     {
+      "valor": "7",
+      "apariciones": 2,
+      "frecuencia_relativa": 0.05
+     },
+     {
+      "valor": "6",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     },
+     {
+      "valor": "8",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     },
+     {
+      "valor": "12",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     },
+     {
+      "valor": "37",
+      "apariciones": 3,
+      "frecuencia_relativa": 0.075
+     }
+    ]
+   },
+   "atrasos_numeros": {
+    "mayores": [
+     {
+      "valor": "7",
+      "atraso": 19,
+      "ultimo_sorteo": 550
+     },
+     {
+      "valor": "8",
+      "atraso": 17,
+      "ultimo_sorteo": 552
+     },
+     {
+      "valor": "38",
+      "atraso": 15,
+      "ultimo_sorteo": 554
+     },
+     {
+      "valor": "15",
+      "atraso": 14,
+      "ultimo_sorteo": 555
+     },
+     {
+      "valor": "1",
+      "atraso": 13,
+      "ultimo_sorteo": 556
+     }
+    ],
+    "nunca_observados": []
+   },
+   "pares_impares": [
+    {
+     "valor": "0",
+     "sorteos": 2,
+     "frecuencia_relativa": 0.05
+    },
+    {
+     "valor": "1",
+     "sorteos": 6,
+     "frecuencia_relativa": 0.15
+    },
+    {
+     "valor": "2",
+     "sorteos": 15,
+     "frecuencia_relativa": 0.375
+    },
+    {
+     "valor": "3",
+     "sorteos": 10,
+     "frecuencia_relativa": 0.25
+    },
+    {
+     "valor": "4",
+     "sorteos": 7,
+     "frecuencia_relativa": 0.175
+    },
+    {
+     "valor": "5",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    }
+   ],
+   "altos_bajos": [
+    {
+     "valor": "0",
+     "sorteos": 2,
+     "frecuencia_relativa": 0.05
+    },
+    {
+     "valor": "1",
+     "sorteos": 7,
+     "frecuencia_relativa": 0.175
+    },
+    {
+     "valor": "2",
+     "sorteos": 13,
+     "frecuencia_relativa": 0.325
+    },
+    {
+     "valor": "3",
+     "sorteos": 14,
+     "frecuencia_relativa": 0.35
+    },
+    {
+     "valor": "4",
+     "sorteos": 4,
+     "frecuencia_relativa": 0.1
+    },
+    {
+     "valor": "5",
+     "sorteos": 0,
+     "frecuencia_relativa": 0.0
+    }
+   ],
+   "decenas": [
+    {
+     "valor": "1-10",
+     "sorteos": 42,
+     "frecuencia_relativa": 1.05
+    },
+    {
+     "valor": "11-20",
+     "sorteos": 57,
+     "frecuencia_relativa": 1.425
+    },
+    {
+     "valor": "21-30",
+     "sorteos": 51,
+     "frecuencia_relativa": 1.275
+    },
+    {
+     "valor": "31-39",
+     "sorteos": 50,
+     "frecuencia_relativa": 1.25
+    }
+   ],
+   "decenas_sobre_numeros_extraidos": {
+    "filas": [
+     {
+      "valor": "1-10",
+      "sorteos": 42,
+      "frecuencia_relativa": 1.05,
+      "apariciones": 42,
+      "porcentaje_de_numeros_extraidos": 21.0
+     },
+     {
+      "valor": "11-20",
+      "sorteos": 57,
+      "frecuencia_relativa": 1.425,
+      "apariciones": 57,
+      "porcentaje_de_numeros_extraidos": 28.5
+     },
+     {
+      "valor": "21-30",
+      "sorteos": 51,
+      "frecuencia_relativa": 1.275,
+      "apariciones": 51,
+      "porcentaje_de_numeros_extraidos": 25.5
+     },
+     {
+      "valor": "31-39",
+      "sorteos": 50,
+      "frecuencia_relativa": 1.25,
+      "apariciones": 50,
+      "porcentaje_de_numeros_extraidos": 25.0
+     }
+    ],
+    "denominador": {
+     "sorteos": 40,
+     "numeros_por_sorteo": 5,
+     "numeros_extraidos": 200
+    }
+   },
+   "superbalota": null
+  }
+ }
+}

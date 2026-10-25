@@ -1,0 +1,288 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas/independencia-pares",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "BALOTO",
+   "nombre": "Baloto",
+   "tipo": "numeros",
+   "rango": [
+    1,
+    43
+   ],
+   "cantidad": 5,
+   "superbalota": [
+    1,
+    16
+   ],
+   "colores": [],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "BALOTO",
+   "nombre": "Baloto",
+   "reglas": {
+    "tipo": "numeros",
+    "rango": [
+     1,
+     43
+    ],
+    "cantidad_numeros": 5,
+    "superbalota": [
+     1,
+     16
+    ]
+   },
+   "total_sorteos": 60,
+   "total_sorteos_sin_corte": 60,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 2081,
+    "primera_fecha": "2021-01-02",
+    "ultimo_sorteo": 2140,
+    "ultima_fecha": "2021-06-28"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 2140,
+    "fecha": "2021-06-28"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 1945,
+    "mensaje": "El último sorteo cargado es de hace 1945 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "independencia-pares",
+   "titulo": "Independencia de pares",
+   "grupo": "pruebas",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Pruebas (pares posibles)",
+     "valor": 903,
+     "unidad": "pruebas",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "Coocurrencias esperadas por par",
+     "valor": 0.6644518272425249,
+     "unidad": "sorteos",
+     "formato": "dec2"
+    },
+    {
+     "etiqueta": "p-value mínimo",
+     "valor": 0.004479441218391923,
+     "unidad": "",
+     "formato": "p"
+    },
+    {
+     "etiqueta": "Con p ajustado (BH) < 0.05",
+     "valor": 0,
+     "unidad": "pruebas",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "independencia",
+     "titulo": "Los 20 pares con menor p-value",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Par",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "observado",
+       "etiqueta": "Sorteos con el par",
+       "formato": "entero",
+       "unidad": "sorteos"
+      },
+      {
+       "clave": "esperado",
+       "etiqueta": "Esperado",
+       "formato": "dec2",
+       "unidad": "sorteos"
+      },
+      {
+       "clave": "p_value",
+       "etiqueta": "p-value",
+       "formato": "p",
+       "unidad": ""
+      },
+      {
+       "clave": "p_ajustado",
+       "etiqueta": "p ajustado (BH)",
+       "formato": "p",
+       "unidad": ""
+      }
+     ],
+     "filas": [
+      {
+       "valor": "5-43",
+       "observado": 4,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.004479441218391923,
+       "p_ajustado": 0.577847917172558
+      },
+      {
+       "valor": "9-20",
+       "observado": 4,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.004479441218391923,
+       "p_ajustado": 0.577847917172558
+      },
+      {
+       "valor": "9-37",
+       "observado": 4,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.004479441218391923,
+       "p_ajustado": 0.577847917172558
+      },
+      {
+       "valor": "14-31",
+       "observado": 4,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.004479441218391923,
+       "p_ajustado": 0.577847917172558
+      },
+      {
+       "valor": "16-37",
+       "observado": 4,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.004479441218391923,
+       "p_ajustado": 0.577847917172558
+      },
+      {
+       "valor": "20-36",
+       "observado": 4,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.004479441218391923,
+       "p_ajustado": 0.577847917172558
+      },
+      {
+       "valor": "20-42",
+       "observado": 4,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.004479441218391923,
+       "p_ajustado": 0.577847917172558
+      },
+      {
+       "valor": "2-33",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "7-15",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "13-19",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "13-26",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "13-28",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "14-16",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "16-24",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "16-28",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "16-43",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "17-24",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "19-27",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "19-31",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      },
+      {
+       "valor": "20-28",
+       "observado": 3,
+       "esperado": 0.6644518272425249,
+       "p_value": 0.029114190296326288,
+       "p_ajustado": 0.9933981824949546
+      }
+     ],
+     "nota": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Una prueba binomial exacta por cada par posible (incluidos los nunca observados): ¿sus números aparecen juntos en más o menos sorteos que lo esperado si el sorteo elige 5 de 43 al azar?",
+    "Con cientos o miles de pruebas, los p-value se ajustan por Benjamini-Hochberg (tasa de falsos descubrimientos); el p-value sin ajustar no basta para llamar significativo a nada. Benjamini-Hochberg controla esa tasa con pruebas independientes o con dependencia positiva; entre pares que comparten números no se ha verificado.",
+    "Un par con p bajo no tiene más probabilidad de salir en el próximo sorteo."
+   ],
+   "selector": null
+  }
+ }
+}

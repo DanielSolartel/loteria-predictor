@@ -1,0 +1,13 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos",
+ "estado": 429,
+ "cuerpo": {
+  "error": {
+   "codigo": "limite_excedido",
+   "mensaje": "Límite de uso de la clave excedido; reintente en 12 s",
+   "solicitud": "62cee3b4dfee4c1fb00869d9dc89106d"
+  }
+ },
+ "retry_after": "12"
+}

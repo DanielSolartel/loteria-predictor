@@ -1,0 +1,647 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/pruebas-uniformidad",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "pruebas-uniformidad",
+   "titulo": "Pruebas de uniformidad (chi-cuadrado)",
+   "grupo": "pruebas",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "p-value: Números (balotas)",
+     "valor": 0.4890990619735026,
+     "unidad": "chi², asintótico",
+     "formato": "p"
+    },
+    {
+     "etiqueta": "p-value: Colores (balotas)",
+     "valor": 0.39196289159963393,
+     "unidad": "chi², asintótico",
+     "formato": "p"
+    },
+    {
+     "etiqueta": "p-value: Pares número-color (balotas)",
+     "valor": 0.7253681405319692,
+     "unidad": "chi², asintótico",
+     "formato": "p"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "resumen",
+     "titulo": "Pruebas de uniformidad (chi-cuadrado)",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Universo",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "categorias",
+       "etiqueta": "Categorías",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "esperado",
+       "etiqueta": "Esperado por categoría",
+       "formato": "dec1",
+       "unidad": ""
+      },
+      {
+       "clave": "estadistico",
+       "etiqueta": "χ²",
+       "formato": "dec2",
+       "unidad": ""
+      },
+      {
+       "clave": "grados_libertad",
+       "etiqueta": "Grados de libertad",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "p_value",
+       "etiqueta": "p-value",
+       "formato": "p",
+       "unidad": ""
+      },
+      {
+       "clave": "tipo_p_value",
+       "etiqueta": "Tipo de p-value",
+       "formato": "tipo_p",
+       "unidad": ""
+      },
+      {
+       "clave": "metodo",
+       "etiqueta": "Método",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "motivo",
+       "etiqueta": "Observación",
+       "formato": "texto",
+       "unidad": ""
+      }
+     ],
+     "filas": [
+      {
+       "valor": "Números (balotas)",
+       "categorias": 7,
+       "sorteos": 45,
+       "esperado": 38.57142857142857,
+       "estadistico": 5.437037037037038,
+       "grados_libertad": 6,
+       "p_value": 0.4890990619735026,
+       "metodo": "chi² de Pearson",
+       "tipo_p_value": "asintotico",
+       "motivo": null
+      },
+      {
+       "valor": "Colores (balotas)",
+       "categorias": 6,
+       "sorteos": 45,
+       "esperado": 45.0,
+       "estadistico": 5.2,
+       "grados_libertad": 5,
+       "p_value": 0.39196289159963393,
+       "metodo": "chi² de Pearson",
+       "tipo_p_value": "asintotico",
+       "motivo": null
+      },
+      {
+       "valor": "Pares número-color (balotas)",
+       "categorias": 42,
+       "sorteos": 45,
+       "esperado": 6.428571428571429,
+       "estadistico": 35.2,
+       "grados_libertad": 41,
+       "p_value": 0.7253681405319692,
+       "metodo": "chi² de Pearson",
+       "tipo_p_value": "asintotico",
+       "motivo": null
+      }
+     ],
+     "nota": null
+    },
+    {
+     "id": "numeros",
+     "titulo": "Números (balotas): observado frente a esperado",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Valor",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "observado",
+       "etiqueta": "Observado",
+       "formato": "entero",
+       "unidad": "balotas"
+      },
+      {
+       "clave": "esperado",
+       "etiqueta": "Esperado",
+       "formato": "dec1",
+       "unidad": ""
+      },
+      {
+       "clave": "residuo",
+       "etiqueta": "Residuo de Pearson",
+       "formato": "dec2",
+       "unidad": "(O−E)/√E"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "observado": 41,
+       "esperado": 38.57142857142857,
+       "residuo": 0.3910371502940011
+      },
+      {
+       "valor": "2",
+       "observado": 39,
+       "esperado": 38.57142857142857,
+       "residuo": 0.06900655593423576
+      },
+      {
+       "valor": "3",
+       "observado": 30,
+       "esperado": 38.57142857142857,
+       "residuo": -1.3801311186847083
+      },
+      {
+       "valor": "4",
+       "observado": 46,
+       "esperado": 38.57142857142857,
+       "residuo": 1.1961136361934144
+      },
+      {
+       "valor": "5",
+       "observado": 42,
+       "esperado": 38.57142857142857,
+       "residuo": 0.5520524474738837
+      },
+      {
+       "valor": "6",
+       "observado": 41,
+       "esperado": 38.57142857142857,
+       "residuo": 0.3910371502940011
+      },
+      {
+       "valor": "7",
+       "observado": 31,
+       "esperado": 38.57142857142857,
+       "residuo": -1.2191158215048254
+      }
+     ],
+     "nota": null
+    },
+    {
+     "id": "colores",
+     "titulo": "Colores (balotas): observado frente a esperado",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Valor",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "observado",
+       "etiqueta": "Observado",
+       "formato": "entero",
+       "unidad": "balotas"
+      },
+      {
+       "clave": "esperado",
+       "etiqueta": "Esperado",
+       "formato": "dec1",
+       "unidad": ""
+      },
+      {
+       "clave": "residuo",
+       "etiqueta": "Residuo de Pearson",
+       "formato": "dec2",
+       "unidad": "(O−E)/√E"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "AMARILLO",
+       "observado": 37,
+       "esperado": 45.0,
+       "residuo": -1.1925695879998879
+      },
+      {
+       "valor": "AZUL",
+       "observado": 44,
+       "esperado": 45.0,
+       "residuo": -0.14907119849998599
+      },
+      {
+       "valor": "BLANCO",
+       "observado": 49,
+       "esperado": 45.0,
+       "residuo": 0.5962847939999439
+      },
+      {
+       "valor": "NEGRO",
+       "observado": 37,
+       "esperado": 45.0,
+       "residuo": -1.1925695879998879
+      },
+      {
+       "valor": "ROJO",
+       "observado": 53,
+       "esperado": 45.0,
+       "residuo": 1.1925695879998879
+      },
+      {
+       "valor": "VERDE",
+       "observado": 50,
+       "esperado": 45.0,
+       "residuo": 0.7453559924999299
+      }
+     ],
+     "nota": null
+    },
+    {
+     "id": "pares",
+     "titulo": "Pares número-color (balotas): observado frente a esperado",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Valor",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "observado",
+       "etiqueta": "Observado",
+       "formato": "entero",
+       "unidad": "balotas"
+      },
+      {
+       "clave": "esperado",
+       "etiqueta": "Esperado",
+       "formato": "dec1",
+       "unidad": ""
+      },
+      {
+       "clave": "residuo",
+       "etiqueta": "Residuo de Pearson",
+       "formato": "dec2",
+       "unidad": "(O−E)/√E"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1-AMARILLO",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "1-AZUL",
+       "observado": 5,
+       "esperado": 6.428571428571429,
+       "residuo": -0.5634361698190111
+      },
+      {
+       "valor": "1-BLANCO",
+       "observado": 9,
+       "esperado": 6.428571428571429,
+       "residuo": 1.0141851056742197
+      },
+      {
+       "valor": "1-NEGRO",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "1-ROJO",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "1-VERDE",
+       "observado": 7,
+       "esperado": 6.428571428571429,
+       "residuo": 0.22537446792760432
+      },
+      {
+       "valor": "2-AMARILLO",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "2-AZUL",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "2-BLANCO",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "2-NEGRO",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "2-ROJO",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "2-VERDE",
+       "observado": 3,
+       "esperado": 6.428571428571429,
+       "residuo": -1.3522468075656267
+      },
+      {
+       "valor": "3-AMARILLO",
+       "observado": 4,
+       "esperado": 6.428571428571429,
+       "residuo": -0.9578414886923189
+      },
+      {
+       "valor": "3-AZUL",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "3-BLANCO",
+       "observado": 5,
+       "esperado": 6.428571428571429,
+       "residuo": -0.5634361698190111
+      },
+      {
+       "valor": "3-NEGRO",
+       "observado": 2,
+       "esperado": 6.428571428571429,
+       "residuo": -1.7466521264389343
+      },
+      {
+       "valor": "3-ROJO",
+       "observado": 5,
+       "esperado": 6.428571428571429,
+       "residuo": -0.5634361698190111
+      },
+      {
+       "valor": "3-VERDE",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "4-AMARILLO",
+       "observado": 5,
+       "esperado": 6.428571428571429,
+       "residuo": -0.5634361698190111
+      },
+      {
+       "valor": "4-AZUL",
+       "observado": 7,
+       "esperado": 6.428571428571429,
+       "residuo": 0.22537446792760432
+      },
+      {
+       "valor": "4-BLANCO",
+       "observado": 10,
+       "esperado": 6.428571428571429,
+       "residuo": 1.4085904245475274
+      },
+      {
+       "valor": "4-NEGRO",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "4-ROJO",
+       "observado": 9,
+       "esperado": 6.428571428571429,
+       "residuo": 1.0141851056742197
+      },
+      {
+       "valor": "4-VERDE",
+       "observado": 9,
+       "esperado": 6.428571428571429,
+       "residuo": 1.0141851056742197
+      },
+      {
+       "valor": "5-AMARILLO",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "5-AZUL",
+       "observado": 9,
+       "esperado": 6.428571428571429,
+       "residuo": 1.0141851056742197
+      },
+      {
+       "valor": "5-BLANCO",
+       "observado": 5,
+       "esperado": 6.428571428571429,
+       "residuo": -0.5634361698190111
+      },
+      {
+       "valor": "5-NEGRO",
+       "observado": 5,
+       "esperado": 6.428571428571429,
+       "residuo": -0.5634361698190111
+      },
+      {
+       "valor": "5-ROJO",
+       "observado": 4,
+       "esperado": 6.428571428571429,
+       "residuo": -0.9578414886923189
+      },
+      {
+       "valor": "5-VERDE",
+       "observado": 11,
+       "esperado": 6.428571428571429,
+       "residuo": 1.8029957434208352
+      },
+      {
+       "valor": "6-AMARILLO",
+       "observado": 3,
+       "esperado": 6.428571428571429,
+       "residuo": -1.3522468075656267
+      },
+      {
+       "valor": "6-AZUL",
+       "observado": 7,
+       "esperado": 6.428571428571429,
+       "residuo": 0.22537446792760432
+      },
+      {
+       "valor": "6-BLANCO",
+       "observado": 4,
+       "esperado": 6.428571428571429,
+       "residuo": -0.9578414886923189
+      },
+      {
+       "valor": "6-NEGRO",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "6-ROJO",
+       "observado": 13,
+       "esperado": 6.428571428571429,
+       "residuo": 2.5918063811674505
+      },
+      {
+       "valor": "6-VERDE",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "7-AMARILLO",
+       "observado": 5,
+       "esperado": 6.428571428571429,
+       "residuo": -0.5634361698190111
+      },
+      {
+       "valor": "7-AZUL",
+       "observado": 2,
+       "esperado": 6.428571428571429,
+       "residuo": -1.7466521264389343
+      },
+      {
+       "valor": "7-BLANCO",
+       "observado": 8,
+       "esperado": 6.428571428571429,
+       "residuo": 0.6197797868009121
+      },
+      {
+       "valor": "7-NEGRO",
+       "observado": 4,
+       "esperado": 6.428571428571429,
+       "residuo": -0.9578414886923189
+      },
+      {
+       "valor": "7-ROJO",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      },
+      {
+       "valor": "7-VERDE",
+       "observado": 6,
+       "esperado": 6.428571428571429,
+       "residuo": -0.16903085094570341
+      }
+     ],
+     "nota": null
+    }
+   ],
+   "grafica": {
+    "titulo": "Residuo de Pearson — Números (balotas)",
+    "tabla": "numeros",
+    "etiqueta": "valor",
+    "valor": "residuo",
+    "unidad": "(O−E)/√E",
+    "referencia": null
+   },
+   "notas": [
+    "Los p-value de esta página son asintóticos: salen de la distribución chi-cuadrado con N−1 grados de libertad, a la que el estadístico se aproxima cuando crece el número de sorteos. No son exactos para una muestra finita; con frecuencias esperadas menores que 5 la aproximación es poco fiable y la tabla lo avisa.",
+    "ColorLoto: se cuentan balotas (con repetición) bajo el supuesto de balotas independientes y uniformes, que no se ha verificado con el reglamento.",
+    "Varias pruebas a la vez: con α = 0.05 alguna puede dar p bajo por azar. Un p-value bajo no indica qué valores saldrán; uno alto no prueba que el sorteo sea uniforme."
+   ],
+   "selector": null
+  }
+ }
+}

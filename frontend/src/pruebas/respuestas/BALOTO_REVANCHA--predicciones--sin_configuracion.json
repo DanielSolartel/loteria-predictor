@@ -1,0 +1,28 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO_REVANCHA/predicciones",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO_REVANCHA",
+  "nombre": "Baloto Revancha",
+  "estado_de_uso": "experimental_no_acreditado",
+  "aviso": "Predicciones experimentales: describen lo que el modelo elegido estima con los sorteos hasta el corte. No son resultados garantizados ni una recomendación de apuesta, y no acreditan ventaja frente al azar.",
+  "contexto": {
+   "uso": "experimental_no_acreditado",
+   "AUTORIZA_EVALUACION": false,
+   "no_go_ae39": "vigente",
+   "resultado_acreditado": false
+  },
+  "configuracion": "sin_configuracion",
+  "base": {
+   "estado": "disponible",
+   "corte": 2180,
+   "sorteos": 100,
+   "ultima_fecha": "2021-10-26",
+   "objetivo": 2181
+  },
+  "prediccion": null,
+  "historial": [],
+  "historial_total": 0
+ }
+}

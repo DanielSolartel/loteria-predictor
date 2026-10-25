@@ -1,0 +1,38 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/simulaciones",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "COLORLOTO",
+  "limite": 20,
+  "estado_de_uso": "experimental_no_acreditado",
+  "simulaciones": [
+   {
+    "id": "c02ecef2-3960-4ace-b3a0-f4797986fc92",
+    "juego": "COLORLOTO",
+    "clave": null,
+    "corte": null,
+    "iteraciones": 100,
+    "semilla": null,
+    "ejecutado_en": "2026-10-25T00:37:43",
+    "duracion_ms": 5,
+    "integridad": "alterada",
+    "motivo": "el contenido no corresponde a su huella (resultado alterado)",
+    "alguna_supera_umbral_exploratorio": null
+   },
+   {
+    "id": "e0e1fe08-2f04-464e-923a-de07e09c9827",
+    "juego": "COLORLOTO",
+    "clave": "91e7243e2c4801b8529ba4b7952921f4c2daf26f4bf18c71bbedbe8c3ca5d052",
+    "corte": 45,
+    "iteraciones": 100,
+    "semilla": 20261024,
+    "ejecutado_en": "2026-10-25T00:37:43",
+    "duracion_ms": 81,
+    "integridad": "verificada",
+    "motivo": null,
+    "alguna_supera_umbral_exploratorio": false
+   }
+  ]
+ }
+}

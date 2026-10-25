@@ -1,0 +1,51 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/estado",
+ "estado": 200,
+ "cuerpo": {
+  "api": "v1",
+  "iniciado_en": "2026-10-25T00:37:43.265407+00:00",
+  "segundos_activo": 0.124,
+  "base": "disponible",
+  "solicitudes": 2,
+  "por_clase": {
+   "2xx": 2
+  },
+  "rutas": [
+   {
+    "metodo": "GET",
+    "ruta": "/api/v1/juegos",
+    "solicitudes": 1,
+    "errores_4xx": 0,
+    "errores_5xx": 0,
+    "latencia_media_ms": 31.68,
+    "latencia_maxima_ms": 31.68
+   },
+   {
+    "metodo": "GET",
+    "ruta": "/api/v1/salud",
+    "solicitudes": 1,
+    "errores_4xx": 0,
+    "errores_5xx": 0,
+    "latencia_media_ms": 1.49,
+    "latencia_maxima_ms": 1.49
+   }
+  ],
+  "limites": {
+   "alcance": "por_proceso",
+   "fichas_por_minuto_por_clave": 100000,
+   "fichas_por_minuto_por_ip": 100000,
+   "costes": {
+    "ligera": 1,
+    "listado": 2,
+    "predicciones": 3,
+    "estadisticas": 5
+   },
+   "rechazos_por_clave": 0,
+   "rechazos_por_ip": 0,
+   "ips_seguidas": 1,
+   "max_ips_seguidas": 1024
+  },
+  "claves_configuradas": 1
+ }
+}

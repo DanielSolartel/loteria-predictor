@@ -1,0 +1,2734 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Lotería Predictor — API pública",
+    "description": "\nAPI pública de **solo lectura** del Sistema Predictivo de Loterías (Baloto, Baloto Revancha,\nMiLoto y ColorLoto): juegos, sorteos, estadísticas descriptivas, predicciones guardadas y\nsimulaciones guardadas.\n\n- **Autenticación:** cabecera `X-API-Key` con una clave emitida por el operador. Sin clave\n  válida: 401. Sin claves configuradas en el servidor: 503.\n- **Límites:** cubeta de fichas **por proceso** (por clave y por IP). Al superarla: 429 con\n  `Retry-After`. Coste: 1 consultas ligeras, 2 listados, 3 predicciones, 5 estadísticas.\n- **Errores:** `{\"error\": {\"codigo\", \"mensaje\", \"solicitud\"}}`; `solicitud` coincide con la\n  cabecera `X-Request-ID`.\n\nUso **experimental_no_acreditado**: AE-39 sigue en NO-GO y `AUTORIZA_EVALUACION = False`. Las\npredicciones no acreditan ventaja frente al azar.\n",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/salud": {
+      "get": {
+        "tags": [
+          "sistema"
+        ],
+        "summary": "Salud del proceso (sin clave)",
+        "operationId": "salud_api_v1_salud_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Salud"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/estado": {
+      "get": {
+        "tags": [
+          "sistema"
+        ],
+        "summary": "Monitoreo de este proceso: solicitudes, latencia, límites y base",
+        "operationId": "estado_api_v1_estado_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoDelServicio"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ]
+      }
+    },
+    "/api/v1/juegos": {
+      "get": {
+        "tags": [
+          "juegos"
+        ],
+        "summary": "Los cuatro juegos y sus reglas",
+        "operationId": "juegos_api_v1_juegos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Juegos"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ]
+      }
+    },
+    "/api/v1/juegos/{codigo}": {
+      "get": {
+        "tags": [
+          "juegos"
+        ],
+        "summary": "Un juego con su espacio muestral",
+        "operationId": "juego_api_v1_juegos__codigo__get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JuegoDetalle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/sorteos": {
+      "get": {
+        "tags": [
+          "sorteos"
+        ],
+        "summary": "Sorteos paginados (máximo 100 por página)",
+        "operationId": "sorteos_api_v1_juegos__codigo__sorteos_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Pagina"
+            }
+          },
+          {
+            "name": "por_pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Por Pagina"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta"
+            }
+          },
+          {
+            "name": "numero_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Numero Desde"
+            }
+          },
+          {
+            "name": "numero_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Numero Hasta"
+            }
+          },
+          {
+            "name": "orden",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "fecha_desc",
+                "fecha_asc",
+                "numero_desc",
+                "numero_asc"
+              ],
+              "type": "string",
+              "default": "fecha_desc",
+              "title": "Orden"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaDeSorteos"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/sorteos/{numero_sorteo}": {
+      "get": {
+        "tags": [
+          "sorteos"
+        ],
+        "summary": "Un sorteo por su número",
+        "operationId": "sorteo_api_v1_juegos__codigo__sorteos__numero_sorteo__get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "numero_sorteo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Numero Sorteo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sorteo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/estadisticas": {
+      "get": {
+        "tags": [
+          "estadisticas"
+        ],
+        "summary": "Métricas descriptivas disponibles para el juego",
+        "operationId": "indice_de_estadisticas_api_v1_juegos__codigo__estadisticas_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndiceDeEstadisticas"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/estadisticas/resumen": {
+      "get": {
+        "tags": [
+          "estadisticas"
+        ],
+        "summary": "Resumen del juego hasta un corte opcional",
+        "operationId": "resumen_api_v1_juegos__codigo__estadisticas_resumen_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "hasta_numero_sorteo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta Numero Sorteo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resumen"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/estadisticas/panel": {
+      "get": {
+        "tags": [
+          "estadisticas"
+        ],
+        "summary": "Panel descriptivo unificado (Fase 5)",
+        "operationId": "panel_api_v1_juegos__codigo__estadisticas_panel_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "hasta_numero_sorteo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta Numero Sorteo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estadisticas"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/estadisticas/{metrica}": {
+      "get": {
+        "tags": [
+          "estadisticas"
+        ],
+        "summary": "Una métrica descriptiva (Fase 5)",
+        "operationId": "metrica_api_v1_juegos__codigo__estadisticas__metrica__get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "metrica",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "examples": [
+                "frecuencia-numeros-por-anio"
+              ],
+              "title": "Metrica"
+            }
+          },
+          {
+            "name": "hasta_numero_sorteo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta Numero Sorteo"
+            }
+          },
+          {
+            "name": "anio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9999,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Anio"
+            }
+          },
+          {
+            "name": "mes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mes"
+            }
+          },
+          {
+            "name": "dia_semana",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "lunes",
+                    "martes",
+                    "miercoles",
+                    "jueves",
+                    "viernes",
+                    "sabado",
+                    "domingo"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dia Semana"
+            }
+          },
+          {
+            "name": "ventana",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ventana"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estadisticas"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/predicciones": {
+      "get": {
+        "tags": [
+          "predicciones"
+        ],
+        "summary": "Predicción guardada (la última o la indicada) e historial acotado",
+        "operationId": "predicciones_api_v1_juegos__codigo__predicciones_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "cartera",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Clave de una predicción guardada",
+              "title": "Cartera"
+            },
+            "description": "Clave de una predicción guardada"
+          },
+          {
+            "name": "historial",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 0,
+              "default": 20,
+              "title": "Historial"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Predicciones"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Recurso guardado no íntegro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/simulaciones": {
+      "get": {
+        "tags": [
+          "simulaciones"
+        ],
+        "summary": "Simulaciones guardadas del juego (máximo 50)",
+        "operationId": "simulaciones_api_v1_juegos__codigo__simulaciones_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Simulaciones"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulaciones/{identificador}": {
+      "get": {
+        "tags": [
+          "simulaciones"
+        ],
+        "summary": "Una simulación guardada, verificada",
+        "operationId": "simulacion_api_v1_simulaciones__identificador__get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identificador",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F-]{32,36}$",
+              "description": "UUID de la fila",
+              "title": "Identificador"
+            },
+            "description": "UUID de la fila"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Simulacion"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Recurso guardado no íntegro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BaseDelJuego": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "corte": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte"
+          },
+          "sorteos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sorteos"
+          },
+          "ultima_fecha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ultima Fecha"
+          },
+          "objetivo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objetivo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "BaseDelJuego"
+      },
+      "ErrorDetalle": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "title": "Codigo",
+            "description": "Código estable del error"
+          },
+          "mensaje": {
+            "type": "string",
+            "title": "Mensaje"
+          },
+          "solicitud": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solicitud",
+            "description": "Identificador de la solicitud (cabecera X-Request-ID)"
+          },
+          "detalles": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detalles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codigo",
+          "mensaje"
+        ],
+        "title": "ErrorDetalle"
+      },
+      "ErrorRespuesta": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetalle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorRespuesta",
+        "examples": [
+          {
+            "error": {
+              "codigo": "no_autenticado",
+              "mensaje": "Clave de API ausente o no válida",
+              "solicitud": "5f0c8a3e9b2d4c1e8f7a6b5c4d3e2f10"
+            }
+          }
+        ]
+      },
+      "Estadisticas": {
+        "properties": {
+          "juego": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Juego"
+          },
+          "muestra": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Muestra"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "juego",
+          "muestra"
+        ],
+        "title": "Estadisticas",
+        "description": "Salida del caso de uso de la Fase 5 (`juego`, `muestra` y `grupos` o `metrica`)."
+      },
+      "EstadoDelServicio": {
+        "properties": {
+          "api": {
+            "type": "string",
+            "title": "Api"
+          },
+          "iniciado_en": {
+            "type": "string",
+            "title": "Iniciado En"
+          },
+          "segundos_activo": {
+            "type": "number",
+            "title": "Segundos Activo"
+          },
+          "base": {
+            "type": "string",
+            "title": "Base",
+            "description": "disponible o no_disponible"
+          },
+          "solicitudes": {
+            "type": "integer",
+            "title": "Solicitudes"
+          },
+          "por_clase": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Por Clase"
+          },
+          "rutas": {
+            "items": {
+              "$ref": "#/components/schemas/Ruta"
+            },
+            "type": "array",
+            "title": "Rutas"
+          },
+          "limites": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Limites"
+          },
+          "claves_configuradas": {
+            "type": "integer",
+            "title": "Claves Configuradas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api",
+          "iniciado_en",
+          "segundos_activo",
+          "base",
+          "solicitudes",
+          "por_clase",
+          "rutas",
+          "limites",
+          "claves_configuradas"
+        ],
+        "title": "EstadoDelServicio"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IndiceDeEstadisticas": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "resumen": {
+            "type": "string",
+            "title": "Resumen"
+          },
+          "panel": {
+            "type": "string",
+            "title": "Panel"
+          },
+          "metricas": {
+            "items": {
+              "$ref": "#/components/schemas/MetricaDisponible"
+            },
+            "type": "array",
+            "title": "Metricas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "resumen",
+          "panel",
+          "metricas"
+        ],
+        "title": "IndiceDeEstadisticas"
+      },
+      "Juego": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "rango_min": {
+            "type": "integer",
+            "title": "Rango Min"
+          },
+          "rango_max": {
+            "type": "integer",
+            "title": "Rango Max"
+          },
+          "cantidad_numeros": {
+            "type": "integer",
+            "title": "Cantidad Numeros"
+          },
+          "tiene_superbalota": {
+            "type": "boolean",
+            "title": "Tiene Superbalota"
+          },
+          "superbalota_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superbalota Min"
+          },
+          "superbalota_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superbalota Max"
+          },
+          "tiene_color": {
+            "type": "boolean",
+            "title": "Tiene Color"
+          },
+          "permite_repeticion": {
+            "type": "boolean",
+            "title": "Permite Repeticion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre",
+          "rango_min",
+          "rango_max",
+          "cantidad_numeros",
+          "tiene_superbalota",
+          "superbalota_min",
+          "superbalota_max",
+          "tiene_color",
+          "permite_repeticion"
+        ],
+        "title": "Juego",
+        "examples": [
+          {
+            "cantidad_numeros": 5,
+            "codigo": "BALOTO",
+            "nombre": "Baloto",
+            "permite_repeticion": false,
+            "rango_max": 43,
+            "rango_min": 1,
+            "superbalota_max": 16,
+            "superbalota_min": 1,
+            "tiene_color": false,
+            "tiene_superbalota": true
+          }
+        ]
+      },
+      "JuegoDetalle": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "rango_min": {
+            "type": "integer",
+            "title": "Rango Min"
+          },
+          "rango_max": {
+            "type": "integer",
+            "title": "Rango Max"
+          },
+          "cantidad_numeros": {
+            "type": "integer",
+            "title": "Cantidad Numeros"
+          },
+          "tiene_superbalota": {
+            "type": "boolean",
+            "title": "Tiene Superbalota"
+          },
+          "superbalota_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superbalota Min"
+          },
+          "superbalota_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superbalota Max"
+          },
+          "tiene_color": {
+            "type": "boolean",
+            "title": "Tiene Color"
+          },
+          "permite_repeticion": {
+            "type": "boolean",
+            "title": "Permite Repeticion"
+          },
+          "espacio_muestral": {
+            "type": "integer",
+            "title": "Espacio Muestral"
+          },
+          "dimensiones": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dimensiones"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre",
+          "rango_min",
+          "rango_max",
+          "cantidad_numeros",
+          "tiene_superbalota",
+          "superbalota_min",
+          "superbalota_max",
+          "tiene_color",
+          "permite_repeticion",
+          "espacio_muestral",
+          "dimensiones"
+        ],
+        "title": "JuegoDetalle",
+        "examples": [
+          {
+            "cantidad_numeros": 5,
+            "codigo": "BALOTO",
+            "nombre": "Baloto",
+            "permite_repeticion": false,
+            "rango_max": 43,
+            "rango_min": 1,
+            "superbalota_max": 16,
+            "superbalota_min": 1,
+            "tiene_color": false,
+            "tiene_superbalota": true
+          }
+        ]
+      },
+      "Juegos": {
+        "properties": {
+          "juegos": {
+            "items": {
+              "$ref": "#/components/schemas/Juego"
+            },
+            "type": "array",
+            "title": "Juegos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juegos"
+        ],
+        "title": "Juegos"
+      },
+      "MetricaDisponible": {
+        "properties": {
+          "metrica": {
+            "type": "string",
+            "title": "Metrica"
+          },
+          "parametro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parametro",
+            "description": "Parámetro opcional que admite: anio, mes, dia_semana o ventana"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metrica",
+          "parametro"
+        ],
+        "title": "MetricaDisponible"
+      },
+      "ModeloDeLaPrediccion": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "familia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Familia"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "title": "ModeloDeLaPrediccion"
+      },
+      "PaginaDeSorteos": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "pagina": {
+            "type": "integer",
+            "title": "Pagina"
+          },
+          "por_pagina": {
+            "type": "integer",
+            "title": "Por Pagina"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Sorteos que cumplen los filtros"
+          },
+          "paginas": {
+            "type": "integer",
+            "title": "Paginas"
+          },
+          "sorteos": {
+            "items": {
+              "$ref": "#/components/schemas/Sorteo"
+            },
+            "type": "array",
+            "title": "Sorteos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "pagina",
+          "por_pagina",
+          "total",
+          "paginas",
+          "sorteos"
+        ],
+        "title": "PaginaDeSorteos"
+      },
+      "Par": {
+        "properties": {
+          "numero": {
+            "type": "integer",
+            "title": "Numero"
+          },
+          "color_codigo": {
+            "type": "string",
+            "title": "Color Codigo"
+          },
+          "color_nombre": {
+            "type": "string",
+            "title": "Color Nombre"
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero",
+          "color_codigo",
+          "color_nombre"
+        ],
+        "title": "Par"
+      },
+      "Prediccion": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "integridad": {
+            "type": "string",
+            "title": "Integridad"
+          },
+          "linea": {
+            "type": "string",
+            "title": "Linea"
+          },
+          "objetivo": {
+            "type": "integer",
+            "title": "Objetivo"
+          },
+          "corte": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte"
+          },
+          "sha256_historico": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256 Historico"
+          },
+          "generado_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generado En"
+          },
+          "clasificacion_temporal": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clasificacion Temporal"
+          },
+          "modelo": {
+            "$ref": "#/components/schemas/ModeloDeLaPrediccion"
+          },
+          "combinaciones": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Combinaciones"
+          },
+          "rankings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rankings"
+          },
+          "observado": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observado"
+          },
+          "frente_a_la_base": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frente A La Base"
+          },
+          "explicacion_disponible": {
+            "type": "boolean",
+            "title": "Explicacion Disponible"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "integridad",
+          "linea",
+          "objetivo",
+          "corte",
+          "sha256_historico",
+          "generado_en",
+          "clasificacion_temporal",
+          "modelo",
+          "combinaciones",
+          "rankings",
+          "observado",
+          "frente_a_la_base",
+          "explicacion_disponible"
+        ],
+        "title": "Prediccion"
+      },
+      "PrediccionGuardada": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "linea": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linea"
+          },
+          "objetivo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objetivo"
+          },
+          "corte": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte"
+          },
+          "generado_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generado En"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          },
+          "ilegible": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ilegible"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave"
+        ],
+        "title": "PrediccionGuardada"
+      },
+      "Predicciones": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "title": "Estado De Uso"
+          },
+          "aviso": {
+            "type": "string",
+            "title": "Aviso"
+          },
+          "contexto": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Contexto"
+          },
+          "configuracion": {
+            "type": "string",
+            "title": "Configuracion",
+            "description": "Estado de la configuración del juego (p. ej. vigente o sin_configuracion)"
+          },
+          "base": {
+            "$ref": "#/components/schemas/BaseDelJuego"
+          },
+          "prediccion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Prediccion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "historial": {
+            "items": {
+              "$ref": "#/components/schemas/PrediccionGuardada"
+            },
+            "type": "array",
+            "title": "Historial"
+          },
+          "historial_total": {
+            "type": "integer",
+            "title": "Historial Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "nombre",
+          "estado_de_uso",
+          "aviso",
+          "contexto",
+          "configuracion",
+          "base",
+          "prediccion",
+          "historial",
+          "historial_total"
+        ],
+        "title": "Predicciones",
+        "examples": [
+          {
+            "aviso": "Predicciones experimentales: ...",
+            "base": {
+              "corte": 87,
+              "estado": "disponible",
+              "objetivo": 88,
+              "sorteos": 87,
+              "ultima_fecha": "2021-09-17"
+            },
+            "configuracion": "vigente",
+            "contexto": {
+              "AUTORIZA_EVALUACION": false,
+              "no_go_ae39": "vigente",
+              "uso": "experimental_no_acreditado"
+            },
+            "estado_de_uso": "experimental_no_acreditado",
+            "historial": [],
+            "historial_total": 0,
+            "juego": "MILOTO",
+            "nombre": "MiLoto"
+          }
+        ]
+      },
+      "Resumen": {
+        "properties": {
+          "codigo_juego": {
+            "type": "string",
+            "title": "Codigo Juego"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "total_sorteos": {
+            "type": "integer",
+            "title": "Total Sorteos"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "codigo_juego",
+          "nombre",
+          "total_sorteos"
+        ],
+        "title": "Resumen",
+        "description": "Salida del caso de uso de resumen por juego (Producto 1)."
+      },
+      "Ruta": {
+        "properties": {
+          "metodo": {
+            "type": "string",
+            "title": "Metodo"
+          },
+          "ruta": {
+            "type": "string",
+            "title": "Ruta"
+          },
+          "solicitudes": {
+            "type": "integer",
+            "title": "Solicitudes"
+          },
+          "errores_4xx": {
+            "type": "integer",
+            "title": "Errores 4Xx"
+          },
+          "errores_5xx": {
+            "type": "integer",
+            "title": "Errores 5Xx"
+          },
+          "latencia_media_ms": {
+            "type": "number",
+            "title": "Latencia Media Ms"
+          },
+          "latencia_maxima_ms": {
+            "type": "number",
+            "title": "Latencia Maxima Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metodo",
+          "ruta",
+          "solicitudes",
+          "errores_4xx",
+          "errores_5xx",
+          "latencia_media_ms",
+          "latencia_maxima_ms"
+        ],
+        "title": "Ruta"
+      },
+      "Salud": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "api": {
+            "type": "string",
+            "title": "Api"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado",
+          "api"
+        ],
+        "title": "Salud",
+        "examples": [
+          {
+            "api": "v1",
+            "estado": "ok"
+          }
+        ]
+      },
+      "Simulacion": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "num_iteraciones": {
+            "type": "integer",
+            "title": "Num Iteraciones"
+          },
+          "ejecutado_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ejecutado En"
+          },
+          "duracion_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duracion Ms"
+          },
+          "integridad": {
+            "type": "string",
+            "title": "Integridad"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "title": "Estado De Uso"
+          },
+          "parametros": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parametros",
+            "description": "Identidad completa; `clave` = SHA-256 canónico del resto"
+          },
+          "contenido": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Contenido",
+            "description": "Resultado científico determinista"
+          },
+          "contenido_sha256": {
+            "type": "string",
+            "title": "Contenido Sha256"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "juego",
+          "num_iteraciones",
+          "ejecutado_en",
+          "duracion_ms",
+          "integridad",
+          "estado_de_uso",
+          "parametros",
+          "contenido",
+          "contenido_sha256"
+        ],
+        "title": "Simulacion"
+      },
+      "SimulacionResumen": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "juego": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Juego"
+          },
+          "clave": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clave"
+          },
+          "corte": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte"
+          },
+          "iteraciones": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iteraciones"
+          },
+          "semilla": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semilla"
+          },
+          "ejecutado_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ejecutado En"
+          },
+          "duracion_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duracion Ms"
+          },
+          "integridad": {
+            "type": "string",
+            "title": "Integridad",
+            "description": "verificada o alterada"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "alguna_supera_umbral_exploratorio": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alguna Supera Umbral Exploratorio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "juego",
+          "clave",
+          "corte",
+          "iteraciones",
+          "semilla",
+          "ejecutado_en",
+          "duracion_ms",
+          "integridad",
+          "motivo",
+          "alguna_supera_umbral_exploratorio"
+        ],
+        "title": "SimulacionResumen"
+      },
+      "Simulaciones": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "limite": {
+            "type": "integer",
+            "title": "Limite"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "title": "Estado De Uso"
+          },
+          "simulaciones": {
+            "items": {
+              "$ref": "#/components/schemas/SimulacionResumen"
+            },
+            "type": "array",
+            "title": "Simulaciones"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "limite",
+          "estado_de_uso",
+          "simulaciones"
+        ],
+        "title": "Simulaciones"
+      },
+      "Sorteo": {
+        "properties": {
+          "numero_sorteo": {
+            "type": "integer",
+            "title": "Numero Sorteo"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha"
+          },
+          "dia_semana": {
+            "type": "string",
+            "title": "Dia Semana"
+          },
+          "numeros": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Numeros"
+          },
+          "superbalota": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superbalota"
+          },
+          "pares": {
+            "items": {
+              "$ref": "#/components/schemas/Par"
+            },
+            "type": "array",
+            "title": "Pares"
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero_sorteo",
+          "fecha",
+          "dia_semana",
+          "numeros",
+          "superbalota",
+          "pares"
+        ],
+        "title": "Sorteo",
+        "examples": [
+          {
+            "dia_semana": "miercoles",
+            "fecha": "2026-10-22",
+            "numero_sorteo": 2715,
+            "numeros": [
+              3,
+              11,
+              19,
+              27,
+              40
+            ],
+            "pares": [],
+            "superbalota": 7
+          }
+        ]
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "ClaveDeAPI": {
+        "type": "apiKey",
+        "description": "Clave de API emitida por el operador (nunca en la URL ni en el código distribuido).",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  }
+}

@@ -1,0 +1,338 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/simulaciones/e0e1fe08-2f04-464e-923a-de07e09c9827",
+ "estado": 200,
+ "cuerpo": {
+  "id": "e0e1fe08-2f04-464e-923a-de07e09c9827",
+  "juego": "COLORLOTO",
+  "num_iteraciones": 100,
+  "ejecutado_en": "2026-10-25T00:37:43",
+  "duracion_ms": 81,
+  "integridad": "verificada",
+  "estado_de_uso": "experimental_no_acreditado",
+  "parametros": {
+   "esquema": "fase7-simulacion-identidad/1",
+   "version_motor": "fase7-simulacion-1",
+   "juego": "COLORLOTO",
+   "corte": 45,
+   "historico": {
+    "sorteos": 45,
+    "primer_sorteo": 1,
+    "ultimo_sorteo": 45,
+    "primera_fecha": "2024-08-06",
+    "ultima_fecha": "2024-12-16",
+    "huecos": 0,
+    "transiciones": 44,
+    "sha256": "c3e9d606bd57782c42b5bcca1e97b0727998f317b099f3f37a39819a401317bf"
+   },
+   "reglas": {
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad": 6,
+    "superbalota": null,
+    "pares_numero_color_con_multiplicidad": true,
+    "paleta": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "mecanismo": "6 extracciones uniformes con reemplazo sobre los 42 pares (numero 1..7 x 6 colores de la paleta del corte); multiplicidad permitida (supuesto multinomial de Productos 2 y 5)",
+    "numeracion": "la observada, huecos incluidos; transiciones estrictas N-1 -> N"
+   },
+   "algoritmo": {
+    "generador": "numpy.random.PCG64",
+    "numpy": "2.5.4",
+    "semilla_derivada": "SeedSequence([semilla, 7, indice_del_juego])",
+    "indice_del_juego": {
+     "BALOTO": 1,
+     "BALOTO_REVANCHA": 2,
+     "MILOTO": 3,
+     "COLORLOTO": 4
+    },
+    "consumo": "H*(k+s) dobles de random() por iteracion, en orden (numeros o balotas y despues superbalota)",
+    "seleccion_sin_reemplazo": "seleccion-secuencial-floor-u-por-restantes-v1",
+    "seleccion_detalle": "t-esimo indice floor(u*(n-t)) entre los restantes; sesgo <= n/2**53",
+    "superbalota_y_pares": "floor(u*m) e floor(u*P): uniforme con el mismo sesgo acotado",
+    "p_valor": "bilateral empirico +1: min(1, 2*min((1+#sim>=obs)/(1+B), (1+#sim<=obs)/(1+B)))",
+    "percentil": "(2*#sim<obs + #sim==obs) / (2*B)",
+    "familia": "bonferroni por juego y ejecucion",
+    "alpha": 0.05
+   },
+   "iteraciones": 100,
+   "semilla": 20261024,
+   "estadisticas": [
+    {
+     "nombre": "dispersion_frecuencia_pares",
+     "descripcion": "Σ(m·Oᵢ − N)² / (m·N): dispersion de los conteos frente a su valor esperado bajo uniformidad, sobre los pares numero-color con multiplicidad",
+     "motor_fase5": "frecuencia.calcular_frecuencia_pares_numero_color",
+     "justificacion": "uniformidad del par como unidad (multinomial); media P - 1"
+    },
+    {
+     "nombre": "dispersion_frecuencia_numeros",
+     "descripcion": "Σ(m·Oᵢ − N)² / (m·N): dispersion de los conteos frente a su valor esperado bajo uniformidad, sobre los numeros 1..7 con multiplicidad",
+     "motor_fase5": "frecuencia.calcular_frecuencia_numeros_colorloto",
+     "justificacion": "uniformidad marginal del numero; media 6"
+    },
+    {
+     "nombre": "dispersion_frecuencia_colores",
+     "descripcion": "Σ(m·Oᵢ − N)² / (m·N): dispersion de los conteos frente a su valor esperado bajo uniformidad, sobre los colores con multiplicidad",
+     "motor_fase5": "frecuencia.calcular_frecuencia_colores",
+     "justificacion": "uniformidad marginal del color; media c - 1"
+    },
+    {
+     "nombre": "media_repeticiones_entre_sorteos",
+     "descripcion": "interseccion de multiconjuntos de numeros con el sorteo N-1 (transiciones estrictas)",
+     "motor_fase5": "repeticiones.calcular_repeticiones_entre_sorteos_colorloto",
+     "justificacion": "dependencia serial con multiplicidad; media exacta por enumeracion binomial"
+    },
+    {
+     "nombre": "media_maximo_repeticion_color",
+     "descripcion": "media de la mayor cantidad de balotas de un mismo color en un sorteo",
+     "motor_fase5": "distribuciones.calcular_maximo_repeticion_color_por_sorteo",
+     "justificacion": "agrupamiento de colores dentro del sorteo; media exacta por enumeracion multinomial"
+    }
+   ],
+   "familia": {
+    "metodo": "bonferroni",
+    "alpha": 0.05,
+    "tamano": 5,
+    "alcance": "comparaciones_de_este_juego_en_esta_ejecucion"
+   },
+   "estado_de_uso": "experimental_no_acreditado",
+   "clave": "91e7243e2c4801b8529ba4b7952921f4c2daf26f4bf18c71bbedbe8c3ca5d052"
+  },
+  "contenido": {
+   "juego": "COLORLOTO",
+   "iteraciones": 100,
+   "estadisticas": [
+    {
+     "nombre": "dispersion_frecuencia_pares",
+     "descripcion": "Σ(m·Oᵢ − N)² / (m·N): dispersion de los conteos frente a su valor esperado bajo uniformidad, sobre los pares numero-color con multiplicidad",
+     "motor_fase5": "frecuencia.calcular_frecuencia_pares_numero_color",
+     "observado": {
+      "numerador": 399168,
+      "denominador": 11340,
+      "exacto": "176/5",
+      "valor": 35.2
+     },
+     "simulado": {
+      "suma_numeradores": 47008080,
+      "suma_cuadrados_numeradores": 23021582863104,
+      "minimo_numerador": 265104,
+      "maximo_numerador": 755496,
+      "mayores_o_iguales": 74,
+      "menores_o_iguales": 29,
+      "menores": 26,
+      "iguales": 3,
+      "media_exacta": "3109/75",
+      "media": 41.45333333333333,
+      "varianza_exacta": "970004/13365",
+      "desviacion": 8.519268009774775
+     },
+     "referencia_analitica": {
+      "exacta": "41/1",
+      "valor": 41.0
+     },
+     "percentil_observado": {
+      "exacto": "11/40",
+      "valor": 0.275
+     },
+     "p_valor_empirico": {
+      "exacto": "60/101",
+      "valor": 0.594059405940594
+     },
+     "p_valor_ajustado_bonferroni": {
+      "exacto": "1/1",
+      "valor": 1.0
+     },
+     "supera_umbral_exploratorio": false
+    },
+    {
+     "nombre": "dispersion_frecuencia_numeros",
+     "descripcion": "Σ(m·Oᵢ − N)² / (m·N): dispersion de los conteos frente a su valor esperado bajo uniformidad, sobre los numeros 1..7 con multiplicidad",
+     "motor_fase5": "frecuencia.calcular_frecuencia_numeros_colorloto",
+     "observado": {
+      "numerador": 10276,
+      "denominador": 1890,
+      "exacto": "734/135",
+      "valor": 5.437037037037037
+     },
+     "simulado": {
+      "suma_numeradores": 1248786,
+      "suma_cuadrados_numeradores": 21466132660,
+      "minimo_numerador": 2044,
+      "maximo_numerador": 38500,
+      "mayores_o_iguales": 50,
+      "menores_o_iguales": 51,
+      "menores": 50,
+      "iguales": 1,
+      "media_exacta": "9911/1500",
+      "media": 6.607333333333333,
+      "varianza_exacta": "2995646899/180427500",
+      "desviacion": 4.0746841015249355
+     },
+     "referencia_analitica": {
+      "exacta": "6/1",
+      "valor": 6.0
+     },
+     "percentil_observado": {
+      "exacto": "101/200",
+      "valor": 0.505
+     },
+     "p_valor_empirico": {
+      "exacto": "1/1",
+      "valor": 1.0
+     },
+     "p_valor_ajustado_bonferroni": {
+      "exacto": "1/1",
+      "valor": 1.0
+     },
+     "supera_umbral_exploratorio": false
+    },
+    {
+     "nombre": "dispersion_frecuencia_colores",
+     "descripcion": "Σ(m·Oᵢ − N)² / (m·N): dispersion de los conteos frente a su valor esperado bajo uniformidad, sobre los colores con multiplicidad",
+     "motor_fase5": "frecuencia.calcular_frecuencia_colores",
+     "observado": {
+      "numerador": 8424,
+      "denominador": 1620,
+      "exacto": "26/5",
+      "valor": 5.2
+     },
+     "simulado": {
+      "suma_numeradores": 788688,
+      "suma_cuadrados_numeradores": 8731722240,
+      "minimo_numerador": 432,
+      "maximo_numerador": 24336,
+      "mayores_o_iguales": 39,
+      "menores_o_iguales": 61,
+      "menores": 61,
+      "iguales": 0,
+      "media_exacta": "5477/1125",
+      "media": 4.868444444444444,
+      "varianza_exacta": "1794292/185625",
+      "desviacion": 3.1090544428522846
+     },
+     "referencia_analitica": {
+      "exacta": "5/1",
+      "valor": 5.0
+     },
+     "percentil_observado": {
+      "exacto": "61/100",
+      "valor": 0.61
+     },
+     "p_valor_empirico": {
+      "exacto": "80/101",
+      "valor": 0.7920792079207921
+     },
+     "p_valor_ajustado_bonferroni": {
+      "exacto": "1/1",
+      "valor": 1.0
+     },
+     "supera_umbral_exploratorio": false
+    },
+    {
+     "nombre": "media_repeticiones_entre_sorteos",
+     "descripcion": "interseccion de multiconjuntos de numeros con el sorteo N-1 (transiciones estrictas)",
+     "motor_fase5": "repeticiones.calcular_repeticiones_entre_sorteos_colorloto",
+     "observado": {
+      "numerador": 129,
+      "denominador": 44,
+      "exacto": "129/44",
+      "valor": 2.9318181818181817
+     },
+     "simulado": {
+      "suma_numeradores": 12692,
+      "suma_cuadrados_numeradores": 1615936,
+      "minimo_numerador": 112,
+      "maximo_numerador": 145,
+      "mayores_o_iguales": 38,
+      "menores_o_iguales": 65,
+      "menores": 62,
+      "iguales": 3,
+      "media_exacta": "3173/1100",
+      "media": 2.8845454545454547,
+      "varianza_exacta": "3519/133100",
+      "desviacion": 0.16260002411969846
+     },
+     "referencia_analitica": {
+      "exacta": "808087218/282475249",
+      "valor": 2.860736368445506
+     },
+     "percentil_observado": {
+      "exacto": "127/200",
+      "valor": 0.635
+     },
+     "p_valor_empirico": {
+      "exacto": "78/101",
+      "valor": 0.7722772277227723
+     },
+     "p_valor_ajustado_bonferroni": {
+      "exacto": "1/1",
+      "valor": 1.0
+     },
+     "supera_umbral_exploratorio": false
+    },
+    {
+     "nombre": "media_maximo_repeticion_color",
+     "descripcion": "media de la mayor cantidad de balotas de un mismo color en un sorteo",
+     "motor_fase5": "distribuciones.calcular_maximo_repeticion_color_por_sorteo",
+     "observado": {
+      "numerador": 109,
+      "denominador": 45,
+      "exacto": "109/45",
+      "valor": 2.422222222222222
+     },
+     "simulado": {
+      "suma_numeradores": 10844,
+      "suma_cuadrados_numeradores": 1178190,
+      "minimo_numerador": 99,
+      "maximo_numerador": 119,
+      "mayores_o_iguales": 54,
+      "menores_o_iguales": 53,
+      "menores": 46,
+      "iguales": 7,
+      "media_exacta": "2711/1125",
+      "media": 2.409777777777778,
+      "varianza_exacta": "56666/5011875",
+      "desviacion": 0.10633130971104393
+     },
+     "referencia_analitica": {
+      "exacta": "3121/1296",
+      "valor": 2.408179012345679
+     },
+     "percentil_observado": {
+      "exacto": "99/200",
+      "valor": 0.495
+     },
+     "p_valor_empirico": {
+      "exacto": "1/1",
+      "valor": 1.0
+     },
+     "p_valor_ajustado_bonferroni": {
+      "exacto": "1/1",
+      "valor": 1.0
+     },
+     "supera_umbral_exploratorio": false
+    }
+   ],
+   "familia": {
+    "metodo": "bonferroni",
+    "tamano": 5,
+    "alpha": 0.05,
+    "alcance": "comparaciones_de_este_juego_en_esta_ejecucion",
+    "cobertura": "Bonferroni cubre solo las comparaciones de este juego en esta ejecucion; no corrige otros juegos, cortes, semillas ni ejecuciones, ni la eleccion de mirar estos datos. supera_umbral_exploratorio=true senala una discrepancia descriptiva a revisar, no un hallazgo establecido; false no demuestra aleatoriedad.",
+    "p_minimo_alcanzable": "2/101",
+    "umbral_alcanzable": false
+   },
+   "alguna_supera_umbral_exploratorio": false,
+   "nota": "Comparacion exploratoria de estadisticas descriptivas fijadas de antemano con su distribucion bajo el mecanismo uniforme del juego. No es confirmatoria, no es evidencia prospectiva ni predictiva, no genera combinaciones ni recomendaciones y no modifica el NO-GO de AE-39."
+  },
+  "contenido_sha256": "0a9d3f3e3e30d3d34776f9cd9ca57374a004c8017dcf28fdabb8d9df5a372c76"
+ }
+}

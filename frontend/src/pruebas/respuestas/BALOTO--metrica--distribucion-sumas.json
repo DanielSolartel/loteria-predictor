@@ -1,0 +1,289 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas/distribucion-sumas",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "BALOTO",
+   "nombre": "Baloto",
+   "tipo": "numeros",
+   "rango": [
+    1,
+    43
+   ],
+   "cantidad": 5,
+   "superbalota": [
+    1,
+    16
+   ],
+   "colores": [],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "BALOTO",
+   "nombre": "Baloto",
+   "reglas": {
+    "tipo": "numeros",
+    "rango": [
+     1,
+     43
+    ],
+    "cantidad_numeros": 5,
+    "superbalota": [
+     1,
+     16
+    ]
+   },
+   "total_sorteos": 60,
+   "total_sorteos_sin_corte": 60,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 2081,
+    "primera_fecha": "2021-01-02",
+    "ultimo_sorteo": 2140,
+    "ultima_fecha": "2021-06-28"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 2140,
+    "fecha": "2021-06-28"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 1945,
+    "mensaje": "El último sorteo cargado es de hace 1945 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "distribucion-sumas",
+   "titulo": "Distribución de sumas",
+   "grupo": "distribuciones",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Media",
+     "valor": 111.9,
+     "unidad": "suma",
+     "formato": "dec1"
+    },
+    {
+     "etiqueta": "Mediana",
+     "valor": 112.5,
+     "unidad": "suma",
+     "formato": "dec1"
+    },
+    {
+     "etiqueta": "Desviación estándar",
+     "valor": 21.476886801086106,
+     "unidad": "suma",
+     "formato": "dec1"
+    },
+    {
+     "etiqueta": "Media esperada bajo azar uniforme",
+     "valor": 110.0,
+     "unidad": "suma",
+     "formato": "dec1"
+    },
+    {
+     "etiqueta": "Mínima y máxima observadas",
+     "valor": "68 y 152",
+     "unidad": "suma",
+     "formato": "texto"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "histograma",
+     "titulo": "Sorteos por intervalo de suma",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Suma",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "sorteos",
+       "etiqueta": "Sorteos",
+       "formato": "entero",
+       "unidad": "sorteos"
+      },
+      {
+       "clave": "pct",
+       "etiqueta": "% de sorteos",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "10-19",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "20-29",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "30-39",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "40-49",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "50-59",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "60-69",
+       "sorteos": 2,
+       "pct": 3.3333333333333335
+      },
+      {
+       "valor": "70-79",
+       "sorteos": 4,
+       "pct": 6.666666666666667
+      },
+      {
+       "valor": "80-89",
+       "sorteos": 3,
+       "pct": 5.0
+      },
+      {
+       "valor": "90-99",
+       "sorteos": 8,
+       "pct": 13.333333333333334
+      },
+      {
+       "valor": "100-109",
+       "sorteos": 10,
+       "pct": 16.666666666666664
+      },
+      {
+       "valor": "110-119",
+       "sorteos": 9,
+       "pct": 15.0
+      },
+      {
+       "valor": "120-129",
+       "sorteos": 11,
+       "pct": 18.333333333333332
+      },
+      {
+       "valor": "130-139",
+       "sorteos": 5,
+       "pct": 8.333333333333332
+      },
+      {
+       "valor": "140-149",
+       "sorteos": 6,
+       "pct": 10.0
+      },
+      {
+       "valor": "150-159",
+       "sorteos": 2,
+       "pct": 3.3333333333333335
+      },
+      {
+       "valor": "160-169",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "170-179",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "180-189",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "190-199",
+       "sorteos": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "200-209",
+       "sorteos": 0,
+       "pct": 0.0
+      }
+     ],
+     "nota": null
+    },
+    {
+     "id": "percentiles",
+     "titulo": "Percentiles de la suma",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Percentil",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "suma",
+       "etiqueta": "Suma",
+       "formato": "dec1",
+       "unidad": "suma"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "P10",
+       "suma": 81.7
+      },
+      {
+       "valor": "P25",
+       "suma": 96.0
+      },
+      {
+       "valor": "P50",
+       "suma": 112.5
+      },
+      {
+       "valor": "P75",
+       "suma": 127.25
+      },
+      {
+       "valor": "P90",
+       "suma": 140.1
+      }
+     ],
+     "nota": null
+    }
+   ],
+   "grafica": {
+    "titulo": "Sorteos por intervalo de suma",
+    "tabla": "histograma",
+    "etiqueta": "valor",
+    "valor": "sorteos",
+    "unidad": "sorteos",
+    "referencia": null
+   },
+   "notas": [
+    "Suma de los 5 números principales de cada sorteo (sin la superbalota). Posibles: de 15 a 205; media esperada bajo azar uniforme K·(mín+máx)/2 = 110.",
+    "La desviación estándar es poblacional (describe la muestra completa)."
+   ],
+   "selector": null
+  }
+ }
+}

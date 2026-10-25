@@ -1,0 +1,1320 @@
+{
+ "origen": "app.api.web.routers.estadisticas_descriptivas.formatear",
+ "etiquetas_tipo_p": {
+  "asintotico": "asintótico (chi-cuadrado límite)",
+  "permutacion_exacta": "permutación exacta",
+  "permutacion_monte_carlo": "permutación Monte Carlo"
+ },
+ "casos": [
+  {
+   "valor": null,
+   "formato": "entero",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": -0.0,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 1,
+   "formato": "entero",
+   "esperado": "1"
+  },
+  {
+   "valor": 7,
+   "formato": "entero",
+   "esperado": "7"
+  },
+  {
+   "valor": -3,
+   "formato": "entero",
+   "esperado": "-3"
+  },
+  {
+   "valor": 2.5,
+   "formato": "entero",
+   "esperado": "2"
+  },
+  {
+   "valor": 0.125,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 0.375,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 2.675,
+   "formato": "entero",
+   "esperado": "2"
+  },
+  {
+   "valor": 1.005,
+   "formato": "entero",
+   "esperado": "1"
+  },
+  {
+   "valor": 12.345,
+   "formato": "entero",
+   "esperado": "12"
+  },
+  {
+   "valor": -12.345,
+   "formato": "entero",
+   "esperado": "-12"
+  },
+  {
+   "valor": 0.04,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": -0.04,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 0.05,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "entero",
+   "esperado": "3"
+  },
+  {
+   "valor": 100,
+   "formato": "entero",
+   "esperado": "100"
+  },
+  {
+   "valor": 100.25,
+   "formato": "entero",
+   "esperado": "100"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "entero",
+   "esperado": "1234567"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "entero",
+   "esperado": "0"
+  },
+  {
+   "valor": "texto",
+   "formato": "entero",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "entero",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "entero",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "entero",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "entero",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "texto",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "texto",
+   "esperado": "0"
+  },
+  {
+   "valor": 1,
+   "formato": "texto",
+   "esperado": "1"
+  },
+  {
+   "valor": 7,
+   "formato": "texto",
+   "esperado": "7"
+  },
+  {
+   "valor": -3,
+   "formato": "texto",
+   "esperado": "-3"
+  },
+  {
+   "valor": 2.5,
+   "formato": "texto",
+   "esperado": "2.5"
+  },
+  {
+   "valor": 12.345,
+   "formato": "texto",
+   "esperado": "12.345"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "texto",
+   "esperado": "3.14159"
+  },
+  {
+   "valor": 100,
+   "formato": "texto",
+   "esperado": "100"
+  },
+  {
+   "valor": 100.25,
+   "formato": "texto",
+   "esperado": "100.25"
+  },
+  {
+   "valor": "texto",
+   "formato": "texto",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "texto",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "texto",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "texto",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "texto",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "dec1",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "dec1",
+   "esperado": "0.0"
+  },
+  {
+   "valor": -0.0,
+   "formato": "dec1",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 1,
+   "formato": "dec1",
+   "esperado": "1.0"
+  },
+  {
+   "valor": 7,
+   "formato": "dec1",
+   "esperado": "7.0"
+  },
+  {
+   "valor": -3,
+   "formato": "dec1",
+   "esperado": "-3.0"
+  },
+  {
+   "valor": 2.5,
+   "formato": "dec1",
+   "esperado": "2.5"
+  },
+  {
+   "valor": 0.125,
+   "formato": "dec1",
+   "esperado": "0.1"
+  },
+  {
+   "valor": 0.375,
+   "formato": "dec1",
+   "esperado": "0.4"
+  },
+  {
+   "valor": 2.675,
+   "formato": "dec1",
+   "esperado": "2.7"
+  },
+  {
+   "valor": 1.005,
+   "formato": "dec1",
+   "esperado": "1.0"
+  },
+  {
+   "valor": 12.345,
+   "formato": "dec1",
+   "esperado": "12.3"
+  },
+  {
+   "valor": -12.345,
+   "formato": "dec1",
+   "esperado": "-12.3"
+  },
+  {
+   "valor": 0.04,
+   "formato": "dec1",
+   "esperado": "0.0"
+  },
+  {
+   "valor": -0.04,
+   "formato": "dec1",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 0.05,
+   "formato": "dec1",
+   "esperado": "0.1"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "dec1",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "dec1",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "dec1",
+   "esperado": "0.1"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "dec1",
+   "esperado": "3.1"
+  },
+  {
+   "valor": 100,
+   "formato": "dec1",
+   "esperado": "100.0"
+  },
+  {
+   "valor": 100.25,
+   "formato": "dec1",
+   "esperado": "100.2"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "dec1",
+   "esperado": "1234567.9"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "dec1",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": "texto",
+   "formato": "dec1",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "dec1",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "dec1",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "dec1",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "dec1",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "dec2",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "dec2",
+   "esperado": "0.00"
+  },
+  {
+   "valor": -0.0,
+   "formato": "dec2",
+   "esperado": "-0.00"
+  },
+  {
+   "valor": 1,
+   "formato": "dec2",
+   "esperado": "1.00"
+  },
+  {
+   "valor": 7,
+   "formato": "dec2",
+   "esperado": "7.00"
+  },
+  {
+   "valor": -3,
+   "formato": "dec2",
+   "esperado": "-3.00"
+  },
+  {
+   "valor": 2.5,
+   "formato": "dec2",
+   "esperado": "2.50"
+  },
+  {
+   "valor": 0.125,
+   "formato": "dec2",
+   "esperado": "0.12"
+  },
+  {
+   "valor": 0.375,
+   "formato": "dec2",
+   "esperado": "0.38"
+  },
+  {
+   "valor": 2.675,
+   "formato": "dec2",
+   "esperado": "2.67"
+  },
+  {
+   "valor": 1.005,
+   "formato": "dec2",
+   "esperado": "1.00"
+  },
+  {
+   "valor": 12.345,
+   "formato": "dec2",
+   "esperado": "12.35"
+  },
+  {
+   "valor": -12.345,
+   "formato": "dec2",
+   "esperado": "-12.35"
+  },
+  {
+   "valor": 0.04,
+   "formato": "dec2",
+   "esperado": "0.04"
+  },
+  {
+   "valor": -0.04,
+   "formato": "dec2",
+   "esperado": "-0.04"
+  },
+  {
+   "valor": 0.05,
+   "formato": "dec2",
+   "esperado": "0.05"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "dec2",
+   "esperado": "0.00"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "dec2",
+   "esperado": "0.00"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "dec2",
+   "esperado": "0.12"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "dec2",
+   "esperado": "3.14"
+  },
+  {
+   "valor": 100,
+   "formato": "dec2",
+   "esperado": "100.00"
+  },
+  {
+   "valor": 100.25,
+   "formato": "dec2",
+   "esperado": "100.25"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "dec2",
+   "esperado": "1234567.89"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "dec2",
+   "esperado": "-0.00"
+  },
+  {
+   "valor": "texto",
+   "formato": "dec2",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "dec2",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "dec2",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "dec2",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "dec2",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "dec3",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "dec3",
+   "esperado": "0.000"
+  },
+  {
+   "valor": -0.0,
+   "formato": "dec3",
+   "esperado": "-0.000"
+  },
+  {
+   "valor": 1,
+   "formato": "dec3",
+   "esperado": "1.000"
+  },
+  {
+   "valor": 7,
+   "formato": "dec3",
+   "esperado": "7.000"
+  },
+  {
+   "valor": -3,
+   "formato": "dec3",
+   "esperado": "-3.000"
+  },
+  {
+   "valor": 2.5,
+   "formato": "dec3",
+   "esperado": "2.500"
+  },
+  {
+   "valor": 0.125,
+   "formato": "dec3",
+   "esperado": "0.125"
+  },
+  {
+   "valor": 0.375,
+   "formato": "dec3",
+   "esperado": "0.375"
+  },
+  {
+   "valor": 2.675,
+   "formato": "dec3",
+   "esperado": "2.675"
+  },
+  {
+   "valor": 1.005,
+   "formato": "dec3",
+   "esperado": "1.005"
+  },
+  {
+   "valor": 12.345,
+   "formato": "dec3",
+   "esperado": "12.345"
+  },
+  {
+   "valor": -12.345,
+   "formato": "dec3",
+   "esperado": "-12.345"
+  },
+  {
+   "valor": 0.04,
+   "formato": "dec3",
+   "esperado": "0.040"
+  },
+  {
+   "valor": -0.04,
+   "formato": "dec3",
+   "esperado": "-0.040"
+  },
+  {
+   "valor": 0.05,
+   "formato": "dec3",
+   "esperado": "0.050"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "dec3",
+   "esperado": "0.000"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "dec3",
+   "esperado": "0.000"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "dec3",
+   "esperado": "0.123"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "dec3",
+   "esperado": "3.142"
+  },
+  {
+   "valor": 100,
+   "formato": "dec3",
+   "esperado": "100.000"
+  },
+  {
+   "valor": 100.25,
+   "formato": "dec3",
+   "esperado": "100.250"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "dec3",
+   "esperado": "1234567.891"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "dec3",
+   "esperado": "-0.000"
+  },
+  {
+   "valor": "texto",
+   "formato": "dec3",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "dec3",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "dec3",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "dec3",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "dec3",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "pct",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "pct",
+   "esperado": "0.0"
+  },
+  {
+   "valor": -0.0,
+   "formato": "pct",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 1,
+   "formato": "pct",
+   "esperado": "1.0"
+  },
+  {
+   "valor": 7,
+   "formato": "pct",
+   "esperado": "7.0"
+  },
+  {
+   "valor": -3,
+   "formato": "pct",
+   "esperado": "-3.0"
+  },
+  {
+   "valor": 2.5,
+   "formato": "pct",
+   "esperado": "2.5"
+  },
+  {
+   "valor": 0.125,
+   "formato": "pct",
+   "esperado": "0.1"
+  },
+  {
+   "valor": 0.375,
+   "formato": "pct",
+   "esperado": "0.4"
+  },
+  {
+   "valor": 2.675,
+   "formato": "pct",
+   "esperado": "2.7"
+  },
+  {
+   "valor": 1.005,
+   "formato": "pct",
+   "esperado": "1.0"
+  },
+  {
+   "valor": 12.345,
+   "formato": "pct",
+   "esperado": "12.3"
+  },
+  {
+   "valor": -12.345,
+   "formato": "pct",
+   "esperado": "-12.3"
+  },
+  {
+   "valor": 0.04,
+   "formato": "pct",
+   "esperado": "0.0"
+  },
+  {
+   "valor": -0.04,
+   "formato": "pct",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 0.05,
+   "formato": "pct",
+   "esperado": "0.1"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "pct",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "pct",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "pct",
+   "esperado": "0.1"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "pct",
+   "esperado": "3.1"
+  },
+  {
+   "valor": 100,
+   "formato": "pct",
+   "esperado": "100.0"
+  },
+  {
+   "valor": 100.25,
+   "formato": "pct",
+   "esperado": "100.2"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "pct",
+   "esperado": "1234567.9"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "pct",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": "texto",
+   "formato": "pct",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "pct",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "pct",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "pct",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "pct",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "pp",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "pp",
+   "esperado": "+0.0"
+  },
+  {
+   "valor": -0.0,
+   "formato": "pp",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 1,
+   "formato": "pp",
+   "esperado": "+1.0"
+  },
+  {
+   "valor": 7,
+   "formato": "pp",
+   "esperado": "+7.0"
+  },
+  {
+   "valor": -3,
+   "formato": "pp",
+   "esperado": "-3.0"
+  },
+  {
+   "valor": 2.5,
+   "formato": "pp",
+   "esperado": "+2.5"
+  },
+  {
+   "valor": 0.125,
+   "formato": "pp",
+   "esperado": "+0.1"
+  },
+  {
+   "valor": 0.375,
+   "formato": "pp",
+   "esperado": "+0.4"
+  },
+  {
+   "valor": 2.675,
+   "formato": "pp",
+   "esperado": "+2.7"
+  },
+  {
+   "valor": 1.005,
+   "formato": "pp",
+   "esperado": "+1.0"
+  },
+  {
+   "valor": 12.345,
+   "formato": "pp",
+   "esperado": "+12.3"
+  },
+  {
+   "valor": -12.345,
+   "formato": "pp",
+   "esperado": "-12.3"
+  },
+  {
+   "valor": 0.04,
+   "formato": "pp",
+   "esperado": "+0.0"
+  },
+  {
+   "valor": -0.04,
+   "formato": "pp",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 0.05,
+   "formato": "pp",
+   "esperado": "+0.1"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "pp",
+   "esperado": "+0.0"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "pp",
+   "esperado": "+0.0"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "pp",
+   "esperado": "+0.1"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "pp",
+   "esperado": "+3.1"
+  },
+  {
+   "valor": 100,
+   "formato": "pp",
+   "esperado": "+100.0"
+  },
+  {
+   "valor": 100.25,
+   "formato": "pp",
+   "esperado": "+100.2"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "pp",
+   "esperado": "+1234567.9"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "pp",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": "texto",
+   "formato": "pp",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "pp",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "pp",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "pp",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "pp",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "p",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "p",
+   "esperado": "< 0.0001"
+  },
+  {
+   "valor": -0.0,
+   "formato": "p",
+   "esperado": "< 0.0001"
+  },
+  {
+   "valor": 1,
+   "formato": "p",
+   "esperado": "1.0000"
+  },
+  {
+   "valor": 7,
+   "formato": "p",
+   "esperado": "7.0000"
+  },
+  {
+   "valor": -3,
+   "formato": "p",
+   "esperado": "< 0.0001"
+  },
+  {
+   "valor": 2.5,
+   "formato": "p",
+   "esperado": "2.5000"
+  },
+  {
+   "valor": 0.125,
+   "formato": "p",
+   "esperado": "0.1250"
+  },
+  {
+   "valor": 0.375,
+   "formato": "p",
+   "esperado": "0.3750"
+  },
+  {
+   "valor": 2.675,
+   "formato": "p",
+   "esperado": "2.6750"
+  },
+  {
+   "valor": 1.005,
+   "formato": "p",
+   "esperado": "1.0050"
+  },
+  {
+   "valor": 12.345,
+   "formato": "p",
+   "esperado": "12.3450"
+  },
+  {
+   "valor": -12.345,
+   "formato": "p",
+   "esperado": "< 0.0001"
+  },
+  {
+   "valor": 0.04,
+   "formato": "p",
+   "esperado": "0.0400"
+  },
+  {
+   "valor": -0.04,
+   "formato": "p",
+   "esperado": "< 0.0001"
+  },
+  {
+   "valor": 0.05,
+   "formato": "p",
+   "esperado": "0.0500"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "p",
+   "esperado": "< 0.0001"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "p",
+   "esperado": "0.0001"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "p",
+   "esperado": "0.1235"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "p",
+   "esperado": "3.1416"
+  },
+  {
+   "valor": 100,
+   "formato": "p",
+   "esperado": "100.0000"
+  },
+  {
+   "valor": 100.25,
+   "formato": "p",
+   "esperado": "100.2500"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "p",
+   "esperado": "1234567.8910"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "p",
+   "esperado": "< 0.0001"
+  },
+  {
+   "valor": "texto",
+   "formato": "p",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "p",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "p",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "p",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "p",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "tipo_p",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "tipo_p",
+   "esperado": "0"
+  },
+  {
+   "valor": 1,
+   "formato": "tipo_p",
+   "esperado": "1"
+  },
+  {
+   "valor": 7,
+   "formato": "tipo_p",
+   "esperado": "7"
+  },
+  {
+   "valor": -3,
+   "formato": "tipo_p",
+   "esperado": "-3"
+  },
+  {
+   "valor": 2.5,
+   "formato": "tipo_p",
+   "esperado": "2.5"
+  },
+  {
+   "valor": 12.345,
+   "formato": "tipo_p",
+   "esperado": "12.345"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "tipo_p",
+   "esperado": "3.14159"
+  },
+  {
+   "valor": 100,
+   "formato": "tipo_p",
+   "esperado": "100"
+  },
+  {
+   "valor": 100.25,
+   "formato": "tipo_p",
+   "esperado": "100.25"
+  },
+  {
+   "valor": "texto",
+   "formato": "tipo_p",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "tipo_p",
+   "esperado": "asintótico (chi-cuadrado límite)"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "tipo_p",
+   "esperado": "permutación exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "tipo_p",
+   "esperado": "permutación Monte Carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "tipo_p",
+   "esperado": "otro"
+  },
+  {
+   "valor": null,
+   "formato": "desconocido",
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "formato": "desconocido",
+   "esperado": "0.00"
+  },
+  {
+   "valor": -0.0,
+   "formato": "desconocido",
+   "esperado": "-0.00"
+  },
+  {
+   "valor": 1,
+   "formato": "desconocido",
+   "esperado": "1.00"
+  },
+  {
+   "valor": 7,
+   "formato": "desconocido",
+   "esperado": "7.00"
+  },
+  {
+   "valor": -3,
+   "formato": "desconocido",
+   "esperado": "-3.00"
+  },
+  {
+   "valor": 2.5,
+   "formato": "desconocido",
+   "esperado": "2.50"
+  },
+  {
+   "valor": 0.125,
+   "formato": "desconocido",
+   "esperado": "0.12"
+  },
+  {
+   "valor": 0.375,
+   "formato": "desconocido",
+   "esperado": "0.38"
+  },
+  {
+   "valor": 2.675,
+   "formato": "desconocido",
+   "esperado": "2.67"
+  },
+  {
+   "valor": 1.005,
+   "formato": "desconocido",
+   "esperado": "1.00"
+  },
+  {
+   "valor": 12.345,
+   "formato": "desconocido",
+   "esperado": "12.35"
+  },
+  {
+   "valor": -12.345,
+   "formato": "desconocido",
+   "esperado": "-12.35"
+  },
+  {
+   "valor": 0.04,
+   "formato": "desconocido",
+   "esperado": "0.04"
+  },
+  {
+   "valor": -0.04,
+   "formato": "desconocido",
+   "esperado": "-0.04"
+  },
+  {
+   "valor": 0.05,
+   "formato": "desconocido",
+   "esperado": "0.05"
+  },
+  {
+   "valor": 5e-05,
+   "formato": "desconocido",
+   "esperado": "0.00"
+  },
+  {
+   "valor": 0.0001,
+   "formato": "desconocido",
+   "esperado": "0.00"
+  },
+  {
+   "valor": 0.12345678,
+   "formato": "desconocido",
+   "esperado": "0.12"
+  },
+  {
+   "valor": 3.14159,
+   "formato": "desconocido",
+   "esperado": "3.14"
+  },
+  {
+   "valor": 100,
+   "formato": "desconocido",
+   "esperado": "100.00"
+  },
+  {
+   "valor": 100.25,
+   "formato": "desconocido",
+   "esperado": "100.25"
+  },
+  {
+   "valor": 1234567.891,
+   "formato": "desconocido",
+   "esperado": "1234567.89"
+  },
+  {
+   "valor": -4e-05,
+   "formato": "desconocido",
+   "esperado": "-0.00"
+  },
+  {
+   "valor": "texto",
+   "formato": "desconocido",
+   "esperado": "texto"
+  },
+  {
+   "valor": "asintotico",
+   "formato": "desconocido",
+   "esperado": "asintotico"
+  },
+  {
+   "valor": "permutacion_exacta",
+   "formato": "desconocido",
+   "esperado": "permutacion_exacta"
+  },
+  {
+   "valor": "permutacion_monte_carlo",
+   "formato": "desconocido",
+   "esperado": "permutacion_monte_carlo"
+  },
+  {
+   "valor": "otro",
+   "formato": "desconocido",
+   "esperado": "otro"
+  }
+ ]
+}

@@ -1,0 +1,44 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas/resumen?hasta_numero_sorteo=1",
+ "estado": 200,
+ "cuerpo": {
+  "codigo_juego": "BALOTO",
+  "nombre": "Baloto",
+  "total_sorteos": 0,
+  "reglas": {
+   "tipo": "numeros",
+   "rango": [
+    1,
+    43
+   ],
+   "cantidad_numeros": 5,
+   "superbalota": [
+    1,
+    16
+   ]
+  },
+  "total_sorteos_sin_corte": 60,
+  "corte": {
+   "hasta_numero_sorteo": 1,
+   "descripcion": "hasta el sorteo 1"
+  },
+  "periodo": null,
+  "ultimo_sorteo_disponible": {
+   "numero_sorteo": 2140,
+   "fecha": "2021-06-28"
+  },
+  "frescura": {
+   "estado": "desactualizado",
+   "dias_desde_el_ultimo_sorteo": 1945,
+   "mensaje": "El último sorteo cargado es de hace 1945 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+  },
+  "huecos": {
+   "cantidad": 0,
+   "primeros": [],
+   "cobertura": 0.0
+  },
+  "consultado_el": "2026-10-25",
+  "estadisticas": null
+ }
+}

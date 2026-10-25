@@ -1,0 +1,44 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/sorteos/45",
+ "estado": 200,
+ "cuerpo": {
+  "numero_sorteo": 45,
+  "fecha": "2024-12-16",
+  "dia_semana": "lunes",
+  "numeros": [],
+  "superbalota": null,
+  "pares": [
+   {
+    "numero": 2,
+    "color_codigo": "BLANCO",
+    "color_nombre": "Blanco"
+   },
+   {
+    "numero": 5,
+    "color_codigo": "ROJO",
+    "color_nombre": "Rojo"
+   },
+   {
+    "numero": 4,
+    "color_codigo": "BLANCO",
+    "color_nombre": "Blanco"
+   },
+   {
+    "numero": 5,
+    "color_codigo": "AMARILLO",
+    "color_nombre": "Amarillo"
+   },
+   {
+    "numero": 2,
+    "color_codigo": "ROJO",
+    "color_nombre": "Rojo"
+   },
+   {
+    "numero": 1,
+    "color_codigo": "VERDE",
+    "color_nombre": "Verde"
+   }
+  ]
+ }
+}

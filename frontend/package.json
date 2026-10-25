@@ -1,0 +1,40 @@
+{
+  "name": "loteria-predictor-frontend",
+  "private": true,
+  "version": "0.9.1",
+  "description": "Fase 9.1: interfaz de consulta de la API pública /api/v1 a través de la pasarela local",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "tipos": "openapi-typescript src/api/openapi.json -o src/api/esquema.d.ts",
+    "tipos:comprobar": "node scripts/comprobar-tipos.mjs",
+    "canario": "node scripts/canario.mjs",
+    "e2e": "node e2e/recorrido.mjs"
+  },
+  "dependencies": {
+    "bootstrap": "5.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router-dom": "7.18.4"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "jsdom": "26.1.0",
+    "openapi-typescript": "7.13.0",
+    "playwright": "1.56.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
+    "vitest": "3.2.7"
+  }
+}

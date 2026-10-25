@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/simulaciones/c02ecef2-3960-4ace-b3a0-f4797986fc92",
+ "estado": 409,
+ "cuerpo": {
+  "error": {
+   "codigo": "alterado",
+   "mensaje": "La simulacion c02ecef2-3960-4ace-b3a0-f4797986fc92 no es integra: el contenido no corresponde a su huella (resultado alterado)",
+   "solicitud": "35cbbd4083ec43b8959eb3070f2be003"
+  }
+ }
+}

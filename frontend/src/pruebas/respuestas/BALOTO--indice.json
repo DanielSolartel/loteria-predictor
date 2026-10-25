@@ -1,0 +1,84 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "resumen": "/api/v1/juegos/BALOTO/estadisticas/resumen",
+  "panel": "/api/v1/juegos/BALOTO/estadisticas/panel",
+  "metricas": [
+   {
+    "metrica": "frecuencia-numeros-por-anio",
+    "parametro": "anio"
+   },
+   {
+    "metrica": "frecuencia-numeros-por-mes",
+    "parametro": "mes"
+   },
+   {
+    "metrica": "frecuencia-numeros-por-dia-semana",
+    "parametro": "dia_semana"
+   },
+   {
+    "metrica": "frecuencia-superbalota-por-anio",
+    "parametro": "anio"
+   },
+   {
+    "metrica": "frecuencia-superbalota-por-mes",
+    "parametro": "mes"
+   },
+   {
+    "metrica": "frecuencia-superbalota-por-dia-semana",
+    "parametro": "dia_semana"
+   },
+   {
+    "metrica": "atrasos-superbalota",
+    "parametro": null
+   },
+   {
+    "metrica": "intervalos-historicos-numeros",
+    "parametro": null
+   },
+   {
+    "metrica": "intervalos-historicos-superbalota",
+    "parametro": null
+   },
+   {
+    "metrica": "distribucion-sumas",
+    "parametro": null
+   },
+   {
+    "metrica": "distribucion-decenas",
+    "parametro": null
+   },
+   {
+    "metrica": "repeticion-superbalota",
+    "parametro": null
+   },
+   {
+    "metrica": "comparacion-frecuencia-numeros-por-ventana",
+    "parametro": "ventana"
+   },
+   {
+    "metrica": "comparacion-frecuencia-superbalota-por-ventana",
+    "parametro": "ventana"
+   },
+   {
+    "metrica": "pruebas-uniformidad",
+    "parametro": null
+   },
+   {
+    "metrica": "independencia-pares",
+    "parametro": null
+   },
+   {
+    "metrica": "independencia-trios",
+    "parametro": null
+   },
+   {
+    "metrica": "correlaciones",
+    "parametro": null
+   }
+  ]
+ }
+}
