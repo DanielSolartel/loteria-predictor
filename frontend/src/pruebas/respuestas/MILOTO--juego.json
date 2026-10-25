@@ -1,0 +1,29 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO",
+ "estado": 200,
+ "cuerpo": {
+  "codigo": "MILOTO",
+  "nombre": "MiLoto",
+  "rango_min": 1,
+  "rango_max": 39,
+  "cantidad_numeros": 5,
+  "tiene_superbalota": false,
+  "superbalota_min": null,
+  "superbalota_max": null,
+  "tiene_color": false,
+  "permite_repeticion": false,
+  "espacio_muestral": 575757,
+  "dimensiones": {
+   "tipo": "standard_number_game",
+   "rango_numeros": [
+    1,
+    39
+   ],
+   "cantidad_numeros": 5,
+   "tiene_superbalota": false,
+   "rango_superbalota": null,
+   "permite_repeticion": false
+  }
+ }
+}

@@ -1,0 +1,35 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO",
+ "estado": 200,
+ "cuerpo": {
+  "codigo": "COLORLOTO",
+  "nombre": "ColorLoto",
+  "rango_min": 1,
+  "rango_max": 7,
+  "cantidad_numeros": 6,
+  "tiene_superbalota": false,
+  "superbalota_min": null,
+  "superbalota_max": null,
+  "tiene_color": true,
+  "permite_repeticion": true,
+  "espacio_muestral": 10737573,
+  "dimensiones": {
+   "tipo": "colorloto",
+   "rango_numeros": [
+    1,
+    7
+   ],
+   "cantidad_balotas": 6,
+   "colores_disponibles": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "permite_repeticion": true
+  }
+ }
+}

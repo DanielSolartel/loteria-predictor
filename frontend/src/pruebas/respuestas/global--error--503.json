@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/sorteos",
+ "estado": 503,
+ "cuerpo": {
+  "error": {
+   "codigo": "base_no_disponible",
+   "mensaje": "Base de datos no disponible",
+   "solicitud": "c8499c57245e45faadc74dbc7d690e76"
+  }
+ }
+}

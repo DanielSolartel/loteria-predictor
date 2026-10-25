@@ -25,7 +25,7 @@ Este documento explica cómo está construido el sistema, con suficiente detalle
 19. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
 20. [Fase 6: actualización y operación automática](#fase-6-actualización-y-operación-automática)
 
-Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026; Fase 6 se integró en PR #96 (Actions `39939306600`) y la limpieza histórica conserva su pendiente separado. Base de Fase 7: PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`); ver [Fase 7: simulaciones](#fase-7-simulaciones). [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md). La validación local de Fase 7 en Windows, PostgreSQL aislado y Brave está completada; [cierre del operador](backend/docs/fase7_validacion_operador_2026-10-24.md), integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`), base de la Fase 8; ver [Fase 8: API pública](#fase-8-api-pública).
+Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026; Fase 6 se integró en PR #96 (Actions `39939306600`) y la limpieza histórica conserva su pendiente separado. Base de Fase 7: PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`); ver [Fase 7: simulaciones](#fase-7-simulaciones). [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md). La validación local de Fase 7 en Windows, PostgreSQL aislado y Brave está completada; [cierre del operador](backend/docs/fase7_validacion_operador_2026-10-24.md), integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`), base de la Fase 8; ver [Fase 8: API pública](#fase-8-api-pública). Fase 8 se integró en PR #99 (`615f3832296d74a7acea44e5ecdf7dc84a11d70a`, CI `40133227968` aprobado en Linux y Windows), base de la 9.1; ver [Fase 9.1: frontend de consulta y pasarela](#fase-91-frontend-de-consulta-y-pasarela).
 
 ---
 
@@ -6866,7 +6866,7 @@ El protocolo de esta entrega termina en aplicar v3.3 sobre v3.2 exacta → prueb
 
 ## Orden futuro y límite de esta entrega
 
-**6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 está activada y su prueba operativa con MiLoto/ColorLoto está verificada; Fase 7 está integrada (PR #98) y la Fase 8 (v2) implementada en Linux con validación nativa pendiente; fases 9–11 conservan su planificación propia. Las referencias originales 6/7/8/9 pasan a 7/8/9/10 sin renombrar evidencia o código históricos. Fase 11 consumirá servicios pertinentes sin duplicar ML; plataforma y empaquetado siguen pendientes. Objetivos y aceptación: [ROADMAP.md](ROADMAP.md).
+**6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 está activada y su prueba operativa con MiLoto/ColorLoto está verificada; Fase 7 está integrada (PR #98) y la Fase 8 también (PR #99, CI aprobado); la entrega 9.1 está implementada y validada solo en Linux, con la Fase 9 global abierta; fases 10–11 conservan su planificación propia. Las referencias originales 6/7/8/9 pasan a 7/8/9/10 sin renombrar evidencia o código históricos. Fase 11 consumirá servicios pertinentes sin duplicar ML; plataforma y empaquetado siguen pendientes. Objetivos y aceptación: [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -6989,4 +6989,27 @@ Composición propia, separada de `app/main.py`: `app/api/publica/aplicacion.py`.
 
 El estado de cuotas y monitoreo vive en `app.state` del proceso, separado de la base, los históricos, los modelos y los almacenes. Detalle: [backend/docs/fase8_api_publica.md](backend/docs/fase8_api_publica.md).
 
-**Validación técnica local de la v2 (24 de octubre de 2026):** las 92 pruebas y cuatro sondas pasaron en Windows; PostgreSQL 16.14 aislado verificó el cableado predeterminado, la transacción de solo lectura, la conservación de filas y almacenes, los límites concurrentes y el proceso Uvicorn real con el arranque soportado. El contenedor operativo conservó ID, arranque, volumen y configuración. Publicación manual y CI del PR pendientes. [Registro del operador](backend/docs/fase8_validacion_operador_2026-10-24.md).
+**Validación técnica local de la v2 (24 de octubre de 2026):** las 92 pruebas y cuatro sondas pasaron en Windows; PostgreSQL 16.14 aislado verificó el cableado predeterminado, la transacción de solo lectura, la conservación de filas y almacenes, los límites concurrentes y el proceso Uvicorn real con el arranque soportado. El contenedor operativo conservó ID, arranque, volumen y configuración. Integrada en PR #99 (merge `615f383`, implementación `b7ccd62`) con el CI `40133227968` aprobado en Linux y Windows. [Registro del operador](backend/docs/fase8_validacion_operador_2026-10-24.md).
+
+## Fase 9.1: frontend de consulta y pasarela
+
+Consulta de `/api/v1` desde una SPA, sin claves en el navegador. Tres procesos locales:
+
+```mermaid
+flowchart LR
+    N[Navegador<br/>SPA compilada] -- "GET mismo origen<br/>sin credenciales" --> P[Pasarela<br/>app.pasarela.aplicacion:app<br/>127.0.0.1:8020]
+    P -- "GET /api/v1 + X-API-Key<br/>del servidor" --> A[API pública<br/>app.api.publica.aplicacion:app<br/>127.0.0.1:8010]
+    A --> C[Casos de uso existentes]
+```
+
+| Pieza | Responsabilidad |
+|---|---|
+| `frontend/` | React 19 + TypeScript + Vite; presenta lo que informa la API (no calcula estadísticas, vigencia, integridad ni aciertos); tipos generados del OpenAPI versionado y decodificadores de presentación para las zonas genéricas; filtros en la URL; sin sondeo, sin reintentos automáticos, solo `/juegos` en memoria |
+| `pasarela/configuracion.py` | ajustes `PASARELA_*` del entorno o de `pasarela.privado.env` (fuera de Git); destino fijo loopback sin credenciales, ruta ni consulta; `Host` y `Origin` admitidos; clave `SecretStr` |
+| `pasarela/rutas.py` | lista cerrada de las 13 plantillas GET del OpenAPI con sus parámetros y límites; excluye la documentación |
+| `pasarela/cliente.py` | `http.client` en un hilo: concurrencia 4 (espera 2 s), 15 s para toda la consulta (conexión, envío, cabeceras, cuerpo y EOF) y 10 s por operación, cada espera con el menor de los dos; 4 MiB; sin redirecciones; cierra cada conexión |
+| `pasarela/aplicacion.py` | ASGI propio: solo GET, cliente loopback, `Host`/`Origin`/Fetch Metadata, rutas seguras, errores propios sanitizados con `X-Request-ID`, cabeceras de seguridad (CSP sin recursos externos), estáticos solo de `dist/` |
+
+La pasarela no importa casos de uso, dominio, repositorios ni la base (prueba de aislamiento por AST y por importación en un proceso aparte). No la montan `app.main` ni la API pública. Contrato: el OpenAPI versionado del frontend se compara con la app pública de la base. Despliegue, HTTPS y autenticación de escritura siguen en la Fase 10. Diseño, límites, verificación y matriz de huecos: [backend/docs/fase9_frontend.md](backend/docs/fase9_frontend.md).
+
+**Validación local de la 9.1 v2:** auditoría Linux y Windows nativo con Brave instalado completada, sobre datos sintéticos. En Windows: 379 pruebas Vitest, 186 de pasarela y 92 de API; 297 visitas normales y 12 de Vite, con controles de seguridad, geometría, almacenamiento y ausencia de canarios. El adaptador externo de verificación propaga `NO_COLOR=1` para reconocer la dirección de Vite en Windows; no modifica el producto. No se consultó PostgreSQL operativo ni se invocó la tarea de Fase 6. Publicación manual y checks del PR pendientes. La Fase 9 global sigue abierta. [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md).

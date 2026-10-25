@@ -1,0 +1,362 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/correlaciones",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "correlaciones",
+   "titulo": "Correlaciones",
+   "grupo": "pruebas",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Pearson, suma frente a la del sorteo anterior",
+     "valor": -0.13978372618812443,
+     "unidad": "coeficiente",
+     "formato": "dec3"
+    },
+    {
+     "etiqueta": "Spearman, apariciones primera frente a segunda mitad",
+     "valor": -0.1284457725980754,
+     "unidad": "coeficiente",
+     "formato": "dec3"
+    },
+    {
+     "etiqueta": "Transiciones N → N+1",
+     "valor": 44,
+     "unidad": "transiciones",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "χ² número × color",
+     "valor": 23.593763282678278,
+     "unidad": "",
+     "formato": "dec2"
+    },
+    {
+     "etiqueta": "Grados de libertad",
+     "valor": 30,
+     "unidad": "",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "p-value número × color (asintótico)",
+     "valor": 0.7900847869842423,
+     "unidad": "chi-cuadrado límite",
+     "formato": "p"
+    },
+    {
+     "etiqueta": "Esperado mínimo por celda",
+     "valor": 4.111111111111111,
+     "unidad": "balotas",
+     "formato": "dec1"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "correlaciones",
+     "titulo": "Correlaciones de Pearson y Spearman",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Pregunta",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "metodo",
+       "etiqueta": "Método",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "coeficiente",
+       "etiqueta": "Coeficiente",
+       "formato": "dec3",
+       "unidad": ""
+      },
+      {
+       "clave": "p_value",
+       "etiqueta": "p-value",
+       "formato": "p",
+       "unidad": ""
+      },
+      {
+       "clave": "como_p_value",
+       "etiqueta": "Cómo se obtiene el p-value",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "pares",
+       "etiqueta": "Pares usados",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "observacion",
+       "etiqueta": "Observación",
+       "formato": "texto",
+       "unidad": ""
+      }
+     ],
+     "filas": [
+      {
+       "valor": "Suma del sorteo frente a la del sorteo anterior",
+       "metodo": "Pearson",
+       "coeficiente": -0.13978372618812443,
+       "p_value": null,
+       "contraste": null,
+       "permutaciones": null,
+       "como_p_value": "No se calcula",
+       "n": 44,
+       "pares": "44 transiciones",
+       "motivo": null,
+       "motivo_p_value": "las transiciones N → N+1 comparten sorteos: los pares no son independientes",
+       "observacion": "Las transiciones N → N+1 comparten sorteos: los pares no son independientes."
+      },
+      {
+       "valor": "Suma del sorteo frente a la del sorteo anterior",
+       "metodo": "Spearman",
+       "coeficiente": -0.20843000043729548,
+       "p_value": null,
+       "contraste": null,
+       "permutaciones": null,
+       "como_p_value": "No se calcula",
+       "n": 44,
+       "pares": "44 transiciones",
+       "motivo": null,
+       "motivo_p_value": "las transiciones N → N+1 comparten sorteos: los pares no son independientes",
+       "observacion": "Las transiciones N → N+1 comparten sorteos: los pares no son independientes."
+      },
+      {
+       "valor": "Apariciones por número: primera mitad frente a segunda",
+       "metodo": "Pearson",
+       "coeficiente": -0.19685990338164258,
+       "p_value": 0.6714285714285714,
+       "contraste": "permutacion_exacta",
+       "permutaciones": 5040,
+       "como_p_value": "Permutación exacta, 5040 ordenaciones",
+       "n": 7,
+       "pares": "7 números",
+       "motivo": null,
+       "motivo_p_value": "permutación exacta: se enumeran las 7! = 5040 ordenaciones de una serie frente a la otra; supone que, bajo H0, todas son igual de probables",
+       "observacion": "Supone que, bajo H0, todas las ordenaciones son igual de probables."
+      },
+      {
+       "valor": "Apariciones por número: primera mitad frente a segunda",
+       "metodo": "Spearman",
+       "coeficiente": -0.1284457725980754,
+       "p_value": 0.7738095238095238,
+       "contraste": "permutacion_exacta",
+       "permutaciones": 5040,
+       "como_p_value": "Permutación exacta, 5040 ordenaciones",
+       "n": 7,
+       "pares": "7 números",
+       "motivo": null,
+       "motivo_p_value": "permutación exacta: se enumeran las 7! = 5040 ordenaciones de una serie frente a la otra; supone que, bajo H0, todas son igual de probables",
+       "observacion": "Supone que, bajo H0, todas las ordenaciones son igual de probables."
+      }
+     ],
+     "nota": null
+    },
+    {
+     "id": "contingencia",
+     "titulo": "Balotas por número y color (observado / esperado)",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Número",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "AMARILLO",
+       "etiqueta": "Amarillo",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "AZUL",
+       "etiqueta": "Azul",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "BLANCO",
+       "etiqueta": "Blanco",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "NEGRO",
+       "etiqueta": "Negro",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "ROJO",
+       "etiqueta": "Rojo",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "VERDE",
+       "etiqueta": "Verde",
+       "formato": "texto",
+       "unidad": ""
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "AMARILLO": "6 / 5.6",
+       "AZUL": "5 / 6.7",
+       "BLANCO": "9 / 7.4",
+       "NEGRO": "6 / 5.6",
+       "ROJO": "8 / 8.0",
+       "VERDE": "7 / 7.6"
+      },
+      {
+       "valor": "2",
+       "AMARILLO": "6 / 5.3",
+       "AZUL": "8 / 6.4",
+       "BLANCO": "8 / 7.1",
+       "NEGRO": "6 / 5.3",
+       "ROJO": "8 / 7.7",
+       "VERDE": "3 / 7.2"
+      },
+      {
+       "valor": "3",
+       "AMARILLO": "4 / 4.1",
+       "AZUL": "6 / 4.9",
+       "BLANCO": "5 / 5.4",
+       "NEGRO": "2 / 4.1",
+       "ROJO": "5 / 5.9",
+       "VERDE": "8 / 5.6"
+      },
+      {
+       "valor": "4",
+       "AMARILLO": "5 / 6.3",
+       "AZUL": "7 / 7.5",
+       "BLANCO": "10 / 8.3",
+       "NEGRO": "6 / 6.3",
+       "ROJO": "9 / 9.0",
+       "VERDE": "9 / 8.5"
+      },
+      {
+       "valor": "5",
+       "AMARILLO": "8 / 5.8",
+       "AZUL": "9 / 6.8",
+       "BLANCO": "5 / 7.6",
+       "NEGRO": "5 / 5.8",
+       "ROJO": "4 / 8.2",
+       "VERDE": "11 / 7.8"
+      },
+      {
+       "valor": "6",
+       "AMARILLO": "3 / 5.6",
+       "AZUL": "7 / 6.7",
+       "BLANCO": "4 / 7.4",
+       "NEGRO": "8 / 5.6",
+       "ROJO": "13 / 8.0",
+       "VERDE": "6 / 7.6"
+      },
+      {
+       "valor": "7",
+       "AMARILLO": "5 / 4.2",
+       "AZUL": "2 / 5.1",
+       "BLANCO": "8 / 5.6",
+       "NEGRO": "4 / 4.2",
+       "ROJO": "6 / 6.1",
+       "VERDE": "6 / 5.7"
+      }
+     ],
+     "nota": "Chi-cuadrado de independencia sin corrección de Yates; p-value asintótico, no exacto para una muestra finita."
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Suma: pares (suma del sorteo N, suma del sorteo N+1) solo entre sorteos de numeración consecutiva. ColorLoto suma los 6 números con repetición.",
+    "Mitades: sorteos 1–22 (22) frente a 23–45 (23); se correlacionan las apariciones de cada número.",
+    "Coeficientes: descriptivos (SciPy). p-value: no se usa el de SciPy, que en spearmanr es una aproximación para muestras grandes y en pearsonr supone pares independientes y normales.",
+    "Suma: el p-value no se calcula. Las transiciones comparten sorteos (el sorteo N+1 de un par es el N del siguiente), así que los pares no son independientes y ningún contraste de pares independientes está justificado; el coeficiente sigue siendo descriptivo.",
+    "Mitades: p-value por permutación de las apariciones de la segunda mitad entre los 7 números; la muestra son los números, no los sorteos. Bajo H0 (sorteos independientes y simétricos respecto de los números) esas apariciones son independientes de la primera mitad y todas sus ordenaciones son igual de probables. Con 7 números se enumeran todas: permutación exacta.",
+    "Bajo un sorteo uniforme e independiente se esperan coeficientes cercanos a 0. Un coeficiente distinto de 0 en una muestra no permite anticipar el próximo sorteo.",
+    "Alguna celda espera menos de 5 balotas: la aproximación chi-cuadrado es poco fiable.",
+    "Número × color supone balotas independientes, supuesto no verificado con el reglamento."
+   ],
+   "selector": null
+  }
+ }
+}

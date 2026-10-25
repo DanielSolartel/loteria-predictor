@@ -1,0 +1,147 @@
+/*
+ * Identidad visual de la consola HTMX (backend/app/static/css/styles.css):
+ * mismos colores de marca, tarjetas, bolitas y colores de ColorLoto. Bootstrap
+ * se sirve compilado desde dist/ (sin CDN).
+ */
+:root {
+  --brand: #4c3f91;
+  --brand-dark: #322a63;
+}
+
+body {
+  background-color: #f4f5f9;
+}
+
+.topbar {
+  background-color: var(--brand-dark);
+}
+
+.salto {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  z-index: 1080;
+}
+
+.salto:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+  background: #fff;
+  color: var(--brand-dark);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.contenido {
+  max-width: 1200px;
+  min-width: 0;
+}
+
+.stat-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.pestanas .nav-link {
+  color: #4a4a4a;
+}
+
+.pestanas .nav-link.active {
+  background-color: var(--brand);
+  color: #fff;
+}
+
+.btn-marca {
+  --bs-btn-bg: var(--brand);
+  --bs-btn-border-color: var(--brand);
+  --bs-btn-color: #fff;
+  --bs-btn-hover-bg: var(--brand-dark);
+  --bs-btn-hover-border-color: var(--brand-dark);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: var(--brand-dark);
+  --bs-btn-disabled-bg: var(--brand);
+  --bs-btn-disabled-border-color: var(--brand);
+}
+
+.color-swatch {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.color-amarillo { background-color: #f7d417; }
+.color-azul { background-color: #1d63e0; }
+.color-rojo { background-color: #e0291d; }
+.color-verde { background-color: #22a94b; }
+.color-blanco { background-color: #ffffff; }
+.color-negro { background-color: #1c1c1c; }
+
+.numero-bolita {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+  margin: 0 4px 4px 0;
+}
+
+.superbalota-bolita {
+  background-color: #d63384;
+}
+
+/* Tablas: el desplazamiento es interno a la region; la pagina no desborda. */
+.tabla-desplazable {
+  max-height: 32rem;
+  overflow: auto;
+  max-width: 100%;
+}
+
+.tabla-desplazable:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.tabla-desplazable table {
+  margin-bottom: 0;
+}
+
+.tabla-desplazable thead th {
+  position: sticky;
+  top: 0;
+  background-color: #fff;
+  z-index: 1;
+}
+
+.datos-adicionales {
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.arbol dt {
+  font-weight: 600;
+}
+
+.arbol dd {
+  margin-left: 1rem;
+  word-break: break-word;
+}
+
+.huella {
+  font-family: var(--bs-font-monospace);
+  word-break: break-all;
+}
+
+.aviso-experimental {
+  border-left: 4px solid #d63384;
+}

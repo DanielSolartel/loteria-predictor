@@ -1,0 +1,103 @@
+# Fase 9.1: validacion del frontend (React + TypeScript + Vite) y de su pasarela local.
+# Separado de la validacion de Python, que no cambia. Sin secretos ni despliegue: la
+# clave de la API del recorrido es un canario generado en cada ejecucion. Instalacion
+# reproducible con package-lock.json (npm ci, sin scripts de instalacion); Playwright
+# descarga solo Chromium, en la version fijada por el lock.
+name: Validacion frontend
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend - Node ${{ matrix.node }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22", "24"]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Versiones
+        run: node --version && npm --version
+      - name: Instalacion reproducible
+        run: npm ci --no-audit --no-fund --ignore-scripts
+      - name: Tipos generados frente al OpenAPI versionado
+        run: npm run tipos:comprobar
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Pruebas de componentes
+        run: npx vitest run --reporter=default --reporter=junit --outputFile.junit=../resultados-vitest-node${{ matrix.node }}.xml
+      - name: Compilacion
+        run: npm run build
+      - name: Canario de compilacion y escaneo de credenciales y almacenamiento
+        run: npm run canario
+
+  navegador:
+    name: Navegador - Chromium/Linux con API sintetica y pasarela
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Dependencias de Python fijadas
+        working-directory: backend
+        run: python -m pip install -r requirements.txt && python -m pip install httpx==0.28.1 && python -m pip check
+      - name: Dependencias del frontend y compilacion
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund --ignore-scripts && npm run build
+      - name: Chromium de Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Pruebas de la pasarela
+        working-directory: backend
+        run: python -m pytest -p no:cacheprovider -rsw tests/unit/pasarela --junitxml=../resultados-pasarela.xml
+      - name: Recorrido completo (360, 390 y 1280 px)
+        working-directory: backend
+        run: python -m tests.recorrido_fase9 --escenario normal --salida ../recorrido/normal
+      - name: Recorrido con cuota agotada (429)
+        working-directory: backend
+        run: python -m tests.recorrido_fase9 --escenario cuota --salida ../recorrido/cuota --anchos 1280
+      - name: Recorrido con la API caida
+        working-directory: backend
+        run: python -m tests.recorrido_fase9 --escenario api_caida --salida ../recorrido/api_caida
+      - name: Recorrido sin clave en la pasarela
+        working-directory: backend
+        run: python -m tests.recorrido_fase9 --escenario sin_clave --salida ../recorrido/sin_clave
+      - name: Recorrido con una clave que la API no reconoce
+        working-directory: backend
+        run: python -m tests.recorrido_fase9 --escenario clave_incorrecta --salida ../recorrido/clave_incorrecta
+      - name: Recorrido en modo desarrollo de Vite
+        working-directory: backend
+        run: python -m tests.recorrido_fase9 --escenario vite --salida ../recorrido/vite
+      - name: Resultados del recorrido
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recorrido-chromium-linux
+          path: |
+            recorrido/*/recorrido.json
+            recorrido/*/navegador/resultados.json
+            recorrido/*/navegador/capturas/
+            resultados-pasarela.xml
+          if-no-files-found: warn

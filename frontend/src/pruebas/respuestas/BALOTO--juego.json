@@ -1,0 +1,32 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO",
+ "estado": 200,
+ "cuerpo": {
+  "codigo": "BALOTO",
+  "nombre": "Baloto",
+  "rango_min": 1,
+  "rango_max": 43,
+  "cantidad_numeros": 5,
+  "tiene_superbalota": true,
+  "superbalota_min": 1,
+  "superbalota_max": 16,
+  "tiene_color": false,
+  "permite_repeticion": false,
+  "espacio_muestral": 15401568,
+  "dimensiones": {
+   "tipo": "standard_number_game",
+   "rango_numeros": [
+    1,
+    43
+   ],
+   "cantidad_numeros": 5,
+   "tiene_superbalota": true,
+   "rango_superbalota": [
+    1,
+    16
+   ],
+   "permite_repeticion": false
+  }
+ }
+}

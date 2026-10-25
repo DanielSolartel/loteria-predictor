@@ -1,0 +1,131 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/sorteos?por_pagina=3",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "COLORLOTO",
+  "pagina": 1,
+  "por_pagina": 3,
+  "total": 45,
+  "paginas": 15,
+  "sorteos": [
+   {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16",
+    "dia_semana": "lunes",
+    "numeros": [],
+    "superbalota": null,
+    "pares": [
+     {
+      "numero": 2,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     },
+     {
+      "numero": 5,
+      "color_codigo": "ROJO",
+      "color_nombre": "Rojo"
+     },
+     {
+      "numero": 4,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     },
+     {
+      "numero": 5,
+      "color_codigo": "AMARILLO",
+      "color_nombre": "Amarillo"
+     },
+     {
+      "numero": 2,
+      "color_codigo": "ROJO",
+      "color_nombre": "Rojo"
+     },
+     {
+      "numero": 1,
+      "color_codigo": "VERDE",
+      "color_nombre": "Verde"
+     }
+    ]
+   },
+   {
+    "numero_sorteo": 44,
+    "fecha": "2024-12-13",
+    "dia_semana": "viernes",
+    "numeros": [],
+    "superbalota": null,
+    "pares": [
+     {
+      "numero": 4,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     },
+     {
+      "numero": 2,
+      "color_codigo": "AZUL",
+      "color_nombre": "Azul"
+     },
+     {
+      "numero": 7,
+      "color_codigo": "ROJO",
+      "color_nombre": "Rojo"
+     },
+     {
+      "numero": 3,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     },
+     {
+      "numero": 1,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     },
+     {
+      "numero": 6,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     }
+    ]
+   },
+   {
+    "numero_sorteo": 43,
+    "fecha": "2024-12-10",
+    "dia_semana": "martes",
+    "numeros": [],
+    "superbalota": null,
+    "pares": [
+     {
+      "numero": 1,
+      "color_codigo": "ROJO",
+      "color_nombre": "Rojo"
+     },
+     {
+      "numero": 7,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     },
+     {
+      "numero": 4,
+      "color_codigo": "BLANCO",
+      "color_nombre": "Blanco"
+     },
+     {
+      "numero": 5,
+      "color_codigo": "NEGRO",
+      "color_nombre": "Negro"
+     },
+     {
+      "numero": 2,
+      "color_codigo": "AZUL",
+      "color_nombre": "Azul"
+     },
+     {
+      "numero": 5,
+      "color_codigo": "AMARILLO",
+      "color_nombre": "Amarillo"
+     }
+    ]
+   }
+  ]
+ }
+}

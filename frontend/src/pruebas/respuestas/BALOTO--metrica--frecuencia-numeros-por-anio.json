@@ -1,0 +1,460 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas/frecuencia-numeros-por-anio",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "BALOTO",
+   "nombre": "Baloto",
+   "tipo": "numeros",
+   "rango": [
+    1,
+    43
+   ],
+   "cantidad": 5,
+   "superbalota": [
+    1,
+    16
+   ],
+   "colores": [],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "BALOTO",
+   "nombre": "Baloto",
+   "reglas": {
+    "tipo": "numeros",
+    "rango": [
+     1,
+     43
+    ],
+    "cantidad_numeros": 5,
+    "superbalota": [
+     1,
+     16
+    ]
+   },
+   "total_sorteos": 60,
+   "total_sorteos_sin_corte": 60,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 2081,
+    "primera_fecha": "2021-01-02",
+    "ultimo_sorteo": 2140,
+    "ultima_fecha": "2021-06-28"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 2140,
+    "fecha": "2021-06-28"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 1945,
+    "mensaje": "El último sorteo cargado es de hace 1945 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "frecuencia-numeros-por-anio",
+   "titulo": "Frecuencia de números por año",
+   "grupo": "temporales",
+   "parametro": "anio",
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Periodo",
+     "valor": "2021",
+     "unidad": "",
+     "formato": "texto"
+    },
+    {
+     "etiqueta": "Sorteos en el periodo",
+     "valor": 60,
+     "unidad": "sorteos",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "% de la muestra",
+     "valor": 100.0,
+     "unidad": "% de sorteos",
+     "formato": "dec1"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "frecuencia",
+     "titulo": "Frecuencia en 2021 frente a toda la muestra",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Número",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones",
+       "etiqueta": "Sorteos con el valor (periodo)",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "pct_periodo",
+       "etiqueta": "% de sorteos del periodo",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "pct_muestra",
+       "etiqueta": "% de sorteos de la muestra",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "diferencia",
+       "etiqueta": "Diferencia",
+       "formato": "pp",
+       "unidad": "puntos porcentuales"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "apariciones": 3,
+       "pct_periodo": 5.0,
+       "pct_muestra": 5.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "2",
+       "apariciones": 5,
+       "pct_periodo": 8.333333333333332,
+       "pct_muestra": 8.333333333333332,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "3",
+       "apariciones": 4,
+       "pct_periodo": 6.666666666666667,
+       "pct_muestra": 6.666666666666667,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "4",
+       "apariciones": 4,
+       "pct_periodo": 6.666666666666667,
+       "pct_muestra": 6.666666666666667,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "5",
+       "apariciones": 7,
+       "pct_periodo": 11.666666666666666,
+       "pct_muestra": 11.666666666666666,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "6",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "7",
+       "apariciones": 7,
+       "pct_periodo": 11.666666666666666,
+       "pct_muestra": 11.666666666666666,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "8",
+       "apariciones": 4,
+       "pct_periodo": 6.666666666666667,
+       "pct_muestra": 6.666666666666667,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "9",
+       "apariciones": 10,
+       "pct_periodo": 16.666666666666664,
+       "pct_muestra": 16.666666666666664,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "10",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "11",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "12",
+       "apariciones": 5,
+       "pct_periodo": 8.333333333333332,
+       "pct_muestra": 8.333333333333332,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "13",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "14",
+       "apariciones": 10,
+       "pct_periodo": 16.666666666666664,
+       "pct_muestra": 16.666666666666664,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "15",
+       "apariciones": 5,
+       "pct_periodo": 8.333333333333332,
+       "pct_muestra": 8.333333333333332,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "16",
+       "apariciones": 13,
+       "pct_periodo": 21.666666666666668,
+       "pct_muestra": 21.666666666666668,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "17",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "18",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "19",
+       "apariciones": 10,
+       "pct_periodo": 16.666666666666664,
+       "pct_muestra": 16.666666666666664,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "20",
+       "apariciones": 13,
+       "pct_periodo": 21.666666666666668,
+       "pct_muestra": 21.666666666666668,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "21",
+       "apariciones": 5,
+       "pct_periodo": 8.333333333333332,
+       "pct_muestra": 8.333333333333332,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "22",
+       "apariciones": 7,
+       "pct_periodo": 11.666666666666666,
+       "pct_muestra": 11.666666666666666,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "23",
+       "apariciones": 9,
+       "pct_periodo": 15.0,
+       "pct_muestra": 15.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "24",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "25",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "26",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "27",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "28",
+       "apariciones": 10,
+       "pct_periodo": 16.666666666666664,
+       "pct_muestra": 16.666666666666664,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "29",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "30",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "31",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "32",
+       "apariciones": 5,
+       "pct_periodo": 8.333333333333332,
+       "pct_muestra": 8.333333333333332,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "33",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "34",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "35",
+       "apariciones": 11,
+       "pct_periodo": 18.333333333333332,
+       "pct_muestra": 18.333333333333332,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "36",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "37",
+       "apariciones": 10,
+       "pct_periodo": 16.666666666666664,
+       "pct_muestra": 16.666666666666664,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "38",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "39",
+       "apariciones": 5,
+       "pct_periodo": 8.333333333333332,
+       "pct_muestra": 8.333333333333332,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "40",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "41",
+       "apariciones": 2,
+       "pct_periodo": 3.3333333333333335,
+       "pct_muestra": 3.3333333333333335,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "42",
+       "apariciones": 8,
+       "pct_periodo": 13.333333333333334,
+       "pct_muestra": 13.333333333333334,
+       "diferencia": 0.0
+      },
+      {
+       "valor": "43",
+       "apariciones": 6,
+       "pct_periodo": 10.0,
+       "pct_muestra": 10.0,
+       "diferencia": 0.0
+      }
+     ],
+     "nota": null
+    }
+   ],
+   "grafica": {
+    "titulo": "% de sorteos en 2021",
+    "tabla": "frecuencia",
+    "etiqueta": "valor",
+    "valor": "pct_periodo",
+    "unidad": "% de sorteos",
+    "referencia": 11.627906976744185,
+    "etiqueta_referencia": "esperado bajo azar uniforme (5/43)"
+   },
+   "notas": [
+    "Sin repetición dentro del sorteo: «% de sorteos» es la proporción de sorteos que contienen el valor."
+   ],
+   "selector": {
+    "parametro": "anio",
+    "valor": "2021",
+    "etiqueta": "2021",
+    "opciones": [
+     {
+      "valor": "2021",
+      "etiqueta": "2021",
+      "sorteos": 60
+     }
+    ]
+   }
+  }
+ }
+}

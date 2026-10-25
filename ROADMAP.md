@@ -1,6 +1,6 @@
 # Roadmap del proyecto
 
-## Estado por fase (Fase 8 v2 validada localmente sobre PR #98, `f15f513`)
+## Estado por fase (Fase 8 integrada en PR #99, `615f383`; entrega 9.1 sobre esa base)
 
 Las fases 1–5, incluidas las cinco familias ML, están integradas en PR #95, base `2ac4d110b7d721e544f5588e9754230eef28184d` (árbol `37380b32906dbc0ded73112d8bbd4f1d50659993`, 691 archivos públicos). El cierre documental ML se aplicó y verificó en PowerShell 5.1, con índice conservado. Actions `39387775447` aprobó Linux completo y Windows selección para esa base. Son antecedentes de PR #95, no resultados de Fase 6.
 
@@ -19,14 +19,14 @@ Daniel ejecutó previamente ML v3.2 en Windows nativo: **7.015 aprobadas**, sin 
 | 5. Estadísticas descriptivas | Completa | Antecedentes Windows con histórico real y Actions conservados |
 | 6. Actualización y operación automática | Implementada y activada en Windows, v3.4 | Novedades automáticas de MiLoto y ColorLoto verificadas; integrada en PR #96 (Actions `39939306600`); limpieza histórica separada. [Detalle](backend/docs/fase6_validacion_operativa_2026-10-23.md) |
 | 7. Simulaciones | Implementada sobre `605afe8`: cuatro juegos, 100 a 1.000.000 de iteraciones, estadísticas fijadas de Fase 5, tabla `simulaciones` y web/API interna/comando; v2 más F7-VIS-01 | Validación local Linux y Windows, PostgreSQL aislado y Brave completados; integrada en PR #98 (merge `f15f513`) con checks de Linux y Windows aprobados. [Cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md) |
-| 8. API pública | v2 implementada sobre `f15f513`: entrada separada `/api/v1` de solo lectura, claves por huella, límites por proceso, OpenAPI y monitoreo; cuatro hallazgos de la v1 corregidos | Linux y Windows validados localmente: 92 pruebas y cuatro sondas nativas; PostgreSQL 16.14 aislado, criterios A–F y A2 cumplidos. Publicación manual y CI del PR pendientes; despliegue en Fase 10. [Cierre local](backend/docs/fase8_validacion_operador_2026-10-24.md) |
-| 9. Frontend React | Planificada | Posterior a API pública |
+| 8. API pública | v2 sobre `f15f513`: entrada separada `/api/v1` de solo lectura, claves por huella, límites por proceso, OpenAPI y monitoreo; cuatro hallazgos de la v1 corregidos | Linux y Windows validados localmente: 92 pruebas y cuatro sondas nativas; PostgreSQL 16.14 aislado, criterios A–F y A2 cumplidos. Integrada en PR #99 (merge `615f383`) con CI `40133227968` aprobado en Linux y Windows; despliegue en Fase 10. [Cierre local](backend/docs/fase8_validacion_operador_2026-10-24.md) |
+| 9. Frontend React | Entrega 9.1 sobre `615f383`: SPA React/TypeScript/Vite que consulta `/api/v1` a través de una pasarela local con la clave en el servidor | 9.1 v2 validada en Linux y Windows nativo con Brave; auditoría local aprobada. Pendientes publicación manual y checks del PR. La Fase 9 global sigue abierta. [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md) |
 | 10. Despliegue | Planificada | Seguridad, operación y disponibilidad pendientes |
 | 11. Aplicación personal | Planificada | Depende de Fase 6 y capacidades pertinentes de fases 8–10 |
 
-**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Fase 7 quedó integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`). La Fase 8 v2 está implementada y validada localmente sobre ese merge; faltan su publicación manual y el CI del PR. El siguiente trabajo de producto es Fase 9; las fases 9–11 conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
+**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Fase 7 quedó integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) y Fase 8 en PR #99 (`615f3832296d74a7acea44e5ecdf7dc84a11d70a`; CI `40133227968` aprobado en Linux y Windows). La entrega 9.1 se implementa sobre ese merge; la Fase 9 global sigue abierta y las fases 10–11 conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
 
-**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge fue la base exacta de Fase 7. PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) integró Fase 7 y es la base exacta de Fase 8. Daniel conserva la revisión y publicación manual de esta entrega.
+**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge fue la base exacta de Fase 7. PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) integró Fase 7 y fue la base exacta de Fase 8. PR #99 (merge `615f3832296d74a7acea44e5ecdf7dc84a11d70a`, implementación `b7ccd623006100e50bc307e020f525f570beb728`, CI `40133227968`) integró Fase 8 y es la base exacta de la 9.1. Daniel conserva la revisión y publicación manual de esta entrega.
 
 ### Historial de productos (Productos 1–6)
 
@@ -399,7 +399,7 @@ El cierre ML fue exclusivamente documental y se aplicó/verificó en PowerShell 
 **Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado vigente:** la implementación y validación local v3.4 y el cierre documental culminaron con PR #94. La ampliación ML v3.2 tiene suite completa nativa Windows y recorrido real completados con evidencia propia. El cierre ML se aplicó/verificó y quedó integrado en PR #95 con Actions aprobados; acreditación prospectiva separada.
 
 **Pendientes vigentes separados:**
-- Fase 8 (v2): validación nativa Windows, auditoría final, publicación manual (PR y checks) y despliegue (Fase 10) pendientes ([pasos](backend/docs/fase8_windows.md)). Fase 7 se integró en PR #98 ([cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md)); Fase 6, en PR #96;
+- Fase 9.1: validación nativa Windows, revisión en Brave, auditoría y publicación manual (PR y checks) pendientes ([pasos](backend/docs/fase9_windows.md)); la Fase 9 global sigue abierta. Fase 8 se integró en PR #99 (CI `40133227968`); Fase 7, en PR #98 ([cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md)); Fase 6, en PR #96;
 - limpieza verificable de tareas/raíces históricas, pendiente separado que no queda acreditado por las capturas de observación;
 - acreditación prospectiva: muestras suficientes por línea y tipo, por su cauce propio. Ninguna cifra retrospectiva acredita ventaja ni es un nivel de confianza.
 
@@ -4425,7 +4425,7 @@ AE-49–51 conservan su contrato (`2081..2705`, B = 10.000, revisión `0006`) y 
 
 ---
 
-## 🟡 Fase 8 — API pública (v2 validada en Linux y Windows; publicación manual y CI pendientes)
+## ✅ Fase 8 — API pública (v2 integrada en PR #99, merge `615f383`, con CI `40133227968` aprobado en Linux y Windows)
 
 **Objetivo:** exponer una API REST pública, documentada y con límites de uso, para que terceros puedan consumir estadísticas y predicciones.
 
@@ -4439,7 +4439,7 @@ AE-49–51 conservan su contrato (`2081..2705`, B = 10.000, revisión `0006`) y 
 
 **Criterios de finalización:** API pública con autenticación, límites de uso, y documentación completa, corriendo en un entorno con monitoreo básico.
 
-**Entrega de la Fase 8 (v2 sobre `f15f513`, validada localmente en Linux y Windows; publicación manual y CI pendientes; despliegue en Fase 10):**
+**Entrega de la Fase 8 (v2 sobre `f15f513`, validada localmente en Linux y Windows e integrada en PR #99 con CI aprobado; despliegue en Fase 10):**
 
 | Requisito | Entregado |
 |---|---|
@@ -4455,7 +4455,7 @@ AE-49–51 conservan su contrato (`2081..2705`, B = 10.000, revisión `0006`) y 
 - **F8-SEC-02:** el arranque soportado desactiva el registro de acceso de Uvicorn, que escribía una clave enviada por error en la URL. El registro propio sigue activo.
 - **F8-LIM-01:** el arranque soportado ignora `X-Forwarded-For`; desde un origen local ya no se elude la cuota por IP.
 - **F8-OBS-01:** el monitoreo y su registro agrupan los métodos no estándar en `OTRO`, que siguen recibiendo 405.
-- **Windows:** `tests/unit/api_publica` está en `tests/seleccion_windows.txt`; sus 92 pruebas y las cuatro sondas del auditor pasaron en Windows nativo. La selección amplia recolectó 3285 casos, incluidas las 92 de API; su ejecución completa queda pendiente para el CI del PR.
+- **Windows:** `tests/unit/api_publica` está en `tests/seleccion_windows.txt`; sus 92 pruebas y las cuatro sondas del auditor pasaron en Windows nativo. La selección amplia recolectó 3285 casos, incluidas las 92 de API; su ejecución completa la hizo el CI del PR #99 (`40133227968`, aprobado).
 
 **Cierre local auditado (24 de octubre de 2026):** PostgreSQL 16.14 aislado cumplió A–F y A2 con 1616 sorteos sintéticos; el contenedor de prueba y su temporal se eliminaron, y el contenedor operativo y los archivos protegidos se conservaron. [Registro y huellas](backend/docs/fase8_validacion_operador_2026-10-24.md).
 
@@ -4463,17 +4463,22 @@ Matriz, decisiones y limitaciones: [fase8_api_publica.md](backend/docs/fase8_api
 
 ---
 
-## 🔜 Fase 9 — Frontend React
+## 🟡 Fase 9 — Frontend React (entrega 9.1 v2 validada en Linux y Windows; Fase 9 global abierta)
 
-**Objetivo:** reemplazar o complementar el frontend Jinja2+HTMX por una aplicación React/Next.js más rica para visualización de estadísticas, modelos y predicciones.
+**Objetivo:** reemplazar o complementar el frontend Jinja2+HTMX por una aplicación React más rica para visualización de estadísticas, modelos y predicciones.
 
-**Dependencias:** Fase 8 (API pública).
+**Dependencias:** Fase 8 (API pública), integrada en PR #99.
 
-**Entregables:**
-- Aplicación React/Next.js consumiendo `api/rest/`.
-- Los casos de uso y el backend no deberían requerir ningún cambio — esa es la garantía explícita de la arquitectura actual (`api/web` y `api/rest` ya comparten los mismos casos de uso).
+**Entrega 9.1 (sobre `615f383`; decisión de Daniel: solo consultas de la API existente):**
+- `frontend/`: SPA React 19 + TypeScript + Vite, Bootstrap local y la identidad de la consola, que consulta `/api/v1` para los cuatro juegos: inicio, juegos y reglas; ficha y resumen con la frescura del backend; sorteos con filtros, paginación y detalle (superbalota y pares número-color); panel y las métricas que declara el índice (18/18/11/5); predicción guardada (historial, modelo, clasificación temporal, integridad, combinaciones, observado y frente a la base); simulaciones guardadas y su detalle; salud y estado de la API, separados de la automatización.
+- `backend/app/pasarela/`: proceso separado que sirve solo `dist/` y reenvía GET de las rutas del OpenAPI versionado con su propia clave; sin casos de uso, dominio ni base.
+- No cambia la API pública ni sus contratos. Consumo vía pasarela, no vía `api/rest/`.
 
-**Criterios de finalización:** paridad funcional con el dashboard HTMX actual, sin duplicar lógica de negocio en el frontend.
+**Validación local de la 9.1 v2:** auditoría Linux y Windows nativo completada con datos sintéticos. Daniel ejecutó 379 pruebas Vitest, 186 de pasarela y 92 de API pública, sin fallos, errores ni omisiones; seis recorridos con Brave instalado (297 visitas del normal y 12 de Vite), sonda del plazo y 14 controles de intercambio HTTP. El recorrido Vite se consolidó en una segunda corrida con un ajuste externo del supervisor para los colores del registro; el producto conservó sus 904 huellas. Publicación manual y checks de Python y frontend pendientes; Fase 9 global abierta. [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md).
+
+**Pendiente para otra decisión:** páginas de detalle de las métricas anteriores, modelos completos, explicaciones, fiabilidad, carteras, resultados avanzados, exportaciones, gráficas nuevas y acciones administrativas ([matriz de huecos](backend/docs/fase9_frontend.md#matriz-de-huecos-de-la-fase-9)).
+
+**Criterios de finalización:** el criterio final de la Fase 9 (paridad funcional con la consola HTMX u otro alcance) se decidirá después; la 9.1 no lo cierra. Sigue vigente: sin duplicar lógica de negocio en el frontend.
 
 ---
 

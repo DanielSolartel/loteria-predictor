@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos",
+ "estado": 401,
+ "cuerpo": {
+  "error": {
+   "codigo": "no_autenticado",
+   "mensaje": "Clave de API ausente o no válida",
+   "solicitud": "342e84f61ad34b7da63be96b13f5e7f0"
+  }
+ }
+}

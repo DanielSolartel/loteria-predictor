@@ -1,0 +1,893 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/panel",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "grupos": [
+   {
+    "clave": "frecuencias",
+    "titulo": "Frecuencias",
+    "metricas": [
+     {
+      "slug": "frecuencia-numeros",
+      "titulo": "Frecuencia de números",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuentes",
+        "valor": "4 (1.022), 5 (0.933), 1 (0.911) [balotas por sorteo]",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Menos frecuentes",
+        "valor": "3 (0.667), 7 (0.689), 2 (0.867) [balotas por sorteo]",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-superbalota",
+      "titulo": "Frecuencia de superbalota",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "frecuencia-observada-esperada",
+      "titulo": "Observada frente a esperada",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "En ColorLoto lo observado frente a lo esperado está en «Pruebas de uniformidad», con balotas (con repetición).",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "frecuencia-colores",
+      "titulo": "Frecuencia de colores",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuentes",
+        "valor": "ROJO (1.178), VERDE (1.111), BLANCO (1.089) [balotas por sorteo]",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-pares-numero-color",
+      "titulo": "Frecuencia de pares número-color",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuentes",
+        "valor": "6-ROJO (0.289), 5-VERDE (0.244), 4-BLANCO (0.222) [balotas por sorteo]",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "temporales",
+    "titulo": "Patrones temporales",
+    "metricas": [
+     {
+      "slug": "frecuencia-numeros-por-anio",
+      "titulo": "Frecuencia de números por año",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "2024",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 45,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 100.0,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-numeros-por-mes",
+      "titulo": "Frecuencia de números por mes",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "diciembre",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 6,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 13.333333333333334,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-numeros-por-dia-semana",
+      "titulo": "Frecuencia de números por día de la semana",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "lunes",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 7,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 15.555555555555555,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-superbalota-por-anio",
+      "titulo": "Frecuencia de superbalota por año",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "frecuencia-superbalota-por-mes",
+      "titulo": "Frecuencia de superbalota por mes",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "frecuencia-superbalota-por-dia-semana",
+      "titulo": "Frecuencia de superbalota por día de la semana",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "frecuencia-colores-por-anio",
+      "titulo": "Frecuencia de colores por año",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Último periodo de la muestra",
+        "valor": "2024, diciembre, lunes",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-colores-por-mes",
+      "titulo": "Frecuencia de colores por mes",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Último periodo de la muestra",
+        "valor": "2024, diciembre, lunes",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-colores-por-dia-semana",
+      "titulo": "Frecuencia de colores por día de la semana",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Último periodo de la muestra",
+        "valor": "2024, diciembre, lunes",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-pares-numero-color-por-anio",
+      "titulo": "Pares número-color por año",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Último periodo de la muestra",
+        "valor": "2024, diciembre, lunes",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-pares-numero-color-por-mes",
+      "titulo": "Pares número-color por mes",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Último periodo de la muestra",
+        "valor": "2024, diciembre, lunes",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-pares-numero-color-por-dia-semana",
+      "titulo": "Pares número-color por día de la semana",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Último periodo de la muestra",
+        "valor": "2024, diciembre, lunes",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "atrasos",
+    "titulo": "Atrasos e intervalos",
+    "metricas": [
+     {
+      "slug": "atrasos-numeros",
+      "titulo": "Atrasos de números",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Mayor atraso (3)",
+        "valor": 1,
+        "unidad": "sorteos de distancia",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Nunca observados",
+        "valor": 0,
+        "unidad": "valores",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "atrasos-superbalota",
+      "titulo": "Atrasos de superbalota",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "atrasos-colores",
+      "titulo": "Atrasos de colores",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Mayor atraso (NEGRO)",
+        "valor": 2,
+        "unidad": "sorteos de distancia",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Nunca observados",
+        "valor": 0,
+        "unidad": "valores",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "atrasos-pares-numero-color",
+      "titulo": "Atrasos de pares número-color",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Mayor atraso (6-AMARILLO)",
+        "valor": 23,
+        "unidad": "sorteos de distancia",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Nunca observados",
+        "valor": 0,
+        "unidad": "valores",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "intervalos-historicos-numeros",
+      "titulo": "Intervalos históricos de números",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Promedio de los intervalos medios",
+        "valor": 1.6536733529751306,
+        "unidad": "sorteos de distancia",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "intervalos-historicos-superbalota",
+      "titulo": "Intervalos históricos de superbalota",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "intervalos-historicos-colores",
+      "titulo": "Intervalos históricos de colores",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Promedio de los intervalos medios",
+        "valor": 1.5043908869937792,
+        "unidad": "sorteos de distancia",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "intervalos-historicos-pares-numero-color",
+      "titulo": "Intervalos históricos de pares número-color",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Promedio de los intervalos medios",
+        "valor": 6.80890022675737,
+        "unidad": "sorteos de distancia",
+        "formato": "dec1"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "distribuciones",
+    "titulo": "Distribuciones de la combinación",
+    "metricas": [
+     {
+      "slug": "distribucion-pares-impares",
+      "titulo": "Pares e impares",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuente (3 pares)",
+        "valor": 35.55555555555556,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-altos-bajos",
+      "titulo": "Bajos y altos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuente (3 bajos)",
+        "valor": 44.44444444444444,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-sumas",
+      "titulo": "Distribución de sumas",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Media de la suma",
+        "valor": 23.68888888888889,
+        "unidad": "suma",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-decenas",
+      "titulo": "Números por decena",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto usa números de 1 a 7: cabe en una sola franja de diez y la distribución por decenas no aporta información (ver «Bajos y altos»).",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "distribucion-pares-consecutivos",
+      "titulo": "Pares consecutivos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Sorteos con al menos un par consecutivo",
+        "valor": 95.55555555555556,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-racha-maxima",
+      "titulo": "Racha máxima de consecutivos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuente (2 de racha)",
+        "valor": 53.333333333333336,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-trios-consecutivos",
+      "titulo": "Tríos consecutivos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Sorteos con al menos un trío consecutivo",
+        "valor": 42.22222222222222,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "maximo-repeticion-color",
+      "titulo": "Máximo color repetido",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuente (2 balotas del mismo color)",
+        "valor": 66.66666666666666,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-conteo-color",
+      "titulo": "Conteo por color",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Colores en la paleta",
+        "valor": 6,
+        "unidad": "colores",
+        "formato": "entero"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "coocurrencia",
+    "titulo": "Coocurrencia y repetición",
+    "metricas": [
+     {
+      "slug": "repeticiones-entre-sorteos",
+      "titulo": "Repeticiones entre sorteos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Transiciones con al menos un número repetido",
+        "valor": 100.0,
+        "unidad": "% de transiciones",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "repeticion-superbalota",
+      "titulo": "Repetición de superbalota",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "coocurrencia-pares",
+      "titulo": "Coocurrencia de pares",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Par más frecuente (1-4)",
+        "valor": 22,
+        "unidad": "sorteos",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "coocurrencia-trios",
+      "titulo": "Coocurrencia de tríos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Trío más frecuente (1-4-5)",
+        "valor": 12,
+        "unidad": "sorteos",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "coocurrencia-pares-colores",
+      "titulo": "Coocurrencia de pares de colores",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Par más frecuente (AZUL-BLANCO)",
+        "valor": 22,
+        "unidad": "sorteos",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "coocurrencia-trios-colores",
+      "titulo": "Coocurrencia de tríos de colores",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Trío más frecuente (AMARILLO-BLANCO-NEGRO)",
+        "valor": 16,
+        "unidad": "sorteos",
+        "formato": "entero"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "ventana",
+    "titulo": "Comparación con una ventana reciente",
+    "metricas": [
+     {
+      "slug": "comparacion-frecuencia-numeros-por-ventana",
+      "titulo": "Números: ventana reciente",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Ventana por defecto",
+        "valor": "últimos 20 sorteos",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "comparacion-frecuencia-superbalota-por-ventana",
+      "titulo": "Superbalota: ventana reciente",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto no tiene superbalota: cada sorteo son 6 balotas número-color.",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "comparacion-frecuencia-colores-por-ventana",
+      "titulo": "Colores: ventana reciente",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Ventana por defecto",
+        "valor": "últimos 20 sorteos",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "comparacion-frecuencia-pares-numero-color-por-ventana",
+      "titulo": "Pares número-color: ventana reciente",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Ventana por defecto",
+        "valor": "últimos 20 sorteos",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "pruebas",
+    "titulo": "Pruebas y correlaciones",
+    "metricas": [
+     {
+      "slug": "pruebas-uniformidad",
+      "titulo": "Pruebas de uniformidad (chi-cuadrado)",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "p-value: Números (balotas)",
+        "valor": 0.4890990619735026,
+        "unidad": "chi², asintótico",
+        "formato": "p"
+       },
+       {
+        "etiqueta": "p-value: Colores (balotas)",
+        "valor": 0.39196289159963393,
+        "unidad": "chi², asintótico",
+        "formato": "p"
+       },
+       {
+        "etiqueta": "p-value: Pares número-color (balotas)",
+        "valor": 0.7253681405319692,
+        "unidad": "chi², asintótico",
+        "formato": "p"
+       }
+      ]
+     },
+     {
+      "slug": "independencia-pares",
+      "titulo": "Independencia de pares",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto permite repetir números dentro del sorteo y la probabilidad de coocurrencia bajo azar depende de una combinatoria con repetición no verificada con el reglamento (ver motor/independencia.py); su relación número-color se prueba en «Correlaciones».",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "independencia-trios",
+      "titulo": "Independencia de tríos",
+      "aplica": false,
+      "nueva": false,
+      "motivo": "ColorLoto permite repetir números dentro del sorteo y la probabilidad de coocurrencia bajo azar depende de una combinatoria con repetición no verificada con el reglamento (ver motor/independencia.py); su relación número-color se prueba en «Correlaciones».",
+      "estado": "no_aplica",
+      "indicadores": []
+     },
+     {
+      "slug": "correlaciones",
+      "titulo": "Correlaciones",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Pearson, suma frente a la del sorteo anterior",
+        "valor": -0.13978372618812443,
+        "unidad": "coeficiente",
+        "formato": "dec3"
+       },
+       {
+        "etiqueta": "Spearman, apariciones primera frente a segunda mitad",
+        "valor": -0.1284457725980754,
+        "unidad": "coeficiente",
+        "formato": "dec3"
+       },
+       {
+        "etiqueta": "Transiciones N → N+1",
+        "valor": 44,
+        "unidad": "transiciones",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "χ² número × color",
+        "valor": 23.593763282678278,
+        "unidad": "",
+        "formato": "dec2"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,19 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/sorteos/2140",
+ "estado": 200,
+ "cuerpo": {
+  "numero_sorteo": 2140,
+  "fecha": "2021-06-28",
+  "dia_semana": "lunes",
+  "numeros": [
+   6,
+   7,
+   15,
+   19,
+   30
+  ],
+  "superbalota": 5,
+  "pares": []
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/salud",
+ "estado": 200,
+ "cuerpo": {
+  "estado": "ok",
+  "api": "v1"
+ }
+}

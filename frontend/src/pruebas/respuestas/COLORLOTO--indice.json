@@ -1,0 +1,32 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "COLORLOTO",
+  "resumen": "/api/v1/juegos/COLORLOTO/estadisticas/resumen",
+  "panel": "/api/v1/juegos/COLORLOTO/estadisticas/panel",
+  "metricas": [
+   {
+    "metrica": "frecuencia-numeros-por-anio",
+    "parametro": "anio"
+   },
+   {
+    "metrica": "frecuencia-numeros-por-mes",
+    "parametro": "mes"
+   },
+   {
+    "metrica": "frecuencia-numeros-por-dia-semana",
+    "parametro": "dia_semana"
+   },
+   {
+    "metrica": "pruebas-uniformidad",
+    "parametro": null
+   },
+   {
+    "metrica": "correlaciones",
+    "parametro": null
+   }
+  ]
+ }
+}

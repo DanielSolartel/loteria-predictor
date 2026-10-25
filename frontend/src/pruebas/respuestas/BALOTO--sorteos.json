@@ -1,0 +1,56 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/sorteos?por_pagina=3",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "pagina": 1,
+  "por_pagina": 3,
+  "total": 60,
+  "paginas": 20,
+  "sorteos": [
+   {
+    "numero_sorteo": 2140,
+    "fecha": "2021-06-28",
+    "dia_semana": "lunes",
+    "numeros": [
+     6,
+     7,
+     15,
+     19,
+     30
+    ],
+    "superbalota": 5,
+    "pares": []
+   },
+   {
+    "numero_sorteo": 2139,
+    "fecha": "2021-06-25",
+    "dia_semana": "viernes",
+    "numeros": [
+     14,
+     19,
+     27,
+     31,
+     35
+    ],
+    "superbalota": 8,
+    "pares": []
+   },
+   {
+    "numero_sorteo": 2138,
+    "fecha": "2021-06-22",
+    "dia_semana": "martes",
+    "numeros": [
+     1,
+     6,
+     9,
+     17,
+     35
+    ],
+    "superbalota": 15,
+    "pares": []
+   }
+  ]
+ }
+}

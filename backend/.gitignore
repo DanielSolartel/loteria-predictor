@@ -18,3 +18,5 @@ storage/resultados/*
 storage/predicciones/*
 !storage/predicciones/.gitkeep
 storage/automatizacion/
+pasarela.privado.env
+*.privado.env

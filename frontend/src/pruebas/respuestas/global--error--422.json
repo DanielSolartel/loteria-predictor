@@ -1,0 +1,21 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/sorteos?pagina=0",
+ "estado": 422,
+ "cuerpo": {
+  "error": {
+   "codigo": "parametro_no_valido",
+   "mensaje": "Parámetro no válido",
+   "solicitud": "e287920248d14f93af7e8cadd0e9211c",
+   "detalles": [
+    {
+     "ubicacion": [
+      "query",
+      "pagina"
+     ],
+     "mensaje": "Input should be greater than or equal to 1"
+    }
+   ]
+  }
+ }
+}

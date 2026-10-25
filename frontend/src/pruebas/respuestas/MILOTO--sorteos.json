@@ -1,0 +1,56 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/sorteos?por_pagina=3",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "MILOTO",
+  "pagina": 1,
+  "por_pagina": 3,
+  "total": 40,
+  "paginas": 14,
+  "sorteos": [
+   {
+    "numero_sorteo": 569,
+    "fecha": "2021-04-29",
+    "dia_semana": "jueves",
+    "numeros": [
+     6,
+     14,
+     29,
+     34,
+     35
+    ],
+    "superbalota": null,
+    "pares": []
+   },
+   {
+    "numero_sorteo": 568,
+    "fecha": "2021-04-26",
+    "dia_semana": "lunes",
+    "numeros": [
+     11,
+     13,
+     17,
+     19,
+     23
+    ],
+    "superbalota": null,
+    "pares": []
+   },
+   {
+    "numero_sorteo": 567,
+    "fecha": "2021-04-23",
+    "dia_semana": "viernes",
+    "numeros": [
+     4,
+     9,
+     12,
+     23,
+     24
+    ],
+    "superbalota": null,
+    "pares": []
+   }
+  ]
+ }
+}

@@ -1,0 +1,830 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas/panel",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "BALOTO",
+   "nombre": "Baloto",
+   "tipo": "numeros",
+   "rango": [
+    1,
+    43
+   ],
+   "cantidad": 5,
+   "superbalota": [
+    1,
+    16
+   ],
+   "colores": [],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "BALOTO",
+   "nombre": "Baloto",
+   "reglas": {
+    "tipo": "numeros",
+    "rango": [
+     1,
+     43
+    ],
+    "cantidad_numeros": 5,
+    "superbalota": [
+     1,
+     16
+    ]
+   },
+   "total_sorteos": 60,
+   "total_sorteos_sin_corte": 60,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 2081,
+    "primera_fecha": "2021-01-02",
+    "ultimo_sorteo": 2140,
+    "ultima_fecha": "2021-06-28"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 2140,
+    "fecha": "2021-06-28"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 1945,
+    "mensaje": "El último sorteo cargado es de hace 1945 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "grupos": [
+   {
+    "clave": "frecuencias",
+    "titulo": "Frecuencias",
+    "metricas": [
+     {
+      "slug": "frecuencia-numeros",
+      "titulo": "Frecuencia de números",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuentes",
+        "valor": "16 (21.7), 20 (21.7), 35 (18.3), 9 (16.7), 14 (16.7) [% de sorteos]",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Menos frecuentes",
+        "valor": "41 (3.3), 1 (5.0), 3 (6.7), 4 (6.7), 8 (6.7) [% de sorteos]",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-superbalota",
+      "titulo": "Frecuencia de superbalota",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuentes",
+        "valor": "6 (11.7), 7 (11.7), 9 (10.0) [% de sorteos]",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Menos frecuentes",
+        "valor": "4 (1.7), 8 (1.7), 1 (3.3) [% de sorteos]",
+        "unidad": "",
+        "formato": "texto"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-observada-esperada",
+      "titulo": "Observada frente a esperada",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Mayor exceso sobre K/N (número 16)",
+        "valor": 10.03875968992248,
+        "unidad": "puntos porcentuales",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Mayor defecto bajo K/N (número 41)",
+        "valor": -8.294573643410851,
+        "unidad": "puntos porcentuales",
+        "formato": "dec1"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "temporales",
+    "titulo": "Patrones temporales",
+    "metricas": [
+     {
+      "slug": "frecuencia-numeros-por-anio",
+      "titulo": "Frecuencia de números por año",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "2021",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 60,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 100.0,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-numeros-por-mes",
+      "titulo": "Frecuencia de números por mes",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "junio",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 10,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 16.666666666666668,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-numeros-por-dia-semana",
+      "titulo": "Frecuencia de números por día de la semana",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "lunes",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 9,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 15.0,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-superbalota-por-anio",
+      "titulo": "Frecuencia de superbalota por año",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "2021",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 60,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 100.0,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-superbalota-por-mes",
+      "titulo": "Frecuencia de superbalota por mes",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "junio",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 10,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 16.666666666666668,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "frecuencia-superbalota-por-dia-semana",
+      "titulo": "Frecuencia de superbalota por día de la semana",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Periodo",
+        "valor": "lunes",
+        "unidad": "",
+        "formato": "texto"
+       },
+       {
+        "etiqueta": "Sorteos en el periodo",
+        "valor": 9,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "% de la muestra",
+        "valor": 15.0,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "atrasos",
+    "titulo": "Atrasos e intervalos",
+    "metricas": [
+     {
+      "slug": "atrasos-numeros",
+      "titulo": "Atrasos de números",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Mayor atraso (8)",
+        "valor": 25,
+        "unidad": "sorteos de distancia",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Nunca observados",
+        "valor": 0,
+        "unidad": "valores",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "atrasos-superbalota",
+      "titulo": "Atrasos de superbalota",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Sorteo de referencia",
+        "valor": 2140,
+        "unidad": "número de sorteo",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Mayor atraso",
+        "valor": 46,
+        "unidad": "sorteos de distancia",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Nunca observadas en la muestra",
+        "valor": 0,
+        "unidad": "valores",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "intervalos-historicos-numeros",
+      "titulo": "Intervalos históricos de números",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Intervalo promedio esperado bajo azar uniforme",
+        "valor": 8.6,
+        "unidad": "sorteos de distancia",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Mayor intervalo observado",
+        "valor": 42,
+        "unidad": "sorteos de distancia",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "intervalos-historicos-superbalota",
+      "titulo": "Intervalos históricos de superbalota",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Intervalo promedio esperado bajo azar uniforme",
+        "valor": 16.0,
+        "unidad": "sorteos de distancia",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Mayor intervalo observado",
+        "valor": 43,
+        "unidad": "sorteos de distancia",
+        "formato": "entero"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "distribuciones",
+    "titulo": "Distribuciones de la combinación",
+    "metricas": [
+     {
+      "slug": "distribucion-pares-impares",
+      "titulo": "Pares e impares",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuente (2 pares)",
+        "valor": 28.333333333333332,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-altos-bajos",
+      "titulo": "Bajos y altos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuente (2 bajos)",
+        "valor": 40.0,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-sumas",
+      "titulo": "Distribución de sumas",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Media",
+        "valor": 111.9,
+        "unidad": "suma",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Mediana",
+        "valor": 112.5,
+        "unidad": "suma",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Desviación estándar",
+        "valor": 21.476886801086106,
+        "unidad": "suma",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Media esperada bajo azar uniforme",
+        "valor": 110.0,
+        "unidad": "suma",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-decenas",
+      "titulo": "Números por decena",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Números extraídos",
+        "valor": 300,
+        "unidad": "números",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Mayor diferencia con el esperado (franja 11-20)",
+        "valor": 4.744186046511629,
+        "unidad": "puntos porcentuales",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-pares-consecutivos",
+      "titulo": "Pares consecutivos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Sorteos con al menos un par consecutivo",
+        "valor": 45.0,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-racha-maxima",
+      "titulo": "Racha máxima de consecutivos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Más frecuente (1 de racha)",
+        "valor": 55.00000000000001,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "distribucion-trios-consecutivos",
+      "titulo": "Tríos consecutivos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Sorteos con al menos un trío consecutivo",
+        "valor": 1.6666666666666667,
+        "unidad": "% de sorteos",
+        "formato": "dec1"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "coocurrencia",
+    "titulo": "Coocurrencia y repetición",
+    "metricas": [
+     {
+      "slug": "repeticiones-entre-sorteos",
+      "titulo": "Repeticiones entre sorteos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Transiciones con al menos un número repetido",
+        "valor": 52.54237288135593,
+        "unidad": "% de transiciones",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "repeticion-superbalota",
+      "titulo": "Repetición de superbalota",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Igual a la del sorteo anterior",
+        "valor": 10.16949152542373,
+        "unidad": "% de transiciones",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Esperado bajo azar uniforme",
+        "valor": 6.25,
+        "unidad": "% de transiciones",
+        "formato": "dec2"
+       },
+       {
+        "etiqueta": "Transiciones válidas (N → N+1)",
+        "valor": 59,
+        "unidad": "transiciones",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Excluidas por hueco de numeración",
+        "valor": 0,
+        "unidad": "transiciones",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "coocurrencia-pares",
+      "titulo": "Coocurrencia de pares",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Par más frecuente (5-43)",
+        "valor": 4,
+        "unidad": "sorteos",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "coocurrencia-trios",
+      "titulo": "Coocurrencia de tríos",
+      "aplica": true,
+      "nueva": false,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Trío más frecuente (2-30-33)",
+        "valor": 2,
+        "unidad": "sorteos",
+        "formato": "entero"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "ventana",
+    "titulo": "Comparación con una ventana reciente",
+    "metricas": [
+     {
+      "slug": "comparacion-frecuencia-numeros-por-ventana",
+      "titulo": "Números: ventana reciente",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Sorteos en la ventana",
+        "valor": 20,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Mayor subida (número 14)",
+        "valor": 13.333333333333334,
+        "unidad": "puntos porcentuales",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Mayor bajada (número 37)",
+        "valor": -11.666666666666666,
+        "unidad": "puntos porcentuales",
+        "formato": "dec1"
+       }
+      ]
+     },
+     {
+      "slug": "comparacion-frecuencia-superbalota-por-ventana",
+      "titulo": "Superbalota: ventana reciente",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Sorteos en la ventana",
+        "valor": 20,
+        "unidad": "sorteos",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Mayor subida (superbalota 15)",
+        "valor": 10.0,
+        "unidad": "puntos porcentuales",
+        "formato": "dec1"
+       },
+       {
+        "etiqueta": "Mayor bajada (superbalota 9)",
+        "valor": -10.0,
+        "unidad": "puntos porcentuales",
+        "formato": "dec1"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "clave": "pruebas",
+    "titulo": "Pruebas y correlaciones",
+    "metricas": [
+     {
+      "slug": "pruebas-uniformidad",
+      "titulo": "Pruebas de uniformidad (chi-cuadrado)",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "p-value: Números principales",
+        "valor": 0.583810126524725,
+        "unidad": "chi², asintótico",
+        "formato": "p"
+       },
+       {
+        "etiqueta": "p-value: Superbalota",
+        "valor": 0.24222048575203634,
+        "unidad": "chi², asintótico",
+        "formato": "p"
+       }
+      ]
+     },
+     {
+      "slug": "independencia-pares",
+      "titulo": "Independencia de pares",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Pruebas (pares posibles)",
+        "valor": 903,
+        "unidad": "pruebas",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Coocurrencias esperadas por par",
+        "valor": 0.6644518272425249,
+        "unidad": "sorteos",
+        "formato": "dec2"
+       },
+       {
+        "etiqueta": "p-value mínimo",
+        "valor": 0.004479441218391923,
+        "unidad": "",
+        "formato": "p"
+       },
+       {
+        "etiqueta": "Con p ajustado (BH) < 0.05",
+        "valor": 0,
+        "unidad": "pruebas",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "independencia-trios",
+      "titulo": "Independencia de tríos",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Pruebas (tríos posibles)",
+        "valor": 12341,
+        "unidad": "pruebas",
+        "formato": "entero"
+       },
+       {
+        "etiqueta": "Coocurrencias esperadas por trío",
+        "valor": 0.04861842638359939,
+        "unidad": "sorteos",
+        "formato": "dec2"
+       },
+       {
+        "etiqueta": "p-value mínimo",
+        "valor": 0.0011263876824872592,
+        "unidad": "",
+        "formato": "p"
+       },
+       {
+        "etiqueta": "Con p ajustado (BH) < 0.05",
+        "valor": 0,
+        "unidad": "pruebas",
+        "formato": "entero"
+       }
+      ]
+     },
+     {
+      "slug": "correlaciones",
+      "titulo": "Correlaciones",
+      "aplica": true,
+      "nueva": true,
+      "motivo": null,
+      "estado": "ok",
+      "indicadores": [
+       {
+        "etiqueta": "Pearson, suma frente a la del sorteo anterior",
+        "valor": -0.06513752718191579,
+        "unidad": "coeficiente",
+        "formato": "dec3"
+       },
+       {
+        "etiqueta": "Spearman, apariciones primera frente a segunda mitad",
+        "valor": -0.00016205195754661773,
+        "unidad": "coeficiente",
+        "formato": "dec3"
+       },
+       {
+        "etiqueta": "Transiciones N → N+1",
+        "valor": 59,
+        "unidad": "transiciones",
+        "formato": "entero"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

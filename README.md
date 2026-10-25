@@ -25,14 +25,14 @@ Daniel ejecutó previamente ML v3.2 en Windows nativo: **7.015 aprobadas**, sin 
 | 5. Estadísticas descriptivas | Completa | Antecedentes Windows con histórico real y Actions conservados |
 | 6. Actualización y operación automática | Implementada y activada en Windows, v3.4 | Novedades automáticas de MiLoto y ColorLoto verificadas; integrada en PR #96 (Actions `39939306600`); limpieza histórica separada. [Detalle](backend/docs/fase6_validacion_operativa_2026-10-23.md) |
 | 7. Simulaciones | Implementada sobre `605afe8`: cuatro juegos, 100 a 1.000.000 de iteraciones, estadísticas fijadas de Fase 5, tabla `simulaciones` y web/API interna/comando; v2 más F7-VIS-01 | Validación local Linux y Windows, PostgreSQL aislado y Brave completados; integrada en PR #98 (merge `f15f513`) con checks de Linux y Windows aprobados. [Cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md) |
-| 8. API pública | v2 implementada en Linux sobre `f15f513`: entrada separada `/api/v1` de solo lectura (juegos, sorteos, estadísticas, predicciones y simulaciones guardadas), claves de API por huella, límite por proceso con 429 y `Retry-After`, OpenAPI y monitoreo; corrige los cuatro hallazgos de la auditoría de la v1 | Pruebas en Linux y PostgreSQL de pruebas aislado; validación nativa Windows, auditoría final, publicación manual y despliegue pendientes. [Detalle](backend/docs/fase8_api_publica.md) |
-| 9. Frontend React | Planificada | Posterior a API pública |
+| 8. API pública | v2: entrada separada `/api/v1` de solo lectura (juegos, sorteos, estadísticas, predicciones y simulaciones guardadas), claves de API por huella, límite por proceso con 429 y `Retry-After`, OpenAPI y monitoreo | Validada en Linux, Windows y PostgreSQL aislado; integrada en PR #99 (merge `615f383`) con CI `40133227968` aprobado en Linux y Windows; despliegue en Fase 10. [Detalle](backend/docs/fase8_api_publica.md) |
+| 9. Frontend React | Entrega 9.1 implementada sobre `615f383`: SPA React/TypeScript/Vite de consulta de `/api/v1` a través de una pasarela local que guarda la clave en el servidor | 9.1 v2 validada en Linux y Windows nativo con Brave; auditoría local aprobada. Pendientes publicación manual y checks del PR. La Fase 9 global sigue abierta. [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md) |
 | 10. Despliegue | Planificada | Seguridad, operación y disponibilidad pendientes |
 | 11. Aplicación personal | Planificada | Depende de Fase 6 y capacidades pertinentes de fases 8–10 |
 
-**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Fase 7 quedó integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`). Esta entrega (v2) implementa la Fase 8 sobre ese merge; las fases 9–11 solo conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
+**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Fase 7 quedó integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) y Fase 8 en PR #99 (`615f3832296d74a7acea44e5ecdf7dc84a11d70a`; CI `40133227968`). Esta entrega implementa la 9.1 sobre ese merge; la Fase 9 global sigue abierta y las fases 10–11 conservan su planificación. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
 
-**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge fue la base exacta de Fase 7. PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) integró Fase 7 y es la base exacta de Fase 8. Daniel conserva la revisión y publicación manual de esta entrega.
+**Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge fue la base exacta de Fase 7. PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) integró Fase 7 y fue la base exacta de Fase 8. PR #99 (merge `615f3832296d74a7acea44e5ecdf7dc84a11d70a`, implementación `b7ccd623006100e50bc307e020f525f570beb728`, CI `40133227968` aprobado en Linux y Windows) integró Fase 8 y es la base exacta de la 9.1. Daniel conserva la revisión y publicación manual de esta entrega.
 
 **Historial de productos**, vinculados a sus fases (detalle al final de este documento y en el ROADMAP):
 
@@ -416,7 +416,7 @@ API de solo lectura: `GET /api/predicciones`, `GET /api/predicciones/{codigo}[?c
 **Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado vigente:** implementación, validación local v3.4 y cierre documental fusionados en PR #94. La ampliación ML v3.2 tiene suite completa nativa Windows y recorrido real completados con evidencia propia. El cierre ML se aplicó/verificó y quedó integrado en PR #95 con Actions aprobados; acreditación prospectiva separada.
 
 **Pendientes vigentes separados:**
-- Fase 8 (v2): validación nativa Windows, auditoría final, publicación manual (PR y checks) y despliegue (Fase 10) pendientes ([pasos](backend/docs/fase8_windows.md)). Fase 7 se integró en PR #98 ([cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md)); Fase 6, en PR #96;
+- Fase 9.1: validación nativa Windows, revisión en Brave, auditoría y publicación manual (PR y checks) pendientes ([pasos](backend/docs/fase9_windows.md)); la Fase 9 global sigue abierta. Fase 8 se integró en PR #99 (CI `40133227968`); Fase 7, en PR #98 ([cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md)); Fase 6, en PR #96;
 - limpieza verificable de tareas/raíces históricas, pendiente separado que no queda acreditado por las capturas de observación;
 - acreditación prospectiva: muestras suficientes por línea y tipo, por su cauce propio.
 
@@ -459,7 +459,7 @@ La consulta de ejecución relee el registro si desaparece el cerrojo vivo, para 
 
 ## API pública (Fase 8)
 
-**Estado:** v2 sobre `f15f513b431dd9a5dc3a2fb148a63a82a11405b5` (merge del PR #98), implementada y validada localmente en Linux y Windows. El 24 de octubre de 2026 se auditaron en Windows 92 pruebas de la API, cuatro sondas y PostgreSQL 16.14 aislado con datos sintéticos; se conservaron el código, los archivos privados y el contenedor operativo. La v2 corrige los cuatro hallazgos de la auditoría de la v1 y añade `tests/unit/api_publica` a la selección de Windows. Quedan pendientes la publicación manual y el CI del PR; el despliegue corresponde a Fase 10. [Cierre y evidencias](backend/docs/fase8_validacion_operador_2026-10-24.md). Diseño y limitaciones: [backend/docs/fase8_api_publica.md](backend/docs/fase8_api_publica.md). Protocolo nativo: [backend/docs/fase8_windows.md](backend/docs/fase8_windows.md).
+**Estado:** v2 sobre `f15f513b431dd9a5dc3a2fb148a63a82a11405b5` (merge del PR #98), validada localmente en Linux y Windows e **integrada en PR #99** (merge `615f3832296d74a7acea44e5ecdf7dc84a11d70a`) con el CI `40133227968` aprobado en Linux y Windows. El 24 de octubre de 2026 se auditaron en Windows 92 pruebas de la API, cuatro sondas y PostgreSQL 16.14 aislado con datos sintéticos; se conservaron el código, los archivos privados y el contenedor operativo. La v2 corrige los cuatro hallazgos de la auditoría de la v1 y añade `tests/unit/api_publica` a la selección de Windows. El despliegue corresponde a Fase 10. [Cierre y evidencias](backend/docs/fase8_validacion_operador_2026-10-24.md). Diseño y limitaciones: [backend/docs/fase8_api_publica.md](backend/docs/fase8_api_publica.md). Protocolo nativo: [backend/docs/fase8_windows.md](backend/docs/fase8_windows.md).
 
 **Arranque soportado** (desde `backend/`): `uvicorn app.api.publica.aplicacion:app --host 127.0.0.1 --port 8010 --no-access-log --no-proxy-headers`. Sin esas dos opciones, Uvicorn escribiría las URL con su consulta en su registro de acceso y reescribiría la IP del cliente con `X-Forwarded-For`.
 
@@ -470,7 +470,20 @@ La consulta de ejecución relee el registro si desaparece el cerrojo vivo, para 
 - **Límites:** cubeta de fichas **por proceso** (no global entre trabajadores), por clave y por IP, con memoria acotada; 429 con `Retry-After`.
 - **Contratos:** OpenAPI/Swagger en `/api/v1/docs` con autenticación, ejemplos y un formato de error único que no expone claves, rutas, trazas ni detalles de la base. Un fallo inesperado se convierte dentro de la API en un 500 con `X-Request-ID` y `no-store`, sin llegar al servidor con su traza.
 - **Monitoreo:** `/api/v1/estado` (solicitudes, latencia, límites y base) y `/api/v1/salud` sin clave, agrupados por plantilla de ruta y método estándar (los demás, como `OTRO`). CORS deshabilitado salvo lista explícita.
-- **Frontend:** el futuro frontend no incorporará claves en su código.
+- **Frontend:** la 9.1 consume `/api/v1` a través de la pasarela local; la clave no llega al navegador ([Fase 9.1](#frontend-de-consulta-fase-91)).
+
+## Frontend de consulta (Fase 9.1)
+
+**Estado:** implementada sobre `615f383` (PR #99) y validada **solo en Linux** con Chromium de Playwright y datos sintéticos (tipos, pruebas de componentes, compilación, canario, pruebas de la pasarela y recorrido HTTP completo a 360, 390 y 1280 px). Windows, Brave, auditoría y publicación manual pendientes; la Fase 9 global sigue abierta con su [matriz de huecos](backend/docs/fase9_frontend.md#matriz-de-huecos-de-la-fase-9). Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+
+**Qué hace.** `frontend/` es una SPA React + TypeScript + Vite (Bootstrap local, identidad visual de la consola) para consultar juegos y reglas, ficha y resumen con la frescura que informa el backend, sorteos con filtros y detalle, panel y métricas que declara el índice, predicción guardada y simulaciones guardadas, y salud y estado de la API. `backend/app/pasarela/` es un proceso separado que sirve la SPA compilada y reenvía solo GET de las rutas del OpenAPI versionado a la API pública con su propia clave; no usa casos de uso, dominio ni base. La consola HTMX sigue siendo la aplicación de escritura y ejecución.
+
+**Arranque local** (desde `backend/`, tras `npm ci` y `npm run build` en `frontend/`):
+- API: `uvicorn app.api.publica.aplicacion:app --host 127.0.0.1 --port 8010 --no-access-log --no-proxy-headers`
+- Pasarela: `uvicorn app.pasarela.aplicacion:app --host 127.0.0.1 --port 8020 --no-access-log --no-proxy-headers` (clave en `PASARELA_CLAVE_API` o en `backend/pasarela.privado.env`, fuera de Git)
+- Abrir `http://127.0.0.1:8020/`.
+
+Diseño, controles, límites y verificación: [backend/docs/fase9_frontend.md](backend/docs/fase9_frontend.md). Protocolo nativo: [backend/docs/fase9_windows.md](backend/docs/fase9_windows.md). Órdenes del frontend: [frontend/README.md](frontend/README.md).
 
 ---
 
@@ -496,7 +509,7 @@ Detalle completo con diagramas Mermaid en [ARCHITECTURE.md](./ARCHITECTURE.md).
 | Backend | Python 3.11+, FastAPI |
 | Base de datos | PostgreSQL 16 |
 | ORM / Migraciones | SQLAlchemy 2.x + Alembic |
-| Frontend | Jinja2 + HTMX + Bootstrap 5 |
+| Frontend | Jinja2 + HTMX + Bootstrap 5 (consola); consulta 9.1: React 19 + TypeScript + Vite, Bootstrap local |
 | Scraping | requests + BeautifulSoup4 |
 | Tests | pytest |
 | Contenedores | Docker Compose (PostgreSQL) |

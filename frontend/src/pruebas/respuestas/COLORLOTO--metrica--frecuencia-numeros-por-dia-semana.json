@@ -1,0 +1,248 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/frecuencia-numeros-por-dia-semana",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "frecuencia-numeros-por-dia-semana",
+   "titulo": "Frecuencia de números por día de la semana",
+   "grupo": "temporales",
+   "parametro": "dia_semana",
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Periodo",
+     "valor": "lunes",
+     "unidad": "",
+     "formato": "texto"
+    },
+    {
+     "etiqueta": "Sorteos en el periodo",
+     "valor": 7,
+     "unidad": "sorteos",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "% de la muestra",
+     "valor": 15.555555555555555,
+     "unidad": "% de sorteos",
+     "formato": "dec1"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "frecuencia",
+     "titulo": "Frecuencia en lunes frente a toda la muestra",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Número",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones",
+       "etiqueta": "Balotas en el periodo",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "por_sorteo",
+       "etiqueta": "Balotas por sorteo (periodo)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "por_sorteo_muestra",
+       "etiqueta": "Balotas por sorteo (muestra)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "diferencia",
+       "etiqueta": "Diferencia",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "apariciones": 7,
+       "por_sorteo": 1.0,
+       "por_sorteo_muestra": 0.9111111111111111,
+       "diferencia": 0.0888888888888889
+      },
+      {
+       "valor": "2",
+       "apariciones": 7,
+       "por_sorteo": 1.0,
+       "por_sorteo_muestra": 0.8666666666666667,
+       "diferencia": 0.1333333333333333
+      },
+      {
+       "valor": "3",
+       "apariciones": 4,
+       "por_sorteo": 0.5714285714285714,
+       "por_sorteo_muestra": 0.6666666666666666,
+       "diferencia": -0.09523809523809523
+      },
+      {
+       "valor": "4",
+       "apariciones": 7,
+       "por_sorteo": 1.0,
+       "por_sorteo_muestra": 1.0222222222222221,
+       "diferencia": -0.022222222222222143
+      },
+      {
+       "valor": "5",
+       "apariciones": 8,
+       "por_sorteo": 1.1428571428571428,
+       "por_sorteo_muestra": 0.9333333333333333,
+       "diferencia": 0.20952380952380945
+      },
+      {
+       "valor": "6",
+       "apariciones": 3,
+       "por_sorteo": 0.42857142857142855,
+       "por_sorteo_muestra": 0.9111111111111111,
+       "diferencia": -0.48253968253968255
+      },
+      {
+       "valor": "7",
+       "apariciones": 6,
+       "por_sorteo": 0.8571428571428571,
+       "por_sorteo_muestra": 0.6888888888888889,
+       "diferencia": 0.1682539682539682
+      }
+     ],
+     "nota": null
+    }
+   ],
+   "grafica": {
+    "titulo": "Balotas por sorteo en lunes",
+    "tabla": "frecuencia",
+    "etiqueta": "valor",
+    "valor": "por_sorteo",
+    "unidad": "balotas por sorteo",
+    "referencia": 0.8571428571428571,
+    "etiqueta_referencia": "esperado bajo azar uniforme (6/7)"
+   },
+   "notas": [
+    "Cada balota cuenta (con repetición): «balotas por sorteo» es un promedio que puede superar 1; no es una proporción de sorteos.",
+    "Solo 7 sorteo(s) en el periodo: con tan pocos sorteos las diferencias son esperables por azar."
+   ],
+   "selector": {
+    "parametro": "dia_semana",
+    "valor": "lunes",
+    "etiqueta": "lunes",
+    "opciones": [
+     {
+      "valor": "lunes",
+      "etiqueta": "lunes",
+      "sorteos": 7
+     },
+     {
+      "valor": "martes",
+      "etiqueta": "martes",
+      "sorteos": 7
+     },
+     {
+      "valor": "miercoles",
+      "etiqueta": "miércoles",
+      "sorteos": 6
+     },
+     {
+      "valor": "jueves",
+      "etiqueta": "jueves",
+      "sorteos": 6
+     },
+     {
+      "valor": "viernes",
+      "etiqueta": "viernes",
+      "sorteos": 7
+     },
+     {
+      "valor": "sabado",
+      "etiqueta": "sábado",
+      "sorteos": 6
+     },
+     {
+      "valor": "domingo",
+      "etiqueta": "domingo",
+      "sorteos": 6
+     }
+    ]
+   }
+  }
+ }
+}

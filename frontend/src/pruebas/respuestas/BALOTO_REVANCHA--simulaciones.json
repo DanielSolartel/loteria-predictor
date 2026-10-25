@@ -1,0 +1,11 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO_REVANCHA/simulaciones",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO_REVANCHA",
+  "limite": 20,
+  "estado_de_uso": "experimental_no_acreditado",
+  "simulaciones": []
+ }
+}

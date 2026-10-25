@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/QUINELA",
+ "estado": 404,
+ "cuerpo": {
+  "error": {
+   "codigo": "no_encontrado",
+   "mensaje": "Juego no admitido; admitidos: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+   "solicitud": "54c37a345d8148d19307d8de466a85a6"
+  }
+ }
+}

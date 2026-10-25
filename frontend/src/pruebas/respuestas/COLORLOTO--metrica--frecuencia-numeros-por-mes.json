@@ -1,0 +1,239 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/frecuencia-numeros-por-mes",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "frecuencia-numeros-por-mes",
+   "titulo": "Frecuencia de números por mes",
+   "grupo": "temporales",
+   "parametro": "mes",
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Periodo",
+     "valor": "diciembre",
+     "unidad": "",
+     "formato": "texto"
+    },
+    {
+     "etiqueta": "Sorteos en el periodo",
+     "valor": 6,
+     "unidad": "sorteos",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "% de la muestra",
+     "valor": 13.333333333333334,
+     "unidad": "% de sorteos",
+     "formato": "dec1"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "frecuencia",
+     "titulo": "Frecuencia en diciembre frente a toda la muestra",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Número",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones",
+       "etiqueta": "Balotas en el periodo",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "por_sorteo",
+       "etiqueta": "Balotas por sorteo (periodo)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "por_sorteo_muestra",
+       "etiqueta": "Balotas por sorteo (muestra)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "diferencia",
+       "etiqueta": "Diferencia",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "apariciones": 6,
+       "por_sorteo": 1.0,
+       "por_sorteo_muestra": 0.9111111111111111,
+       "diferencia": 0.0888888888888889
+      },
+      {
+       "valor": "2",
+       "apariciones": 6,
+       "por_sorteo": 1.0,
+       "por_sorteo_muestra": 0.8666666666666667,
+       "diferencia": 0.1333333333333333
+      },
+      {
+       "valor": "3",
+       "apariciones": 3,
+       "por_sorteo": 0.5,
+       "por_sorteo_muestra": 0.6666666666666666,
+       "diferencia": -0.16666666666666663
+      },
+      {
+       "valor": "4",
+       "apariciones": 8,
+       "por_sorteo": 1.3333333333333333,
+       "por_sorteo_muestra": 1.0222222222222221,
+       "diferencia": 0.3111111111111111
+      },
+      {
+       "valor": "5",
+       "apariciones": 8,
+       "por_sorteo": 1.3333333333333333,
+       "por_sorteo_muestra": 0.9333333333333333,
+       "diferencia": 0.3999999999999999
+      },
+      {
+       "valor": "6",
+       "apariciones": 1,
+       "por_sorteo": 0.16666666666666666,
+       "por_sorteo_muestra": 0.9111111111111111,
+       "diferencia": -0.7444444444444445
+      },
+      {
+       "valor": "7",
+       "apariciones": 4,
+       "por_sorteo": 0.6666666666666666,
+       "por_sorteo_muestra": 0.6888888888888889,
+       "diferencia": -0.022222222222222254
+      }
+     ],
+     "nota": null
+    }
+   ],
+   "grafica": {
+    "titulo": "Balotas por sorteo en diciembre",
+    "tabla": "frecuencia",
+    "etiqueta": "valor",
+    "valor": "por_sorteo",
+    "unidad": "balotas por sorteo",
+    "referencia": 0.8571428571428571,
+    "etiqueta_referencia": "esperado bajo azar uniforme (6/7)"
+   },
+   "notas": [
+    "Cada balota cuenta (con repetición): «balotas por sorteo» es un promedio que puede superar 1; no es una proporción de sorteos.",
+    "El mes es calendario y agrega todos los años de la muestra (marzo de 2024 y de 2025 juntos).",
+    "Solo 6 sorteo(s) en el periodo: con tan pocos sorteos las diferencias son esperables por azar."
+   ],
+   "selector": {
+    "parametro": "mes",
+    "valor": "12",
+    "etiqueta": "diciembre",
+    "opciones": [
+     {
+      "valor": "8",
+      "etiqueta": "agosto",
+      "sorteos": 9
+     },
+     {
+      "valor": "9",
+      "etiqueta": "septiembre",
+      "sorteos": 10
+     },
+     {
+      "valor": "10",
+      "etiqueta": "octubre",
+      "sorteos": 10
+     },
+     {
+      "valor": "11",
+      "etiqueta": "noviembre",
+      "sorteos": 10
+     },
+     {
+      "valor": "12",
+      "etiqueta": "diciembre",
+      "sorteos": 6
+     }
+    ]
+   }
+  }
+ }
+}

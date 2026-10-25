@@ -1,0 +1,57 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos",
+ "estado": 200,
+ "cuerpo": {
+  "juegos": [
+   {
+    "codigo": "BALOTO",
+    "nombre": "Baloto",
+    "rango_min": 1,
+    "rango_max": 43,
+    "cantidad_numeros": 5,
+    "tiene_superbalota": true,
+    "superbalota_min": 1,
+    "superbalota_max": 16,
+    "tiene_color": false,
+    "permite_repeticion": false
+   },
+   {
+    "codigo": "BALOTO_REVANCHA",
+    "nombre": "Baloto Revancha",
+    "rango_min": 1,
+    "rango_max": 43,
+    "cantidad_numeros": 5,
+    "tiene_superbalota": true,
+    "superbalota_min": 1,
+    "superbalota_max": 16,
+    "tiene_color": false,
+    "permite_repeticion": false
+   },
+   {
+    "codigo": "MILOTO",
+    "nombre": "MiLoto",
+    "rango_min": 1,
+    "rango_max": 39,
+    "cantidad_numeros": 5,
+    "tiene_superbalota": false,
+    "superbalota_min": null,
+    "superbalota_max": null,
+    "tiene_color": false,
+    "permite_repeticion": false
+   },
+   {
+    "codigo": "COLORLOTO",
+    "nombre": "ColorLoto",
+    "rango_min": 1,
+    "rango_max": 7,
+    "cantidad_numeros": 6,
+    "tiene_superbalota": false,
+    "superbalota_min": null,
+    "superbalota_max": null,
+    "tiene_color": true,
+    "permite_repeticion": true
+   }
+  ]
+ }
+}

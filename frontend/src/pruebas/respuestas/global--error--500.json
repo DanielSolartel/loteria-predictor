@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos",
+ "estado": 500,
+ "cuerpo": {
+  "error": {
+   "codigo": "error_interno",
+   "mensaje": "Error interno",
+   "solicitud": "2efae08eb1b74d1e8c7bcf064f027af6"
+  }
+ }
+}

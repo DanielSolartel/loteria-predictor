@@ -1,0 +1,25 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/simulaciones",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "limite": 20,
+  "estado_de_uso": "experimental_no_acreditado",
+  "simulaciones": [
+   {
+    "id": "6a6bf85b-bb36-454e-9c72-7aaa6fa3fccd",
+    "juego": "BALOTO",
+    "clave": "84f93ae3115a60b0baa4f1a6c56c4f6a2f6780c6da4b7853366de73221929994",
+    "corte": 2140,
+    "iteraciones": 100,
+    "semilla": 20261024,
+    "ejecutado_en": "2026-10-25T00:37:42",
+    "duracion_ms": 6,
+    "integridad": "verificada",
+    "motivo": null,
+    "alguna_supera_umbral_exploratorio": false
+   }
+  ]
+ }
+}

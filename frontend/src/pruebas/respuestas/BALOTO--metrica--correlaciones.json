@@ -1,0 +1,213 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas/correlaciones",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "BALOTO",
+   "nombre": "Baloto",
+   "tipo": "numeros",
+   "rango": [
+    1,
+    43
+   ],
+   "cantidad": 5,
+   "superbalota": [
+    1,
+    16
+   ],
+   "colores": [],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "BALOTO",
+   "nombre": "Baloto",
+   "reglas": {
+    "tipo": "numeros",
+    "rango": [
+     1,
+     43
+    ],
+    "cantidad_numeros": 5,
+    "superbalota": [
+     1,
+     16
+    ]
+   },
+   "total_sorteos": 60,
+   "total_sorteos_sin_corte": 60,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 2081,
+    "primera_fecha": "2021-01-02",
+    "ultimo_sorteo": 2140,
+    "ultima_fecha": "2021-06-28"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 2140,
+    "fecha": "2021-06-28"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 1945,
+    "mensaje": "El último sorteo cargado es de hace 1945 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "correlaciones",
+   "titulo": "Correlaciones",
+   "grupo": "pruebas",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Pearson, suma frente a la del sorteo anterior",
+     "valor": -0.06513752718191579,
+     "unidad": "coeficiente",
+     "formato": "dec3"
+    },
+    {
+     "etiqueta": "Spearman, apariciones primera frente a segunda mitad",
+     "valor": -0.00016205195754661773,
+     "unidad": "coeficiente",
+     "formato": "dec3"
+    },
+    {
+     "etiqueta": "Transiciones N → N+1",
+     "valor": 59,
+     "unidad": "transiciones",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "correlaciones",
+     "titulo": "Correlaciones de Pearson y Spearman",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Pregunta",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "metodo",
+       "etiqueta": "Método",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "coeficiente",
+       "etiqueta": "Coeficiente",
+       "formato": "dec3",
+       "unidad": ""
+      },
+      {
+       "clave": "p_value",
+       "etiqueta": "p-value",
+       "formato": "p",
+       "unidad": ""
+      },
+      {
+       "clave": "como_p_value",
+       "etiqueta": "Cómo se obtiene el p-value",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "pares",
+       "etiqueta": "Pares usados",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "observacion",
+       "etiqueta": "Observación",
+       "formato": "texto",
+       "unidad": ""
+      }
+     ],
+     "filas": [
+      {
+       "valor": "Suma del sorteo frente a la del sorteo anterior",
+       "metodo": "Pearson",
+       "coeficiente": -0.06513752718191579,
+       "p_value": null,
+       "contraste": null,
+       "permutaciones": null,
+       "como_p_value": "No se calcula",
+       "n": 59,
+       "pares": "59 transiciones",
+       "motivo": null,
+       "motivo_p_value": "las transiciones N → N+1 comparten sorteos: los pares no son independientes",
+       "observacion": "Las transiciones N → N+1 comparten sorteos: los pares no son independientes."
+      },
+      {
+       "valor": "Suma del sorteo frente a la del sorteo anterior",
+       "metodo": "Spearman",
+       "coeficiente": -0.06928767764196739,
+       "p_value": null,
+       "contraste": null,
+       "permutaciones": null,
+       "como_p_value": "No se calcula",
+       "n": 59,
+       "pares": "59 transiciones",
+       "motivo": null,
+       "motivo_p_value": "las transiciones N → N+1 comparten sorteos: los pares no son independientes",
+       "observacion": "Las transiciones N → N+1 comparten sorteos: los pares no son independientes."
+      },
+      {
+       "valor": "Apariciones por número: primera mitad frente a segunda",
+       "metodo": "Pearson",
+       "coeficiente": -0.01779816513761468,
+       "p_value": 0.9201,
+       "contraste": "permutacion_monte_carlo",
+       "permutaciones": 9999,
+       "como_p_value": "Permutación Monte Carlo, B = 9999, semilla 5",
+       "n": 43,
+       "pares": "43 números",
+       "motivo": null,
+       "motivo_p_value": "permutación Monte Carlo: 9999 ordenaciones aleatorias con semilla fija 5 (reproducible); p = (1 + k)/(1 + 9999), con k las ordenaciones al menos tan extremas; aproxima el p exacto de permutación con desviación típica <= 0,005 y supone que, bajo H0, todas las ordenaciones son igual de probables",
+       "observacion": "p = (1 + k)/(1 + B); desviación típica ≤ 0,005 frente a la exacta."
+      },
+      {
+       "valor": "Apariciones por número: primera mitad frente a segunda",
+       "metodo": "Spearman",
+       "coeficiente": -0.00016205195754661773,
+       "p_value": 0.999,
+       "contraste": "permutacion_monte_carlo",
+       "permutaciones": 9999,
+       "como_p_value": "Permutación Monte Carlo, B = 9999, semilla 5",
+       "n": 43,
+       "pares": "43 números",
+       "motivo": null,
+       "motivo_p_value": "permutación Monte Carlo: 9999 ordenaciones aleatorias con semilla fija 5 (reproducible); p = (1 + k)/(1 + 9999), con k las ordenaciones al menos tan extremas; aproxima el p exacto de permutación con desviación típica <= 0,005 y supone que, bajo H0, todas las ordenaciones son igual de probables",
+       "observacion": "p = (1 + k)/(1 + B); desviación típica ≤ 0,005 frente a la exacta."
+      }
+     ],
+     "nota": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Suma: pares (suma del sorteo N, suma del sorteo N+1) solo entre sorteos de numeración consecutiva. Sin la superbalota.",
+    "Mitades: sorteos 2081–2110 (30) frente a 2111–2140 (30); se correlacionan las apariciones de cada número.",
+    "Coeficientes: descriptivos (SciPy). p-value: no se usa el de SciPy, que en spearmanr es una aproximación para muestras grandes y en pearsonr supone pares independientes y normales.",
+    "Suma: el p-value no se calcula. Las transiciones comparten sorteos (el sorteo N+1 de un par es el N del siguiente), así que los pares no son independientes y ningún contraste de pares independientes está justificado; el coeficiente sigue siendo descriptivo.",
+    "Mitades: p-value por permutación de las apariciones de la segunda mitad entre los 43 números; la muestra son los números, no los sorteos. Bajo H0 (sorteos independientes y simétricos respecto de los números) esas apariciones son independientes de la primera mitad y todas sus ordenaciones son igual de probables. Con 43 números no se enumeran todas: Monte Carlo con 9999 ordenaciones y semilla fija 5, p = (1 + k)/(1 + B); reproducible, aproxima la permutación exacta con desviación típica ≤ 0,005.",
+    "Bajo un sorteo uniforme e independiente se esperan coeficientes cercanos a 0. Un coeficiente distinto de 0 en una muestra no permite anticipar el próximo sorteo."
+   ],
+   "selector": null
+  }
+ }
+}
