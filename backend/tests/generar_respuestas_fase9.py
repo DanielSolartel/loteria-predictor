@@ -22,7 +22,7 @@ JUEGOS = ("BALOTO", "BALOTO_REVANCHA", "MILOTO", "COLORLOTO")
 VALORES_DE_FORMATO = (None, 0, -0.0, 1, 7, -3, 2.5, 0.125, 0.375, 2.675, 1.005, 12.345, -12.345, 0.04, -0.04, 0.05,
                       0.00005, 0.0001, 0.12345678, 3.14159, 100, 100.25, 1234567.891, -0.00004)
 TEXTOS_DE_FORMATO = ("texto", "asintotico", "permutacion_exacta", "permutacion_monte_carlo", "otro")
-FORMATOS = ("entero", "texto", "dec1", "dec2", "dec3", "pct", "pp", "p", "tipo_p", "desconocido")
+FORMATOS = ("entero", "texto", "dec1", "dec2", "dec3", "pct", "pp", "p", "tipo_p", "color", "desconocido")
 
 
 def casos_de_formato() -> dict:
@@ -95,6 +95,16 @@ def main(argv: list[str] | None = None) -> int:
         guardar(f"BALOTO--metrica--{metrica}", f"/api/v1/juegos/BALOTO/estadisticas/{metrica}")
     for m in guardar("COLORLOTO--indice", "/api/v1/juegos/COLORLOTO/estadisticas")["metricas"]:
         guardar(f"COLORLOTO--metrica--{m['metrica']}", f"/api/v1/juegos/COLORLOTO/estadisticas/{m['metrica']}")
+    # Fase 9.2: paginas anteriores de los juegos numericos (incluida una tabla paginada) y filtros de ColorLoto.
+    for metrica in ("frecuencia-observada-esperada", "atrasos-numeros", "coocurrencia-pares", "coocurrencia-trios"):
+        guardar(f"BALOTO--metrica--{metrica}", f"/api/v1/juegos/BALOTO/estadisticas/{metrica}")
+    guardar("BALOTO--metrica--coocurrencia-trios--pagina-2", "/api/v1/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=2")
+    guardar("MILOTO--metrica--distribucion-racha-maxima", "/api/v1/juegos/MILOTO/estadisticas/distribucion-racha-maxima")
+    guardar("COLORLOTO--metrica--distribucion-conteo-color--rojo",
+            "/api/v1/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=ROJO")
+    guardar("BALOTO--metrica--atrasos-numeros--sin_datos",
+            "/api/v1/juegos/BALOTO/estadisticas/atrasos-numeros?hasta_numero_sorteo=1")
+    guardar("COLORLOTO--error--422", "/api/v1/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=MORADO")
     sims = c.get("/api/v1/juegos/COLORLOTO/simulaciones", headers=h).json()["simulaciones"]
     for s in sims:
         guardar(f"COLORLOTO--simulacion--{s['integridad']}", f"/api/v1/simulaciones/{s['id']}")

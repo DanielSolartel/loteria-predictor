@@ -1,6 +1,6 @@
 # Roadmap del proyecto
 
-## Estado por fase (Fase 8 integrada en PR #99, `615f383`; entrega 9.1 sobre esa base)
+## Estado por fase (9.1 integrada en PR #100, `9966a4b`; entrega 9.2 sobre esa base)
 
 Las fases 1–5, incluidas las cinco familias ML, están integradas en PR #95, base `2ac4d110b7d721e544f5588e9754230eef28184d` (árbol `37380b32906dbc0ded73112d8bbd4f1d50659993`, 691 archivos públicos). El cierre documental ML se aplicó y verificó en PowerShell 5.1, con índice conservado. Actions `39387775447` aprobó Linux completo y Windows selección para esa base. Son antecedentes de PR #95, no resultados de Fase 6.
 
@@ -17,14 +17,14 @@ Daniel ejecutó previamente ML v3.2 en Windows nativo: **7.015 aprobadas**, sin 
 | 3. Machine Learning | Cinco familias añadidas: XGBoost, LightGBM, red neuronal, Bayes jerárquico y Markov; conserva seis candidatos anteriores por juego | Registro/recarga de 20 modelos nuevos, recorrido e impresión nativa validados; cierre documental aplicado y PR #95 con Actions aprobados |
 | 4. Predicciones | Centro de cuatro juegos, explicación y fiabilidad observada; integrado con las familias nuevas | Flujo de las cinco familias y persistencia validados en Windows; PR #95 con Actions aprobados, separado del antecedente PR #94 |
 | 5. Estadísticas descriptivas | Completa | Antecedentes Windows con histórico real y Actions conservados |
-| 6. Actualización y operación automática | Implementada y activada en Windows, v3.4 | Novedades automáticas de MiLoto y ColorLoto verificadas; integrada en PR #96 (Actions `39939306600`); limpieza histórica separada. [Detalle](backend/docs/fase6_validacion_operativa_2026-10-23.md) |
+| 6. Actualización y operación automática | Implementada y activada en Windows, v3.4. Horario de consulta por juego (entrega 9.2) implementado y **no aplicado** a la tarea real | Novedades automáticas de MiLoto y ColorLoto verificadas; integrada en PR #96 (Actions `39939306600`); limpieza histórica separada. [Detalle](backend/docs/fase6_validacion_operativa_2026-10-23.md). Horario: validado en Windows nativo y aprobado por la auditoría (pruebas dirigidas con Windows PowerShell 5.1 y ensayo nativo B con el Programador real y un testigo sintético; [validación](backend/docs/fase9_2_validacion_operador_2026-10-26.md)). Pendientes: publicación, CI del nuevo PR y migración manual de la tarea real, que sigue habilitada con la programación anterior ([horario](backend/docs/fase6_horario.md), [migración](backend/docs/fase6_migracion_lp6.md)) |
 | 7. Simulaciones | Implementada sobre `605afe8`: cuatro juegos, 100 a 1.000.000 de iteraciones, estadísticas fijadas de Fase 5, tabla `simulaciones` y web/API interna/comando; v2 más F7-VIS-01 | Validación local Linux y Windows, PostgreSQL aislado y Brave completados; integrada en PR #98 (merge `f15f513`) con checks de Linux y Windows aprobados. [Cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md) |
 | 8. API pública | v2 sobre `f15f513`: entrada separada `/api/v1` de solo lectura, claves por huella, límites por proceso, OpenAPI y monitoreo; cuatro hallazgos de la v1 corregidos | Linux y Windows validados localmente: 92 pruebas y cuatro sondas nativas; PostgreSQL 16.14 aislado, criterios A–F y A2 cumplidos. Integrada en PR #99 (merge `615f383`) con CI `40133227968` aprobado en Linux y Windows; despliegue en Fase 10. [Cierre local](backend/docs/fase8_validacion_operador_2026-10-24.md) |
-| 9. Frontend React | Entrega 9.1 sobre `615f383`: SPA React/TypeScript/Vite que consulta `/api/v1` a través de una pasarela local con la clave en el servidor | 9.1 v2 validada en Linux y Windows nativo con Brave; auditoría local aprobada. Pendientes publicación manual y checks del PR. La Fase 9 global sigue abierta. [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md) |
+| 9. Frontend React | 9.1 integrada en PR #100 (`9966a4b`): SPA React/TypeScript/Vite que consulta `/api/v1` a través de una pasarela local con la clave en el servidor. Entrega 9.2 sobre ese merge: páginas de las métricas anteriores en el mismo índice y la misma ruta de métrica | 9.1 v2 validada en Linux y Windows nativo con Brave ([validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md)). 9.2 validada en Linux y en Windows nativo con Brave y aprobada por la auditoría, por la cadena v2 → ajuste nativo v3 → ajuste de pruebas v4 ([validación del operador](backend/docs/fase9_2_validacion_operador_2026-10-26.md)). Pendientes: publicación manual y CI del nuevo PR. La Fase 9 global sigue abierta |
 | 10. Despliegue | Planificada | Seguridad, operación y disponibilidad pendientes |
 | 11. Aplicación personal | Planificada | Depende de Fase 6 y capacidades pertinentes de fases 8–10 |
 
-**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Fase 7 quedó integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) y Fase 8 en PR #99 (`615f3832296d74a7acea44e5ecdf7dc84a11d70a`; CI `40133227968` aprobado en Linux y Windows). La entrega 9.1 se implementa sobre ese merge; la Fase 9 global sigue abierta y las fases 10–11 conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
+**Orden: 6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 quedó integrada en PR #96 y el arreglo del issue #93 en PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`). Fase 7 quedó integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) y Fase 8 en PR #99 (`615f3832296d74a7acea44e5ecdf7dc84a11d70a`; CI `40133227968` aprobado en Linux y Windows). La 9.1 quedó integrada en PR #100 (`9966a4bbcb8d81953fb283b07544636f4c11fc95`). La entrega 9.2 se implementó sobre ese merge, junto con el horario de consulta de Fase 6. Está validada y auditada, y falta su publicación; la Fase 9 global sigue abierta y las fases 10–11 conservan su planificación y avances históricos. Las fases 1–5 mantienen su número. En antecedentes, «Fase 6 — Simulaciones» usa la numeración original; hoy corresponde a Fase 7. Los Productos 1–6 y sus archivos, rutas, pruebas y artefactos históricos no se renombran.
 
 **Cadena de base conservada:** PR #94 y sus checks `38982578601` son antecedentes de Fase 4. PR #95 incorpora la ampliación ML y el cierre documental ya verificado; su merge `2ac4d110b7d721e544f5588e9754230eef28184d` es la base exacta de Fase 6. No se atribuye a sus checks la nueva operación automática. PR #96 (`fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`) integró Fase 6 y PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`; Actions `40020240159` del PR y `40023629982` del merge) cerró el issue #93; ese merge fue la base exacta de Fase 7. PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`) integró Fase 7 y fue la base exacta de Fase 8. PR #99 (merge `615f3832296d74a7acea44e5ecdf7dc84a11d70a`, implementación `b7ccd623006100e50bc307e020f525f570beb728`, CI `40133227968`) integró Fase 8 y es la base exacta de la 9.1. Daniel conserva la revisión y publicación manual de esta entrega.
 
@@ -399,7 +399,8 @@ El cierre ML fue exclusivamente documental y se aplicó/verificó en PowerShell 
 **Estado histórico al entregar v3.1:** su validación real final estaba pendiente. **Estado vigente:** la implementación y validación local v3.4 y el cierre documental culminaron con PR #94. La ampliación ML v3.2 tiene suite completa nativa Windows y recorrido real completados con evidencia propia. El cierre ML se aplicó/verificó y quedó integrado en PR #95 con Actions aprobados; acreditación prospectiva separada.
 
 **Pendientes vigentes separados:**
-- Fase 9.1: validación nativa Windows, revisión en Brave, auditoría y publicación manual (PR y checks) pendientes ([pasos](backend/docs/fase9_windows.md)); la Fase 9 global sigue abierta. Fase 8 se integró en PR #99 (CI `40133227968`); Fase 7, en PR #98 ([cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md)); Fase 6, en PR #96;
+- Fase 9.2 (páginas de las métricas anteriores y horario de consulta): validada en Windows nativo con Brave y aprobada por la auditoría el 26 de octubre de 2026 ([validación del operador](backend/docs/fase9_2_validacion_operador_2026-10-26.md)). Pendientes: publicación manual y CI del nuevo PR. La 9.1 se integró en PR #100 y la Fase 9 global sigue abierta. Fase 8 se integró en PR #99 (CI `40133227968`); Fase 7, en PR #98 ([cierre local](backend/docs/fase7_validacion_operador_2026-10-24.md)); Fase 6, en PR #96;
+- Fase 6, horario de consulta por juego (entrega 9.2): validado en Windows y auditado. La v2 corrigió los hallazgos de la auditoría de la v1: lectura de fechas del plan, espacio de nombres XML, confirmación del slot antes de consultar y reversión sin activar ni retirar tareas vivas. La v3 corrigió F92-NAT-01: `StartWhenAvailable` omitido por el Programador vale su predeterminado `false`. La v4 corrigió F92-TEST-01: un ayudante de prueba en Windows PowerShell 5.1. El ensayo nativo B con un testigo sintético está aprobado. Sigue pendiente la migración manual de `LP6-01023009031fcabd`, que se preparará como bloque separado con respaldo y reversión ([horario](backend/docs/fase6_horario.md), [migración](backend/docs/fase6_migracion_lp6.md)). El código nuevo rechaza el `ciclo` sin modo de la tarea versión 1: no se actualiza el origen operativo con esa tarea habilitada;
 - limpieza verificable de tareas/raíces históricas, pendiente separado que no queda acreditado por las capturas de observación;
 - acreditación prospectiva: muestras suficientes por línea y tipo, por su cauce propio. Ninguna cifra retrospectiva acredita ventaja ni es un nivel de confianza.
 
@@ -4170,7 +4171,23 @@ No se entrenó ni evaluó ML, no se leyeron números ganadores y no se generaron
 
 **Programación y estado de aceptación (2026-10-23):** instalación y activación explícitas de tarea Windows; núcleo habilitado y dos novedades reales incorporadas automáticamente, con siguientes carteras y explicaciones persistidas. Los modelos seleccionados y el histórico canónico anterior se conservan. La salvedad de los doce HTML y la atribución de las pruebas anteriores constan en la [validación operativa](backend/docs/fase6_validacion_operativa_2026-10-23.md).
 
-**Pendientes separados:** limpieza verificable de restos históricos; acreditación prospectiva por su cauce propio. *Actualización posterior (23-10-2026):* el commit, la publicación manual, la revisión y Actions se completaron en PR #96 (merge `fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`), y el issue #93 se cerró con PR #97. Los protocolos v3.3 se conservan como antecedentes y no se repiten por rutina. La prueba operativa de novedad automática en MiLoto y ColorLoto ya está verificada. Las fases 7–11 mantenían entonces su planificación; la Fase 7 se implementa después sobre `605afe8`.
+**Horario de consulta por juego (entrega 9.2; implementado, no aplicado a la tarea real):** separa el calendario de sorteo del horario de consulta. Hay franjas por juego y día en `America/Bogota`, cada 15 minutos, con fin excluido, y una recuperación a las 09:00 solo para los juegos pendientes. La tarea versión 2 invoca `ciclo --programado --plan HUELLA`; no tiene inicio de sesión ni repetición todo el día y usa `StartWhenAvailable=false`. Las personas usan `ciclo --manual`. Una política validada sirve al plan de Windows y a la admisión del núcleo. La configuración pasa explícitamente a la versión 2. El protocolo nativo con una tarea de ensayo aislada se ejecutó y la auditoría lo aprobó el 26 de octubre de 2026 ([validación del operador](backend/docs/fase9_2_validacion_operador_2026-10-26.md)). La migración manual de `LP6-01023009031fcabd` sigue preparada y no aplicada ([horario](backend/docs/fase6_horario.md), [migración](backend/docs/fase6_migracion_lp6.md)). *v2 tras la auditoría de la v1:*
+- la lectura del plan conserva el texto ISO y su desfase en Windows PowerShell 5.1 y en PowerShell 7;
+- la URI del espacio de nombres ya no se confunde con el gestor `$ns`;
+- justo antes de consultar se confirma el mismo slot admitido;
+- la reversión registra una copia deshabilitada, vuelve a comprobar el ciclo vivo tras pausar y restaura la versión 2 si falla el registro.
+
+*v3 y v4, tras la validación nativa:*
+- el Programador omite `StartWhenAvailable` al exportar su predeterminado `false`. La omisión vale ese predeterminado documentado, nunca el valor esperado (F92-NAT-01);
+- un ayudante de prueba ahora captura la colección como arreglo, lo que lo hace compatible con Windows PowerShell 5.1 (F92-TEST-01).
+
+Con esto quedan aprobados 121 casos únicos dirigidos y el ensayo con el Programador real y un testigo sintético.
+
+**Pendientes separados:**
+- limpieza verificable de restos históricos;
+- acreditación prospectiva por su cauce propio;
+- publicación y CI del nuevo PR del horario;
+- migración controlada del horario, como bloque separado con respaldo y reversión. *Actualización posterior (23-10-2026):* el commit, la publicación manual, la revisión y Actions se completaron en PR #96 (merge `fcadea6a08e8e6b52386a9055be16bb1873b9a29`, Actions `39939306600`), y el issue #93 se cerró con PR #97. Los protocolos v3.3 se conservan como antecedentes y no se repiten por rutina. La prueba operativa de novedad automática en MiLoto y ColorLoto ya está verificada. Las fases 7–11 mantenían entonces su planificación; la Fase 7 se implementa después sobre `605afe8`.
 
 ---
 
@@ -4463,7 +4480,7 @@ Matriz, decisiones y limitaciones: [fase8_api_publica.md](backend/docs/fase8_api
 
 ---
 
-## 🟡 Fase 9 — Frontend React (entrega 9.1 v2 validada en Linux y Windows; Fase 9 global abierta)
+## 🟡 Fase 9 — Frontend React (9.1 integrada en PR #100; entrega 9.2 validada en Windows y auditada, pendiente de publicación; Fase 9 global abierta)
 
 **Objetivo:** reemplazar o complementar el frontend Jinja2+HTMX por una aplicación React más rica para visualización de estadísticas, modelos y predicciones.
 
@@ -4474,9 +4491,27 @@ Matriz, decisiones y limitaciones: [fase8_api_publica.md](backend/docs/fase8_api
 - `backend/app/pasarela/`: proceso separado que sirve solo `dist/` y reenvía GET de las rutas del OpenAPI versionado con su propia clave; sin casos de uso, dominio ni base.
 - No cambia la API pública ni sus contratos. Consumo vía pasarela, no vía `api/rest/`.
 
-**Validación local de la 9.1 v2:** auditoría Linux y Windows nativo completada con datos sintéticos. Daniel ejecutó 379 pruebas Vitest, 186 de pasarela y 92 de API pública, sin fallos, errores ni omisiones; seis recorridos con Brave instalado (297 visitas del normal y 12 de Vite), sonda del plazo y 14 controles de intercambio HTTP. El recorrido Vite se consolidó en una segunda corrida con un ajuste externo del supervisor para los colores del registro; el producto conservó sus 904 huellas. Publicación manual y checks de Python y frontend pendientes; Fase 9 global abierta. [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md).
+**Validación local de la 9.1 v2:** auditoría Linux y Windows nativo completada con datos sintéticos. Daniel ejecutó 379 pruebas Vitest, 186 de pasarela y 92 de API pública, sin fallos, errores ni omisiones; seis recorridos con Brave instalado (297 visitas del normal y 12 de Vite), sonda del plazo y 14 controles de intercambio HTTP. El recorrido Vite se consolidó en una segunda corrida con un ajuste externo del supervisor para los colores del registro; el producto conservó sus 904 huellas. *Actualización posterior:* la 9.1 se integró en PR #100 (merge `9966a4bbcb8d81953fb283b07544636f4c11fc95`). [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md).
 
-**Pendiente para otra decisión:** páginas de detalle de las métricas anteriores, modelos completos, explicaciones, fiabilidad, carteras, resultados avanzados, exportaciones, gráficas nuevas y acciones administrativas ([matriz de huecos](backend/docs/fase9_frontend.md#matriz-de-huecos-de-la-fase-9)).
+**Entrega 9.2 (sobre `9966a4b`):**
+- Páginas de las métricas anteriores: 12 en Baloto y en Revancha, 11 en MiLoto y 31 en ColorLoto, incluidos colores, conteo por color y pares número-color con su color. Usan el mismo índice y la misma ruta de métrica, sin una ruta por métrica.
+- El backend calcula con las recetas existentes, sin persistir. Contrato tipado de columnas, filas, filtros, corte y aplicabilidad.
+- La coocurrencia de tríos numérica se pagina de forma explícita, 100 filas por página.
+- Estados explícitos: sin datos, histórico no válido (409), parámetros no válidos (422) y base no disponible (503).
+- Una consulta de métrica por pantalla, con cuotas, `Retry-After` y 429 intactos, y la lista de la pasarela ampliada con `color` y `pagina`.
+- En Linux: comparación con las recetas en los cuatro juegos, Vitest y recorrido en Chromium a 360, 390 y 1280 px.
+- En Windows 11 nativo, etapa A sobre la v2 con datos sintéticos:
+  - 772 pruebas Python: 394 de Fase 6, 186 de API pública y 192 de pasarela;
+  - 456 de Vitest;
+  - tipos, TypeScript, compilación y canario correctos;
+  - sonda de horario 3/3;
+  - Brave: 507 visitas y 26 comprobaciones.
+- Ajustes v3 (F92-NAT-01) y v4 (F92-TEST-01), comprobados de forma dirigida:
+  - 121 casos únicos aprobados en Windows PowerShell 5.1, por consolidación de 117 + 4;
+  - ensayo nativo B con el Programador real y un testigo sintético.
+- Estado: la auditoría lo aprobó el 26 de octubre de 2026. Pendientes la publicación manual y el CI del nuevo PR. [Validación del operador](backend/docs/fase9_2_validacion_operador_2026-10-26.md).
+
+**Pendiente para otra decisión:** modelos completos, explicaciones, fiabilidad, carteras, resultados avanzados, exportaciones, gráficas nuevas y acciones administrativas ([matriz de huecos](backend/docs/fase9_frontend.md#matriz-de-huecos-de-la-fase-9)).
 
 **Criterios de finalización:** el criterio final de la Fase 9 (paridad funcional con la consola HTMX u otro alcance) se decidirá después; la 9.1 no lo cierra. Sigue vigente: sin duplicar lógica de negocio en el frontend.
 

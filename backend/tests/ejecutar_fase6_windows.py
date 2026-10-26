@@ -32,6 +32,7 @@ ALMACENES_SINTETICOS = (("PRONOSTICOS_EXPERIMENTALES", "pronosticos"), ("OPERACI
     ("AUTOMATIZACION", "automatizacion"))
 FOCALES = tuple("tests/unit/test_fase6_" + n + ".py" for n in (
     "calendario", "persistencia", "ciclo", "integracion", "web", "tarea_windows", "supervisor", "cli", "retry_http", "revisiones", "decisiones", "xml_windows", "ensayo_limpieza_windows", "exportacion_windows",
+    "horario", "horario_regresiones", "auditoria_v1",
 ))
 DIRIGIDAS = tuple("tests/unit/test_fase6_" + n + ".py" for n in (
     "tarea_windows", "xml_windows", "ensayo_limpieza_windows", "exportacion_windows", "supervisor",

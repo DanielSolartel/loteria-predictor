@@ -1,0 +1,137 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/estadisticas/distribucion-racha-maxima",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "MILOTO",
+   "nombre": "MiLoto",
+   "tipo": "numeros",
+   "rango": [
+    1,
+    39
+   ],
+   "cantidad": 5,
+   "superbalota": null,
+   "colores": [],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "MILOTO",
+   "nombre": "MiLoto",
+   "reglas": {
+    "tipo": "numeros",
+    "rango": [
+     1,
+     39
+    ],
+    "cantidad_numeros": 5,
+    "superbalota": null
+   },
+   "total_sorteos": 40,
+   "total_sorteos_sin_corte": 40,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 530,
+    "primera_fecha": "2021-01-02",
+    "ultimo_sorteo": 569,
+    "ultima_fecha": "2021-04-29"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 569,
+    "fecha": "2021-04-29"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 2005,
+    "mensaje": "El último sorteo cargado es de hace 2005 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "distribucion-racha-maxima",
+   "titulo": "Racha máxima de consecutivos",
+   "grupo": "distribuciones",
+   "origen": "anterior",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 40,
+     "unidad": "sorteos",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Racha máxima de consecutivos",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Longitud de la racha máxima",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones",
+       "etiqueta": "Sorteos",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "pct",
+       "etiqueta": "% de sorteos",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "apariciones": 24,
+       "pct": 60.0
+      },
+      {
+       "valor": "2",
+       "apariciones": 13,
+       "pct": 32.5
+      },
+      {
+       "valor": "3",
+       "apariciones": 3,
+       "pct": 7.5
+      },
+      {
+       "valor": "4",
+       "apariciones": 0,
+       "pct": 0.0
+      },
+      {
+       "valor": "5",
+       "apariciones": 0,
+       "pct": 0.0
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas."
+   ],
+   "selector": null
+  }
+ }
+}

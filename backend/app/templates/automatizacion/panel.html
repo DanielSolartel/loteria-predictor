@@ -34,6 +34,33 @@
         Su estado en Windows no se deduce de que este seguimiento esté habilitado.</p>
 </section>
 
+{% set h = panel.get('horario') or {} %}
+<section class="card stat-card p-3 mb-3 auto-horario" aria-labelledby="auto-horario-titulo" data-horario="{{ h.get('estado', 'desconocido') }}">
+    <h2 class="h6" id="auto-horario-titulo">Horario de consulta automática</h2>
+    <p class="small text-muted">La tarea programada solo inicia consultas en estas franjas (hora de Bogotá; inicio incluido, fin excluido) y,
+        a las {{ h.get('recuperacion') or '—' }} del día siguiente, una recuperación solo para lo que quedó pendiente.
+        Las horas son una propuesta operativa configurable, no la hora oficial de publicación. Una consulta iniciada a tiempo puede terminar después del fin;
+        empezar más tarde no amplía el plazo para emitir, que cierra a la hora del sorteo.</p>
+    {% if h.get('estado') == 'valida' %}
+    <div class="table-responsive" role="region" aria-label="Franjas por juego" tabindex="0">
+    <table class="table table-sm small mb-1">
+        <thead><tr><th scope="col">Juego</th><th scope="col">Núcleo</th><th scope="col">Franjas</th><th scope="col">Ahora</th><th scope="col">Próxima oportunidad</th></tr></thead>
+        <tbody>{% for codigo, j in h.get('juegos', {}).items() %}
+        <tr data-juego-horario="{{ codigo }}" data-motivo="{{ j.get('motivo') }}">
+            <th scope="row">{{ nombres.get(codigo, codigo) }}</th>
+            <td>{{ 'Habilitado' if j.get('habilitado_en_nucleo') else 'Deshabilitado en el núcleo' }}</td>
+            <td>{% for f in j.get('franjas', []) %}<div>{{ f.dia }} {{ f.inicio }}–{{ f.fin }}{% if f.termina_al_dia_siguiente %} (día siguiente){% endif %}</div>{% else %}Sin franjas{% endfor %}</td>
+            <td>{{ motivos_horario.get(j.get('motivo'), j.get('motivo')) }}<div class="text-muted">{{ j.get('detalle') }}</div></td>
+            <td>{{ momento(j.get('proxima_oportunidad')) }}{% if j.get('tipo_proxima') == 'recuperacion' %} · recuperación{% endif %}</td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="small text-muted mb-0">Huella del plan de la tarea: <code class="auto-huella">{{ h.get('huella_plan') }}</code>.
+        La tarea registrada debe llevar esta huella; si no, el núcleo rechaza sus ciclos sin consultar.</p>
+    {% else %}
+    <p class="alert alert-warning py-2 small mb-0" role="status">{{ h.get('motivo') or 'Sin política de horario.' }}</p>
+    {% endif %}
+</section>
+
 {% if panel.get('rutas_verificadas') is sameas false %}
 <div class="alert alert-danger" role="status">Las rutas operativas aún no coinciden con los destinos esperados. Revisa la configuración antes de activar la tarea.</div>
 {% endif %}

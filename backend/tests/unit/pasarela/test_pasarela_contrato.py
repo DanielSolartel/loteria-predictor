@@ -56,7 +56,7 @@ def test_las_respuestas_sinteticas_del_frontend_siguen_los_contratos_publicos():
 
     contratos = {"juegos": e.Juegos, "juego": e.JuegoDetalle, "sorteos": e.PaginaDeSorteos, "sorteo": e.Sorteo,
                  "indice": e.IndiceDeEstadisticas, "resumen": e.Resumen, "panel": e.Estadisticas,
-                 "metrica": e.Estadisticas, "predicciones": e.Predicciones, "simulaciones": e.Simulaciones,
+                 "metrica": e.RespuestaDeMetrica, "predicciones": e.Predicciones, "simulaciones": e.Simulaciones,
                  "simulacion": e.Simulacion, "estado": e.EstadoDelServicio, "salud": e.Salud}
     archivos = sorted(RESPUESTAS.glob("*.json"))
     assert len(archivos) >= 20

@@ -14,12 +14,15 @@ se descartan sorteos en silencio.
 Las reglas salen del dominio (`GameFactory`, `ColorLotoGame`) y la paleta de ColorLoto de la tabla
 `colores`: la de la muestra si fue la misma en todos sus sorteos, y si cambió, la vigente hoy más los
 colores observados fuera de ella (`paleta_estable=False`).
+
+Fase 9.2: `metrica` sirve también las páginas ANTERIORES (las de las recetas de la consola) con
+`metricas_anteriores`, sobre la misma muestra cortada y validada y sin escribir la caché.
 """
 from __future__ import annotations
 
 from datetime import date
 
-from app.application.estadisticas.descriptivas import ReglasJuego, construir_metrica, construir_panel
+from app.application.estadisticas.descriptivas import POR_SLUG, ReglasJuego, construir_metrica, construir_panel
 from app.application.estadisticas.motor.corte_temporal import filtrar_por_corte_temporal
 from app.application.estadisticas.resumen_juego import _cabecera
 from app.application.exceptions import JuegoNoEncontradoError
@@ -31,6 +34,7 @@ from app.application.use_cases.calcular_y_persistir_estadistica import (
     _validar_historico_consistente,
     _validar_historico_superbalota_consistente,
 )
+from app.application.use_cases import metricas_anteriores
 from app.application.use_cases.game_factory import GameFactory
 from app.domain.games.colorloto import BALLS_TO_PICK, NUMBER_RANGE
 
@@ -48,14 +52,25 @@ class ConsultarEstadisticasDescriptivas:
         return self._reglas(juego, [])
 
     def metrica(self, codigo_juego: str, slug: str, *, hoy: date, hasta_numero_sorteo: int | None = None,
-                parametros: dict | None = None) -> dict:
-        juego, reglas, todos, muestra = self._cargar(codigo_juego, hasta_numero_sorteo)
+                parametros: dict | None = None, pagina: int | None = None) -> dict:
+        """Página de la Fase 5 o anterior. KeyError si el juego no tiene esa página;
+        `metricas_anteriores.ParametroNoValido` si un filtro o la página no se admiten."""
+        juego, reglas, todos, muestra, catalogo = self._cargar(codigo_juego, hasta_numero_sorteo)
+        definicion = POR_SLUG[slug]
+        if definicion.aplica(reglas) and definicion.es_nueva(reglas):
+            if pagina is not None:
+                raise metricas_anteriores.ParametroNoValido("Esta métrica no está paginada: no admite «pagina».")
+            contenido = construir_metrica(slug, reglas, muestra, parametros)
+            contenido = {**contenido, "origen": "fase5",
+                         "tablas": [{**t, "paginacion": None} for t in contenido["tablas"]]}
+        else:
+            contenido = metricas_anteriores.construir(slug, reglas, muestra, catalogo, parametros, pagina)
         return {"juego": self._juego_dict(juego, reglas),
                 "muestra": self._muestra(juego, reglas, todos, muestra, hasta_numero_sorteo, hoy),
-                "metrica": construir_metrica(slug, reglas, muestra, parametros)}
+                "metrica": contenido}
 
     def panel(self, codigo_juego: str, *, hoy: date, hasta_numero_sorteo: int | None = None) -> dict:
-        juego, reglas, todos, muestra = self._cargar(codigo_juego, hasta_numero_sorteo)
+        juego, reglas, todos, muestra, _ = self._cargar(codigo_juego, hasta_numero_sorteo)
         return {"juego": self._juego_dict(juego, reglas),
                 "muestra": self._muestra(juego, reglas, todos, muestra, hasta_numero_sorteo, hoy),
                 "grupos": construir_panel(reglas, muestra)}
@@ -70,11 +85,12 @@ class ConsultarEstadisticasDescriptivas:
 
     def _cargar(self, codigo_juego: str, hasta_numero_sorteo: int | None):
         juego = self._juego(codigo_juego)
+        catalogo = ()
         if codigo_juego == "COLORLOTO":
             todos = sorted(self._resultados.listar_resultados_colorloto(juego.id), key=lambda r: r.numero_sorteo)
             muestra = filtrar_por_corte_temporal(todos, hasta_numero_sorteo)
-            _validar_historico_colorloto_consistente(muestra, self._colores.listar_todos(juego.id), BALLS_TO_PICK,
-                                                     NUMBER_RANGE[0], NUMBER_RANGE[1])
+            catalogo = self._colores.listar_todos(juego.id)
+            _validar_historico_colorloto_consistente(muestra, catalogo, BALLS_TO_PICK, NUMBER_RANGE[0], NUMBER_RANGE[1])
         else:
             todos = sorted(self._resultados.listar_resultados_numericos(juego.id), key=lambda r: r.numero_sorteo)
             muestra = filtrar_por_corte_temporal(todos, hasta_numero_sorteo)
@@ -83,7 +99,7 @@ class ConsultarEstadisticasDescriptivas:
             _validar_historico_consistente(muestra, reglas.cantidad, rango_min=reglas.rango[0], rango_max=reglas.rango[1])
             if reglas.superbalota is not None:
                 _validar_historico_superbalota_consistente(muestra, *reglas.superbalota)
-        return juego, reglas, todos, muestra
+        return juego, reglas, todos, muestra, catalogo
 
     def _reglas(self, juego, muestra) -> ReglasJuego:
         if juego.codigo == "COLORLOTO":

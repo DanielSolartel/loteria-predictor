@@ -75,6 +75,7 @@
    "slug": "correlaciones",
    "titulo": "Correlaciones",
    "grupo": "pruebas",
+   "origen": "fase5",
    "parametro": null,
    "estado": "ok",
    "motivo": null,
@@ -228,7 +229,8 @@
        "observacion": "Supone que, bajo H0, todas las ordenaciones son igual de probables."
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     },
     {
      "id": "contingencia",
@@ -342,7 +344,8 @@
        "VERDE": "6 / 5.7"
       }
      ],
-     "nota": "Chi-cuadrado de independencia sin corrección de Yates; p-value asintótico, no exacto para una muestra finita."
+     "nota": "Chi-cuadrado de independencia sin corrección de Yates; p-value asintótico, no exacto para una muestra finita.",
+     "paginacion": null
     }
    ],
    "grafica": null,

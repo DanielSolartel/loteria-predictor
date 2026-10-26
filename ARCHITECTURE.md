@@ -25,7 +25,7 @@ Este documento explica cómo está construido el sistema, con suficiente detalle
 19. [Decisiones de diseño y por qué](#decisiones-de-diseño-y-por-qué)
 20. [Fase 6: actualización y operación automática](#fase-6-actualización-y-operación-automática)
 
-Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026; Fase 6 se integró en PR #96 (Actions `39939306600`) y la limpieza histórica conserva su pendiente separado. Base de Fase 7: PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`); ver [Fase 7: simulaciones](#fase-7-simulaciones). [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md). La validación local de Fase 7 en Windows, PostgreSQL aislado y Brave está completada; [cierre del operador](backend/docs/fase7_validacion_operador_2026-10-24.md), integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`), base de la Fase 8; ver [Fase 8: API pública](#fase-8-api-pública). Fase 8 se integró en PR #99 (`615f3832296d74a7acea44e5ecdf7dc84a11d70a`, CI `40133227968` aprobado en Linux y Windows), base de la 9.1; ver [Fase 9.1: frontend de consulta y pasarela](#fase-91-frontend-de-consulta-y-pasarela).
+Estado de las fases 1–11 e historial de los Productos 1–6: ver ROADMAP.md. Base de Fase 6: PR #95 (`2ac4d110b7d721e544f5588e9754230eef28184d`). La operación v3.4 está activada en Windows y las novedades automáticas de MiLoto y ColorLoto quedaron verificadas el 23 de octubre de 2026; Fase 6 se integró en PR #96 (Actions `39939306600`) y la limpieza histórica conserva su pendiente separado. Base de Fase 7: PR #97 (`605afe8c2bb3b38d0fa3abdb6a5d14ba2002b5a6`); ver [Fase 7: simulaciones](#fase-7-simulaciones). [Evidencias y salvedades](backend/docs/fase6_validacion_operativa_2026-10-23.md). La validación local de Fase 7 en Windows, PostgreSQL aislado y Brave está completada; [cierre del operador](backend/docs/fase7_validacion_operador_2026-10-24.md), integrada en PR #98 (`f15f513b431dd9a5dc3a2fb148a63a82a11405b5`), base de la Fase 8; ver [Fase 8: API pública](#fase-8-api-pública). Fase 8 se integró en PR #99 (`615f3832296d74a7acea44e5ecdf7dc84a11d70a`, CI `40133227968` aprobado en Linux y Windows), base de la 9.1; ver [Fase 9.1: frontend de consulta y pasarela](#fase-91-frontend-de-consulta-y-pasarela). La 9.1 se integró en PR #100 (`9966a4bbcb8d81953fb283b07544636f4c11fc95`), base de la entrega 9.2: [métricas anteriores](#fase-92-páginas-de-las-métricas-anteriores) y [horario de consulta de Fase 6](#horario-de-consulta-por-juego-entrega-92-no-aplicado).
 
 ---
 
@@ -6838,13 +6838,68 @@ El registro antecede a los pasos irreversibles. La consulta distingue un cerrojo
 
 ### Proceso y tarea Windows
 
-`python -m scripts.operacion_automatica --config RUTA ciclo` funciona fuera del servidor. `scripts/windows/fase6_tarea.ps1` crea por defecto solo un plan XML; `-Instalar` registra una tarea deshabilitada del usuario actual y `-Activar` la habilita explícitamente. Usa intérprete, configuración y backend absolutos, `InteractiveToken`, privilegio mínimo, inicio de sesión y repetición cada cinco minutos, `IgnoreNew`, `StartWhenAvailable`, sin despertar el equipo y con límite de dos horas. La política del núcleo determina cuándo consultar, separada del disparo de tarea. No hay programa por proceso Uvicorn, contraseñas ni modificación de permisos globales.
+`python -m scripts.operacion_automatica --config RUTA ciclo` funciona fuera del servidor (versión 1; en la versión 2 del horario, `ciclo --programado --plan HUELLA` o `ciclo --manual`, ver abajo). `scripts/windows/fase6_tarea.ps1` crea por defecto solo un plan XML; `-Instalar` registra una tarea deshabilitada del usuario actual y `-Activar` la habilita explícitamente. Usa intérprete, configuración y backend absolutos, `InteractiveToken`, privilegio mínimo, inicio de sesión y repetición cada cinco minutos, `IgnoreNew`, `StartWhenAvailable`, sin despertar el equipo y con límite de dos horas. La política del núcleo determina cuándo consultar, separada del disparo de tarea. No hay programa por proceso Uvicorn, contraseñas ni modificación de permisos globales.
 
 Cerrar navegador/Uvicorn es compatible con la operación; cerrar sesión, suspender o apagar impide nuevas ejecuciones. La pausa de tarea impide disparos y la pausa del núcleo impide trabajo nuevo: no matan un ciclo entre pasos. Desinstalar solo retira la tarea propia inactiva, preservando datos. [Protocolo Windows](backend/docs/fase6_windows.md) y [control de tarea](backend/docs/fase6_tarea_windows.md).
 
 La dependencia IANA `tzdata==2026.5` se añade solo en Windows, donde no se presupone tzdb. Se prepara un entorno Fase 6 separado con restricciones exportadas del entorno ML validado; este último no se actualiza. Sin Bogotá disponible, la operación se bloquea con un motivo accionable en vez de usar zona del equipo o un desplazamiento fijo silencioso.
 
 El ensayo Python del controlador configura UTF-8 sin BOM para stdout/stderr solo dentro del PowerShell hijo (`-EncodedCommand` con programa UTF-16LE y wrappers UTF-8 con BOM para PS5.1). En v3.1 el lanzamiento exige `-OutputFormat Text` y fija `$ProgressPreference='SilentlyContinue'` antes de cualquier inicialización de módulos en el hijo: evita la serialización CLIXML y el progreso automático de PowerShell 5.1 en stderr sin filtrar su captura. Captura ambos streams como bytes y guarda su contenido y código de salida antes de decodificar UTF-8 estricto. Una infracción del contrato conserva esa evidencia y falla explícitamente, sin `None` convertido a vacío ni reemplazo de caracteres. No modifica consola, perfiles o variables globales del servidor; los cmdlets simulados siguen sin acreditar el Programador real.
+
+### Horario de consulta por juego (entrega 9.2; no aplicado)
+
+`application/operacion_horario.py` es puro: valida una `PoliticaHorario`, con franjas por juego y día de la semana en `America/Bogota`, cadencia de 15 minutos y recuperación diaria. Contrasta las franjas con el calendario de sorteo de `operacion_calendario.py` sin confundirlos y deriva tres cosas de esa única representación:
+- las ventanas: inicio incluido y fin excluido, cruzando la medianoche;
+- la próxima oportunidad;
+- el plan de Windows: los `CalendarTrigger` semanales con desplazamiento `-05:00` y la huella SHA-256 de su texto canónico.
+
+`decidir` admite o rechaza cada oportunidad programada, en este orden:
+1. fuera de horario;
+2. reintentos agotados;
+3. evento completo;
+4. requiere operador;
+5. oportunidad ya usada;
+6. espera de reintento;
+7. admitido.
+
+Los estados que requieren operador muestran su aviso y la recuperación de las 09:00 no los rearma.
+
+```mermaid
+flowchart LR
+    CFG["configuracion v2<br/>horario"] --> POL["PoliticaHorario<br/>validada"]
+    POL --> PLAN["horario plan<br/>disparadores + huella"]
+    PLAN --> PS["fase6_tarea.ps1 v2<br/>CalendarTrigger"]
+    PS --> CLI["ciclo --programado --plan HUELLA"]
+    POL --> ADM["decidir por juego"]
+    CLI --> ADM
+    ADM -->|admitido| C["Ciclo del juego<br/>(revalida al empezar y confirma<br/>el slot antes de consultar)"]
+    ADM -->|rechazo| E["Motivo registrado; sin recursos"]
+```
+
+`OperacionAutomatica.ciclo` distingue la invocación programada (`InvocacionProgramada` con la huella) de la manual. La programada se rechaza sin abrir recursos en cualquiera de estos casos:
+- núcleo pausado;
+- horario ausente o no válido;
+- plan divergente;
+- ningún juego debido.
+
+Si no se rechaza, ejecuta los juegos admitidos y revalida cada uno antes de empezarlo. Tras preparar el juego, `horario.confirmar` comprueba justo antes de `sincronizar` que sigue admitido el mismo slot (corrección v2 de F92-HOR-01). Si la preparación cruzó el cierre, el juego queda `omitido_horario` sin consultar, sin consumir el slot siguiente y conservando su espera. Un evento ya procesado detiene las consultas repetidas.
+
+El almacén admite configuración de las versiones 1 y 2 y rechaza un `horario` en la versión 1. La migración es explícita (`horario migrar --confirmar`), y las lecturas y el panel no escriben.
+
+`fase6_tarea.ps1` reconoce la tarea versión 1 con sus comprobaciones exactas auditadas solo para consultarla, pausarla, desinstalarla o migrarla. Registra la versión 2 sin `LogonTrigger` ni repetición y con `StartWhenAvailable=false`. `-Migrar` sustituye en el mismo nombre, con exportación previa para `-Revertir`, y rechaza tareas ajenas o alteradas, un ciclo vivo y duplicados. `-Revertir` registra una copia validada y deshabilitada de esa exportación y vuelve a comprobar el ciclo vivo tras pausar; si el registro falla, restaura la versión 2 deshabilitada. El plan se lee conservando el texto ISO de las fechas (corrección v2 de F92-REV-01 y F92-PS-02).
+
+**Exportación nativa (corrección v3 de F92-NAT-01).** El Programador puede omitir `StartWhenAvailable` cuando vale su predeterminado `false`.
+- La validación de la exportación usa una tabla local con los campos que el esquema permite omitir (`RunLevel`, `WakeToRun` y `StartWhenAvailable`), cada uno con su valor **documentado**. Si un campo se omite, toma ese valor y después se compara con el esperado de su versión, así que una versión 1 sin el campo sigue rechazada.
+- El diagnóstico registra `origen = predeterminado_documentado`.
+- La exportación original se conserva sin normalizar.
+
+**Estado.** Validado en Windows con Windows PowerShell 5.1 y aprobado por la auditoría el 26 de octubre de 2026:
+- pruebas dirigidas: 121 casos únicos, por consolidación de dos corridas;
+- ensayo nativo B con el Programador real y un testigo sintético.
+
+La tarea real sigue en la versión 1 y su migración es un bloque posterior y separado ([validación del operador](backend/docs/fase9_2_validacion_operador_2026-10-26.md)).
+
+Diseño y consolas: [fase6_horario.md](backend/docs/fase6_horario.md). Migración de `LP6-01023009031fcabd`: [fase6_migracion_lp6.md](backend/docs/fase6_migracion_lp6.md).
 
 ### Validación y límites
 
@@ -6866,7 +6921,7 @@ El protocolo de esta entrega termina en aplicar v3.3 sobre v3.2 exacta → prueb
 
 ## Orden futuro y límite de esta entrega
 
-**6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 está activada y su prueba operativa con MiLoto/ColorLoto está verificada; Fase 7 está integrada (PR #98) y la Fase 8 también (PR #99, CI aprobado); la entrega 9.1 está implementada y validada solo en Linux, con la Fase 9 global abierta; fases 10–11 conservan su planificación propia. Las referencias originales 6/7/8/9 pasan a 7/8/9/10 sin renombrar evidencia o código históricos. Fase 11 consumirá servicios pertinentes sin duplicar ML; plataforma y empaquetado siguen pendientes. Objetivos y aceptación: [ROADMAP.md](ROADMAP.md).
+**6 Actualización y operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal.** Fase 6 está activada y su prueba operativa con MiLoto/ColorLoto está verificada; Fase 7 está integrada (PR #98) y la Fase 8 también (PR #99, CI aprobado); la 9.1 está integrada (PR #100). La entrega 9.2 está validada en Linux y en Windows nativo y aprobada por la auditoría; falta su publicación y el CI del nuevo PR, y la Fase 9 global sigue abierta; fases 10–11 conservan su planificación propia. Las referencias originales 6/7/8/9 pasan a 7/8/9/10 sin renombrar evidencia o código históricos. Fase 11 consumirá servicios pertinentes sin duplicar ML; plataforma y empaquetado siguen pendientes. Objetivos y aceptación: [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -7013,3 +7068,26 @@ flowchart LR
 La pasarela no importa casos de uso, dominio, repositorios ni la base (prueba de aislamiento por AST y por importación en un proceso aparte). No la montan `app.main` ni la API pública. Contrato: el OpenAPI versionado del frontend se compara con la app pública de la base. Despliegue, HTTPS y autenticación de escritura siguen en la Fase 10. Diseño, límites, verificación y matriz de huecos: [backend/docs/fase9_frontend.md](backend/docs/fase9_frontend.md).
 
 **Validación local de la 9.1 v2:** auditoría Linux y Windows nativo con Brave instalado completada, sobre datos sintéticos. En Windows: 379 pruebas Vitest, 186 de pasarela y 92 de API; 297 visitas normales y 12 de Vite, con controles de seguridad, geometría, almacenamiento y ausencia de canarios. El adaptador externo de verificación propaga `NO_COLOR=1` para reconocer la dirección de Vite en Windows; no modifica el producto. No se consultó PostgreSQL operativo ni se invocó la tarea de Fase 6. Publicación manual y checks del PR pendientes. La Fase 9 global sigue abierta. [Validación del operador](backend/docs/fase9_validacion_operador_2026-10-25.md).
+
+## Fase 9.2: páginas de las métricas anteriores
+
+Extiende el índice y la ruta de métrica existentes (`GET /api/v1/juegos/{codigo}/estadisticas` y `.../estadisticas/{metrica}`), sin una ruta por métrica. La lista de la pasarela sigue con sus 13 plantillas y añade a la de métrica los parámetros `color` y `pagina`.
+
+```mermaid
+flowchart LR
+    R["rutas.py<br/>GET metrica"] --> Q["ConsultarEstadisticasDescriptivas.metrica"]
+    Q -->|Fase 5| N["construir_metrica"]
+    Q -->|anterior| M["metricas_anteriores.construir"]
+    M --> K["calcular_sin_persistir<br/>(recetas existentes)"]
+    K --> P["Proyección: indicadores,<br/>tablas, notas, selector, paginación"]
+```
+
+| Pieza | Responsabilidad |
+|---|---|
+| `use_cases/metricas_anteriores.py` | catálogo de las métricas anteriores por juego (receta, parámetros, forma, filtro y si se pagina). Proyecta el resultado serializado de la receta al contenido tipado. Elige los filtros: año, mes o día de la semana del último sorteo por defecto; ventana entre las existentes; color entre los vigentes y los observados. Separa cada par número-color en número y color. Pagina con 100 filas y nunca recorta en silencio |
+| `calcular_y_persistir_estadistica.calcular_sin_persistir` | misma receta que la consola HTMX, sin escribir en `estadisticas` |
+| `api/publica/esquemas.py` | `RespuestaDeMetrica` con `ContenidoDeMetrica`: columnas con formato, filas, `Paginacion`, indicadores, notas y selector. `MetricaDisponible` añade título, grupo, origen, parámetro y paginación |
+| `api/publica/errores.py` | `historico_no_valido` (409) cuando el histórico cargado no es consistente |
+| `frontend/src/pantallas/Estadisticas.tsx` | una consulta de métrica por pantalla; el filtro y la página van en la URL; el color se muestra con la convención de la consola; paginación accesible |
+
+El frontend no calcula estadísticas: presenta columnas y filas. La pasarela y la API conservan cuotas, `Retry-After`, 429 y el plazo total de la pasarela. Validada en Linux y en Windows nativo con Brave, y aprobada por la auditoría; pendientes la publicación manual y el CI del nuevo PR ([validación del operador](backend/docs/fase9_2_validacion_operador_2026-10-26.md)). Diseño y matriz de huecos: [backend/docs/fase9_frontend.md](backend/docs/fase9_frontend.md).

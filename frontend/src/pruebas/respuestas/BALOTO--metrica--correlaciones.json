@@ -66,6 +66,7 @@
    "slug": "correlaciones",
    "titulo": "Correlaciones",
    "grupo": "pruebas",
+   "origen": "fase5",
    "parametro": null,
    "estado": "ok",
    "motivo": null,
@@ -195,7 +196,8 @@
        "observacion": "p = (1 + k)/(1 + B); desviación típica ≤ 0,005 frente a la exacta."
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": null,

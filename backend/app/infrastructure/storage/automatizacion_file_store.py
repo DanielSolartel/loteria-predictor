@@ -5,6 +5,10 @@ usan publicación atómica y lectura cooperante Windows ya validadas; no
 reescriben los temporales de otras ejecuciones. Las propuestas de corrección
 y sus decisiones son entradas inmutables distintas del estado mutable.
 
+La configuración tiene versión explícita: la 1 (anterior, sin horario) se sigue leyendo tal cual y
+la 2 añade la política de horario de consulta (`operacion_horario`), validada al leer y al escribir.
+Leer nunca migra: pasar de la 1 a la 2 es una escritura explícita (`horario migrar --confirmar`).
+
 Los cerrojos de este almacén coordinan procesos que comparten su directorio.
 No sustituyen la coordinación de base de datos del adaptador operativo ni
 demuestran exclusión entre equipos con directorios diferentes.
@@ -21,6 +25,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.application import operacion_horario
 from app.infrastructure.storage import operacion_file_store as ofs
 
 JUEGOS = ("BALOTO", "BALOTO_REVANCHA", "MILOTO", "COLORLOTO")
@@ -77,8 +82,12 @@ def _defecto() -> dict:
 def _configuracion(configuracion: dict) -> dict:
     _verificar_objeto(configuracion)
     c = {**_defecto(), **configuracion}
-    if type(c["version"]) is not int or c["version"] != 1:
+    if type(c["version"]) is not int or c["version"] not in (1, 2):
         raise ValueError("Versión de configuración operativa no admitida.")
+    if c["version"] == 1 and "horario" in c:
+        raise ValueError("La versión 1 no lleva horario: migre de forma explícita a la versión 2.")
+    if c["version"] == 2:
+        operacion_horario.desde_dict(c.get("horario"))  # PoliticaNoValida: nunca vuelve al sondeo continuo
     if type(c["activada"]) is not bool or type(c["pausada"]) is not bool:
         raise ValueError("Activada y pausada deben ser booleanos explícitos.")
     if not isinstance(c["juegos"], list) or not c["juegos"]:

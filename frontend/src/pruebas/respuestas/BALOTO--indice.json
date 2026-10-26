@@ -8,76 +8,244 @@
   "panel": "/api/v1/juegos/BALOTO/estadisticas/panel",
   "metricas": [
    {
+    "metrica": "frecuencia-numeros",
+    "titulo": "Frecuencia de números",
+    "grupo": "frecuencias",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-superbalota",
+    "titulo": "Frecuencia de superbalota",
+    "grupo": "frecuencias",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-observada-esperada",
+    "titulo": "Observada frente a esperada",
+    "grupo": "frecuencias",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
     "metrica": "frecuencia-numeros-por-anio",
-    "parametro": "anio"
+    "titulo": "Frecuencia de números por año",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "anio",
+    "paginada": false
    },
    {
     "metrica": "frecuencia-numeros-por-mes",
-    "parametro": "mes"
+    "titulo": "Frecuencia de números por mes",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "mes",
+    "paginada": false
    },
    {
     "metrica": "frecuencia-numeros-por-dia-semana",
-    "parametro": "dia_semana"
+    "titulo": "Frecuencia de números por día de la semana",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "dia_semana",
+    "paginada": false
    },
    {
     "metrica": "frecuencia-superbalota-por-anio",
-    "parametro": "anio"
+    "titulo": "Frecuencia de superbalota por año",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "anio",
+    "paginada": false
    },
    {
     "metrica": "frecuencia-superbalota-por-mes",
-    "parametro": "mes"
+    "titulo": "Frecuencia de superbalota por mes",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "mes",
+    "paginada": false
    },
    {
     "metrica": "frecuencia-superbalota-por-dia-semana",
-    "parametro": "dia_semana"
+    "titulo": "Frecuencia de superbalota por día de la semana",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "dia_semana",
+    "paginada": false
+   },
+   {
+    "metrica": "atrasos-numeros",
+    "titulo": "Atrasos de números",
+    "grupo": "atrasos",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "atrasos-superbalota",
-    "parametro": null
+    "titulo": "Atrasos de superbalota",
+    "grupo": "atrasos",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "intervalos-historicos-numeros",
-    "parametro": null
+    "titulo": "Intervalos históricos de números",
+    "grupo": "atrasos",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "intervalos-historicos-superbalota",
-    "parametro": null
+    "titulo": "Intervalos históricos de superbalota",
+    "grupo": "atrasos",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-pares-impares",
+    "titulo": "Pares e impares",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-altos-bajos",
+    "titulo": "Bajos y altos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "distribucion-sumas",
-    "parametro": null
+    "titulo": "Distribución de sumas",
+    "grupo": "distribuciones",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "distribucion-decenas",
-    "parametro": null
+    "titulo": "Números por decena",
+    "grupo": "distribuciones",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-pares-consecutivos",
+    "titulo": "Pares consecutivos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-racha-maxima",
+    "titulo": "Racha máxima de consecutivos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-trios-consecutivos",
+    "titulo": "Tríos consecutivos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "repeticiones-entre-sorteos",
+    "titulo": "Repeticiones entre sorteos",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "repeticion-superbalota",
-    "parametro": null
+    "titulo": "Repetición de superbalota",
+    "grupo": "coocurrencia",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "coocurrencia-pares",
+    "titulo": "Coocurrencia de pares",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "coocurrencia-trios",
+    "titulo": "Coocurrencia de tríos",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": true
    },
    {
     "metrica": "comparacion-frecuencia-numeros-por-ventana",
-    "parametro": "ventana"
+    "titulo": "Números: ventana reciente",
+    "grupo": "ventana",
+    "origen": "fase5",
+    "parametro": "ventana",
+    "paginada": false
    },
    {
     "metrica": "comparacion-frecuencia-superbalota-por-ventana",
-    "parametro": "ventana"
+    "titulo": "Superbalota: ventana reciente",
+    "grupo": "ventana",
+    "origen": "fase5",
+    "parametro": "ventana",
+    "paginada": false
    },
    {
     "metrica": "pruebas-uniformidad",
-    "parametro": null
+    "titulo": "Pruebas de uniformidad (chi-cuadrado)",
+    "grupo": "pruebas",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "independencia-pares",
-    "parametro": null
+    "titulo": "Independencia de pares",
+    "grupo": "pruebas",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "independencia-trios",
-    "parametro": null
+    "titulo": "Independencia de tríos",
+    "grupo": "pruebas",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "correlaciones",
-    "parametro": null
+    "titulo": "Correlaciones",
+    "grupo": "pruebas",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    }
   ]
  }

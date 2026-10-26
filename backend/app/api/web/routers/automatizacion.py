@@ -38,6 +38,14 @@ ESTADOS = {
     "generacion_bloqueada": "Predicción bloqueada", "sin_consultas_debidas": "Próxima consulta programada",
     "ocupado": "Recurso en uso",
     "historico_incompleto": "Histórico incompleto; recuperación necesaria",
+    "omitido_horario": "No iniciado: su franja o su slot terminó antes de consultar", "horario_no_configurado": "Sin horario (configuración versión 1)",
+    "horario_no_valido": "Horario no válido", "plan_divergente": "Tarea con otro plan de horario",
+}
+MOTIVOS_HORARIO = {
+    "admitido": "Oportunidad abierta", "fuera_de_horario": "Fuera de horario", "evento_completo": "Evento ya procesado",
+    "requiere_operador": "Requiere una acción explícita", "oportunidad_usada": "Consulta de este slot ya hecha",
+    "espera_reintento": "Esperando por fallo o Retry-After", "reintentos_agotados": "Intentos agotados",
+    "deshabilitado": "Deshabilitado en el núcleo", "cierre_antes_de_consultar": "Slot cerrado antes de consultar",
 }
 
 
@@ -66,7 +74,8 @@ templates.env.filters["fecha_operativa"] = fecha_operativa
 
 def _contexto(request: Request, **datos) -> dict:
     return {"request": request, "active_page": "automatizacion", "estado_db": "Estado guardado",
-            "token_local": proteccion_local.token_local(), "nombres": NOMBRES, "estados": ESTADOS, **datos}
+            "token_local": proteccion_local.token_local(), "nombres": NOMBRES, "estados": ESTADOS,
+            "motivos_horario": MOTIVOS_HORARIO, **datos}
 
 
 def _error(request: Request, mensaje: str, codigo: int):

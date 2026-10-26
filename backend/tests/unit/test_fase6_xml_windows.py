@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from tests.unit.test_fase6_tarea_windows import (
-    NS, _llamar, _sesion, tarea,
+    NS, PLAN, _llamar, _sesion, tarea,
 )
 
 
@@ -44,19 +44,19 @@ def _assert_contenido(x, tarea):
     val = lambda n: x.findtext("t:" + n.replace("/", "/t:"), namespaces=NS)
     assert val("Actions/Exec/Command") == str(tarea["python"])
     assert val("Actions/Exec/WorkingDirectory") == str(tarea["repo"] / "backend")
-    assert val("Actions/Exec/Arguments") == '-m scripts.operacion_automatica --config "' + str(tarea["config"]) + '" ciclo'
+    assert val("Actions/Exec/Arguments") == ('-m scripts.operacion_automatica --config "' + str(tarea["config"])
+                                             + '" ciclo --programado --plan ' + PLAN["huella"])
     assert val("Principals/Principal/RunLevel") == "LeastPrivilege"
     assert val("Principals/Principal/LogonType") == "InteractiveToken"
     assert val("Settings/Enabled") == "false"
     assert val("Settings/MultipleInstancesPolicy") == "IgnoreNew"
     assert val("Settings/ExecutionTimeLimit") == "PT2H"
     assert val("Settings/WakeToRun") == "false"
-    assert val("Settings/StartWhenAvailable") == "true"
-    assert val("Triggers/TimeTrigger/Repetition/Interval") == "PT5M"
-    assert len(x.findall("t:Triggers/*", NS)) == 2
-    assert x.find("t:Triggers/t:LogonTrigger", NS) is not None
-    assert val("Triggers/LogonTrigger/UserId") == val("Principals/Principal/UserId")
-    assert val("RegistrationInfo/Source") == "LoteriaPredictor/Fase6/tarea/1"
+    assert val("Settings/StartWhenAvailable") == "false"
+    disparadores = x.findall("t:Triggers/*", NS)
+    assert [d.tag.split("}")[1] for d in disparadores] == ["CalendarTrigger"] * len(PLAN["disparadores"])
+    assert x.find("t:Triggers/t:LogonTrigger", NS) is None and x.find("t:Triggers/t:TimeTrigger", NS) is None
+    assert val("RegistrationInfo/Source") == "LoteriaPredictor/Fase6/tarea/2"
 
 
 def test_plan_xml_unicode_cabecera_bytes_y_contenido_coherentes(tarea_unicode):

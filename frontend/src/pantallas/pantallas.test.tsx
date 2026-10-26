@@ -149,13 +149,121 @@ describe("sorteos", () => {
 });
 
 describe("estadisticas", () => {
-  it("el panel enlaza solo las metricas del indice; las anteriores quedan pendientes", async () => {
-    instalarServidor();
+  it("el panel enlaza las metricas del indice (Fase 5 y anteriores) con solo dos consultas", async () => {
+    const { deApi } = instalarServidor();
     renderizar("/juegos/COLORLOTO/estadisticas");
-    expect(await screen.findByText("5 métricas con página propia según el índice de la API.")).toBeTruthy();
+    expect(await screen.findByText(/^36 métricas con página propia según el índice de la API \(\s*5 de la Fase 5 y 31 anteriores\)\.$/)).toBeTruthy();
     const enlazadas = screen.getAllByRole("link").filter((a) => /\/juegos\/COLORLOTO\/estadisticas\/[a-z-]+$/.test(a.getAttribute("href") ?? ""));
-    expect(enlazadas).toHaveLength(5);
-    expect(screen.getAllByText("Página de detalle pendiente (no está en el índice v1).").length).toBeGreaterThan(0);
+    expect(enlazadas).toHaveLength(36);
+    expect(enlazadas.map((a) => a.textContent)).toContain("Frecuencia de colores");
+    expect(screen.queryAllByText("Página de detalle pendiente (no está en el índice v1).")).toHaveLength(0);
+    // Presupuesto: el indice y el panel; ninguna metrica se descarga al entrar.
+    expect(deApi().filter((u) => u.includes("/estadisticas")).sort()).toEqual([
+      "/api/v1/juegos/COLORLOTO/estadisticas",
+      "/api/v1/juegos/COLORLOTO/estadisticas/panel",
+    ]);
+  });
+
+  it("una metrica que el indice no declara sigue sin enlace y queda pendiente", async () => {
+    const indice = muestra("COLORLOTO--indice");
+    const cuerpo = indice.cuerpo as { metricas: { metrica: string }[] };
+    cuerpo.metricas = cuerpo.metricas.filter((m) => m.metrica !== "frecuencia-colores");
+    instalarServidor({ "/api/v1/juegos/COLORLOTO/estadisticas": indice });
+    renderizar("/juegos/COLORLOTO/estadisticas");
+    const tarjeta = (await screen.findByText("Frecuencia de colores")).closest("[data-metrica]") as HTMLElement;
+    expect(within(tarjeta).queryByRole("link")).toBeNull();
+    expect(tarjeta.textContent).toContain("Página de detalle pendiente (no está en el índice v1).");
+  });
+
+  it("ColorLoto: cada fila asocia numero y color, con muestra y nombre en texto", async () => {
+    const { deApi } = instalarServidor();
+    renderizar("/juegos/COLORLOTO/estadisticas/frecuencia-pares-numero-color");
+    const region = await screen.findByRole("region", { name: "Tabla: Frecuencia de pares número-color" });
+    const [cabecera, fila] = within(region).getAllByRole("row");
+    expect(within(cabecera!).getAllByRole("columnheader").map((c) => c.textContent?.split(/\s/)[0])).toEqual([
+      "Número", "Color", "Balotas", "Balotas",
+    ]);
+    const [numero, color, , porSorteo] = within(fila!).getAllByRole("cell");
+    expect(numero!.textContent).toBe("1");
+    expect(color!.textContent).toBe("AMARILLO");
+    expect(color!.querySelector(".color-swatch.color-amarillo")?.getAttribute("aria-hidden")).toBe("true");
+    expect(color!.className).not.toContain("text-end");
+    expect(porSorteo!.textContent).toBe("0.133");
+    expect(screen.getByText(/página anterior \(misma receta que la consola local\)/)).toBeTruthy();
+    expect(deApi().filter((u) => u.includes("/estadisticas"))).toEqual(["/api/v1/juegos/COLORLOTO/estadisticas/frecuencia-pares-numero-color"]);
+  });
+
+  it("un color sin estilo conocido se muestra con su codigo y una muestra neutra", async () => {
+    const m = muestra("COLORLOTO--metrica--frecuencia-colores");
+    const tabla = (m.cuerpo as { metrica: { tablas: { filas: Record<string, unknown>[] }[] } }).metrica.tablas[0]!;
+    tabla.filas[0] = { ...tabla.filas[0], color: "MORADO" };
+    instalarServidor({ "/api/v1/juegos/COLORLOTO/estadisticas/frecuencia-colores": m });
+    renderizar("/juegos/COLORLOTO/estadisticas/frecuencia-colores");
+    const celda = (await screen.findByText("MORADO")).closest("td") as HTMLElement;
+    expect(celda.querySelector(".color-swatch")?.className).toBe("color-swatch");
+  });
+
+  it("tabla paginada por la API: total, pagina y enlaces que van a la URL", async () => {
+    const { deApi } = instalarServidor();
+    renderizar("/juegos/BALOTO/estadisticas/coocurrencia-trios");
+    const region = await screen.findByRole("region", { name: "Tabla: Coocurrencia de tríos" });
+    expect(within(region).getAllByRole("row")).toHaveLength(101);
+    expect(screen.getByText("581 filas en total · página 1 de 6 · 100 por página")).toBeTruthy();
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Paginación" })).getByRole("link", { name: "Página siguiente" }));
+    await waitFor(() => expect(ubicacion()).toBe("/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=2"));
+    expect(await screen.findByText("581 filas en total · página 2 de 6 · 100 por página")).toBeTruthy();
+    expect(deApi().filter((u) => u.includes("/estadisticas"))).toEqual([
+      "/api/v1/juegos/BALOTO/estadisticas/coocurrencia-trios",
+      "/api/v1/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=2",
+    ]);
+  });
+
+  it("selector de color: va a la URL y vuelve a la primera pagina", async () => {
+    const { deApi } = instalarServidor();
+    renderizar("/juegos/COLORLOTO/estadisticas/distribucion-conteo-color");
+    const selector = (await screen.findByLabelText("color")) as HTMLSelectElement;
+    expect(selector.value).toBe("AMARILLO");
+    fireEvent.change(selector, { target: { value: "ROJO" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    await waitFor(() => expect(ubicacion()).toBe("/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=ROJO"));
+    await waitFor(() => expect(deApi()).toContain("/api/v1/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=ROJO"));
+  });
+
+  it.each([
+    ["COLORLOTO--error--422", "/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=MORADO", "parametro_no_valido",
+      "color debe ser uno de"],
+  ])("%s: el parametro no valido se explica sin reintento", async (nombre, ruta, codigo, texto) => {
+    instalarServidor();
+    renderizar(ruta);
+    const a = await alerta();
+    expect(a.dataset.codigo).toBe(codigo);
+    expect(a.textContent).toContain(texto);
+    expect(within(a).queryByRole("button", { name: "Reintentar" })).toBeNull();
+    expect(muestra(nombre).estado).toBe(422);
+  });
+
+  it("sin datos hasta el corte: estado explicito y sin tablas", async () => {
+    instalarServidor();
+    renderizar("/juegos/BALOTO/estadisticas/atrasos-numeros?hasta_numero_sorteo=1");
+    await screen.findByRole("heading", { level: 1, name: "Atrasos de números" });
+    const aviso = document.querySelector("[data-estado='sin_datos']") as HTMLElement;
+    expect(aviso.textContent).toBe("Sin datos: No hay sorteos hasta el corte indicado.");
+    expect(screen.queryByRole("region", { name: /^Tabla:/ })).toBeNull();
+  });
+
+  it("historico no valido (409): explicacion propia, sin contenido ni reintento", async () => {
+    instalarServidor({
+      "/api/v1/juegos/BALOTO/estadisticas/coocurrencia-pares": {
+        estado: 409,
+        cuerpo: { error: { codigo: "historico_no_valido", mensaje: "El histórico cargado no es consistente; no se calcula la estadística", solicitud: "a".repeat(32) } },
+      },
+    });
+    renderizar("/juegos/BALOTO/estadisticas/coocurrencia-pares");
+    const a = await alerta();
+    expect(a.dataset.codigo).toBe("historico_no_valido");
+    expect(a.textContent).toContain("no supera la validación de la muestra");
+    expect(within(a).queryByRole("button", { name: "Reintentar" })).toBeNull();
+    expect(screen.queryByRole("region", { name: /^Tabla:/ })).toBeNull();
   });
 
   it("la tabla generica conserva los datos adicionales de cada fila", async () => {

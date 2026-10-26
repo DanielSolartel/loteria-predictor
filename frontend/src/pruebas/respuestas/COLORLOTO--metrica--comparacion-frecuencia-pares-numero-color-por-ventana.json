@@ -1,0 +1,563 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/comparacion-frecuencia-pares-numero-color-por-ventana",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "comparacion-frecuencia-pares-numero-color-por-ventana",
+   "titulo": "Pares número-color: ventana reciente",
+   "grupo": "ventana",
+   "origen": "anterior",
+   "parametro": "ventana",
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Filtro",
+     "valor": "últimos 20 sorteos",
+     "unidad": "",
+     "formato": "texto"
+    },
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 45,
+     "unidad": "sorteos",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Pares número-color: ventana reciente",
+     "columnas": [
+      {
+       "clave": "numero",
+       "etiqueta": "Número",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "color",
+       "etiqueta": "Color",
+       "formato": "color",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones_muestra",
+       "etiqueta": "Balotas (muestra)",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "por_sorteo_muestra",
+       "etiqueta": "Balotas por sorteo (muestra)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "apariciones_ventana",
+       "etiqueta": "Balotas (ventana)",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "por_sorteo_ventana",
+       "etiqueta": "Balotas por sorteo (ventana)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "diferencia",
+       "etiqueta": "Diferencia",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      }
+     ],
+     "filas": [
+      {
+       "numero": 1,
+       "color": "AMARILLO",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 0,
+       "por_sorteo_ventana": 0.0,
+       "diferencia": -0.13333333333333333
+      },
+      {
+       "numero": 1,
+       "color": "AZUL",
+       "apariciones_muestra": 5,
+       "por_sorteo_muestra": 0.1111111111111111,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.0111111111111111
+      },
+      {
+       "numero": 1,
+       "color": "BLANCO",
+       "apariciones_muestra": 9,
+       "por_sorteo_muestra": 0.2,
+       "apariciones_ventana": 4,
+       "por_sorteo_ventana": 0.2,
+       "diferencia": 0.0
+      },
+      {
+       "numero": 1,
+       "color": "NEGRO",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.033333333333333326
+      },
+      {
+       "numero": 1,
+       "color": "ROJO",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.07777777777777778
+      },
+      {
+       "numero": 1,
+       "color": "VERDE",
+       "apariciones_muestra": 7,
+       "por_sorteo_muestra": 0.15555555555555556,
+       "apariciones_ventana": 5,
+       "por_sorteo_ventana": 0.25,
+       "diferencia": 0.09444444444444444
+      },
+      {
+       "numero": 2,
+       "color": "AMARILLO",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 3,
+       "por_sorteo_ventana": 0.15,
+       "diferencia": 0.016666666666666663
+      },
+      {
+       "numero": 2,
+       "color": "AZUL",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 5,
+       "por_sorteo_ventana": 0.25,
+       "diferencia": 0.07222222222222222
+      },
+      {
+       "numero": 2,
+       "color": "BLANCO",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 5,
+       "por_sorteo_ventana": 0.25,
+       "diferencia": 0.07222222222222222
+      },
+      {
+       "numero": 2,
+       "color": "NEGRO",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 3,
+       "por_sorteo_ventana": 0.15,
+       "diferencia": 0.016666666666666663
+      },
+      {
+       "numero": 2,
+       "color": "ROJO",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 4,
+       "por_sorteo_ventana": 0.2,
+       "diferencia": 0.022222222222222227
+      },
+      {
+       "numero": 2,
+       "color": "VERDE",
+       "apariciones_muestra": 3,
+       "por_sorteo_muestra": 0.06666666666666667,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": 0.03333333333333334
+      },
+      {
+       "numero": 3,
+       "color": "AMARILLO",
+       "apariciones_muestra": 4,
+       "por_sorteo_muestra": 0.08888888888888889,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": 0.011111111111111113
+      },
+      {
+       "numero": 3,
+       "color": "AZUL",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 1,
+       "por_sorteo_ventana": 0.05,
+       "diferencia": -0.08333333333333333
+      },
+      {
+       "numero": 3,
+       "color": "BLANCO",
+       "apariciones_muestra": 5,
+       "por_sorteo_muestra": 0.1111111111111111,
+       "apariciones_ventana": 1,
+       "por_sorteo_ventana": 0.05,
+       "diferencia": -0.0611111111111111
+      },
+      {
+       "numero": 3,
+       "color": "NEGRO",
+       "apariciones_muestra": 2,
+       "por_sorteo_muestra": 0.044444444444444446,
+       "apariciones_ventana": 1,
+       "por_sorteo_ventana": 0.05,
+       "diferencia": 0.005555555555555557
+      },
+      {
+       "numero": 3,
+       "color": "ROJO",
+       "apariciones_muestra": 5,
+       "por_sorteo_muestra": 0.1111111111111111,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.0111111111111111
+      },
+      {
+       "numero": 3,
+       "color": "VERDE",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 3,
+       "por_sorteo_ventana": 0.15,
+       "diferencia": -0.02777777777777779
+      },
+      {
+       "numero": 4,
+       "color": "AMARILLO",
+       "apariciones_muestra": 5,
+       "por_sorteo_muestra": 0.1111111111111111,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.0111111111111111
+      },
+      {
+       "numero": 4,
+       "color": "AZUL",
+       "apariciones_muestra": 7,
+       "por_sorteo_muestra": 0.15555555555555556,
+       "apariciones_ventana": 3,
+       "por_sorteo_ventana": 0.15,
+       "diferencia": -0.005555555555555564
+      },
+      {
+       "numero": 4,
+       "color": "BLANCO",
+       "apariciones_muestra": 10,
+       "por_sorteo_muestra": 0.2222222222222222,
+       "apariciones_ventana": 4,
+       "por_sorteo_ventana": 0.2,
+       "diferencia": -0.0222222222222222
+      },
+      {
+       "numero": 4,
+       "color": "NEGRO",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 5,
+       "por_sorteo_ventana": 0.25,
+       "diferencia": 0.11666666666666667
+      },
+      {
+       "numero": 4,
+       "color": "ROJO",
+       "apariciones_muestra": 9,
+       "por_sorteo_muestra": 0.2,
+       "apariciones_ventana": 6,
+       "por_sorteo_ventana": 0.3,
+       "diferencia": 0.09999999999999998
+      },
+      {
+       "numero": 4,
+       "color": "VERDE",
+       "apariciones_muestra": 9,
+       "por_sorteo_muestra": 0.2,
+       "apariciones_ventana": 4,
+       "por_sorteo_ventana": 0.2,
+       "diferencia": 0.0
+      },
+      {
+       "numero": 5,
+       "color": "AMARILLO",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 4,
+       "por_sorteo_ventana": 0.2,
+       "diferencia": 0.022222222222222227
+      },
+      {
+       "numero": 5,
+       "color": "AZUL",
+       "apariciones_muestra": 9,
+       "por_sorteo_muestra": 0.2,
+       "apariciones_ventana": 5,
+       "por_sorteo_ventana": 0.25,
+       "diferencia": 0.04999999999999999
+      },
+      {
+       "numero": 5,
+       "color": "BLANCO",
+       "apariciones_muestra": 5,
+       "por_sorteo_muestra": 0.1111111111111111,
+       "apariciones_ventana": 1,
+       "por_sorteo_ventana": 0.05,
+       "diferencia": -0.0611111111111111
+      },
+      {
+       "numero": 5,
+       "color": "NEGRO",
+       "apariciones_muestra": 5,
+       "por_sorteo_muestra": 0.1111111111111111,
+       "apariciones_ventana": 3,
+       "por_sorteo_ventana": 0.15,
+       "diferencia": 0.03888888888888889
+      },
+      {
+       "numero": 5,
+       "color": "ROJO",
+       "apariciones_muestra": 4,
+       "por_sorteo_muestra": 0.08888888888888889,
+       "apariciones_ventana": 1,
+       "por_sorteo_ventana": 0.05,
+       "diferencia": -0.03888888888888889
+      },
+      {
+       "numero": 5,
+       "color": "VERDE",
+       "apariciones_muestra": 11,
+       "por_sorteo_muestra": 0.24444444444444444,
+       "apariciones_ventana": 5,
+       "por_sorteo_ventana": 0.25,
+       "diferencia": 0.005555555555555564
+      },
+      {
+       "numero": 6,
+       "color": "AMARILLO",
+       "apariciones_muestra": 3,
+       "por_sorteo_muestra": 0.06666666666666667,
+       "apariciones_ventana": 0,
+       "por_sorteo_ventana": 0.0,
+       "diferencia": -0.06666666666666667
+      },
+      {
+       "numero": 6,
+       "color": "AZUL",
+       "apariciones_muestra": 7,
+       "por_sorteo_muestra": 0.15555555555555556,
+       "apariciones_ventana": 3,
+       "por_sorteo_ventana": 0.15,
+       "diferencia": -0.005555555555555564
+      },
+      {
+       "numero": 6,
+       "color": "BLANCO",
+       "apariciones_muestra": 4,
+       "por_sorteo_muestra": 0.08888888888888889,
+       "apariciones_ventana": 1,
+       "por_sorteo_ventana": 0.05,
+       "diferencia": -0.03888888888888889
+      },
+      {
+       "numero": 6,
+       "color": "NEGRO",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 3,
+       "por_sorteo_ventana": 0.15,
+       "diferencia": -0.02777777777777779
+      },
+      {
+       "numero": 6,
+       "color": "ROJO",
+       "apariciones_muestra": 13,
+       "por_sorteo_muestra": 0.28888888888888886,
+       "apariciones_ventana": 6,
+       "por_sorteo_ventana": 0.3,
+       "diferencia": 0.011111111111111127
+      },
+      {
+       "numero": 6,
+       "color": "VERDE",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.033333333333333326
+      },
+      {
+       "numero": 7,
+       "color": "AMARILLO",
+       "apariciones_muestra": 5,
+       "por_sorteo_muestra": 0.1111111111111111,
+       "apariciones_ventana": 1,
+       "por_sorteo_ventana": 0.05,
+       "diferencia": -0.0611111111111111
+      },
+      {
+       "numero": 7,
+       "color": "AZUL",
+       "apariciones_muestra": 2,
+       "por_sorteo_muestra": 0.044444444444444446,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": 0.05555555555555556
+      },
+      {
+       "numero": 7,
+       "color": "BLANCO",
+       "apariciones_muestra": 8,
+       "por_sorteo_muestra": 0.17777777777777778,
+       "apariciones_ventana": 6,
+       "por_sorteo_ventana": 0.3,
+       "diferencia": 0.1222222222222222
+      },
+      {
+       "numero": 7,
+       "color": "NEGRO",
+       "apariciones_muestra": 4,
+       "por_sorteo_muestra": 0.08888888888888889,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": 0.011111111111111113
+      },
+      {
+       "numero": 7,
+       "color": "ROJO",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.033333333333333326
+      },
+      {
+       "numero": 7,
+       "color": "VERDE",
+       "apariciones_muestra": 6,
+       "por_sorteo_muestra": 0.13333333333333333,
+       "apariciones_ventana": 2,
+       "por_sorteo_ventana": 0.1,
+       "diferencia": -0.033333333333333326
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas.",
+    "Cada balota cuenta (con repetición): «balotas por sorteo» es un promedio que puede superar 1; no es una proporción de sorteos.",
+    "Colores: los vigentes en la fecha del último sorteo de la muestra más los observados en ella, como en la consola. Un color sin estilo conocido se muestra con su código."
+   ],
+   "selector": {
+    "parametro": "ventana",
+    "valor": "20",
+    "etiqueta": "últimos 20 sorteos",
+    "opciones": [
+     {
+      "valor": "5",
+      "etiqueta": "últimos 5",
+      "sorteos": 5
+     },
+     {
+      "valor": "10",
+      "etiqueta": "últimos 10",
+      "sorteos": 10
+     },
+     {
+      "valor": "20",
+      "etiqueta": "últimos 20",
+      "sorteos": 20
+     },
+     {
+      "valor": "50",
+      "etiqueta": "últimos 50",
+      "sorteos": 45
+     }
+    ]
+   }
+  }
+ }
+}

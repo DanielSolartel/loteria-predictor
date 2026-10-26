@@ -1,0 +1,234 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/comparacion-frecuencia-numeros-por-ventana",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "comparacion-frecuencia-numeros-por-ventana",
+   "titulo": "Números: ventana reciente",
+   "grupo": "ventana",
+   "origen": "anterior",
+   "parametro": "ventana",
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Filtro",
+     "valor": "últimos 20 sorteos",
+     "unidad": "",
+     "formato": "texto"
+    },
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 45,
+     "unidad": "sorteos",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Números: ventana reciente",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Número",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones_muestra",
+       "etiqueta": "Balotas (muestra)",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "por_sorteo_muestra",
+       "etiqueta": "Balotas por sorteo (muestra)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "apariciones_ventana",
+       "etiqueta": "Balotas (ventana)",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "por_sorteo_ventana",
+       "etiqueta": "Balotas por sorteo (ventana)",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      },
+      {
+       "clave": "diferencia",
+       "etiqueta": "Diferencia",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "apariciones_muestra": 41,
+       "por_sorteo_muestra": 0.9111111111111111,
+       "apariciones_ventana": 15,
+       "por_sorteo_ventana": 0.75,
+       "diferencia": -0.1611111111111111
+      },
+      {
+       "valor": "2",
+       "apariciones_muestra": 39,
+       "por_sorteo_muestra": 0.8666666666666667,
+       "apariciones_ventana": 22,
+       "por_sorteo_ventana": 1.1,
+       "diferencia": 0.2333333333333334
+      },
+      {
+       "valor": "3",
+       "apariciones_muestra": 30,
+       "por_sorteo_muestra": 0.6666666666666666,
+       "apariciones_ventana": 10,
+       "por_sorteo_ventana": 0.5,
+       "diferencia": -0.16666666666666663
+      },
+      {
+       "valor": "4",
+       "apariciones_muestra": 46,
+       "por_sorteo_muestra": 1.0222222222222221,
+       "apariciones_ventana": 24,
+       "por_sorteo_ventana": 1.2,
+       "diferencia": 0.1777777777777778
+      },
+      {
+       "valor": "5",
+       "apariciones_muestra": 42,
+       "por_sorteo_muestra": 0.9333333333333333,
+       "apariciones_ventana": 19,
+       "por_sorteo_ventana": 0.95,
+       "diferencia": 0.016666666666666607
+      },
+      {
+       "valor": "6",
+       "apariciones_muestra": 41,
+       "por_sorteo_muestra": 0.9111111111111111,
+       "apariciones_ventana": 15,
+       "por_sorteo_ventana": 0.75,
+       "diferencia": -0.1611111111111111
+      },
+      {
+       "valor": "7",
+       "apariciones_muestra": 31,
+       "por_sorteo_muestra": 0.6888888888888889,
+       "apariciones_ventana": 15,
+       "por_sorteo_ventana": 0.75,
+       "diferencia": 0.061111111111111116
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas.",
+    "Cada balota cuenta (con repetición): «balotas por sorteo» es un promedio que puede superar 1; no es una proporción de sorteos."
+   ],
+   "selector": {
+    "parametro": "ventana",
+    "valor": "20",
+    "etiqueta": "últimos 20 sorteos",
+    "opciones": [
+     {
+      "valor": "5",
+      "etiqueta": "últimos 5",
+      "sorteos": 5
+     },
+     {
+      "valor": "10",
+      "etiqueta": "últimos 10",
+      "sorteos": 10
+     },
+     {
+      "valor": "20",
+      "etiqueta": "últimos 20",
+      "sorteos": 20
+     },
+     {
+      "valor": "50",
+      "etiqueta": "últimos 50",
+      "sorteos": 45
+     }
+    ]
+   }
+  }
+ }
+}

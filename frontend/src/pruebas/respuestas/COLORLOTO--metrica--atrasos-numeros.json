@@ -1,0 +1,162 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/atrasos-numeros",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "atrasos-numeros",
+   "titulo": "Atrasos de números",
+   "grupo": "atrasos",
+   "origen": "anterior",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 45,
+     "unidad": "sorteos",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Atrasos de números",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Número",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "atraso",
+       "etiqueta": "Atraso",
+       "formato": "entero",
+       "unidad": "sorteos de distancia"
+      },
+      {
+       "clave": "ultimo_sorteo",
+       "etiqueta": "Último sorteo con el valor",
+       "formato": "entero",
+       "unidad": ""
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "atraso": 0,
+       "ultimo_sorteo": 45
+      },
+      {
+       "valor": "2",
+       "atraso": 0,
+       "ultimo_sorteo": 45
+      },
+      {
+       "valor": "3",
+       "atraso": 1,
+       "ultimo_sorteo": 44
+      },
+      {
+       "valor": "4",
+       "atraso": 0,
+       "ultimo_sorteo": 45
+      },
+      {
+       "valor": "5",
+       "atraso": 0,
+       "ultimo_sorteo": 45
+      },
+      {
+       "valor": "6",
+       "atraso": 1,
+       "ultimo_sorteo": 44
+      },
+      {
+       "valor": "7",
+       "atraso": 1,
+       "ultimo_sorteo": 44
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas."
+   ],
+   "selector": null
+  }
+ }
+}

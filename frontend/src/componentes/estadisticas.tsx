@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import type { Json } from "../api/decodificar";
 import { alineadoADerecha, formatear } from "../api/formatos";
 import type { Cabecera, Frescura, Grafica, Indicador, TablaDeMetrica } from "../api/presentacion";
-import { TablaDesplazable, textoJson } from "./comunes";
+import { Paginacion } from "../pantallas/Sorteos";
+import { Color, TablaDesplazable, textoJson } from "./comunes";
 
 const ESTADOS_DE_FRESCURA: Readonly<Record<string, { etiqueta: string; clase: string }>> = {
   al_dia: { etiqueta: "Al día", clase: "text-bg-success" },
@@ -106,9 +107,12 @@ export function Indicadores({ indicadores }: { indicadores: readonly Indicador[]
   );
 }
 
-function valorDeCelda(valor: Json | undefined, formato: string): string {
+function valorDeCelda(valor: Json | undefined, formato: string): ReactNode {
   if (valor === undefined || valor === null) {
     return "—";
+  }
+  if (formato === "color" && typeof valor === "string") {
+    return <Color color={valor} />;  // muestra y codigo en texto; un color desconocido, sin estilo propio
   }
   if (typeof valor === "number" || typeof valor === "string") {
     return formatear(valor, formato);
@@ -119,9 +123,11 @@ function valorDeCelda(valor: Json | undefined, formato: string): string {
 /**
  * Tabla generica de una metrica: las columnas declaradas con su formato y
  * unidad y, si alguna fila trae claves no declaradas, una columna final con
- * esos datos adicionales para no perder contenido.
+ * esos datos adicionales para no perder contenido. Si la API la pagina, se
+ * indican el total de filas y la pagina, con enlaces (`enlace`) a las demas.
  */
-export function TablaMetrica({ tabla }: { tabla: TablaDeMetrica }) {
+export function TablaMetrica({ tabla, enlace }: { tabla: TablaDeMetrica; enlace?: (pagina: number) => string }) {
+  const paginacion = tabla.paginacion;
   const declaradas = new Set(tabla.columnas.map((c) => c.clave));
   const adicionales = (fila: Record<string, Json>) => Object.entries(fila).filter(([k]) => !declaradas.has(k));
   const hayAdicionales = tabla.filas.some((f) => adicionales(f).length > 0);
@@ -174,6 +180,15 @@ export function TablaMetrica({ tabla }: { tabla: TablaDeMetrica }) {
           </table>
         </TablaDesplazable>
       )}
+      {paginacion ? (
+        <div className="mt-2" data-paginacion={`${paginacion.pagina}/${paginacion.total_paginas}`}>
+          <p className="small text-muted mb-1">
+            {paginacion.total_filas} filas en total · página {paginacion.pagina} de {paginacion.total_paginas} ·{" "}
+            {paginacion.por_pagina} por página
+          </p>
+          {enlace ? <Paginacion pagina={paginacion.pagina} paginas={paginacion.total_paginas} enlace={enlace} /> : null}
+        </div>
+      ) : null}
       {tabla.nota ? <p className="small text-muted mb-0 mt-1">{tabla.nota}</p> : null}
     </div>
   );

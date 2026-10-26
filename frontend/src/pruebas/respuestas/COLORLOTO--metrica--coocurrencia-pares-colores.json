@@ -1,0 +1,272 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/coocurrencia-pares-colores",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "coocurrencia-pares-colores",
+   "titulo": "Coocurrencia de pares de colores",
+   "grupo": "coocurrencia",
+   "origen": "anterior",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 45,
+     "unidad": "sorteos",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "Combinaciones observadas",
+     "valor": 15,
+     "unidad": "combinaciones",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Coocurrencia de pares de colores",
+     "columnas": [
+      {
+       "clave": "color_1",
+       "etiqueta": "Color 1",
+       "formato": "color",
+       "unidad": ""
+      },
+      {
+       "clave": "color_2",
+       "etiqueta": "Color 2",
+       "formato": "color",
+       "unidad": ""
+      },
+      {
+       "clave": "soporte",
+       "etiqueta": "Sorteos con la combinación",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "pct",
+       "etiqueta": "% de sorteos",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "pct_esperado",
+       "etiqueta": "% esperado (independencia)",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "lift",
+       "etiqueta": "Lift",
+       "formato": "dec2",
+       "unidad": "observado / esperado"
+      }
+     ],
+     "filas": [
+      {
+       "color_1": "AZUL",
+       "color_2": "BLANCO",
+       "soporte": 22,
+       "pct": 48.888888888888886,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AZUL",
+       "color_2": "NEGRO",
+       "soporte": 22,
+       "pct": 48.888888888888886,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AZUL",
+       "color_2": "ROJO",
+       "soporte": 21,
+       "pct": 46.666666666666664,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "BLANCO",
+       "color_2": "NEGRO",
+       "soporte": 21,
+       "pct": 46.666666666666664,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AMARILLO",
+       "color_2": "BLANCO",
+       "soporte": 20,
+       "pct": 44.44444444444444,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AZUL",
+       "color_2": "VERDE",
+       "soporte": 19,
+       "pct": 42.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "BLANCO",
+       "color_2": "ROJO",
+       "soporte": 19,
+       "pct": 42.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "BLANCO",
+       "color_2": "VERDE",
+       "soporte": 19,
+       "pct": 42.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "ROJO",
+       "color_2": "VERDE",
+       "soporte": 19,
+       "pct": 42.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AMARILLO",
+       "color_2": "NEGRO",
+       "soporte": 18,
+       "pct": 40.0,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AMARILLO",
+       "color_2": "ROJO",
+       "soporte": 17,
+       "pct": 37.77777777777778,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "NEGRO",
+       "color_2": "ROJO",
+       "soporte": 17,
+       "pct": 37.77777777777778,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "NEGRO",
+       "color_2": "VERDE",
+       "soporte": 17,
+       "pct": 37.77777777777778,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AMARILLO",
+       "color_2": "AZUL",
+       "soporte": 16,
+       "pct": 35.55555555555556,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "color_1": "AMARILLO",
+       "color_2": "VERDE",
+       "soporte": 16,
+       "pct": 35.55555555555556,
+       "pct_esperado": null,
+       "lift": null
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas.",
+    "Colores: los vigentes en la fecha del último sorteo de la muestra más los observados en ella, como en la consola. Un color sin estilo conocido se muestra con su código."
+   ],
+   "selector": null
+  }
+ }
+}

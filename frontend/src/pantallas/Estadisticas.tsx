@@ -1,10 +1,11 @@
 /**
  * Estadisticas: indice de metricas (GET .../estadisticas) y panel (GET .../panel).
- * Solo las metricas que el indice declara tienen pagina; las demas muestran sus
- * indicadores del panel y quedan pendientes. Las que no aplican, su motivo.
+ * Solo las metricas que el indice declara tienen pagina (las de la Fase 5 y,
+ * desde la 9.2, las anteriores); si alguna no figurase, muestra sus indicadores
+ * del panel y queda pendiente. Las que no aplican, su motivo.
  */
 import { type FormEvent, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { consultar, rutaApi } from "../api/cliente";
 import { formatear } from "../api/formatos";
 import { decIndice, decPanel, decRespuestaDeMetrica, type Metrica as MetricaDatos, type Selector } from "../api/presentacion";
@@ -43,7 +44,9 @@ export function Estadisticas() {
                 <>
                   <VistaMuestra muestra={p.muestra} />
                   <p className="small" data-metricas-con-pagina={i.metricas.length}>
-                    {i.metricas.length} métricas con página propia según el índice de la API.
+                    {i.metricas.length} métricas con página propia según el índice de la API (
+                    {i.metricas.filter((m) => m.origen === "fase5").length} de la Fase 5 y{" "}
+                    {i.metricas.filter((m) => m.origen === "anterior").length} anteriores).
                   </p>
                   {p.grupos.map((g) => (
                     <section className="mb-4" key={g.clave} aria-labelledby={`grupo-${g.clave}`}>
@@ -100,7 +103,7 @@ export function Estadisticas() {
   );
 }
 
-const PARAMETROS = ["hasta_numero_sorteo", "anio", "mes", "dia_semana", "ventana"] as const;
+const PARAMETROS = ["hasta_numero_sorteo", "anio", "mes", "dia_semana", "ventana", "color", "pagina"] as const;
 type Parametro = (typeof PARAMETROS)[number];
 const esParametro = (n: string): n is Parametro => (PARAMETROS as readonly string[]).includes(n);
 
@@ -158,7 +161,7 @@ function FormularioDeMetrica({
   );
 }
 
-function VistaMetrica({ m }: { m: MetricaDatos }) {
+function VistaMetrica({ m, enlace }: { m: MetricaDatos; enlace: (pagina: number) => string }) {
   const tablaDeGrafica = m.grafica ? m.tablas.find((t) => t.id === m.grafica?.tabla) : undefined;
   return (
     <>
@@ -171,7 +174,7 @@ function VistaMetrica({ m }: { m: MetricaDatos }) {
       <Indicadores indicadores={m.indicadores} />
       {m.grafica ? <NotaDeGrafica grafica={m.grafica} tabla={tablaDeGrafica?.titulo} /> : null}
       {m.tablas.map((t) => (
-        <TablaMetrica tabla={t} key={t.id} />
+        <TablaMetrica tabla={t} key={t.id} enlace={enlace} />
       ))}
       {m.notas.length > 0 ? (
         <div className="alert alert-secondary small">
@@ -188,7 +191,13 @@ function VistaMetrica({ m }: { m: MetricaDatos }) {
 
 export function Metrica() {
   const { codigo = "", metrica = "" } = useParams();
+  const { pathname, search } = useLocation();
   const [valores, cambiar] = useFiltros(PARAMETROS);
+  const enlace = (pagina: number) => {
+    const consulta = new URLSearchParams(search);
+    consulta.set("pagina", String(pagina));
+    return `${pathname}?${consulta.toString()}`;
+  };
   const url = rutaApi(["juegos", codigo, "estadisticas", metrica], valores);
   const [estado, reintentar] = useConsulta(url, (s) => consultar(url, decRespuestaDeMetrica, s));
   return (
@@ -200,7 +209,8 @@ export function Metrica() {
           <>
             <h1 className="h3">{m.titulo}</h1>
             <p className="small text-muted">
-              Grupo {m.grupo} · estadística descriptiva de sorteos ya ocurridos: no es una probabilidad del próximo sorteo ni una
+              Grupo {m.grupo}
+              {m.origen === "anterior" ? " · página anterior (misma receta que la consola local)" : ""} · estadística descriptiva de sorteos ya ocurridos: no es una probabilidad del próximo sorteo ni una
               recomendación.
             </p>
             <FormularioDeMetrica
@@ -210,12 +220,13 @@ export function Metrica() {
               aplicar={(corte, valor) =>
                 cambiar({
                   hasta_numero_sorteo: corte,
+                  pagina: null,  // otro corte u otro filtro: la tabla vuelve a su primera pagina
                   ...(m.selector && esParametro(m.selector.parametro) ? { [m.selector.parametro]: valor } : {}),
                 })
               }
             />
             <VistaMuestra muestra={muestra} />
-            <VistaMetrica m={m} />
+            <VistaMetrica m={m} enlace={enlace} />
           </>
         )}
       </Consulta>

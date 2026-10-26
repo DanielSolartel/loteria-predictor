@@ -36,11 +36,14 @@ const BASE = opciones.base.replace(/\/$/, "");
 const ORIGEN = new URL(BASE).origin;
 const ANCHOS = opciones.anchos.split(",").map(Number);
 const JUEGOS = ["BALOTO", "BALOTO_REVANCHA", "MILOTO", "COLORLOTO"];
-const METRICAS_ESPERADAS = { BALOTO: 18, BALOTO_REVANCHA: 18, MILOTO: 11, COLORLOTO: 5 };
+// Fase 9.2: paginas de la Fase 5 y anteriores aplicables (indice real de la API).
+const METRICAS_ESPERADAS = { BALOTO: 30, BALOTO_REVANCHA: 30, MILOTO: 22, COLORLOTO: 36 };
 const PLATAFORMA = process.platform === "linux" ? "linux" : process.platform;
 const CAPTURAS = new Set(["inicio", "ficha-BALOTO", "sorteos-COLORLOTO", "metrica-BALOTO-correlaciones",
   "metrica-COLORLOTO-pruebas-uniformidad", "prediccion-MILOTO", "prediccion-COLORLOTO", "servicio",
-  "estadisticas-COLORLOTO", "sorteo-COLORLOTO"]);
+  "estadisticas-COLORLOTO", "sorteo-COLORLOTO", "metrica-COLORLOTO-frecuencia-pares-numero-color",
+  "metrica-COLORLOTO-coocurrencia-trios-colores", "metrica-BALOTO-coocurrencia-trios", "metrica-MILOTO-atrasos-numeros",
+  "metrica-paginada-BALOTO-2", "metrica-color-COLORLOTO-ROJO"]);
 
 await mkdir(join(opciones.salida, "capturas"), { recursive: true });
 const navegador = await chromium.launch();
@@ -103,7 +106,12 @@ async function geometria(pagina) {
       const r = t.getBoundingClientRect();
       return { izquierda: Math.round(r.left), derecha: Math.round(r.right), desplazaInterno: t.scrollWidth > t.clientWidth + 1, foco: t.tabIndex === 0 && t.getAttribute("role") === "region" && Boolean(t.getAttribute("aria-label")) };
     });
-    return { ventana, documento: document.documentElement.scrollWidth, cuerpo: document.body.scrollWidth, tablas };
+    // Celdas de formato `color` de las tablas de metrica (ColorLoto): muestra oculta y codigo en texto.
+    const colores = [...document.querySelectorAll("main table[data-tabla] td .color-swatch")].map((m) => ({
+      texto: (m.parentElement?.textContent ?? "").trim(),
+      oculta: m.getAttribute("aria-hidden") === "true",
+    }));
+    return { ventana, documento: document.documentElement.scrollWidth, cuerpo: document.body.scrollWidth, tablas, colores };
   });
 }
 
@@ -153,6 +161,9 @@ async function visitar(ancho, nombre, ruta, { esperarError = null, admitidos = [
     if (!pie.includes("uso experimental no acreditado")) {
       visita.motivos.push("falta el aviso experimental del pie");
     }
+    if (g.colores.some((c) => !c.oculta || !/^[A-Z][A-Z_]*$/.test(c.texto))) {
+      visita.motivos.push("celda de color sin codigo en texto o con muestra anunciada");
+    }
     visita.almacenamiento = await almacenamiento(pagina);
     if (Object.values(visita.almacenamiento).some((n) => n !== 0)) {
       visita.motivos.push(`almacenamiento no vacio: ${JSON.stringify(visita.almacenamiento)}`);
@@ -164,7 +175,7 @@ async function visitar(ancho, nombre, ruta, { esperarError = null, admitidos = [
     }
     visita.marcas = await pagina.evaluate(() =>
       Object.fromEntries(
-        ["prediccion", "frescura", "observado", "frente", "integridad", "configuracion", "estado", "base", "salud", "metrica"]
+        ["prediccion", "frescura", "observado", "frente", "integridad", "configuracion", "estado", "base", "salud", "metrica", "paginacion"]
           .map((k) => [k, [...document.querySelectorAll(`[data-${k}]`)].map((e) => e.getAttribute(`data-${k}`))])
           .filter(([, v]) => v.length > 0),
       ),
@@ -363,7 +374,12 @@ async function recorridoNormal() {
       }
       comprobar(`metricas-${juego}-${ancho}`, metricas.length === METRICAS_ESPERADAS[juego], { enlazadas: metricas.length, esperadas: METRICAS_ESPERADAS[juego] });
       for (const m of metricas) {
-        await visitar(ancho, `metrica-${juego}-${m.split("/").pop()}`, m);
+        const v = await visitar(ancho, `metrica-${juego}-${m.split("/").pop()}`, m);
+        // Presupuesto por pantalla: una sola consulta de estadisticas (la metrica), sin indice ni panel.
+        const deEstadisticas = (v.peticiones_api ?? []).filter((x) => x.includes("/estadisticas"));
+        if (deEstadisticas.length !== 1 || deEstadisticas[0] !== `/api/v1${m}`) {
+          fallo(`${ancho} ${m}`, `consultas de estadisticas: ${JSON.stringify(deEstadisticas)}`);
+        }
       }
       const prediccion = await visitar(ancho, `prediccion-${juego}`, `/juegos/${juego}/prediccion`);
       const clave = prediccion.marcas?.prediccion?.[0];
@@ -380,6 +396,13 @@ async function recorridoNormal() {
         v.nombre = (v.errores_mostrados ?? []).includes("alterado") ? "simulacion-alterada" : "simulacion-verificada";
       }
     }
+    // Fase 9.2: tabla paginada, filtro de color, color no valido y tabla de ColorLoto con colores.
+    await visitar(ancho, "metrica-paginada-BALOTO-2", "/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=2");
+    await visitar(ancho, "metrica-color-COLORLOTO-ROJO", "/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=ROJO");
+    await visitar(ancho, "metrica-color-no-valido", "/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=MORADO",
+      { esperarError: "parametro_no_valido" });
+    await visitar(ancho, "metrica-pagina-fuera", "/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=999",
+      { esperarError: "parametro_no_valido" });
     await teclado(ancho);
   }
   await historialYRecarga();
@@ -388,6 +411,12 @@ async function recorridoNormal() {
   const ver = (n) => resultados.visitas.filter((v) => v.nombre === n);
   comprobar("simulacion-alterada-vista", ver("simulacion-alterada").length === ANCHOS.length && ver("simulacion-alterada").every((v) => v.ok));
   comprobar("simulacion-verificada-vista", ver("simulacion-verificada").length >= ANCHOS.length);
+  const pares = ver("metrica-COLORLOTO-frecuencia-pares-numero-color");
+  comprobar("colorloto-pares-con-color", pares.length === ANCHOS.length && pares.every((v) => v.ok && v.geometria.colores.length === 42),
+    { colores: pares.map((v) => v.geometria?.colores?.length) });
+  const paginadas = ver("metrica-paginada-BALOTO-2");
+  comprobar("tabla-paginada-pagina-2", paginadas.length === ANCHOS.length && paginadas.every((v) => v.ok && (v.marcas?.paginacion ?? [])[0] === "2/6"),
+    { marcas: paginadas.map((v) => v.marcas?.paginacion) });
 }
 
 async function recorridoCuota() {

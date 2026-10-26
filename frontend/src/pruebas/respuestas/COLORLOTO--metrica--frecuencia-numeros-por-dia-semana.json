@@ -75,6 +75,7 @@
    "slug": "frecuencia-numeros-por-dia-semana",
    "titulo": "Frecuencia de números por día de la semana",
    "grupo": "temporales",
+   "origen": "fase5",
    "parametro": "dia_semana",
    "estado": "ok",
    "motivo": null,
@@ -185,7 +186,8 @@
        "diferencia": 0.1682539682539682
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": {

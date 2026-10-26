@@ -1,6 +1,14 @@
 # Fase 9.1 — Frontend de consulta (React) y pasarela local
 
-**Estado:** entrega 9.1 v2 implementada sobre `615f3832296d74a7acea44e5ecdf7dc84a11d70a` (merge del PR #99, Fase 8; CI `40133227968` corresponde a esa base). Auditoría local y validaciones Linux/Cloud y Windows nativo con Brave instalado completadas sobre datos sintéticos. La evidencia Windows fue ejecutada por Daniel y auditada por ChatGPT; no se atribuye a Claude ni al CI. **Pendientes:** publicación manual y checks del PR de la 9.1. La **Fase 9 global sigue abierta**: la 9.1 cubre las consultas existentes de `/api/v1` y su criterio final se decide después ([matriz de huecos](#matriz-de-huecos-de-la-fase-9)). Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. [Validación del operador](fase9_validacion_operador_2026-10-25.md).
+**Entrega 9.2 (sobre `9966a4bbcb8d81953fb283b07544636f4c11fc95`, merge del PR #100 que integró la 9.1):** páginas de las métricas anteriores en el mismo índice y la misma ruta de métrica.
+
+- **Validación:** en Linux y en Windows 11 nativo con Brave, sobre datos sintéticos.
+- **Auditoría:** aprobada el 26 de octubre de 2026 ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)).
+- **Pendiente:** la publicación manual y el CI del nuevo PR.
+
+[Detalle de la entrega](#entrega-92-páginas-de-las-métricas-anteriores). La Fase 9 global sigue abierta.
+
+**Estado:** entrega 9.1 v2 implementada sobre `615f3832296d74a7acea44e5ecdf7dc84a11d70a` (merge del PR #99, Fase 8; CI `40133227968` corresponde a esa base). Auditoría local y validaciones Linux/Cloud y Windows nativo con Brave instalado completadas sobre datos sintéticos. La evidencia Windows fue ejecutada por Daniel y auditada por ChatGPT; no se atribuye a Claude ni al CI. *Actualización posterior:* la 9.1 se integró en PR #100 (merge `9966a4b`). La **Fase 9 global sigue abierta**: la 9.1 cubre las consultas existentes de `/api/v1` y su criterio final se decide después ([matriz de huecos](#matriz-de-huecos-de-la-fase-9)). Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. [Validación del operador](fase9_validacion_operador_2026-10-25.md).
 
 **v2 (auditoría de la v1, F9-LIM-01):** el plazo total del cliente de la pasarela cubre ahora toda la consulta y la conexión se cierra también en las salidas por error; el resto de la 9.1 no cambia ([verificación de la v2](#v2-plazo-total-del-cliente-f9-lim-01)).
 
@@ -38,14 +46,14 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 | Sorteos `/juegos/:codigo/sorteos` (`?desde&hasta&numero_desde&numero_hasta&orden&por_pagina&pagina`) | `…/sorteos` | 2 |
 | Sorteo `/juegos/:codigo/sorteos/:numero` | `…/sorteos/{n}` | 1 |
 | Estadísticas `/juegos/:codigo/estadisticas` (`?hasta_numero_sorteo`) | `…/estadisticas` (índice) y `…/panel` | 1 + 5 |
-| Métrica `/juegos/:codigo/estadisticas/:metrica` (corte y `anio`, `mes`, `dia_semana` o `ventana` según el selector) | `…/estadisticas/{metrica}` | 5 |
+| Métrica `/juegos/:codigo/estadisticas/:metrica` (corte y `anio`, `mes`, `dia_semana`, `ventana` o `color` según el selector; `pagina` si el índice la declara) | `…/estadisticas/{metrica}` | 5 |
 | Predicción guardada `/juegos/:codigo/prediccion` (`?cartera`) | `…/predicciones` | 3 |
 | Simulaciones `/juegos/:codigo/simulaciones` (`?limite`) | `…/simulaciones` | 2 |
 | Simulación `/simulaciones/:id` | `simulaciones/{id}` | 2 |
 | Servicio `/servicio` | `salud` y `estado` | 0 + 1 |
 
 - **Frescura:** la informan el resumen, el panel y cada métrica (`al_dia`, `desactualizado` con sus días, `sin_datos`). La consulta de predicciones no la informa: la pantalla muestra corte, última fecha y el estado de la base, marca la frescura como «no informada por esta consulta» y advierte que «base disponible» no equivale a «datos al día». Un campo ausente se muestra como «no informado».
-- **Métricas:** solo tienen página las que declara el índice real (18 en Baloto y Revancha, 11 en MiLoto y 5 en ColorLoto, comprobadas en el recorrido). Las anteriores muestran sus indicadores en el panel con «página de detalle pendiente»; las que no aplican, su motivo. La tabla genérica muestra columnas, unidades y formatos declarados y, si una fila trae claves no declaradas (p. ej. `contraste`, `motivo_p_value` en correlaciones), una columna «Datos adicionales»: no se pierde contenido. La gráfica de la consola HTMX se sustituye por una nota con su tabla y su referencia.
+- **Métricas:** solo tienen página las que declara el índice real. En la 9.1 eran 18 en Baloto y Revancha, 11 en MiLoto y 5 en ColorLoto. Con la 9.2 son 30, 30, 22 y 36, porque se suman las métricas anteriores; las cuentas se comprueban en el recorrido. Las que no aplican muestran su motivo. La tabla genérica muestra columnas, unidades y formatos declarados y, si una fila trae claves no declaradas (p. ej. `contraste`, `motivo_p_value` en correlaciones), una columna «Datos adicionales»: no se pierde contenido. La gráfica de la consola HTMX se sustituye por una nota con su tabla y su referencia.
 - **Predicción:** historial con selección por `?cartera=`, modelo proyectado, clasificación temporal, integridad informada, combinaciones (números y superbalota o pares número-color), resultado observado con aciertos por línea y frente a la base. Explicación, clasificación de candidatos y fiabilidad quedan pendientes.
 - **Simulaciones:** listado con integridad y motivo; detalle con parámetros (identidad completa), integridad, huella del contenido, estadísticas comparadas y familia. Una simulación alterada llega como 409 `alterado` y no se muestra su contenido.
 - **Servicio:** salud y estado **del proceso de la API**; la página dice que no informa de la operación automática ni de sus tareas.
@@ -71,6 +79,71 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 - **Errores propios:** formato único `{"error": {codigo, mensaje, solicitud}}`, con `X-Request-ID` y `no-store`, sin rutas, claves ni trazas. Un fallo inesperado se convierte en 500 `error_interno` y el registro solo anota su clase. Los errores contractuales de la API (401, 404, 409, 422, 429, 500, 503) pasan con su código y `Retry-After`.
 - **Estáticos:** solo archivos dentro de `dist/` (rutas resueltas, sin enlaces que salgan) y extensiones conocidas; un recurso inexistente es 404 y no recibe `index.html`.
 - **Secreto:** la clave es `SecretStr` y no aparece en `repr`, registros, respuestas ni errores. Ni la clave ni su huella llegan al bundle, al tráfico del navegador, a sus respuestas, al almacenamiento, a la URL ni a los registros: lo comprueban un canario de compilación (`npm run canario`), las pruebas de la pasarela y el recorrido real, que busca el canario en todas las respuestas recibidas por el navegador y en los registros de los tres procesos. La presencia del nombre público `X-API-Key` en el esquema generado no es una filtración: el escaneo excluye `esquema.d.ts` y `openapi.json` y busca código que envíe la cabecera.
+
+## Entrega 9.2: páginas de las métricas anteriores
+
+**Base:** `9966a4bbcb8d81953fb283b07544636f4c11fc95`, merge del PR #100.
+
+**Estado:** implementada y validada con datos sintéticos, en Linux y en Windows 11 nativo con Brave. La auditoría independiente la aprobó. Quedan pendientes la publicación manual y el CI del nuevo PR ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)).
+
+**Alcance.** El índice declara las métricas anteriores de la consola: 12 en Baloto y en Revancha, 11 en MiLoto y 31 en ColorLoto, incluidos colores, conteo por color y pares número-color. Lo hace con `titulo`, `grupo`, `origen` (`fase5` o `anterior`), `parametro` y `paginada`. Todas se consultan en `GET /api/v1/juegos/{codigo}/estadisticas/{metrica}`; no hay una ruta por métrica.
+
+**Cálculo y contrato.**
+- El backend calcula con la misma receta que la consola HTMX (`calcular_sin_persistir`) y no escribe en `estadisticas`.
+- `RespuestaDeMetrica` es tipada:
+  - indicadores;
+  - tablas con columnas (formato y unidad), filas y `paginacion`;
+  - notas;
+  - selector de filtro con sus opciones;
+  - corte, frescura y aplicabilidad.
+- El frontend no calcula: presenta.
+
+**Filtros.**
+- `anio`, `mes` y `dia_semana` valen por defecto lo del último sorteo; `ventana`, una de las existentes (20 por defecto).
+- `color` es el código exacto de un color vigente u observado; por defecto, el primero.
+- Un parámetro que la métrica no declara, un valor fuera de las opciones o una página fuera de rango dan 422 `parametro_no_valido`.
+
+**Paginación explícita.** La coocurrencia de tríos de los juegos numéricos se pagina en 100 filas, con `pagina`, total de filas y total de páginas. Es la única tabla que crece con el histórico (hasta 12 341 tríos en Baloto), y la consola también la pagina en 100. Las demás están acotadas por las reglas del juego (como mucho 903 pares en Baloto y 42 pares número-color en ColorLoto) y se envían completas. La muestra sintética de pares de Baloto, con 443 filas, ocupa 83 KB, frente al límite de 4 MiB de la pasarela. La pantalla muestra «N filas en total · página X de Y · 100 por página» y su paginación accesible. No se recorta en silencio ni se suben los límites de la pasarela.
+
+**ColorLoto.**
+- Cada par número-color se separa en una columna `numero` y otra `color`.
+- El color se muestra con la muestra y el nombre de la convención existente de la consola (`<Color>`).
+- Un color fuera de la paleta conocida conserva su nombre, sin muestra.
+
+**Estados.**
+
+| Situación | Código | Qué devuelve |
+|---|---|---|
+| Sin sorteos | 200 | `sin_datos` |
+| Periodo vacío | 200 | `sin_sorteos_en_el_periodo` |
+| Histórico no válido | 409 | `historico_no_valido` («el histórico cargado no es consistente; no se calcula la estadística») |
+| Parámetros no válidos | 422 | `parametro_no_valido` |
+| Base no disponible | 503 | `base_no_disponible` |
+
+**Presupuesto.** Una consulta de métrica por pantalla, con el mismo coste de cuota que las demás (5 fichas). Se conservan cuotas, `Retry-After`, 429, la lista de la pasarela y el plazo total de 15 s de la 9.1 v2. La pasarela solo añade `color` y `pagina` a los parámetros admitidos de esa ruta. Siguen siendo 13 plantillas.
+
+**Accesibilidad y móvil.** Se mantienen las tablas de la 9.1 (encabezados, desplazamiento propio y alineación). La paginación es la de Sorteos: `nav` «Paginación», enlaces con nombre accesible y `aria-current` en la página actual. El foco pasa al contenido al cambiar de ruta, como en la 9.1; cambiar filtro o página no lo mueve.
+
+**Evidencia en Linux** (Cloud, Python 3.14.9, pytest 9.1.1, Node 22.22.2, Chromium de Playwright; no acredita Windows ni Brave):
+
+| Comprobación | Resultado |
+|---|---|
+| `test_api_publica_metricas_anteriores.py` (comparación con la receta de la consola en los cuatro juegos, con y sin corte, filtros, número-color, paginación, estados y cuota) | 94 aprobadas |
+| `tests/unit/api_publica` y `tests/unit/pasarela` | 186 y 192 aprobadas |
+| Vitest · `tipos:comprobar` · `typecheck` · `build` · `canario` | 456 aprobadas · igual · sin errores · correcto · 0 hallazgos |
+| Suite completa del backend | 7812 aprobadas y 87 omitidas (baterías de PowerShell de Fase 6), sin fallos |
+| Recorrido `normal` a 360, 390 y 1280 px | 507/507 visitas y 26/26 comprobaciones: todas las métricas del índice (30/30/22/36) en los tres anchos, página 2 de la tabla paginada, color `ROJO`, color y página no válidos, 42 muestras de color en `frecuencia-pares-numero-color`; 11 controles HTTP directos sin fallos; canario ausente en 3144 respuestas |
+
+Los registros, los JUnit y el resultado del recorrido están en el ZIP de evidencias de la entrega.
+
+**Evidencia en Windows.** Daniel ejecutó la etapa A sobre la v2 de la entrega en Windows 11 nativo con Brave instalado (Python 3.14.6 y datos sintéticos):
+
+- 456 pruebas Vitest;
+- 186 pruebas de API pública y 192 de pasarela, dentro de 772 pruebas Python;
+- tipos, TypeScript, compilación y canario correctos;
+- el recorrido `normal` en Brave, con 507 visitas y 26 comprobaciones sobre todas las métricas del índice (30/30/22/36).
+
+Los ajustes posteriores v3 y v4 solo tocan Fase 6 (controlador de la tarea, ensayo y sus pruebas), no el frontend, la API ni la pasarela. Por eso estas baterías conservan su atribución a la corrida sobre v2 y no se repitieron. Son resultados del operador, separados de la evidencia Linux anterior. [Validación del operador](fase9_2_validacion_operador_2026-10-26.md).
 
 ## Verificación
 
@@ -115,13 +188,13 @@ Los grupos no se suman: son baterías distintas. El primer intento del recorrido
 
 ## Matriz de huecos de la Fase 9
 
-| Función de la consola HTMX | 9.1 | Pendiente para otra decisión |
+| Función de la consola HTMX | 9.1 y 9.2 | Pendiente para otra decisión |
 |---|---|---|
 | Juegos y reglas | Cubierto | — |
 | Resumen con frescura y corte | Cubierto | Gráficas de barras |
 | Sorteos: filtros, paginación y detalle | Cubierto | — |
 | Panel de Fase 5 y métricas con página (18/18/11/5) | Cubierto | Gráficas nuevas |
-| Páginas de las métricas anteriores (30 en Baloto) | Indicadores en el panel | Página de detalle (no hay consulta v1) |
+| Páginas de las métricas anteriores: 12 en Baloto y en Revancha, 11 en MiLoto y 31 en ColorLoto. *Corrección:* la 9.1 decía «30 en Baloto», que es el total con las de Fase 5 | Cubierto en la entrega 9.2, validada en Windows con Brave y auditada; publicación pendiente | Gráficas de la consola (se sustituyen por tablas) |
 | Predicción guardada | Cubierto (historial, modelo, clasificación temporal, integridad, combinaciones, observado, frente a la base) | Explicación, clasificación de candidatos, fiabilidad |
 | Simulaciones guardadas | Cubierto | Lanzar simulaciones (escritura) |
 | Salud y estado de la API | Cubierto | — |
@@ -138,4 +211,5 @@ El criterio final de la Fase 9 (paridad, alcance o sustitución de la consola) s
 - La cuota y el monitoreo de la API son por proceso (Fase 8); la pasarela no añade una cuota propia.
 - La pasarela solo admite destinos y clientes loopback: no es un proxy para red ni despliegue.
 - Los colores de ColorLoto fuera de la paleta conocida se muestran con su nombre y sin muestra de color.
+- **Fuera del alcance de la 9.2:** el orquestador del recorrido (`tests/recorrido_fase9.py`) no propaga `NO_COLOR` a Vite. En Windows, los códigos ANSI pueden impedir que reconozca la dirección de arranque. La validación de la 9.1 lo sorteó con el supervisor externo `color-vite-r1`. El defecto sigue sin corregir en el orquestador versionado y se trata aparte.
 - Con formato `texto`/`tipo_p`, un número puede verse distinto que en la consola HTMX (JSON no conserva `100.0` ni la notación exponencial de Python).

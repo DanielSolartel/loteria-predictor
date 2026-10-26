@@ -22,8 +22,9 @@ GUARDA_WINDOWS = "if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32N
 CONTROL_SIMULADO = r'''
 [CmdletBinding()]
 param([string]$Worktree,[string]$PythonExe,[string]$Configuracion,[string]$Evidencia,
+      [string]$PlanHorario,[string]$XmlAnterior,
       [switch]$Plan,[switch]$Instalar,[switch]$Activar,[switch]$Pausar,
-      [switch]$Desinstalar,[switch]$Estado)
+      [switch]$Desinstalar,[switch]$Estado,[switch]$Migrar,[switch]$Revertir,[switch]$Reanudar)
 $accion = if($Plan){'Plan'}elseif($Instalar){'Instalar'}elseif($Activar){'Activar'}elseif($Pausar){'Pausar'}elseif($Desinstalar){'Desinstalar'}else{'Estado'}
 [void]$global:Controles.Add($accion)
 [void][IO.Directory]::CreateDirectory($Evidencia)
@@ -64,6 +65,11 @@ def raiz_limpieza():
 
 
 def _ensayar_fallo_instalacion(raiz_limpieza, escenario):
+    return _ensayar(raiz_limpieza, escenario)
+
+
+def _ensayar(raiz_limpieza, escenario, control=CONTROL_SIMULADO, previo=""):
+    """Ensayo con el controlador simulado `control`; `previo` añade sustitutos tras los predeterminados."""
     raiz = raiz_limpieza / "ensayo con espacios y ñ"
     raiz.mkdir()
     backend = raiz / "backend"
@@ -78,7 +84,12 @@ def _ensayar_fallo_instalacion(raiz_limpieza, escenario):
     copia = copia.replace("[IO.Path]::GetTempPath()", _ps_literal(temporales))
     probe = backend / "tests/ensayar_tarea_fase6_windows.ps1"
     probe.write_text(copia, encoding="utf-8-sig")
-    (backend / "scripts/windows/fase6_tarea.ps1").write_text(CONTROL_SIMULADO, encoding="utf-8-sig")
+    (backend / "scripts/windows/fase6_tarea.ps1").write_text(control, encoding="utf-8-sig")
+    # El ensayo analiza tambien el controlador anterior archivado (version 1) que usa en la migracion.
+    (backend / "tests/fixtures/fase6").mkdir(parents=True)
+    (backend / "tests/fixtures/fase6/fase6_tarea_v1.ps1").write_text(control, encoding="utf-8-sig")
+    plan = raiz / "plan de horario.json"
+    plan.write_text('{"solo_fixture": true}\n', encoding="utf-8")
     python = raiz / "python ficticio.exe"
     python.write_bytes(b"NO_EJECUTAR")
     evidencia = raiz / "evidencia"
@@ -91,8 +102,9 @@ def _ensayar_fallo_instalacion(raiz_limpieza, escenario):
         "function Get-ScheduledTask { throw 'NO_CONSULTAR_TAREA_REAL' }\n"
         "function Get-ScheduledTaskInfo { throw 'NO_CONSULTAR_TAREA_REAL' }\n"
         "function Export-ScheduledTask { throw 'NO_EXPORTAR_TAREA_REAL' }\n"
+        + previo +
         "& " + _ps_literal(probe) + " -PythonExe " + _ps_literal(python)
-        + " -Evidencia " + _ps_literal(evidencia) + " -Ejecutar\n"
+        + " -Evidencia " + _ps_literal(evidencia) + " -PlanHorario " + _ps_literal(plan) + " -Ejecutar\n"
         "$rc=$LASTEXITCODE\n"
         "[IO.File]::WriteAllText(" + _ps_literal(traza)
         + ",(($global:Controles.ToArray()|ConvertTo-Json)+\"`n\"),(New-Object Text.UTF8Encoding($false,$true)))\n"
@@ -160,3 +172,76 @@ def test_limpieza_sin_retirada_segura_conserva_raiz_y_error_original(raiz_limpie
     assert any(aviso in a for a in r["avisos_limpieza"])
     assert raiz.is_dir() and (raiz / "config-testigo.json").is_file()
     _assert_error_instalacion_conservado(p, r)
+
+
+
+# F92-NAT-01: tras instalar, el ensayo comprueba StartWhenAvailable en la exportación nativa. El
+# Programador puede omitir el elemento (predeterminado documentado false); la comprobación debe leerlo
+# de forma semántica y estricta, sin acceder a una propiedad XML inexistente ni reescribir el XML.
+CONTROL_SWA = r"""
+[CmdletBinding()]
+param([string]$Worktree,[string]$PythonExe,[string]$Configuracion,[string]$Evidencia,
+      [string]$PlanHorario,[string]$XmlAnterior,
+      [switch]$Plan,[switch]$Instalar,[switch]$Activar,[switch]$Pausar,
+      [switch]$Desinstalar,[switch]$Estado,[switch]$Migrar,[switch]$Revertir,[switch]$Reanudar)
+$accion = if($Plan){'Plan'}elseif($Instalar){'Instalar'}elseif($Activar){'Activar'}elseif($Pausar){'Pausar'}elseif($Desinstalar){'Desinstalar'}else{'Estado'}
+[void]$global:Controles.Add($accion)
+[void][IO.Directory]::CreateDirectory($Evidencia)
+$r=[ordered]@{estado='consultada';codigo=0;error=$null;tarea='LP6-solo-simulada';tarea_modificada=$false;habilitada=$false;estado_programador='Disabled';plan_horario=@{huella=('a'*64)}}
+$rc=0
+if($accion -eq 'Plan'){$r.estado='plan_no_instalado'}
+elseif($accion -eq 'Instalar'){$r.estado='instalada_deshabilitada';$r.tarea_modificada=$true}
+elseif($accion -eq 'Activar'){$r.estado='error';$r.error='ALTO_TRAS_COMPROBACION_SWA';$rc=51}
+elseif($accion -eq 'Estado'){if($global:Retirada){$r.estado='no_instalada'}}
+elseif($accion -eq 'Pausar'){$r.estado='tarea_pausada'}
+elseif($accion -eq 'Desinstalar'){$r.estado='desinstalada';$global:Retirada=$true}
+$r.codigo=$rc
+[IO.File]::WriteAllText((Join-Path $Evidencia 'resultado.json'),(($r|ConvertTo-Json -Depth 8)+"`n"),(New-Object Text.UTF8Encoding($false,$true)))
+exit $rc
+"""
+
+
+def _exportacion_swa(valores):
+    """Exportación como la del Programador: sin el elemento si `valores` está vacío."""
+    swa = "".join("<StartWhenAvailable>" + v + "</StartWhenAvailable>" for v in valores)
+    return ('<?xml version="1.0" encoding="UTF-16"?>\n'
+            '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">'
+            "<RegistrationInfo><Source>LoteriaPredictor/Fase6/tarea/2</Source></RegistrationInfo>"
+            "<Triggers><CalendarTrigger><StartBoundary>2026-01-05T22:30:00-05:00</StartBoundary><Enabled>true</Enabled>"
+            "<ScheduleByWeek><DaysOfWeek><Monday /></DaysOfWeek><WeeksInterval>1</WeeksInterval></ScheduleByWeek>"
+            "</CalendarTrigger></Triggers>"
+            "<Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>" + swa + "<Enabled>false</Enabled></Settings>"
+            "</Task>")
+
+
+def _ensayar_swa(raiz_limpieza, valores):
+    xml = _exportacion_swa(valores)
+    previo = ("$global:ExportacionSwa=" + _ps_literal(xml) + "\n"
+              "function Export-ScheduledTask { [CmdletBinding()]param([string]$TaskName,[string]$TaskPath) "
+              "return $global:ExportacionSwa }\n")
+    return _ensayar(raiz_limpieza, "swa", control=CONTROL_SWA, previo=previo)
+
+
+@pytest.mark.parametrize("valores", [[], ["false"], ["0"]], ids=["omitido", "false", "cero"])
+def test_ensayo_acepta_start_when_available_false_omitido_o_explicito(raiz_limpieza, valores):
+    p, r, controles, raiz = _ensayar_swa(raiz_limpieza, valores)
+    assert "ALTO_TRAS_COMPROBACION_SWA" in r["error"], r["error"]
+    assert r["registrada"]["disparadores"] == ["CalendarTrigger"]
+    assert r["registrada"]["inicios"] == ["2026-01-05T22:30:00-05:00"]
+    assert controles == ["Plan", "Instalar", "Activar", "Estado", "Pausar", "Desinstalar", "Estado"]
+    assert r["estado_limpieza"] == "completa" and not raiz.exists()
+
+
+@pytest.mark.parametrize("valores", [["true"], ["1"], ["false", "false"], [""], ["si"]],
+                         ids=["true", "uno", "duplicado", "vacio", "no_booleano"])
+def test_ensayo_rechaza_start_when_available_distinto_de_false(raiz_limpieza, valores):
+    p, r, controles, raiz = _ensayar_swa(raiz_limpieza, valores)
+    assert p.returncode == 1 and "StartWhenAvailable" in r["error"], r["error"]
+    assert "registrada" not in r and "Activar" not in controles
+    assert controles == ["Plan", "Instalar", "Estado", "Pausar", "Desinstalar", "Estado"]
+    assert r["estado_limpieza"] == "completa" and not raiz.exists()
+
+
+def test_ensayo_no_lee_start_when_available_como_propiedad_xml():
+    """Con StrictMode, `$x.Task.Settings.StartWhenAvailable` falla si el Programador omitió el elemento."""
+    assert ".Settings.StartWhenAvailable" not in ENSAYO.read_text(encoding="utf-8")
