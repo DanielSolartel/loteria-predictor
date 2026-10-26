@@ -3,6 +3,15 @@
 El reloj y los puertos se inyectan. La admisión temporal se liga al primer
 evento posterior al último resultado cargado, nunca al próximo desde hoy.
 La persistencia, adquisición y predicción pertenecen a sus adaptadores/UC.
+
+Dos formas de iniciar un ciclo:
+- programada (la tarea de Windows): `ciclo(programado=InvocacionProgramada(plan))`. Exige una
+  configuración de versión 2 con política de horario válida y la huella de su plan; solo consulta
+  los juegos habilitados cuya franja (o recuperación) admite esa oportunidad, revalidando cada juego
+  justo antes de empezarlo. Sin política, con otra huella o fuera de horario no consulta nada;
+- manual explícita (CLI `ciclo --manual`, botón del panel local): la comprobación de siempre, sin
+  franjas, que respeta pausa, cerrojos, espera por fallos, Retry-After y el cierre de emisión.
+La etiqueta `origen` solo describe; no concede ni quita una admisión.
 """
 from __future__ import annotations
 
@@ -14,10 +23,22 @@ import json
 import re
 from typing import Callable
 
+from app.application import operacion_horario as horario
 from app.application.operacion_calendario import calendario_defecto, eventos, clasificar, admisible_emitir
 from app.application.use_cases.operacion_diaria import nuevo_identificador
 
 JUEGOS = ("BALOTO", "BALOTO_REVANCHA", "MILOTO", "COLORLOTO")
+ORIGEN_PROGRAMADO = "programado"
+_HUELLA = re.compile(r"[0-9a-f]{64}")
+
+
+class InvocacionProgramada:
+    """Invocación de la tarea programada: lleva la huella del plan con el que se registró."""
+
+    def __init__(self, plan: str):
+        if not isinstance(plan, str) or not _HUELLA.fullmatch(plan):
+            raise ValueError("La invocación programada requiere la huella SHA-256 de su plan.")
+        self.plan = plan
 
 
 def ahora_utc():
@@ -126,10 +147,47 @@ class OperacionAutomatica:
         verificado = bool(self.validar_destinos())
         return {"estado": "sin_configurar" if not verificado else "pausada" if conf.get("pausada", True) or not conf.get("activada") else "habilitada",
                 "configuracion": conf, "juegos": juegos, "ejecuciones": ejecuciones,
+                "horario": self._horario_panel(conf),
                 "avisos": avisos, "revisiones": pendientes, "historial_revisiones": historial_revisiones,
                 "rutas_verificadas": verificado,
                 "programacion_windows": "Verificar por separado en el Programador de tareas; la web no instala ni activa tareas.",
                 "aviso": "experimental_no_acreditado; AE-39 NO-GO; AUTORIZA_EVALUACION = False"}
+
+    def _politica(self, conf):
+        politica = horario.de_configuracion(conf)
+        if politica is not None:
+            horario.validar_con_calendario(politica, self.calendarios)
+        return politica
+
+    def _horario_panel(self, conf):
+        """Franjas, próxima oportunidad y motivo de espera por juego. Solo lee: no consulta ni escribe."""
+        try:
+            politica = self._politica(conf)
+        except ValueError as error:
+            return {"estado": "no_valida", "motivo": str(error), "juegos": {}}
+        if politica is None:
+            return {"estado": "sin_migrar", "juegos": {},
+                    "motivo": "Configuración de versión 1 sin horario: la tarea programada no consulta hasta migrarla "
+                              "(`horario migrar --confirmar`); la comprobación manual sigue disponible."}
+        ahora = self._ahora()
+        maximo = int(conf.get("politica", {}).get("max_reintentos", 8))
+        juegos = {}
+        for codigo in JUEGOS:
+            habilitado = codigo in conf.get("juegos", JUEGOS)
+            estado = self.almacen.estado(codigo)
+            d = horario.decidir(politica, codigo, ahora, estado, max_reintentos=maximo)
+            pendiente = d.motivo not in ("fuera_de_horario", "evento_completo") or estado.get("estado") != "correcto"
+            siguiente = horario.proxima_oportunidad(politica, codigo, ahora, incluir_recuperacion=pendiente)
+            juegos[codigo] = {
+                "habilitado_en_nucleo": habilitado,
+                "franjas": [{"dia": horario.DIAS[f.dia], "inicio": horario._hhmm(f.inicio), "fin": horario._hhmm(f.fin),
+                             "termina_al_dia_siguiente": f.fin <= f.inicio} for f in politica.franjas_de(codigo)],
+                "motivo": "deshabilitado" if not habilitado else d.motivo, "detalle": d.detalle,
+                "proxima_oportunidad": None if siguiente is None else siguiente[0].isoformat(),
+                "tipo_proxima": None if siguiente is None else siguiente[1].tipo}
+        return {"estado": "valida", "politica": horario.como_dict(politica), "huella_plan": horario.huella_plan(politica),
+                "recuperacion": None if politica.recuperacion is None else horario._hhmm(politica.recuperacion),
+                "intervalo_minutos": politica.intervalo_minutos, "ahora": ahora.isoformat(), "juegos": juegos}
 
     def recuperar(self):
         """Solo registro y planificación: no sincroniza, genera o borra nada."""
@@ -201,13 +259,17 @@ class OperacionAutomatica:
             return min(ahora + timedelta(minutes=fuera), evento - timedelta(minutes=30)), 0
         return ahora + timedelta(minutes=minutos), 0
 
-    def _un_juego(self, e, codigo, conf):
+    def _un_juego(self, e, codigo, conf, oportunidad=None, confirmar=None):
         previo = self.almacen.estado(codigo)
+        conservar_espera = False
         r = {"codigo": codigo, "juego": codigo, "estado": "en_curso", "pasos": [], "motivo": None,
              "ejecucion": e["id"], "ultima_comprobacion": self._ahora().isoformat(), "error": None}
-        for campo in ("ultimo_sorteo", "fecha_ultimo_sorteo", "sorteos", "ultima_actualizacion", "pagina_recuperacion"):
+        for campo in ("ultimo_sorteo", "fecha_ultimo_sorteo", "sorteos", "ultima_actualizacion", "pagina_recuperacion",
+                      "horario"):
             if campo in previo:
                 r[campo] = previo[campo]
+        if oportunidad is not None:  # slot programado consumido por este intento, aunque falle
+            r["horario"] = oportunidad.registro()
         paso = "abrir_recursos"
         politica = conf.get("politica", {})
         try:
@@ -227,6 +289,19 @@ class OperacionAutomatica:
                 if self.almacen.configuracion().get("pausada", True):
                     r.update(estado="pausada", motivo="La operación se pausó antes de consultar.")
                     return r
+                if oportunidad is not None and confirmar is not None:
+                    # Borde real de la consulta al proveedor: el mismo slot admitido, con el reloj de ahora.
+                    paso = "confirmar_horario"
+                    confirmada = confirmar(oportunidad)
+                    self._guardar_paso(e, r, paso, {"admitido": confirmada.admitido, "motivo": confirmada.motivo,
+                                                    "oportunidad": oportunidad.oportunidad.isoformat()})
+                    if not confirmada.admitido:
+                        # La preparación cruzó el cierre: no se inicia `sincronizar`, no se consume otro slot y
+                        # se conservan la espera y los fallos anteriores (F92-HOR-01).
+                        r["horario"] = {**oportunidad.registro(), "consulta": "no_iniciada", "motivo": confirmada.motivo}
+                        r.update(estado="omitido_horario", motivo=confirmada.detalle)
+                        conservar_espera = True
+                        return r
                 paso = "sincronizacion"
                 parametros = {"max_paginas": int(politica.get("max_paginas", 3)),
                               "reconciliar_ultimos": int(politica.get("reconciliar_ultimos", 12)),
@@ -321,18 +396,30 @@ class OperacionAutomatica:
             return r
         finally:
             ahora = self._ahora()
-            siguiente, intentos = self._proxima_consulta(politica, r, previo, ahora, bool(r.get("error")))
-            r.update(finalizada_en=ahora.isoformat(), proxima_consulta=siguiente.isoformat(), fallos_consecutivos=intentos)
-            if intentos >= int(politica.get("max_reintentos", 8)):
-                r.update(estado="reintentos_agotados",
-                         motivo="Se alcanzó el límite de fallos consecutivos. Revise el recurso y use Recuperar explícitamente.")
+            if conservar_espera:
+                for campo in ("error", "fallos_consecutivos", "proxima_consulta", "reintentar_despues_segundos"):
+                    if campo in previo:
+                        r[campo] = previo[campo]
+                r["finalizada_en"] = ahora.isoformat()
+            else:
+                siguiente, intentos = self._proxima_consulta(politica, r, previo, ahora, bool(r.get("error")))
+                r.update(finalizada_en=ahora.isoformat(), proxima_consulta=siguiente.isoformat(), fallos_consecutivos=intentos)
+                if intentos >= int(politica.get("max_reintentos", 8)):
+                    r.update(estado="reintentos_agotados",
+                             motivo="Se alcanzó el límite de fallos consecutivos. Revise el recurso y use Recuperar explícitamente.")
             self.almacen.guardar_estado(codigo, r)
             e["juegos"][codigo] = r
             self.almacen.guardar_ejecucion(e)
 
-    def ciclo(self, juegos=None, forzar=False, origen="tarea"):
+    def ciclo(self, juegos=None, forzar=False, origen="manual", programado: InvocacionProgramada | None = None):
         self._verificar_destinos()
         conf = self.almacen.configuracion()
+        if programado is not None:
+            if juegos is not None or forzar:
+                raise ValueError("La invocación programada elige los juegos por horario; no admite juegos ni forzar.")
+            return self._ciclo_programado(conf, programado)
+        if origen == ORIGEN_PROGRAMADO:
+            raise ValueError("El origen programado exige la invocación de la tarea con su plan.")
         if not conf.get("activada") or conf.get("pausada", True):
             return {"estado": "pausada", "juegos": {}, "motivo": "La tarea no activa la configuración operativa."}
         elegidos = list(dict.fromkeys(conf.get("juegos", JUEGOS) if juegos is None else juegos))
@@ -354,6 +441,47 @@ class OperacionAutomatica:
         if not debidos:
             return {"estado": "reintentos_agotados" if agotados else "sin_consultas_debidas",
                     "juegos": {}, "reintentos_agotados": agotados}
+        return self._ejecutar(conf, debidos, ahora, {"origen": origen})
+
+    def _ciclo_programado(self, conf, programado):
+        """Solo los juegos habilitados cuya oportunidad de horario está abierta y su trabajo pendiente."""
+        if not conf.get("activada") or conf.get("pausada", True):
+            return {"estado": "pausada", "juegos": {}, "motivo": "La tarea no activa la configuración operativa."}
+        try:
+            politica = self._politica(conf)
+        except ValueError as error:
+            return {"estado": "horario_no_valido", "juegos": {}, "motivo": str(error)}
+        if politica is None:
+            return {"estado": "horario_no_configurado", "juegos": {},
+                    "motivo": "Configuración de versión 1 sin horario: migre con `horario migrar --confirmar` y "
+                              "registre la tarea con el plan resultante. No se consulta."}
+        if programado.plan != horario.huella_plan(politica):
+            return {"estado": "plan_divergente", "juegos": {},
+                    "motivo": "La tarea se registró con otro plan de horario; actualícela con el plan vigente. No se consulta."}
+        ahora = self._ahora()
+        maximo = int(conf.get("politica", {}).get("max_reintentos", 8))
+        decisiones = {j: horario.decidir(politica, j, ahora, self.almacen.estado(j), max_reintentos=maximo)
+                      for j in conf.get("juegos", JUEGOS)}
+        admitidos = sorted((j for j, d in decisiones.items() if d.admitido),
+                           key=lambda j: (decisiones[j].ventana.inicio, JUEGOS.index(j)))
+        motivos = {j: {"motivo": d.motivo, "detalle": d.detalle} for j, d in decisiones.items()}
+        if not admitidos:
+            return {"estado": "sin_consultas_debidas", "juegos": {}, "horario": motivos,
+                    "reintentos_agotados": [j for j, d in decisiones.items() if d.motivo == "reintentos_agotados"]}
+
+        def revalidar(codigo):
+            # Un ciclo empezado dentro del horario no autoriza a empezar más tarde la consulta de
+            # otro juego cuyo turno ya terminó: se decide de nuevo con el reloj de este momento.
+            return horario.decidir(politica, codigo, self._ahora(), self.almacen.estado(codigo), max_reintentos=maximo)
+
+        def confirmar(admitida):
+            # Tras preparar el juego e inmediatamente antes de consultar al proveedor (ver `_un_juego`).
+            return horario.confirmar(politica, admitida, self._ahora(), self.almacen.estado(admitida.juego),
+                                     max_reintentos=maximo)
+        return self._ejecutar(conf, admitidos, ahora, {"origen": ORIGEN_PROGRAMADO, "plan": programado.plan,
+                                                       "horario": motivos}, revalidar=revalidar, confirmar=confirmar)
+
+    def _ejecutar(self, conf, debidos, ahora, datos, revalidar=None, confirmar=None):
         identificador = nuevo_identificador(ahora)
         ocupados = {}
         restantes = debidos[:]
@@ -368,15 +496,23 @@ class OperacionAutomatica:
         if not restantes:
             return {"estado": "ocupado", "juegos": {}, "activas": ocupados}
         e = {"id": identificador, "estado": "en_curso", "iniciada_en": ahora.isoformat(), "finalizada_en": None,
-             "origen": origen, "juegos": {j: {"codigo": j, "estado": "pendiente", "pasos": []} for j in restantes},
+             **datos, "juegos": {j: {"codigo": j, "estado": "pendiente", "pasos": []} for j in restantes},
              "ocupados": ocupados, "politica": deepcopy(conf.get("politica", {})), "version": 1}
         try:
             self.almacen.guardar_ejecucion(e)
             for codigo in restantes:
-                self._un_juego(e, codigo, conf)
+                decision = revalidar(codigo) if revalidar is not None else None
+                if decision is not None and not decision.admitido:
+                    e["juegos"][codigo] = {"codigo": codigo, "estado": "omitido_horario", "pasos": [],
+                                           "motivo": decision.detalle, "horario": {"motivo": decision.motivo}}
+                    self.almacen.guardar_ejecucion(e)
+                    cerrojos.liberar(codigo)
+                    continue
+                self._un_juego(e, codigo, conf, oportunidad=decision, confirmar=confirmar)
                 cerrojos.liberar(codigo)
-            estados = [r["estado"] for r in e["juegos"].values()]
-            e.update(estado="exito" if all(s == "correcto" for s in estados) else "parcial",
+            estados = [r["estado"] for r in e["juegos"].values() if r["estado"] != "omitido_horario"]
+            e.update(estado="sin_consultas_debidas" if not estados else
+                     "exito" if all(s == "correcto" for s in estados) else "parcial",
                      finalizada_en=self._ahora().isoformat())
             self.almacen.guardar_ejecucion(e)
             return e

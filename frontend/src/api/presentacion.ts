@@ -21,6 +21,7 @@ import {
   etiqueta,
   EstructuraNoReconocida,
   lista,
+  literal,
   nulable,
   numero,
   objeto,
@@ -88,7 +89,16 @@ export const decIndice = objeto<IndiceDeEstadisticas>({
   juego: texto,
   resumen: texto,
   panel: texto,
-  metricas: lista(objeto<Esquema["MetricaDisponible"]>({ metrica: texto, parametro: nulable(texto) })),
+  metricas: lista(
+    objeto<Esquema["MetricaDisponible"]>({
+      metrica: texto,
+      titulo: texto,
+      grupo: texto,
+      origen: literal("fase5", "anterior"),
+      parametro: nulable(literal("anio", "mes", "dia_semana", "ventana", "color")),
+      paginada: booleano,
+    }),
+  ),
 });
 
 export const decSalud = objeto<Salud>({ estado: texto, api: texto });
@@ -386,6 +396,7 @@ export interface Columna {
   formato: string;
   unidad: string;
 }
+export type Paginacion = Esquema["Paginacion"];
 export interface TablaDeMetrica {
   id: string;
   titulo: string;
@@ -393,6 +404,8 @@ export interface TablaDeMetrica {
   /** Filas completas: las claves fuera de `columnas` se muestran como datos adicionales. */
   filas: Record<string, Json>[];
   nota: string | null;
+  /** Solo en las tablas paginadas por la API (las demas llegan completas). */
+  paginacion: Paginacion | null;
 }
 export interface Grafica {
   titulo: string;
@@ -417,6 +430,8 @@ export interface Metrica {
   slug: string;
   titulo: string;
   grupo: string;
+  /** fase5: pagina del catalogo de la Fase 5; anterior: receta de la consola (Fase 9.2). */
+  origen: "fase5" | "anterior";
   parametro: string | null;
   estado: string;
   motivo: string | null;
@@ -433,10 +448,12 @@ export interface RespuestaDeMetrica {
 }
 
 const decColumna = objeto<Columna>({ clave: texto, etiqueta: texto, formato: texto, unidad: texto });
+const decPaginacion = objeto<Paginacion>({ pagina: entero, por_pagina: entero, total_filas: entero, total_paginas: entero });
 export const decMetrica = objeto<Metrica>({
   slug: texto,
   titulo: texto,
   grupo: texto,
+  origen: literal("fase5", "anterior"),
   parametro: nulable(texto),
   estado: texto,
   motivo: nulable(texto),
@@ -448,6 +465,7 @@ export const decMetrica = objeto<Metrica>({
       columnas: lista(decColumna),
       filas: lista(objetoJson),
       nota: nulable(texto),
+      paginacion: nulable(decPaginacion),
     }),
   ),
   grafica: nulable(

@@ -20,6 +20,8 @@ const EXPLICACIONES: Readonly<Record<string, string>> = {
   no_encontrado: "El recurso pedido no existe en la API.",
   parametro_no_valido: "Algún filtro o parámetro no es válido.",
   alterado: "Integridad alterada: el recurso guardado no coincide con su huella y no se muestra.",
+  historico_no_valido:
+    "El histórico cargado en la base no supera la validación de la muestra: la API no calcula la estadística ni descarta sorteos. Se corrige revisando los datos en la consola local.",
   no_disponible: "El recurso guardado no se puede leer ahora.",
   incompatible: "El recurso guardado no es compatible con esta versión.",
   sin_configuracion: "El juego no tiene configuración de predicción vigente.",

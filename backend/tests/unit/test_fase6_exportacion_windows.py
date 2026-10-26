@@ -4,6 +4,12 @@ La fixture conserva la estructura observada en Windows, incluidos elementos
 omitidos, pero sustituye nombres, SID, rutas y vinculación por valores del caso.
 Solo la copia de ensayo reemplaza Get-UsuarioActual y Resolver-IdentidadSid por
 AST. No se instala una tarea ni se acredita resolución nativa de Windows aquí.
+
+La exportación nativa observada es de la VERSIÓN 1 (PT5M e inicio de sesión): el
+registro lo hace el controlador anterior archivado y las demás acciones el
+controlador nuevo, que debe reconocerla con las mismas reglas auditadas sin
+relajarlas (y negarse a activarla: se migra). La exportación nativa de la versión 2
+se obtiene con el protocolo del operador.
 """
 from __future__ import annotations
 
@@ -19,6 +25,7 @@ import pytest
 from tests.unit.test_fase6_tarea_windows import _ejecutar_powershell, _ps_literal, tarea
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts/windows/fase6_tarea.ps1"
+SCRIPT_V1 = Path(__file__).resolve().parents[2] / "tests/fixtures/fase6/fase6_tarea_v1.ps1"
 FIXTURE = Path(__file__).resolve().parents[1] / "fixtures/fase6/tarea-exportada-nativa.xml"
 SID = "S-1-5-21-101-202-303-1001"
 OTRO_SID = "S-1-5-21-404-505-606-1002"
@@ -35,11 +42,6 @@ $global:ErrorExportacion=$false
 $global:Controles=New-Object Collections.Generic.List[string]
 $global:Resultados=New-Object Collections.Generic.List[object]
 $global:AlterarAlRegistrar=__ALTERAR__
-$original=__SCRIPT__
-$scriptPrueba=Join-Path __RAIZ__ 'controlador-parametrizado.ps1'
-$tokens=$null;$errores=$null
-$ast=[Management.Automation.Language.Parser]::ParseFile($original,[ref]$tokens,[ref]$errores)
-if(@($errores).Count){throw 'SINTAXIS DEL CONTROLADOR ORIGINAL'}
 $reemplazos=@{
  'Get-UsuarioActual'=@'
 function Get-UsuarioActual {
@@ -54,11 +56,21 @@ function Resolver-IdentidadSid([string]$Identidad) {
 }
 '@
 }
-$texto=[IO.File]::ReadAllText($original)
-$funciones=@($ast.FindAll({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst]},$true) | Where-Object{$reemplazos.ContainsKey($_.Name)} | Sort-Object { $_.Extent.StartOffset } -Descending)
-if(@($funciones|Where-Object{$_.Name -eq 'Get-UsuarioActual'}).Count -ne 1){throw 'FALTA SEAM DE IDENTIDAD EN FIXTURE'}
-foreach($f in $funciones){$texto=$texto.Remove($f.Extent.StartOffset,$f.Extent.EndOffset-$f.Extent.StartOffset).Insert($f.Extent.StartOffset,[string]$reemplazos[$f.Name])}
-[IO.File]::WriteAllText($scriptPrueba,$texto,(New-Object Text.UTF8Encoding($true,$true)))
+function Preparar-Copia([string]$Original,[string]$Destino){
+ $tokens=$null;$errores=$null
+ $ast=[Management.Automation.Language.Parser]::ParseFile($Original,[ref]$tokens,[ref]$errores)
+ if(@($errores).Count){throw 'SINTAXIS DEL CONTROLADOR ORIGINAL'}
+ $texto=[IO.File]::ReadAllText($Original)
+ $funciones=@($ast.FindAll({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst]},$true) | Where-Object{$reemplazos.ContainsKey($_.Name)} | Sort-Object { $_.Extent.StartOffset } -Descending)
+ if(@($funciones|Where-Object{$_.Name -eq 'Get-UsuarioActual'}).Count -ne 1){throw 'FALTA SEAM DE IDENTIDAD EN FIXTURE'}
+ foreach($f in $funciones){$texto=$texto.Remove($f.Extent.StartOffset,$f.Extent.EndOffset-$f.Extent.StartOffset).Insert($f.Extent.StartOffset,[string]$reemplazos[$f.Name])}
+ [IO.File]::WriteAllText($Destino,$texto,(New-Object Text.UTF8Encoding($true,$true)))
+}
+$scriptPrueba=Join-Path __RAIZ__ 'controlador-parametrizado.ps1'
+$scriptV1Prueba=Join-Path __RAIZ__ 'controlador-v1-parametrizado.ps1'
+Preparar-Copia __SCRIPT__ $scriptPrueba
+Preparar-Copia __SCRIPTV1__ $scriptV1Prueba
+$planPrueba=__PLAN__
 $raiz=__RAIZ__
 $comun=@{Worktree=__REPO__;PythonExe=__PYTHON__;Configuracion=__CONFIG__}
 function Get-Ns([xml]$x){$n=New-Object Xml.XmlNamespaceManager($x.NameTable);$n.AddNamespace('t','http://schemas.microsoft.com/windows/2004/02/mit/task');return ,$n}
@@ -113,7 +125,9 @@ function Unregister-ScheduledTask {
 function Invoke-Caso([string]$Nombre,[string]$Accion,[int]$Esperado=0){
  $e=Join-Path (Join-Path $raiz 'puntos') $Nombre
  $a=@{};foreach($k in $comun.Keys){$a[$k]=$comun[$k]};$a.Evidencia=$e;$a[$Accion]=$true
- & $scriptPrueba @a | Out-Host
+ # La version 1 la registra su controlador archivado; el resto, el controlador nuevo con su plan.
+ if($Accion -eq 'Instalar'){$s=$scriptV1Prueba}else{$s=$scriptPrueba;$a.PlanHorario=$planPrueba}
+ & $s @a | Out-Host
  $codigo=$LASTEXITCODE
  $r=Get-Content -LiteralPath (Join-Path $e 'resultado.json') -Raw -Encoding UTF8|ConvertFrom-Json
  [void]$global:Resultados.Add($r)
@@ -147,8 +161,8 @@ def _ejecutar(tarea, cuerpo, *, cuenta="EQUIPO-A\\ana", sid=SID, alteracion=""):
     fuente = Path(os.environ.get("FASE6_CONTROLADOR_PRUEBAS") or SCRIPT)
     cabecera = CABECERA
     valores = {"SID": sid, "CUENTA": cuenta, "OTRO_SID": OTRO_SID, "ALTERAR": alteracion,
-               "SCRIPT": fuente, "RAIZ": tarea["raiz"], "REPO": tarea["repo"], "PYTHON": tarea["python"],
-               "CONFIG": tarea["config"], "FIXTURE": FIXTURE}
+               "SCRIPT": fuente, "SCRIPTV1": SCRIPT_V1, "PLAN": tarea["plan"], "RAIZ": tarea["raiz"],
+               "REPO": tarea["repo"], "PYTHON": tarea["python"], "CONFIG": tarea["config"], "FIXTURE": FIXTURE}
     for nombre, valor in valores.items():
         cabecera = cabecera.replace("__" + nombre + "__", _ps_literal(valor))
     wrapper = tarea["raiz"] / "exportacion-simulada.ps1"
@@ -241,6 +255,8 @@ ALTERACIONES = {
     "contexto_ajeno": "$x.Task.Actions.SetAttribute('Context','Ajeno')",
     "logon_type_incompatible": "Set-Campo $x '/t:Task/t:Principals/t:Principal/t:LogonType' 'Password'",
     "inicio_no_disponible": "Set-Campo $x '/t:Task/t:Settings/t:StartWhenAvailable' 'false'",
+    # F92-NAT-01: la v1 exige true; si el Programador omite el campo vale su predeterminado false.
+    "inicio_omitido": "Remove-Campo $x '/t:Task/t:Settings/t:StartWhenAvailable'",
     "limite_incompatible": "Set-Campo $x '/t:Task/t:Settings/t:ExecutionTimeLimit' 'PT72H'",
     "politica_incompatible": "Set-Campo $x '/t:Task/t:Settings/t:MultipleInstancesPolicy' 'Parallel'",
     "time_deshabilitado": "Add-Campo $x '/t:Task/t:Triggers/t:TimeTrigger' 'Enabled' 'false'",

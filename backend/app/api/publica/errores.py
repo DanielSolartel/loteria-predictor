@@ -19,7 +19,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.application.exceptions import DominioError, JuegoNoEncontradoError, SorteoNoEncontradoError
+from app.application.exceptions import (
+    DominioError,
+    JuegoNoEncontradoError,
+    ResultadoHistoricoInconsistenteError,
+    SorteoNoEncontradoError,
+)
 
 registro = logging.getLogger("app.api.publica")
 
@@ -82,6 +87,14 @@ def registrar_manejadores(app: FastAPI) -> None:
     @app.exception_handler(SorteoNoEncontradoError)
     async def _sorteo(request: Request, exc: SorteoNoEncontradoError):
         return respuesta_de_error(request, 404, "no_encontrado", "Sorteo no encontrado")
+
+    @app.exception_handler(ResultadoHistoricoInconsistenteError)
+    async def _historico(request: Request, exc: ResultadoHistoricoInconsistenteError):
+        # El histórico guardado no supera la validación de la muestra: no se calcula ni se descarta
+        # ningún sorteo. Sin el detalle (sorteo y valores) en la respuesta; solo la clase en el registro.
+        registro.warning("api_publica historico_no_valido solicitud=%s", getattr(request.state, "solicitud", None))
+        return respuesta_de_error(request, 409, "historico_no_valido",
+                                  "El histórico cargado no es consistente; no se calcula la estadística")
 
     @app.exception_handler(DominioError)
     async def _dominio(request: Request, exc: DominioError):

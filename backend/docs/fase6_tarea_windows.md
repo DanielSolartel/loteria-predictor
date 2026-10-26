@@ -1,10 +1,37 @@
 # Fase 6: tarea de Windows independiente de la interfaz
 
-`scripts/windows/fase6_tarea.ps1` prepara y controla una tarea del **usuario actual**, con Windows PowerShell 5.1 en consola normal. No inicia Uvicorn ni utiliza HTTP para ejecutar la operación. La acción usa el intérprete absoluto y llama directamente al ejecutor de Fase 6:
+`scripts/windows/fase6_tarea.ps1` prepara y controla una tarea del **usuario actual**, con Windows PowerShell 5.1 en consola normal. No inicia Uvicorn ni utiliza HTTP para ejecutar la operación. La acción usa el intérprete absoluto y llama directamente al ejecutor de Fase 6. En la **versión 2** (horario por juego, entrega 9.2) la acción es:
 
 ```text
-python.exe -m scripts.operacion_automatica --config "ruta absoluta de configuracion.json" ciclo
+python.exe -m scripts.operacion_automatica --config "ruta absoluta de configuracion.json" ciclo --programado --plan <huella del plan>
 ```
+
+## Versión 2: horario por juego (entrega 9.2; validada en Windows, no aplicada a la tarea real)
+
+- **Estado.** Validada en Windows 11 con Windows PowerShell 5.1.26100.9711 y aprobada por la auditoría independiente el 26 de octubre de 2026:
+  - pruebas dirigidas: 121 casos únicos aprobados, por consolidación de dos corridas;
+  - ensayo nativo B con el Programador real y un testigo sintético ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)).
+
+  La tarea real `LP6-01023009031fcabd` sigue en la versión 1, habilitada. Su migración es un bloque posterior y separado. Las versiones v3 y v4 de la entrega no son versiones de la tarea: el controlador sigue registrando la versión 2.
+- **Disparadores.** Solo los `CalendarTrigger` semanales del plan que imprime `horario plan --salida` (franjas cada 15 minutos y recuperación a las 09:00). No hay `LogonTrigger` ni repetición sin fin, y `StartWhenAvailable=false`.
+- **Exportación nativa (corrección v3 de F92-NAT-01).** El Programador puede omitir `StartWhenAvailable` al exportar su predeterminado `false`.
+  - El controlador toma la omisión como el predeterminado **documentado** del esquema, nunca como el valor esperado. Así una versión 1, que exige `true`, sigue rechazada si falta el campo.
+  - El diagnóstico registra `origen = predeterminado_documentado`.
+  - La exportación original se archiva sin normalizar.
+  - El ensayo lee el campo de forma estricta, sin acceder a una propiedad XML ausente.
+- **Parámetros nuevos.**
+  - `-PlanHorario <archivo>`: obligatorio para `-Plan`, `-Instalar`, `-Migrar`, `-Activar` y `-Reanudar`, y para cualquier acción sobre una tarea de la versión 2.
+  - `-Migrar`: sustituye una versión 1 propia, en el mismo nombre y sin duplicado.
+  - `-Revertir -XmlAnterior <exportación archivada>`: vuelve a la versión 1 deshabilitada. Registra una copia validada con `Enabled=false`, nunca la exportación tal cual, y conserva el original. Tras pausar, vuelve a comprobar la propiedad y que no haya un ciclo vivo. Si falla el registro, restaura la versión 2 deshabilitada ([detalle](fase6_migracion_lp6.md#2-reversión)).
+- **Lectura del plan (corrección v2 de F92-PS-02).** PowerShell 7 convierte las cadenas ISO completas en `DateTime` al leer JSON y pierde su texto y su desfase; `-DateKind String` solo existe desde la 7.5. El controlador protege esas cadenas antes de convertir y las restaura después, igual en Windows PowerShell 5.1 y en PowerShell 7.x. Siguen las comprobaciones de patrón, texto canónico, huella y XML, y además cada inicio debe llevar el desfase `-05:00` del plan.
+- **Espacio de nombres (corrección v2 de F92-PS-01).** La URI de Task Scheduler vive en `$UriTarea`. Antes se llamaba `$NS`, y PowerShell la confundía con el gestor local `$ns`, porque no distingue mayúsculas. Una guarda estática de las pruebas impide que una función tape así un valor del script que también lee.
+- **Resultado.** `version_tarea` informa la versión con la que queda la tarea después de la acción (corrección v2 de F92-PS-03).
+- **Versión 1.** La versión anterior (PT5M e inicio de sesión) se reconoce con sus comprobaciones exactas auditadas, solo para consultarla, pausarla, desinstalarla o migrarla. El controlador nuevo no la activa ni instala otra encima.
+- **Más información.**
+  - Política, admisión, consolas que siguen apareciendo y compromiso entre disponibilidad y horario: [horario de consulta](fase6_horario.md).
+  - Plan y procedimiento de la migración manual de `LP6-01023009031fcabd`, con su reversión y el protocolo nativo previo con una tarea de ensayo aislada: [migración](fase6_migracion_lp6.md).
+
+Las secciones siguientes describen la **versión 1** y sus validaciones v3.x. Se conservan como antecedente. Donde dicen «cada cinco minutos», «inicio de sesión» o `StartWhenAvailable=true` se refieren a esa versión.
 
 El directorio de trabajo es el `backend` absoluto del worktree indicado. No programa la CLI histórica `scripts.operacion_diaria`: esa operación de Producto 3 no acredita por sí sola el enlace con las versiones y configuraciones ML vigentes. El núcleo de Fase 6 resuelve ese enlace mediante los casos de uso actuales.
 
@@ -92,9 +119,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Pausa fallida: revisar el resultado.' }
 ## Sesión, suspensión, reinicio y límites
 
 - Principal `InteractiveToken`, usuario actual y `LeastPrivilege`: no solicita ni guarda contraseña y no pide «privilegios más altos». **Requiere una sesión abierta de ese usuario**; puede funcionar con pantalla bloqueada. Cerrar navegador, terminal o Uvicorn no la detiene. Cerrar sesión impide nuevas ejecuciones hasta el próximo inicio de sesión.
-- Desencadenadores: inicio de sesión del usuario y repetición **cada cinco minutos**. Son ventanas de invocación, no horarios oficiales de sorteo ni garantía de publicación. La aplicación decide en `America/Bogota` si corresponde consultar y respeta sus ventanas, espera progresiva y límites del proveedor.
+- Desencadenadores (versión 1): inicio de sesión del usuario y repetición **cada cinco minutos**. En la versión 2 se sustituyen por las franjas del plan y la recuperación de las 09:00, sin inicio de sesión ([horario](fase6_horario.md)). Son ventanas de invocación, no horarios oficiales de sorteo ni garantía de publicación. La aplicación decide en `America/Bogota` si corresponde consultar y respeta sus ventanas, espera progresiva y límites del proveedor.
 - `IgnoreNew` evita tareas periódicas simultáneas. La exclusión con invocaciones manuales y otras instancias pertenece además a los cerrojos del núcleo; esta política del Programador, por sí sola, no coordina todos los escritores.
-- `StartWhenAvailable=true` permite retomar tras una oportunidad perdida; no promete ejecutar cada intervalo ausente ni autoriza emisiones retroactivas. El núcleo reconcilia de forma acotada y bloquea emisiones cuyo evento ya no sea temporalmente admisible.
+- `StartWhenAvailable=true` (versión 1) permite retomar tras una oportunidad perdida; no promete ejecutar cada intervalo ausente ni autoriza emisiones retroactivas. La versión 2 usa `false`: una oportunidad perdida no se ejecuta a otra hora y el pendiente espera a la siguiente oportunidad permitida. El núcleo reconcilia de forma acotada y bloquea emisiones cuyo evento ya no sea temporalmente admisible.
 - `WakeToRun=false`: no despierta el equipo ni altera sus opciones de energía. Un PC apagado o suspendido no ejecuta tareas. Tras encender, reanudar e iniciar sesión, los ciclos recuperan novedades conforme a su política; disponibilidad continua requiere un equipo/servicio disponible.
 - Límite de tarea **dos horas**, sin modificar límites de los trabajadores ML existentes. Si el Programador termina un proceso excedido o el equipo se apaga, la consulta y recuperación del núcleo distinguen actividad viva de ejecución interrumpida. Los registros persistentes se conservan; no se promocionan ni borran temporales históricos.
 - La tarea puede invocarse sin red: el núcleo registra la indisponibilidad y aplica la espera progresiva. No depende de «red disponible» como sustituto de un diagnóstico real.
@@ -123,6 +150,8 @@ Seguir `fase6-guia-windows.md` v3.3: conservar worktree/Python existentes, aplic
 Daniel completó en Windows nativo la v3.1: **7.243 aprobadas**, cero fallos, errores u omisiones; OpenSSL `exigir` 7/7, demostración sintética de cuatro juegos y `pip check` limpio. Las **47 dirigidas Linux de v3.2** conservan su evidencia propia. Son antecedentes de esas versiones, no resultados v3.3, y no se suman grupos solapados. No se repiten completa, entrenamiento, demostración o revisión visual/PDF por rutina. Las regresiones Linux usan simulaciones expresas y no acreditan el Programador o resolución nativa de identidades.
 
 ## Ensayo optativo del Programador real, completamente aislado
+
+**Versión 2 (entrega 9.2):** el ensayo nativo B con este script se ejecutó y la auditoría lo aprobó el 26 de octubre de 2026, con el testigo sintético `LP6-aa9dcee442bf1e45`. Dio 14 pasos y 16 mutaciones acotadas al testigo. El intento de activar una versión 1 con el controlador nuevo termina con código 1, como se espera. El único inicio del testigo fue manual, y la limpieza fue completa. La tarea real no se tocó ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)). Los párrafos siguientes describen las etapas v3.x de la versión 1 y se conservan como antecedente.
 
 `tests/ensayar_tarea_fase6_windows.ps1` requiere Windows y la opción explícita `-Ejecutar`. Daniel debe revisarlo y ejecutarlo después de las baterías sintéticas. Crea un worktree testigo temporal propio con un programa Python de biblioteca estándar; ese programa solo escribe una marca de ejecución y nunca importa la aplicación, abre BD, consulta proveedor o carga modelos. El controlador real registra una tarea propia deshabilitada, la activa explícitamente, solicita un disparo real, conserva XML, identidad del intérprete, PID y resultado del Programador, la pausa y la desinstala. La espera se liga a la creación de la marca y al estado del proceso, con límite de 60 segundos.
 

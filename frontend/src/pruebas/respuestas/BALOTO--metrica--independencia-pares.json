@@ -66,6 +66,7 @@
    "slug": "independencia-pares",
    "titulo": "Independencia de pares",
    "grupo": "pruebas",
+   "origen": "fase5",
    "parametro": null,
    "estado": "ok",
    "motivo": null,
@@ -273,7 +274,8 @@
        "p_ajustado": 0.9933981824949546
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": null,

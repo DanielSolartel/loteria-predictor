@@ -131,3 +131,6 @@ tests/unit/test_fase6_xml_windows.py
 tests/unit/test_fase6_ensayo_limpieza_windows.py
 
 tests/unit/test_fase6_exportacion_windows.py
+tests/unit/test_fase6_horario.py
+tests/unit/test_fase6_horario_regresiones.py
+tests/unit/test_fase6_auditoria_v1.py

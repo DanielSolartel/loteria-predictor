@@ -13,7 +13,8 @@ export const ETIQUETAS_TIPO_P: Readonly<Record<string, string>> = {
   permutacion_monte_carlo: "permutación Monte Carlo",
 };
 
-export const FORMATOS = ["entero", "texto", "dec1", "dec2", "dec3", "pct", "pp", "p", "tipo_p"] as const;
+/** `color` (Fase 9.2): codigo de un color de ColorLoto; se muestra con su muestra y su codigo en texto. */
+export const FORMATOS = ["entero", "texto", "dec1", "dec2", "dec3", "pct", "pp", "p", "tipo_p", "color"] as const;
 
 /**
  * Como `format(x, ".{f}f")` de Python: `toFixed` redondea los empates exactos
@@ -72,7 +73,7 @@ export function formatear(valor: number | string | null | undefined, formato: st
 }
 
 export function alineadoADerecha(formato: string): boolean {
-  return formato !== "texto" && formato !== "tipo_p";
+  return formato !== "texto" && formato !== "tipo_p" && formato !== "color";
 }
 
 export function fechaHora(iso: string | null | undefined): string {

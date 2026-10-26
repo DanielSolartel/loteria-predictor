@@ -1,0 +1,579 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/intervalos-historicos-pares-numero-color",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "intervalos-historicos-pares-numero-color",
+   "titulo": "Intervalos históricos de pares número-color",
+   "grupo": "atrasos",
+   "origen": "anterior",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 45,
+     "unidad": "sorteos",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Intervalos históricos de pares número-color",
+     "columnas": [
+      {
+       "clave": "numero",
+       "etiqueta": "Número",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "color",
+       "etiqueta": "Color",
+       "formato": "color",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones",
+       "etiqueta": "Sorteos con el valor",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "intervalos",
+       "etiqueta": "Intervalos",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "minimo",
+       "etiqueta": "Mínimo",
+       "formato": "entero",
+       "unidad": "sorteos de distancia"
+      },
+      {
+       "clave": "maximo",
+       "etiqueta": "Máximo",
+       "formato": "entero",
+       "unidad": "sorteos de distancia"
+      },
+      {
+       "clave": "promedio",
+       "etiqueta": "Promedio",
+       "formato": "dec1",
+       "unidad": "sorteos de distancia"
+      },
+      {
+       "clave": "mediana",
+       "etiqueta": "Mediana",
+       "formato": "dec1",
+       "unidad": "sorteos de distancia"
+      }
+     ],
+     "filas": [
+      {
+       "numero": 1,
+       "color": "AMARILLO",
+       "apariciones": 5,
+       "intervalos": 4,
+       "minimo": 1,
+       "maximo": 9,
+       "promedio": 5.25,
+       "mediana": 5.5
+      },
+      {
+       "numero": 1,
+       "color": "AZUL",
+       "apariciones": 5,
+       "intervalos": 4,
+       "minimo": 2,
+       "maximo": 13,
+       "promedio": 7.5,
+       "mediana": 7.5
+      },
+      {
+       "numero": 1,
+       "color": "BLANCO",
+       "apariciones": 8,
+       "intervalos": 7,
+       "minimo": 2,
+       "maximo": 9,
+       "promedio": 5.428571428571429,
+       "mediana": 5
+      },
+      {
+       "numero": 1,
+       "color": "NEGRO",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 1,
+       "maximo": 14,
+       "promedio": 7.2,
+       "mediana": 9
+      },
+      {
+       "numero": 1,
+       "color": "ROJO",
+       "apariciones": 8,
+       "intervalos": 7,
+       "minimo": 2,
+       "maximo": 16,
+       "promedio": 6,
+       "mediana": 3
+      },
+      {
+       "numero": 1,
+       "color": "VERDE",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 1,
+       "maximo": 13,
+       "promedio": 8,
+       "mediana": 9
+      },
+      {
+       "numero": 2,
+       "color": "AMARILLO",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 2,
+       "maximo": 11,
+       "promedio": 5.4,
+       "mediana": 4
+      },
+      {
+       "numero": 2,
+       "color": "AZUL",
+       "apariciones": 8,
+       "intervalos": 7,
+       "minimo": 1,
+       "maximo": 16,
+       "promedio": 5.571428571428571,
+       "mediana": 3
+      },
+      {
+       "numero": 2,
+       "color": "BLANCO",
+       "apariciones": 8,
+       "intervalos": 7,
+       "minimo": 3,
+       "maximo": 14,
+       "promedio": 5.428571428571429,
+       "mediana": 4
+      },
+      {
+       "numero": 2,
+       "color": "NEGRO",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 2,
+       "maximo": 19,
+       "promedio": 7.4,
+       "mediana": 6
+      },
+      {
+       "numero": 2,
+       "color": "ROJO",
+       "apariciones": 7,
+       "intervalos": 6,
+       "minimo": 2,
+       "maximo": 21,
+       "promedio": 7.333333333333333,
+       "mediana": 5.0
+      },
+      {
+       "numero": 2,
+       "color": "VERDE",
+       "apariciones": 3,
+       "intervalos": 2,
+       "minimo": 2,
+       "maximo": 9,
+       "promedio": 5.5,
+       "mediana": 5.5
+      },
+      {
+       "numero": 3,
+       "color": "AMARILLO",
+       "apariciones": 4,
+       "intervalos": 3,
+       "minimo": 3,
+       "maximo": 13,
+       "promedio": 6.666666666666667,
+       "mediana": 4
+      },
+      {
+       "numero": 3,
+       "color": "AZUL",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 2,
+       "maximo": 14,
+       "promedio": 5,
+       "mediana": 3
+      },
+      {
+       "numero": 3,
+       "color": "BLANCO",
+       "apariciones": 5,
+       "intervalos": 4,
+       "minimo": 3,
+       "maximo": 24,
+       "promedio": 9.25,
+       "mediana": 5.0
+      },
+      {
+       "numero": 3,
+       "color": "NEGRO",
+       "apariciones": 2,
+       "intervalos": 1,
+       "minimo": 13,
+       "maximo": 13,
+       "promedio": 13,
+       "mediana": 13
+      },
+      {
+       "numero": 3,
+       "color": "ROJO",
+       "apariciones": 5,
+       "intervalos": 4,
+       "minimo": 5,
+       "maximo": 13,
+       "promedio": 9,
+       "mediana": 9.0
+      },
+      {
+       "numero": 3,
+       "color": "VERDE",
+       "apariciones": 7,
+       "intervalos": 6,
+       "minimo": 1,
+       "maximo": 16,
+       "promedio": 5.666666666666667,
+       "mediana": 4.5
+      },
+      {
+       "numero": 4,
+       "color": "AMARILLO",
+       "apariciones": 5,
+       "intervalos": 4,
+       "minimo": 6,
+       "maximo": 15,
+       "promedio": 9.75,
+       "mediana": 9.0
+      },
+      {
+       "numero": 4,
+       "color": "AZUL",
+       "apariciones": 7,
+       "intervalos": 6,
+       "minimo": 2,
+       "maximo": 23,
+       "promedio": 6.5,
+       "mediana": 3.0
+      },
+      {
+       "numero": 4,
+       "color": "BLANCO",
+       "apariciones": 9,
+       "intervalos": 8,
+       "minimo": 1,
+       "maximo": 16,
+       "promedio": 5.5,
+       "mediana": 3.5
+      },
+      {
+       "numero": 4,
+       "color": "NEGRO",
+       "apariciones": 4,
+       "intervalos": 3,
+       "minimo": 2,
+       "maximo": 32,
+       "promedio": 12.666666666666666,
+       "mediana": 4
+      },
+      {
+       "numero": 4,
+       "color": "ROJO",
+       "apariciones": 9,
+       "intervalos": 8,
+       "minimo": 1,
+       "maximo": 12,
+       "promedio": 3.875,
+       "mediana": 2.5
+      },
+      {
+       "numero": 4,
+       "color": "VERDE",
+       "apariciones": 9,
+       "intervalos": 8,
+       "minimo": 2,
+       "maximo": 8,
+       "promedio": 3.75,
+       "mediana": 3.0
+      },
+      {
+       "numero": 5,
+       "color": "AMARILLO",
+       "apariciones": 8,
+       "intervalos": 7,
+       "minimo": 2,
+       "maximo": 10,
+       "promedio": 5.428571428571429,
+       "mediana": 5
+      },
+      {
+       "numero": 5,
+       "color": "AZUL",
+       "apariciones": 9,
+       "intervalos": 8,
+       "minimo": 2,
+       "maximo": 9,
+       "promedio": 4.75,
+       "mediana": 3.5
+      },
+      {
+       "numero": 5,
+       "color": "BLANCO",
+       "apariciones": 5,
+       "intervalos": 4,
+       "minimo": 2,
+       "maximo": 12,
+       "promedio": 5.5,
+       "mediana": 4.0
+      },
+      {
+       "numero": 5,
+       "color": "NEGRO",
+       "apariciones": 5,
+       "intervalos": 4,
+       "minimo": 1,
+       "maximo": 23,
+       "promedio": 9,
+       "mediana": 6.0
+      },
+      {
+       "numero": 5,
+       "color": "ROJO",
+       "apariciones": 4,
+       "intervalos": 3,
+       "minimo": 3,
+       "maximo": 23,
+       "promedio": 14,
+       "mediana": 16
+      },
+      {
+       "numero": 5,
+       "color": "VERDE",
+       "apariciones": 11,
+       "intervalos": 10,
+       "minimo": 1,
+       "maximo": 10,
+       "promedio": 4.1,
+       "mediana": 3.0
+      },
+      {
+       "numero": 6,
+       "color": "AMARILLO",
+       "apariciones": 3,
+       "intervalos": 2,
+       "minimo": 2,
+       "maximo": 4,
+       "promedio": 3,
+       "mediana": 3.0
+      },
+      {
+       "numero": 6,
+       "color": "AZUL",
+       "apariciones": 7,
+       "intervalos": 6,
+       "minimo": 1,
+       "maximo": 8,
+       "promedio": 4.333333333333333,
+       "mediana": 4.0
+      },
+      {
+       "numero": 6,
+       "color": "BLANCO",
+       "apariciones": 4,
+       "intervalos": 3,
+       "minimo": 6,
+       "maximo": 27,
+       "promedio": 14,
+       "mediana": 9
+      },
+      {
+       "numero": 6,
+       "color": "NEGRO",
+       "apariciones": 7,
+       "intervalos": 6,
+       "minimo": 2,
+       "maximo": 13,
+       "promedio": 5.833333333333333,
+       "mediana": 3.5
+      },
+      {
+       "numero": 6,
+       "color": "ROJO",
+       "apariciones": 9,
+       "intervalos": 8,
+       "minimo": 1,
+       "maximo": 7,
+       "promedio": 3.125,
+       "mediana": 2.0
+      },
+      {
+       "numero": 6,
+       "color": "VERDE",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 1,
+       "maximo": 10,
+       "promedio": 4.2,
+       "mediana": 2
+      },
+      {
+       "numero": 7,
+       "color": "AMARILLO",
+       "apariciones": 4,
+       "intervalos": 3,
+       "minimo": 1,
+       "maximo": 26,
+       "promedio": 10,
+       "mediana": 3
+      },
+      {
+       "numero": 7,
+       "color": "AZUL",
+       "apariciones": 2,
+       "intervalos": 1,
+       "minimo": 1,
+       "maximo": 1,
+       "promedio": 1,
+       "mediana": 1
+      },
+      {
+       "numero": 7,
+       "color": "BLANCO",
+       "apariciones": 7,
+       "intervalos": 6,
+       "minimo": 1,
+       "maximo": 17,
+       "promedio": 5.333333333333333,
+       "mediana": 2.0
+      },
+      {
+       "numero": 7,
+       "color": "NEGRO",
+       "apariciones": 4,
+       "intervalos": 3,
+       "minimo": 4,
+       "maximo": 23,
+       "promedio": 10.333333333333334,
+       "mediana": 4
+      },
+      {
+       "numero": 7,
+       "color": "ROJO",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 2,
+       "maximo": 16,
+       "promedio": 8.2,
+       "mediana": 7
+      },
+      {
+       "numero": 7,
+       "color": "VERDE",
+       "apariciones": 6,
+       "intervalos": 5,
+       "minimo": 3,
+       "maximo": 11,
+       "promedio": 7.2,
+       "mediana": 6
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas.",
+    "Colores: los vigentes en la fecha del último sorteo de la muestra más los observados en ella, como en la consola. Un color sin estilo conocido se muestra con su código.",
+    "La lista completa de intervalos de cada valor no se envía; se muestran su cantidad, mínimo, máximo, promedio y mediana (como la consola)."
+   ],
+   "selector": null
+  }
+ }
+}

@@ -66,6 +66,7 @@
    "slug": "distribucion-sumas",
    "titulo": "Distribución de sumas",
    "grupo": "distribuciones",
+   "origen": "fase5",
    "parametro": null,
    "estado": "ok",
    "motivo": null,
@@ -227,7 +228,8 @@
        "pct": 0.0
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     },
     {
      "id": "percentiles",
@@ -268,7 +270,8 @@
        "suma": 140.1
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": {

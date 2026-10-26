@@ -1,0 +1,432 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/estadisticas/frecuencia-observada-esperada",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "BALOTO",
+   "nombre": "Baloto",
+   "tipo": "numeros",
+   "rango": [
+    1,
+    43
+   ],
+   "cantidad": 5,
+   "superbalota": [
+    1,
+    16
+   ],
+   "colores": [],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "BALOTO",
+   "nombre": "Baloto",
+   "reglas": {
+    "tipo": "numeros",
+    "rango": [
+     1,
+     43
+    ],
+    "cantidad_numeros": 5,
+    "superbalota": [
+     1,
+     16
+    ]
+   },
+   "total_sorteos": 60,
+   "total_sorteos_sin_corte": 60,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 2081,
+    "primera_fecha": "2021-01-02",
+    "ultimo_sorteo": 2140,
+    "ultima_fecha": "2021-06-28"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 2140,
+    "fecha": "2021-06-28"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 1945,
+    "mensaje": "El último sorteo cargado es de hace 1945 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "frecuencia-observada-esperada",
+   "titulo": "Observada frente a esperada",
+   "grupo": "frecuencias",
+   "origen": "anterior",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 60,
+     "unidad": "sorteos",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Observada frente a esperada",
+     "columnas": [
+      {
+       "clave": "valor",
+       "etiqueta": "Número",
+       "formato": "texto",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones",
+       "etiqueta": "Sorteos",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "pct_observado",
+       "etiqueta": "% observado",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "pct_teorico",
+       "etiqueta": "% teórico (K/N)",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "diferencia",
+       "etiqueta": "Diferencia",
+       "formato": "pp",
+       "unidad": "puntos porcentuales"
+      }
+     ],
+     "filas": [
+      {
+       "valor": "1",
+       "apariciones": 3,
+       "pct_observado": 5.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -6.627906976744185
+      },
+      {
+       "valor": "2",
+       "apariciones": 5,
+       "pct_observado": 8.333333333333332,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -3.2945736434108532
+      },
+      {
+       "valor": "3",
+       "apariciones": 4,
+       "pct_observado": 6.666666666666667,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -4.961240310077519
+      },
+      {
+       "valor": "4",
+       "apariciones": 4,
+       "pct_observado": 6.666666666666667,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -4.961240310077519
+      },
+      {
+       "valor": "5",
+       "apariciones": 7,
+       "pct_observado": 11.666666666666666,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 0.03875968992248097
+      },
+      {
+       "valor": "6",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "7",
+       "apariciones": 7,
+       "pct_observado": 11.666666666666666,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 0.03875968992248097
+      },
+      {
+       "valor": "8",
+       "apariciones": 4,
+       "pct_observado": 6.666666666666667,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -4.961240310077519
+      },
+      {
+       "valor": "9",
+       "apariciones": 10,
+       "pct_observado": 16.666666666666664,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 5.03875968992248
+      },
+      {
+       "valor": "10",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "11",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "12",
+       "apariciones": 5,
+       "pct_observado": 8.333333333333332,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -3.2945736434108532
+      },
+      {
+       "valor": "13",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "14",
+       "apariciones": 10,
+       "pct_observado": 16.666666666666664,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 5.03875968992248
+      },
+      {
+       "valor": "15",
+       "apariciones": 5,
+       "pct_observado": 8.333333333333332,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -3.2945736434108532
+      },
+      {
+       "valor": "16",
+       "apariciones": 13,
+       "pct_observado": 21.666666666666668,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 10.03875968992248
+      },
+      {
+       "valor": "17",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "18",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "19",
+       "apariciones": 10,
+       "pct_observado": 16.666666666666664,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 5.03875968992248
+      },
+      {
+       "valor": "20",
+       "apariciones": 13,
+       "pct_observado": 21.666666666666668,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 10.03875968992248
+      },
+      {
+       "valor": "21",
+       "apariciones": 5,
+       "pct_observado": 8.333333333333332,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -3.2945736434108532
+      },
+      {
+       "valor": "22",
+       "apariciones": 7,
+       "pct_observado": 11.666666666666666,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 0.03875968992248097
+      },
+      {
+       "valor": "23",
+       "apariciones": 9,
+       "pct_observado": 15.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 3.3720930232558137
+      },
+      {
+       "valor": "24",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "25",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "26",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "27",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "28",
+       "apariciones": 10,
+       "pct_observado": 16.666666666666664,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 5.03875968992248
+      },
+      {
+       "valor": "29",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "30",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "31",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "32",
+       "apariciones": 5,
+       "pct_observado": 8.333333333333332,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -3.2945736434108532
+      },
+      {
+       "valor": "33",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "34",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "35",
+       "apariciones": 11,
+       "pct_observado": 18.333333333333332,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 6.705426356589146
+      },
+      {
+       "valor": "36",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "37",
+       "apariciones": 10,
+       "pct_observado": 16.666666666666664,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 5.03875968992248
+      },
+      {
+       "valor": "38",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "39",
+       "apariciones": 5,
+       "pct_observado": 8.333333333333332,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -3.2945736434108532
+      },
+      {
+       "valor": "40",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      },
+      {
+       "valor": "41",
+       "apariciones": 2,
+       "pct_observado": 3.3333333333333335,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -8.294573643410851
+      },
+      {
+       "valor": "42",
+       "apariciones": 8,
+       "pct_observado": 13.333333333333334,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": 1.7054263565891472
+      },
+      {
+       "valor": "43",
+       "apariciones": 6,
+       "pct_observado": 10.0,
+       "pct_teorico": 11.627906976744185,
+       "diferencia": -1.6279069767441854
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas.",
+    "Probabilidad teórica: K/N = 5/43."
+   ],
+   "selector": null
+  }
+ }
+}

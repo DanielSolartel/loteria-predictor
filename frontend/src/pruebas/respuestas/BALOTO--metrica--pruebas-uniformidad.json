@@ -66,6 +66,7 @@
    "slug": "pruebas-uniformidad",
    "titulo": "Pruebas de uniformidad (chi-cuadrado)",
    "grupo": "pruebas",
+   "origen": "fase5",
    "parametro": null,
    "estado": "ok",
    "motivo": null,
@@ -169,7 +170,8 @@
        "motivo": "esperado por categoría 3.8 < 5: aproximación poco fiable"
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     },
     {
      "id": "numeros",
@@ -460,7 +462,8 @@
        "residuo": -0.36978938065676203
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     },
     {
      "id": "superbalota",
@@ -589,7 +592,8 @@
        "residuo": -0.9036961141150639
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": {

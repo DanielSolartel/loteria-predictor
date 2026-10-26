@@ -74,6 +74,19 @@ def test_parametros_acotados_en_nombre_tamano_y_multiplicidad(entorno, consulta,
     assert d.recibidas == []
 
 
+@pytest.mark.parametrize("consulta, codigo", [
+    (b"color=ROJO&color=AZUL", "parametro_repetido"), (b"pagina=1&pagina=1", "parametro_repetido"),
+    (b"color=ROJO%20AZUL", "parametro_no_valido"), (b"pagina=" + b"9" * 81, "parametro_no_valido"),
+    (b"colores=ROJO", "parametro_no_admitido"), (b"por_pagina=500", "parametro_no_admitido")])
+def test_filtros_de_metrica_de_la_9_2_acotados(entorno, consulta, codigo):
+    """`color` y `pagina` (Fase 9.2) solo en la ruta de métrica, una vez y con caracteres admitidos; el
+    tamaño de página no se elige desde el navegador (la API fija 100 filas)."""
+    d, app = entorno
+    estado, _, cuerpo = fp.crudo(app, b"/api/v1/juegos/COLORLOTO/estadisticas/distribucion-conteo-color", consulta=consulta)
+    assert estado == 422 and json.loads(cuerpo)["error"]["codigo"] == codigo
+    assert d.recibidas == []
+
+
 def test_la_validacion_semantica_es_de_la_api(entorno):
     d, app = entorno
     d.json(422, {"error": {"codigo": "parametro_no_valido", "mensaje": "Parámetro no válido", "solicitud": "b" * 32,
@@ -94,6 +107,8 @@ def test_cada_plantilla_se_reenvia_con_su_ruta_y_consulta(entorno):
             "/api/v1/juegos/MILOTO/estadisticas/panel?hasta_numero_sorteo=560",
             "/api/v1/juegos/BALOTO/estadisticas/frecuencia-numeros-por-dia-semana?dia_semana=miercoles"
             "&hasta_numero_sorteo=2100",
+            "/api/v1/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=ROJO&hasta_numero_sorteo=40",
+            "/api/v1/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=3&hasta_numero_sorteo=2100",
             "/api/v1/juegos/BALOTO/predicciones?cartera=" + "a" * 64 + "&historial=50",
             "/api/v1/juegos/BALOTO/simulaciones?limite=50",
             "/api/v1/simulaciones/344d4a67-798a-4b2f-85fc-0f53dd183e99"]

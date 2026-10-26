@@ -75,6 +75,7 @@
    "slug": "pruebas-uniformidad",
    "titulo": "Pruebas de uniformidad (chi-cuadrado)",
    "grupo": "pruebas",
+   "origen": "fase5",
    "parametro": null,
    "estado": "ok",
    "motivo": null,
@@ -196,7 +197,8 @@
        "motivo": null
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     },
     {
      "id": "numeros",
@@ -271,7 +273,8 @@
        "residuo": -1.2191158215048254
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     },
     {
      "id": "colores",
@@ -340,7 +343,8 @@
        "residuo": 0.7453559924999299
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     },
     {
      "id": "pares",
@@ -625,7 +629,8 @@
        "residuo": -0.16903085094570341
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": {

@@ -4,7 +4,7 @@ simulaciones conservan la forma del caso de uso que los produce."""
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -86,21 +86,96 @@ class PaginaDeSorteos(BaseModel):
 
 class MetricaDisponible(BaseModel):
     metrica: str
-    parametro: str | None = Field(description="Parámetro opcional que admite: anio, mes, dia_semana o ventana")
+    titulo: str
+    grupo: str
+    origen: Literal["fase5", "anterior"] = Field(
+        description="fase5: página del catálogo de la Fase 5; anterior: receta de la consola (Fase 9.2)")
+    parametro: Literal["anio", "mes", "dia_semana", "ventana", "color"] | None = Field(
+        description="Único filtro opcional que admite la métrica, además de hasta_numero_sorteo")
+    paginada: bool = Field(description="Si admite `pagina` (100 filas por página en su tabla)")
 
 
 class IndiceDeEstadisticas(BaseModel):
     juego: str
     resumen: str
     panel: str
-    metricas: list[MetricaDisponible]
+    metricas: list[MetricaDisponible] = Field(description="Solo las métricas aplicables al juego con página")
 
 
 class Estadisticas(BaseModel):
-    """Salida del caso de uso de la Fase 5 (`juego`, `muestra` y `grupos` o `metrica`)."""
+    """Salida del caso de uso de la Fase 5 (`juego`, `muestra` y `grupos`)."""
     model_config = ConfigDict(extra="allow")
     juego: dict[str, Any]
     muestra: dict[str, Any]
+
+
+class _Abierto(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
+class ColumnaDeMetrica(_Abierto):
+    clave: str
+    etiqueta: str
+    formato: str = Field(description="entero, texto, dec1, dec2, dec3, pct, pp, p, tipo_p o color")
+    unidad: str
+
+
+class Paginacion(BaseModel):
+    pagina: int
+    por_pagina: int
+    total_filas: int
+    total_paginas: int
+
+
+class TablaDeMetrica(_Abierto):
+    id: str
+    titulo: str
+    columnas: list[ColumnaDeMetrica]
+    filas: list[dict[str, Any]] = Field(description="Valores por clave de columna; puede traer claves adicionales")
+    nota: str | None
+    paginacion: Paginacion | None = Field(description="Solo en las tablas paginadas; las demás van completas")
+
+
+class IndicadorDeMetrica(_Abierto):
+    etiqueta: str
+    valor: Any
+    unidad: str
+    formato: str
+
+
+class OpcionDeSelector(_Abierto):
+    valor: str | int | float
+    etiqueta: str | int | float
+    sorteos: int | None
+
+
+class SelectorDeMetrica(_Abierto):
+    parametro: str
+    valor: str | int | float | None
+    etiqueta: str | int | float | None
+    opciones: list[OpcionDeSelector]
+
+
+class ContenidoDeMetrica(_Abierto):
+    slug: str
+    titulo: str
+    grupo: str
+    origen: Literal["fase5", "anterior"]
+    parametro: str | None
+    estado: str = Field(description="ok, sin_datos, insuficiente o sin_sorteos_en_el_periodo")
+    motivo: str | None
+    indicadores: list[IndicadorDeMetrica]
+    tablas: list[TablaDeMetrica]
+    grafica: dict[str, Any] | None
+    notas: list[str]
+    selector: SelectorDeMetrica | None
+
+
+class RespuestaDeMetrica(BaseModel):
+    """Una métrica del juego (Fase 5 o anterior) sobre la muestra hasta el corte."""
+    juego: dict[str, Any]
+    muestra: dict[str, Any]
+    metrica: ContenidoDeMetrica
 
 
 class Resumen(BaseModel):

@@ -66,6 +66,7 @@
    "slug": "comparacion-frecuencia-numeros-por-ventana",
    "titulo": "Números: ventana reciente",
    "grupo": "ventana",
+   "origen": "fase5",
    "parametro": "ventana",
    "estado": "ok",
    "motivo": null,
@@ -477,7 +478,8 @@
        "diferencia": -5.0
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": {

@@ -2965,6 +2965,21 @@ _CATALOGO: dict[str, _Receta] = {
     ),
 }
 
+HistoricoColorLoto = _HistoricoColorLoto
+"""Nombre público del envoltorio (pares + catálogo completo de colores) que reciben las recetas de ColorLoto."""
+
+
+def calcular_sin_persistir(tipo_estadistica: str, historico, parametros_metrica: dict) -> dict:
+    """Pasos 3 y 4 de `ejecutar()` (calcular con el motor y serializar) de la receta
+    `tipo_estadistica`, sobre un histórico YA cortado: la secuencia numérica o
+    `HistoricoColorLoto(pares, catalogo_colores)`. No lee ni escribe la caché `estadisticas`
+    ni consulta repositorios (Fase 9.2: páginas de solo lectura de la API pública). Mismo
+    resultado serializado que `ejecutar()` guardaría para la misma muestra y parámetros."""
+    receta = _CATALOGO.get(tipo_estadistica)
+    if receta is None:
+        raise TipoEstadisticaNoSoportadoError(tipo_estadistica)
+    return receta.serializar(receta.calcular(historico, parametros_metrica))
+
 
 class CalcularYPersistirEstadistica:
     def __init__(

@@ -18,7 +18,8 @@ from app.api.publica import dependencias as d
 from app.api.publica import esquemas as e
 from app.api.publica.errores import ErrorPublico
 from app.api.publica.seguridad import acceso
-from app.application.estadisticas.descriptivas import POR_SLUG, VENTANAS
+from app.application.estadisticas.descriptivas import VENTANAS
+from app.application.use_cases import metricas_anteriores
 from app.application.use_cases.consultar_estadisticas_descriptivas import ConsultarEstadisticasDescriptivas
 from app.application.use_cases.consultar_juegos import ListarJuegos, ObtenerJuego
 from app.application.use_cases.consultar_resumen_juego import SLUG_A_CODIGO_RESUMEN, ConsultarResumenJuego
@@ -40,7 +41,7 @@ _HTTP_DE_CASO = {"no_encontrado": 404, "no_valido": 422, "alterado": 409, "no_di
 
 def _errores(*estados: int) -> dict:
     textos = {401: "Clave ausente o no válida", 404: "Juego o recurso inexistente",
-              409: "Recurso guardado no íntegro",
+              409: "Recurso guardado no íntegro o histórico no válido",
               422: "Parámetro no válido", 503: "API sin claves configuradas o base no disponible",
               429: "Límite de uso excedido (cabecera Retry-After)"}
     return {s: {"model": e.ErrorRespuesta, "description": textos[s]} for s in (401, 429, 503, *estados)}
@@ -155,58 +156,64 @@ def sorteo(codigo: str = CodigoJuego, numero_sorteo: int = Path(ge=1), _: str = 
 # Estadisticas (Productos 1 y Fase 5)
 # ---------------------------------------------------------------------------
 
-def _metricas(reglas) -> list[dict]:
-    return [{"metrica": slug, "parametro": definicion.parametro} for slug, definicion in POR_SLUG.items()
-            if definicion.construir is not None and definicion.aplica(reglas) and definicion.es_nueva(reglas)]
-
-
 @router.get("/juegos/{codigo}/estadisticas", response_model=e.IndiceDeEstadisticas, tags=["estadisticas"],
             responses=_errores(404, 503), summary="Métricas descriptivas disponibles para el juego")
 def indice_de_estadisticas(codigo: str = CodigoJuego, _: str = Depends(acceso(LIGERA)),
                            consultar: ConsultarEstadisticasDescriptivas = Depends(d.consultar_estadisticas)):
     reglas = consultar.reglas(_juego(codigo))
     base = f"/api/v1/juegos/{codigo}/estadisticas"
-    return {"juego": codigo, "resumen": f"{base}/resumen", "panel": f"{base}/panel", "metricas": _metricas(reglas)}
+    return {"juego": codigo, "resumen": f"{base}/resumen", "panel": f"{base}/panel",
+            "metricas": metricas_anteriores.paginas(reglas)}
 
 
 @router.get("/juegos/{codigo}/estadisticas/resumen", response_model=e.Resumen, tags=["estadisticas"],
-            responses=_errores(404, 422, 503), summary="Resumen del juego hasta un corte opcional")
+            responses=_errores(404, 409, 422, 503), summary="Resumen del juego hasta un corte opcional")
 def resumen(codigo: str = CodigoJuego, hasta_numero_sorteo: int | None = Query(None, ge=1),
             _: str = Depends(acceso(ESTADISTICAS)), consultar: ConsultarResumenJuego = Depends(d.consultar_resumen)):
     return consultar.ejecutar(_juego(codigo), hoy=date.today(), hasta_numero_sorteo=hasta_numero_sorteo)
 
 
 @router.get("/juegos/{codigo}/estadisticas/panel", response_model=e.Estadisticas, tags=["estadisticas"],
-            responses=_errores(404, 422, 503), summary="Panel descriptivo unificado (Fase 5)")
+            responses=_errores(404, 409, 422, 503), summary="Panel descriptivo unificado (Fase 5)")
 def panel(codigo: str = CodigoJuego, hasta_numero_sorteo: int | None = Query(None, ge=1),
           _: str = Depends(acceso(ESTADISTICAS)),
           consultar: ConsultarEstadisticasDescriptivas = Depends(d.consultar_estadisticas)):
     return consultar.panel(_juego(codigo), hoy=date.today(), hasta_numero_sorteo=hasta_numero_sorteo)
 
 
-@router.get("/juegos/{codigo}/estadisticas/{metrica}", response_model=e.Estadisticas, tags=["estadisticas"],
-            responses=_errores(404, 422, 503), summary="Una métrica descriptiva (Fase 5)")
-def metrica(codigo: str = CodigoJuego, metrica: str = Path(examples=["frecuencia-numeros-por-anio"]),
+@router.get("/juegos/{codigo}/estadisticas/{metrica}", response_model=e.RespuestaDeMetrica, tags=["estadisticas"],
+            responses=_errores(404, 409, 422, 503),
+            summary="Una métrica descriptiva: de la Fase 5 o anterior (receta de la consola)")
+def metrica(codigo: str = CodigoJuego, metrica: str = Path(examples=["frecuencia-colores"]),
             hasta_numero_sorteo: int | None = Query(None, ge=1), anio: int | None = Query(None, ge=1, le=9999),
             mes: int | None = Query(None, ge=1, le=12),
             dia_semana: Literal["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"] | None = None,
-            ventana: int | None = Query(None), _: str = Depends(acceso(ESTADISTICAS)),
+            ventana: int | None = Query(None),
+            color: str | None = Query(None, pattern="^[A-Z][A-Z_]{0,31}$",
+                                      description="Código exacto de un color (distribucion-conteo-color de ColorLoto)"),
+            pagina: int | None = Query(None, ge=1, le=MAXIMO_PAGINA,
+                                       description="Página de una tabla paginada (100 filas); solo si el índice la declara"),
+            _: str = Depends(acceso(ESTADISTICAS)),
             consultar: ConsultarEstadisticasDescriptivas = Depends(d.consultar_estadisticas)):
     _juego(codigo)
-    definicion = POR_SLUG.get(metrica)
-    if definicion is None or definicion.construir is None or not (
-            definicion.aplica(reglas := consultar.reglas(codigo)) and definicion.es_nueva(reglas)):
+    disponible = next((m for m in metricas_anteriores.paginas(consultar.reglas(codigo)) if m["metrica"] == metrica), None)
+    if disponible is None:
         raise ErrorPublico(404, "no_encontrado", "Métrica no disponible para este juego")
-    recibidos = {"anio": anio, "mes": mes, "dia_semana": dia_semana, "ventana": ventana}
-    ajenos = sorted(k for k, v in recibidos.items() if v is not None and k != definicion.parametro)
+    recibidos = {"anio": anio, "mes": mes, "dia_semana": dia_semana, "ventana": ventana, "color": color}
+    ajenos = sorted(k for k, v in recibidos.items() if v is not None and k != disponible["parametro"])
+    if pagina is not None and not disponible["paginada"]:
+        ajenos.append("pagina")
     if ajenos:
         raise ErrorPublico(422, "parametro_no_valido",
                            f"Parámetros no admitidos por esta métrica: {', '.join(ajenos)}")
-    if definicion.parametro == "ventana" and ventana is not None and ventana not in VENTANAS:
+    if disponible["parametro"] == "ventana" and ventana is not None and ventana not in VENTANAS:
         raise ErrorPublico(422, "parametro_no_valido", f"ventana debe ser una de {list(VENTANAS)}")
-    parametros = {definicion.parametro: recibidos[definicion.parametro]} if definicion.parametro else {}
-    return consultar.metrica(codigo, metrica, hoy=date.today(), hasta_numero_sorteo=hasta_numero_sorteo,
-                             parametros=parametros)
+    parametros = {disponible["parametro"]: recibidos[disponible["parametro"]]} if disponible["parametro"] else {}
+    try:
+        return consultar.metrica(codigo, metrica, hoy=date.today(), hasta_numero_sorteo=hasta_numero_sorteo,
+                                 parametros=parametros, pagina=pagina)
+    except metricas_anteriores.ParametroNoValido as error:
+        raise ErrorPublico(422, "parametro_no_valido", str(error)) from error
 
 
 # ---------------------------------------------------------------------------

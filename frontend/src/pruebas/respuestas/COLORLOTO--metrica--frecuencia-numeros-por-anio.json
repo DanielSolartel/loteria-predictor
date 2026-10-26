@@ -75,6 +75,7 @@
    "slug": "frecuencia-numeros-por-anio",
    "titulo": "Frecuencia de números por año",
    "grupo": "temporales",
+   "origen": "fase5",
    "parametro": "anio",
    "estado": "ok",
    "motivo": null,
@@ -185,7 +186,8 @@
        "diferencia": 0.0
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": {

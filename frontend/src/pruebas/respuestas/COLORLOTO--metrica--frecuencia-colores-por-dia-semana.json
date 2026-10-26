@@ -1,0 +1,206 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/frecuencia-colores-por-dia-semana",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "frecuencia-colores-por-dia-semana",
+   "titulo": "Frecuencia de colores por día de la semana",
+   "grupo": "temporales",
+   "origen": "anterior",
+   "parametro": "dia_semana",
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Filtro",
+     "valor": "lunes",
+     "unidad": "",
+     "formato": "texto"
+    },
+    {
+     "etiqueta": "Sorteos en el periodo",
+     "valor": 7,
+     "unidad": "sorteos",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Frecuencia de colores por día de la semana",
+     "columnas": [
+      {
+       "clave": "color",
+       "etiqueta": "Color",
+       "formato": "color",
+       "unidad": ""
+      },
+      {
+       "clave": "apariciones",
+       "etiqueta": "Balotas",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "por_sorteo",
+       "etiqueta": "Balotas por sorteo",
+       "formato": "dec3",
+       "unidad": "balotas por sorteo"
+      }
+     ],
+     "filas": [
+      {
+       "color": "AMARILLO",
+       "apariciones": 8,
+       "por_sorteo": 1.1428571428571428
+      },
+      {
+       "color": "AZUL",
+       "apariciones": 4,
+       "por_sorteo": 0.5714285714285714
+      },
+      {
+       "color": "BLANCO",
+       "apariciones": 6,
+       "por_sorteo": 0.8571428571428571
+      },
+      {
+       "color": "NEGRO",
+       "apariciones": 5,
+       "por_sorteo": 0.7142857142857143
+      },
+      {
+       "color": "ROJO",
+       "apariciones": 7,
+       "por_sorteo": 1.0
+      },
+      {
+       "color": "VERDE",
+       "apariciones": 12,
+       "por_sorteo": 1.7142857142857142
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas.",
+    "Cada balota cuenta (con repetición): «balotas por sorteo» es un promedio que puede superar 1; no es una proporción de sorteos.",
+    "Colores: los vigentes en la fecha del último sorteo de la muestra más los observados en ella, como en la consola. Un color sin estilo conocido se muestra con su código."
+   ],
+   "selector": {
+    "parametro": "dia_semana",
+    "valor": "lunes",
+    "etiqueta": "lunes",
+    "opciones": [
+     {
+      "valor": "lunes",
+      "etiqueta": "lunes",
+      "sorteos": 7
+     },
+     {
+      "valor": "martes",
+      "etiqueta": "martes",
+      "sorteos": 7
+     },
+     {
+      "valor": "miercoles",
+      "etiqueta": "miércoles",
+      "sorteos": 6
+     },
+     {
+      "valor": "jueves",
+      "etiqueta": "jueves",
+      "sorteos": 6
+     },
+     {
+      "valor": "viernes",
+      "etiqueta": "viernes",
+      "sorteos": 7
+     },
+     {
+      "valor": "sabado",
+      "etiqueta": "sábado",
+      "sorteos": 6
+     },
+     {
+      "valor": "domingo",
+      "etiqueta": "domingo",
+      "sorteos": 6
+     }
+    ]
+   }
+  }
+ }
+}

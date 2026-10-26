@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=MORADO",
+ "estado": 422,
+ "cuerpo": {
+  "error": {
+   "codigo": "parametro_no_valido",
+   "mensaje": "color debe ser uno de ['AMARILLO', 'AZUL', 'BLANCO', 'NEGRO', 'ROJO', 'VERDE']",
+   "solicitud": "acfb9aed745a4b67a6460818b5b9f6aa"
+  }
+ }
+}

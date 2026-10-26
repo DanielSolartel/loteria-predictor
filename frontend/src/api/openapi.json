@@ -721,6 +721,16 @@
               }
             }
           },
+          "409": {
+            "description": "Recurso guardado no íntegro o histórico no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Parámetro no válido",
             "content": {
@@ -830,6 +840,16 @@
               }
             }
           },
+          "409": {
+            "description": "Recurso guardado no íntegro o histórico no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Parámetro no válido",
             "content": {
@@ -848,7 +868,7 @@
         "tags": [
           "estadisticas"
         ],
-        "summary": "Una métrica descriptiva (Fase 5)",
+        "summary": "Una métrica descriptiva: de la Fase 5 o anterior (receta de la consola)",
         "operationId": "metrica_api_v1_juegos__codigo__estadisticas__metrica__get",
         "security": [
           {
@@ -877,7 +897,7 @@
             "schema": {
               "type": "string",
               "examples": [
-                "frecuencia-numeros-por-anio"
+                "frecuencia-colores"
               ],
               "title": "Metrica"
             }
@@ -975,6 +995,45 @@
               ],
               "title": "Ventana"
             }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z_]{0,31}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Código exacto de un color (distribucion-conteo-color de ColorLoto)",
+              "title": "Color"
+            },
+            "description": "Código exacto de un color (distribucion-conteo-color de ColorLoto)"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 10000,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Página de una tabla paginada (100 filas); solo si el índice la declara",
+              "title": "Pagina"
+            },
+            "description": "Página de una tabla paginada (100 filas); solo si el índice la declara"
           }
         ],
         "responses": {
@@ -983,7 +1042,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Estadisticas"
+                  "$ref": "#/components/schemas/RespuestaDeMetrica"
                 }
               }
             }
@@ -1020,6 +1079,16 @@
           },
           "404": {
             "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Recurso guardado no íntegro o histórico no válido",
             "content": {
               "application/json": {
                 "schema": {
@@ -1152,7 +1221,7 @@
             }
           },
           "409": {
-            "description": "Recurso guardado no íntegro",
+            "description": "Recurso guardado no íntegro o histórico no válido",
             "content": {
               "application/json": {
                 "schema": {
@@ -1356,7 +1425,7 @@
             }
           },
           "409": {
-            "description": "Recurso guardado no íntegro",
+            "description": "Recurso guardado no íntegro o histórico no válido",
             "content": {
               "application/json": {
                 "schema": {
@@ -1437,6 +1506,147 @@
           "estado"
         ],
         "title": "BaseDelJuego"
+      },
+      "ColumnaDeMetrica": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "etiqueta": {
+            "type": "string",
+            "title": "Etiqueta"
+          },
+          "formato": {
+            "type": "string",
+            "title": "Formato",
+            "description": "entero, texto, dec1, dec2, dec3, pct, pp, p, tipo_p o color"
+          },
+          "unidad": {
+            "type": "string",
+            "title": "Unidad"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "clave",
+          "etiqueta",
+          "formato",
+          "unidad"
+        ],
+        "title": "ColumnaDeMetrica"
+      },
+      "ContenidoDeMetrica": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "titulo": {
+            "type": "string",
+            "title": "Titulo"
+          },
+          "grupo": {
+            "type": "string",
+            "title": "Grupo"
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "fase5",
+              "anterior"
+            ],
+            "title": "Origen"
+          },
+          "parametro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parametro"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado",
+            "description": "ok, sin_datos, insuficiente o sin_sorteos_en_el_periodo"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "indicadores": {
+            "items": {
+              "$ref": "#/components/schemas/IndicadorDeMetrica"
+            },
+            "type": "array",
+            "title": "Indicadores"
+          },
+          "tablas": {
+            "items": {
+              "$ref": "#/components/schemas/TablaDeMetrica"
+            },
+            "type": "array",
+            "title": "Tablas"
+          },
+          "grafica": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grafica"
+          },
+          "notas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notas"
+          },
+          "selector": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelectorDeMetrica"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "slug",
+          "titulo",
+          "grupo",
+          "origen",
+          "parametro",
+          "estado",
+          "motivo",
+          "indicadores",
+          "tablas",
+          "grafica",
+          "notas",
+          "selector"
+        ],
+        "title": "ContenidoDeMetrica"
       },
       "ErrorDetalle": {
         "properties": {
@@ -1525,7 +1735,7 @@
           "muestra"
         ],
         "title": "Estadisticas",
-        "description": "Salida del caso de uso de la Fase 5 (`juego`, `muestra` y `grupos` o `metrica`)."
+        "description": "Salida del caso de uso de la Fase 5 (`juego`, `muestra` y `grupos`)."
       },
       "EstadoDelServicio": {
         "properties": {
@@ -1601,6 +1811,34 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "IndicadorDeMetrica": {
+        "properties": {
+          "etiqueta": {
+            "type": "string",
+            "title": "Etiqueta"
+          },
+          "valor": {
+            "title": "Valor"
+          },
+          "unidad": {
+            "type": "string",
+            "title": "Unidad"
+          },
+          "formato": {
+            "type": "string",
+            "title": "Formato"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "etiqueta",
+          "valor",
+          "unidad",
+          "formato"
+        ],
+        "title": "IndicadorDeMetrica"
+      },
       "IndiceDeEstadisticas": {
         "properties": {
           "juego": {
@@ -1620,7 +1858,8 @@
               "$ref": "#/components/schemas/MetricaDisponible"
             },
             "type": "array",
-            "title": "Metricas"
+            "title": "Metricas",
+            "description": "Solo las métricas aplicables al juego con página"
           }
         },
         "type": "object",
@@ -1837,23 +2076,56 @@
             "type": "string",
             "title": "Metrica"
           },
+          "titulo": {
+            "type": "string",
+            "title": "Titulo"
+          },
+          "grupo": {
+            "type": "string",
+            "title": "Grupo"
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "fase5",
+              "anterior"
+            ],
+            "title": "Origen",
+            "description": "fase5: página del catálogo de la Fase 5; anterior: receta de la consola (Fase 9.2)"
+          },
           "parametro": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "anio",
+                  "mes",
+                  "dia_semana",
+                  "ventana",
+                  "color"
+                ]
               },
               {
                 "type": "null"
               }
             ],
             "title": "Parametro",
-            "description": "Parámetro opcional que admite: anio, mes, dia_semana o ventana"
+            "description": "Único filtro opcional que admite la métrica, además de hasta_numero_sorteo"
+          },
+          "paginada": {
+            "type": "boolean",
+            "title": "Paginada",
+            "description": "Si admite `pagina` (100 filas por página en su tabla)"
           }
         },
         "type": "object",
         "required": [
           "metrica",
-          "parametro"
+          "titulo",
+          "grupo",
+          "origen",
+          "parametro",
+          "paginada"
         ],
         "title": "MetricaDisponible"
       },
@@ -1918,6 +2190,57 @@
         "type": "object",
         "title": "ModeloDeLaPrediccion"
       },
+      "OpcionDeSelector": {
+        "properties": {
+          "valor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Valor"
+          },
+          "etiqueta": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Etiqueta"
+          },
+          "sorteos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sorteos"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "valor",
+          "etiqueta",
+          "sorteos"
+        ],
+        "title": "OpcionDeSelector"
+      },
       "PaginaDeSorteos": {
         "properties": {
           "juego": {
@@ -1959,6 +2282,34 @@
           "sorteos"
         ],
         "title": "PaginaDeSorteos"
+      },
+      "Paginacion": {
+        "properties": {
+          "pagina": {
+            "type": "integer",
+            "title": "Pagina"
+          },
+          "por_pagina": {
+            "type": "integer",
+            "title": "Por Pagina"
+          },
+          "total_filas": {
+            "type": "integer",
+            "title": "Total Filas"
+          },
+          "total_paginas": {
+            "type": "integer",
+            "title": "Total Paginas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pagina",
+          "por_pagina",
+          "total_filas",
+          "total_paginas"
+        ],
+        "title": "Paginacion"
       },
       "Par": {
         "properties": {
@@ -2287,6 +2638,31 @@
           }
         ]
       },
+      "RespuestaDeMetrica": {
+        "properties": {
+          "juego": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Juego"
+          },
+          "muestra": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Muestra"
+          },
+          "metrica": {
+            "$ref": "#/components/schemas/ContenidoDeMetrica"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "muestra",
+          "metrica"
+        ],
+        "title": "RespuestaDeMetrica",
+        "description": "Una métrica del juego (Fase 5 o anterior) sobre la muestra hasta el corte."
+      },
       "Resumen": {
         "properties": {
           "codigo_juego": {
@@ -2378,6 +2754,64 @@
             "estado": "ok"
           }
         ]
+      },
+      "SelectorDeMetrica": {
+        "properties": {
+          "parametro": {
+            "type": "string",
+            "title": "Parametro"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          },
+          "etiqueta": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etiqueta"
+          },
+          "opciones": {
+            "items": {
+              "$ref": "#/components/schemas/OpcionDeSelector"
+            },
+            "type": "array",
+            "title": "Opciones"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "parametro",
+          "valor",
+          "etiqueta",
+          "opciones"
+        ],
+        "title": "SelectorDeMetrica"
       },
       "Simulacion": {
         "properties": {
@@ -2680,6 +3114,67 @@
             "superbalota": 7
           }
         ]
+      },
+      "TablaDeMetrica": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "titulo": {
+            "type": "string",
+            "title": "Titulo"
+          },
+          "columnas": {
+            "items": {
+              "$ref": "#/components/schemas/ColumnaDeMetrica"
+            },
+            "type": "array",
+            "title": "Columnas"
+          },
+          "filas": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Filas",
+            "description": "Valores por clave de columna; puede traer claves adicionales"
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota"
+          },
+          "paginacion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Paginacion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Solo en las tablas paginadas; las demás van completas"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "titulo",
+          "columnas",
+          "filas",
+          "nota",
+          "paginacion"
+        ],
+        "title": "TablaDeMetrica"
       },
       "ValidationError": {
         "properties": {

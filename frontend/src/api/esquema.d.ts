@@ -164,7 +164,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Una métrica descriptiva (Fase 5) */
+        /** Una métrica descriptiva: de la Fase 5 o anterior (receta de la consola) */
         get: operations["metrica_api_v1_juegos__codigo__estadisticas__metrica__get"];
         put?: never;
         post?: never;
@@ -242,6 +242,58 @@ export interface components {
             /** Objetivo */
             objetivo?: number | null;
         };
+        /** ColumnaDeMetrica */
+        ColumnaDeMetrica: {
+            /** Clave */
+            clave: string;
+            /** Etiqueta */
+            etiqueta: string;
+            /**
+             * Formato
+             * @description entero, texto, dec1, dec2, dec3, pct, pp, p, tipo_p o color
+             */
+            formato: string;
+            /** Unidad */
+            unidad: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ContenidoDeMetrica */
+        ContenidoDeMetrica: {
+            /** Slug */
+            slug: string;
+            /** Titulo */
+            titulo: string;
+            /** Grupo */
+            grupo: string;
+            /**
+             * Origen
+             * @enum {string}
+             */
+            origen: "fase5" | "anterior";
+            /** Parametro */
+            parametro: string | null;
+            /**
+             * Estado
+             * @description ok, sin_datos, insuficiente o sin_sorteos_en_el_periodo
+             */
+            estado: string;
+            /** Motivo */
+            motivo: string | null;
+            /** Indicadores */
+            indicadores: components["schemas"]["IndicadorDeMetrica"][];
+            /** Tablas */
+            tablas: components["schemas"]["TablaDeMetrica"][];
+            /** Grafica */
+            grafica: {
+                [key: string]: unknown;
+            } | null;
+            /** Notas */
+            notas: string[];
+            selector: components["schemas"]["SelectorDeMetrica"] | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ErrorDetalle */
         ErrorDetalle: {
             /**
@@ -276,7 +328,7 @@ export interface components {
         };
         /**
          * Estadisticas
-         * @description Salida del caso de uso de la Fase 5 (`juego`, `muestra` y `grupos` o `metrica`).
+         * @description Salida del caso de uso de la Fase 5 (`juego`, `muestra` y `grupos`).
          */
         Estadisticas: {
             /** Juego */
@@ -323,6 +375,19 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** IndicadorDeMetrica */
+        IndicadorDeMetrica: {
+            /** Etiqueta */
+            etiqueta: string;
+            /** Valor */
+            valor: unknown;
+            /** Unidad */
+            unidad: string;
+            /** Formato */
+            formato: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** IndiceDeEstadisticas */
         IndiceDeEstadisticas: {
             /** Juego */
@@ -331,7 +396,10 @@ export interface components {
             resumen: string;
             /** Panel */
             panel: string;
-            /** Metricas */
+            /**
+             * Metricas
+             * @description Solo las métricas aplicables al juego con página
+             */
             metricas: components["schemas"]["MetricaDisponible"][];
         };
         /**
@@ -423,11 +491,26 @@ export interface components {
         MetricaDisponible: {
             /** Metrica */
             metrica: string;
+            /** Titulo */
+            titulo: string;
+            /** Grupo */
+            grupo: string;
+            /**
+             * Origen
+             * @description fase5: página del catálogo de la Fase 5; anterior: receta de la consola (Fase 9.2)
+             * @enum {string}
+             */
+            origen: "fase5" | "anterior";
             /**
              * Parametro
-             * @description Parámetro opcional que admite: anio, mes, dia_semana o ventana
+             * @description Único filtro opcional que admite la métrica, además de hasta_numero_sorteo
              */
-            parametro: string | null;
+            parametro: ("anio" | "mes" | "dia_semana" | "ventana" | "color") | null;
+            /**
+             * Paginada
+             * @description Si admite `pagina` (100 filas por página en su tabla)
+             */
+            paginada: boolean;
         };
         /** ModeloDeLaPrediccion */
         ModeloDeLaPrediccion: {
@@ -441,6 +524,17 @@ export interface components {
             tipo?: string | null;
             /** Version */
             version?: string | null;
+        };
+        /** OpcionDeSelector */
+        OpcionDeSelector: {
+            /** Valor */
+            valor: string | number;
+            /** Etiqueta */
+            etiqueta: string | number;
+            /** Sorteos */
+            sorteos: number | null;
+        } & {
+            [key: string]: unknown;
         };
         /** PaginaDeSorteos */
         PaginaDeSorteos: {
@@ -459,6 +553,17 @@ export interface components {
             paginas: number;
             /** Sorteos */
             sorteos: components["schemas"]["Sorteo"][];
+        };
+        /** Paginacion */
+        Paginacion: {
+            /** Pagina */
+            pagina: number;
+            /** Por Pagina */
+            por_pagina: number;
+            /** Total Filas */
+            total_filas: number;
+            /** Total Paginas */
+            total_paginas: number;
         };
         /** Par */
         Par: {
@@ -576,6 +681,21 @@ export interface components {
             historial_total: number;
         };
         /**
+         * RespuestaDeMetrica
+         * @description Una métrica del juego (Fase 5 o anterior) sobre la muestra hasta el corte.
+         */
+        RespuestaDeMetrica: {
+            /** Juego */
+            juego: {
+                [key: string]: unknown;
+            };
+            /** Muestra */
+            muestra: {
+                [key: string]: unknown;
+            };
+            metrica: components["schemas"]["ContenidoDeMetrica"];
+        };
+        /**
          * Resumen
          * @description Salida del caso de uso de resumen por juego (Producto 1).
          */
@@ -618,6 +738,19 @@ export interface components {
             estado: string;
             /** Api */
             api: string;
+        };
+        /** SelectorDeMetrica */
+        SelectorDeMetrica: {
+            /** Parametro */
+            parametro: string;
+            /** Valor */
+            valor: string | number | null;
+            /** Etiqueta */
+            etiqueta: string | number | null;
+            /** Opciones */
+            opciones: components["schemas"]["OpcionDeSelector"][];
+        } & {
+            [key: string]: unknown;
         };
         /** Simulacion */
         Simulacion: {
@@ -724,6 +857,28 @@ export interface components {
             superbalota: number | null;
             /** Pares */
             pares: components["schemas"]["Par"][];
+        };
+        /** TablaDeMetrica */
+        TablaDeMetrica: {
+            /** Id */
+            id: string;
+            /** Titulo */
+            titulo: string;
+            /** Columnas */
+            columnas: components["schemas"]["ColumnaDeMetrica"][];
+            /**
+             * Filas
+             * @description Valores por clave de columna; puede traer claves adicionales
+             */
+            filas: {
+                [key: string]: unknown;
+            }[];
+            /** Nota */
+            nota: string | null;
+            /** @description Solo en las tablas paginadas; las demás van completas */
+            paginacion: components["schemas"]["Paginacion"] | null;
+        } & {
+            [key: string]: unknown;
         };
         /** ValidationError */
         ValidationError: {
@@ -1183,6 +1338,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorRespuesta"];
                 };
             };
+            /** @description Recurso guardado no íntegro o histórico no válido */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
             /** @description Parámetro no válido */
             422: {
                 headers: {
@@ -1253,6 +1417,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorRespuesta"];
                 };
             };
+            /** @description Recurso guardado no íntegro o histórico no válido */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
             /** @description Parámetro no válido */
             422: {
                 headers: {
@@ -1290,6 +1463,10 @@ export interface operations {
                 mes?: number | null;
                 dia_semana?: ("lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo") | null;
                 ventana?: number | null;
+                /** @description Código exacto de un color (distribucion-conteo-color de ColorLoto) */
+                color?: string | null;
+                /** @description Página de una tabla paginada (100 filas); solo si el índice la declara */
+                pagina?: number | null;
             };
             header?: never;
             path: {
@@ -1307,7 +1484,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Estadisticas"];
+                    "application/json": components["schemas"]["RespuestaDeMetrica"];
                 };
             };
             /** @description Clave ausente o no válida */
@@ -1321,6 +1498,15 @@ export interface operations {
             };
             /** @description Juego o recurso inexistente */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Recurso guardado no íntegro o histórico no válido */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1400,7 +1586,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorRespuesta"];
                 };
             };
-            /** @description Recurso guardado no íntegro */
+            /** @description Recurso guardado no íntegro o histórico no válido */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1547,7 +1733,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorRespuesta"];
                 };
             };
-            /** @description Recurso guardado no íntegro */
+            /** @description Recurso guardado no íntegro o histórico no válido */
             409: {
                 headers: {
                     [name: string]: unknown;

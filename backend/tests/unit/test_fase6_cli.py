@@ -60,7 +60,9 @@ def test_preparar_pausa_reanudar_y_pausar_no_consultan_juegos(cli):
     assert llamar("reanudar")[0] == 0
     assert json.loads(llamar("estado")[1])["estado"] == "habilitada"
     assert llamar("pausar")[0] == 0
-    assert json.loads(llamar("ciclo")[1])["estado"] == "pausada"
+    assert json.loads(llamar("ciclo", "--manual")[1])["estado"] == "pausada"
+    # Sin modo explícito (la acción de la tarea anterior) no hay ciclo: código 2 y nada en la salida.
+    assert llamar("ciclo")[:2] == (2, "")
     assert "MARCADOR_PRIVADO" not in ruta.read_text(encoding="utf-8")
 
 

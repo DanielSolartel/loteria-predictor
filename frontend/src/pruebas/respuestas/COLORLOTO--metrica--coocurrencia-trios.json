@@ -1,0 +1,472 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/estadisticas/coocurrencia-trios",
+ "estado": 200,
+ "cuerpo": {
+  "juego": {
+   "codigo": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "tipo": "colorloto",
+   "rango": [
+    1,
+    7
+   ],
+   "cantidad": 6,
+   "superbalota": null,
+   "colores": [
+    "AMARILLO",
+    "AZUL",
+    "BLANCO",
+    "NEGRO",
+    "ROJO",
+    "VERDE"
+   ],
+   "paleta_estable": true
+  },
+  "muestra": {
+   "codigo_juego": "COLORLOTO",
+   "nombre": "ColorLoto",
+   "reglas": {
+    "tipo": "colorloto",
+    "rango": [
+     1,
+     7
+    ],
+    "cantidad_balotas": 6,
+    "colores": [
+     "AMARILLO",
+     "AZUL",
+     "BLANCO",
+     "NEGRO",
+     "ROJO",
+     "VERDE"
+    ],
+    "permite_repeticion": true
+   },
+   "total_sorteos": 45,
+   "total_sorteos_sin_corte": 45,
+   "corte": {
+    "hasta_numero_sorteo": null,
+    "descripcion": "todo el histórico cargado"
+   },
+   "periodo": {
+    "primer_sorteo": 1,
+    "primera_fecha": "2024-08-06",
+    "ultimo_sorteo": 45,
+    "ultima_fecha": "2024-12-16"
+   },
+   "ultimo_sorteo_disponible": {
+    "numero_sorteo": 45,
+    "fecha": "2024-12-16"
+   },
+   "frescura": {
+    "estado": "desactualizado",
+    "dias_desde_el_ultimo_sorteo": 678,
+    "mensaje": "El último sorteo cargado es de hace 678 días: el histórico puede estar desactualizado. Sincroniza desde Importación antes de sacar conclusiones."
+   },
+   "huecos": {
+    "cantidad": 0,
+    "primeros": [],
+    "cobertura": 100.0
+   },
+   "consultado_el": "2026-10-25"
+  },
+  "metrica": {
+   "slug": "coocurrencia-trios",
+   "titulo": "Coocurrencia de tríos",
+   "grupo": "coocurrencia",
+   "origen": "anterior",
+   "parametro": null,
+   "estado": "ok",
+   "motivo": null,
+   "indicadores": [
+    {
+     "etiqueta": "Sorteos analizados",
+     "valor": 45,
+     "unidad": "sorteos",
+     "formato": "entero"
+    },
+    {
+     "etiqueta": "Combinaciones observadas",
+     "valor": 35,
+     "unidad": "combinaciones",
+     "formato": "entero"
+    }
+   ],
+   "tablas": [
+    {
+     "id": "datos",
+     "titulo": "Coocurrencia de tríos",
+     "columnas": [
+      {
+       "clave": "numero_1",
+       "etiqueta": "Número 1",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "numero_2",
+       "etiqueta": "Número 2",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "numero_3",
+       "etiqueta": "Número 3",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "soporte",
+       "etiqueta": "Sorteos con la combinación",
+       "formato": "entero",
+       "unidad": ""
+      },
+      {
+       "clave": "pct",
+       "etiqueta": "% de sorteos",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "pct_esperado",
+       "etiqueta": "% esperado (independencia)",
+       "formato": "pct",
+       "unidad": "% de sorteos"
+      },
+      {
+       "clave": "lift",
+       "etiqueta": "Lift",
+       "formato": "dec2",
+       "unidad": "observado / esperado"
+      }
+     ],
+     "filas": [
+      {
+       "numero_1": 1,
+       "numero_2": 4,
+       "numero_3": 5,
+       "soporte": 12,
+       "pct": 26.666666666666668,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 4,
+       "numero_3": 5,
+       "soporte": 12,
+       "pct": 26.666666666666668,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 4,
+       "numero_3": 7,
+       "soporte": 12,
+       "pct": 26.666666666666668,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 2,
+       "numero_3": 4,
+       "soporte": 11,
+       "pct": 24.444444444444443,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 3,
+       "numero_3": 4,
+       "soporte": 11,
+       "pct": 24.444444444444443,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 3,
+       "numero_3": 6,
+       "soporte": 11,
+       "pct": 24.444444444444443,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 4,
+       "numero_3": 6,
+       "soporte": 10,
+       "pct": 22.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 5,
+       "numero_3": 6,
+       "soporte": 10,
+       "pct": 22.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 4,
+       "numero_3": 6,
+       "soporte": 10,
+       "pct": 22.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 3,
+       "numero_2": 4,
+       "numero_3": 6,
+       "soporte": 10,
+       "pct": 22.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 3,
+       "numero_2": 4,
+       "numero_3": 7,
+       "soporte": 10,
+       "pct": 22.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 4,
+       "numero_2": 5,
+       "numero_3": 7,
+       "soporte": 10,
+       "pct": 22.22222222222222,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 2,
+       "numero_3": 5,
+       "soporte": 9,
+       "pct": 20.0,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 3,
+       "numero_3": 5,
+       "soporte": 9,
+       "pct": 20.0,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 4,
+       "numero_3": 7,
+       "soporte": 9,
+       "pct": 20.0,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 5,
+       "numero_3": 7,
+       "soporte": 9,
+       "pct": 20.0,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 5,
+       "numero_3": 7,
+       "soporte": 9,
+       "pct": 20.0,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 4,
+       "numero_2": 6,
+       "numero_3": 7,
+       "soporte": 8,
+       "pct": 17.77777777777778,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 2,
+       "numero_3": 7,
+       "soporte": 7,
+       "pct": 15.555555555555555,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 6,
+       "numero_3": 7,
+       "soporte": 7,
+       "pct": 15.555555555555555,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 3,
+       "numero_2": 4,
+       "numero_3": 5,
+       "soporte": 7,
+       "pct": 15.555555555555555,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 3,
+       "numero_2": 5,
+       "numero_3": 6,
+       "soporte": 7,
+       "pct": 15.555555555555555,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 3,
+       "numero_2": 5,
+       "numero_3": 7,
+       "soporte": 7,
+       "pct": 15.555555555555555,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 2,
+       "numero_3": 6,
+       "soporte": 6,
+       "pct": 13.333333333333334,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 3,
+       "numero_3": 4,
+       "soporte": 6,
+       "pct": 13.333333333333334,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 3,
+       "numero_3": 7,
+       "soporte": 6,
+       "pct": 13.333333333333334,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 3,
+       "numero_2": 6,
+       "numero_3": 7,
+       "soporte": 6,
+       "pct": 13.333333333333334,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 4,
+       "numero_2": 5,
+       "numero_3": 6,
+       "soporte": 6,
+       "pct": 13.333333333333334,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 5,
+       "numero_2": 6,
+       "numero_3": 7,
+       "soporte": 6,
+       "pct": 13.333333333333334,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 3,
+       "numero_3": 7,
+       "soporte": 5,
+       "pct": 11.11111111111111,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 5,
+       "numero_3": 6,
+       "soporte": 5,
+       "pct": 11.11111111111111,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 6,
+       "numero_3": 7,
+       "soporte": 5,
+       "pct": 11.11111111111111,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 3,
+       "numero_3": 5,
+       "soporte": 4,
+       "pct": 8.88888888888889,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 1,
+       "numero_2": 2,
+       "numero_3": 3,
+       "soporte": 3,
+       "pct": 6.666666666666667,
+       "pct_esperado": null,
+       "lift": null
+      },
+      {
+       "numero_1": 2,
+       "numero_2": 3,
+       "numero_3": 6,
+       "soporte": 3,
+       "pct": 6.666666666666667,
+       "pct_esperado": null,
+       "lift": null
+      }
+     ],
+     "nota": null,
+     "paginacion": null
+    }
+   ],
+   "grafica": null,
+   "notas": [
+    "Misma receta y parámetros que la página de la consola; se calcula al consultar, sin leer ni guardar la caché de estadísticas."
+   ],
+   "selector": null
+  }
+ }
+}

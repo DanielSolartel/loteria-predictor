@@ -8,24 +8,292 @@
   "panel": "/api/v1/juegos/COLORLOTO/estadisticas/panel",
   "metricas": [
    {
+    "metrica": "frecuencia-numeros",
+    "titulo": "Frecuencia de números",
+    "grupo": "frecuencias",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-colores",
+    "titulo": "Frecuencia de colores",
+    "grupo": "frecuencias",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-pares-numero-color",
+    "titulo": "Frecuencia de pares número-color",
+    "grupo": "frecuencias",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
     "metrica": "frecuencia-numeros-por-anio",
-    "parametro": "anio"
+    "titulo": "Frecuencia de números por año",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "anio",
+    "paginada": false
    },
    {
     "metrica": "frecuencia-numeros-por-mes",
-    "parametro": "mes"
+    "titulo": "Frecuencia de números por mes",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "mes",
+    "paginada": false
    },
    {
     "metrica": "frecuencia-numeros-por-dia-semana",
-    "parametro": "dia_semana"
+    "titulo": "Frecuencia de números por día de la semana",
+    "grupo": "temporales",
+    "origen": "fase5",
+    "parametro": "dia_semana",
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-colores-por-anio",
+    "titulo": "Frecuencia de colores por año",
+    "grupo": "temporales",
+    "origen": "anterior",
+    "parametro": "anio",
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-colores-por-mes",
+    "titulo": "Frecuencia de colores por mes",
+    "grupo": "temporales",
+    "origen": "anterior",
+    "parametro": "mes",
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-colores-por-dia-semana",
+    "titulo": "Frecuencia de colores por día de la semana",
+    "grupo": "temporales",
+    "origen": "anterior",
+    "parametro": "dia_semana",
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-pares-numero-color-por-anio",
+    "titulo": "Pares número-color por año",
+    "grupo": "temporales",
+    "origen": "anterior",
+    "parametro": "anio",
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-pares-numero-color-por-mes",
+    "titulo": "Pares número-color por mes",
+    "grupo": "temporales",
+    "origen": "anterior",
+    "parametro": "mes",
+    "paginada": false
+   },
+   {
+    "metrica": "frecuencia-pares-numero-color-por-dia-semana",
+    "titulo": "Pares número-color por día de la semana",
+    "grupo": "temporales",
+    "origen": "anterior",
+    "parametro": "dia_semana",
+    "paginada": false
+   },
+   {
+    "metrica": "atrasos-numeros",
+    "titulo": "Atrasos de números",
+    "grupo": "atrasos",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "atrasos-colores",
+    "titulo": "Atrasos de colores",
+    "grupo": "atrasos",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "atrasos-pares-numero-color",
+    "titulo": "Atrasos de pares número-color",
+    "grupo": "atrasos",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "intervalos-historicos-numeros",
+    "titulo": "Intervalos históricos de números",
+    "grupo": "atrasos",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "intervalos-historicos-colores",
+    "titulo": "Intervalos históricos de colores",
+    "grupo": "atrasos",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "intervalos-historicos-pares-numero-color",
+    "titulo": "Intervalos históricos de pares número-color",
+    "grupo": "atrasos",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-pares-impares",
+    "titulo": "Pares e impares",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-altos-bajos",
+    "titulo": "Bajos y altos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-sumas",
+    "titulo": "Distribución de sumas",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-pares-consecutivos",
+    "titulo": "Pares consecutivos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-racha-maxima",
+    "titulo": "Racha máxima de consecutivos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-trios-consecutivos",
+    "titulo": "Tríos consecutivos",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "maximo-repeticion-color",
+    "titulo": "Máximo color repetido",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "distribucion-conteo-color",
+    "titulo": "Conteo por color",
+    "grupo": "distribuciones",
+    "origen": "anterior",
+    "parametro": "color",
+    "paginada": false
+   },
+   {
+    "metrica": "repeticiones-entre-sorteos",
+    "titulo": "Repeticiones entre sorteos",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "coocurrencia-pares",
+    "titulo": "Coocurrencia de pares",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "coocurrencia-trios",
+    "titulo": "Coocurrencia de tríos",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "coocurrencia-pares-colores",
+    "titulo": "Coocurrencia de pares de colores",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "coocurrencia-trios-colores",
+    "titulo": "Coocurrencia de tríos de colores",
+    "grupo": "coocurrencia",
+    "origen": "anterior",
+    "parametro": null,
+    "paginada": false
+   },
+   {
+    "metrica": "comparacion-frecuencia-numeros-por-ventana",
+    "titulo": "Números: ventana reciente",
+    "grupo": "ventana",
+    "origen": "anterior",
+    "parametro": "ventana",
+    "paginada": false
+   },
+   {
+    "metrica": "comparacion-frecuencia-colores-por-ventana",
+    "titulo": "Colores: ventana reciente",
+    "grupo": "ventana",
+    "origen": "anterior",
+    "parametro": "ventana",
+    "paginada": false
+   },
+   {
+    "metrica": "comparacion-frecuencia-pares-numero-color-por-ventana",
+    "titulo": "Pares número-color: ventana reciente",
+    "grupo": "ventana",
+    "origen": "anterior",
+    "parametro": "ventana",
+    "paginada": false
    },
    {
     "metrica": "pruebas-uniformidad",
-    "parametro": null
+    "titulo": "Pruebas de uniformidad (chi-cuadrado)",
+    "grupo": "pruebas",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    },
    {
     "metrica": "correlaciones",
-    "parametro": null
+    "titulo": "Correlaciones",
+    "grupo": "pruebas",
+    "origen": "fase5",
+    "parametro": null,
+    "paginada": false
    }
   ]
  }

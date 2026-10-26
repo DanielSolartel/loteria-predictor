@@ -75,6 +75,7 @@
    "slug": "frecuencia-numeros-por-mes",
    "titulo": "Frecuencia de números por mes",
    "grupo": "temporales",
+   "origen": "fase5",
    "parametro": "mes",
    "estado": "ok",
    "motivo": null,
@@ -185,7 +186,8 @@
        "diferencia": -0.022222222222222254
       }
      ],
-     "nota": null
+     "nota": null,
+     "paginacion": null
     }
    ],
    "grafica": {
