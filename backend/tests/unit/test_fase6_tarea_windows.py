@@ -676,10 +676,29 @@ foreach($c in @($global:Llamadas | Select-Object -Skip $cuenta)){if($c -in @('En
 ''')
 
 
+# F92-CI-01: SHA-256 con .NET sobre los bytes originales del archivo, sin Get-FileHash, que el
+# Windows PowerShell 5.1 del CI de Windows no resolvió. Devuelve el mismo texto que Get-FileHash
+# (hexadecimal en mayúsculas) y libera el archivo y el algoritmo aunque falle la lectura.
+_SHA256_ARCHIVO = r'''
+function Get-Sha256Archivo([string]$Ruta) {
+    if (-not [IO.Path]::IsPathRooted($Ruta)) { throw ('RUTA NO ABSOLUTA PARA SHA-256: ' + $Ruta) }
+    $flujo=$null; $algoritmo=$null
+    try {
+        $flujo=[IO.File]::Open($Ruta,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+        $algoritmo=[Security.Cryptography.SHA256]::Create()
+        return [BitConverter]::ToString($algoritmo.ComputeHash($flujo)).Replace('-','')
+    } finally {
+        if ($null -ne $algoritmo) { $algoritmo.Dispose() }
+        if ($null -ne $flujo) { $flujo.Dispose() }
+    }
+}
+'''
+
+
 # F92-REV-01: la reversión registra siempre una copia validada y deshabilitada del XML archivado,
 # vuelve a comprobar propiedad y ciclo vivo tras pausar y antes de retirar, y no activa tareas ni
 # pierde la versión vigente si el registro falla. Los mocks anotan cada alta y cada baja.
-_REVERSION = r'''
+_REVERSION = _SHA256_ARCHIVO + r'''
 $global:Altas=@();$global:BajasVivas=@();$global:Carrera=$false;$global:FallarFuente=@()
 function Register-ScheduledTask {
     [CmdletBinding()]param([string]$TaskName,[string]$TaskPath,[string]$Xml)
@@ -706,10 +725,10 @@ $r=Invoke-CasoV1 'v1-instalar' 'Instalar';$nombre=$r.tarea
 $r=Invoke-CasoV1 'v1-activar' 'Activar';if(-not $r.habilitada){throw 'V1 NO ACTIVADA'}
 $migrada=Invoke-Caso 'migrar' 'Migrar';$xmlV1=[string]$migrada.xml_reversion
 if(([xml][IO.File]::ReadAllText($xmlV1,[Text.Encoding]::Unicode)).Task.Settings.Enabled -ne 'true'){throw 'LA EXPORTACION ARCHIVADA DEBIA SER LA V1 HABILITADA'}
-$shaV1=(Get-FileHash -LiteralPath $xmlV1 -Algorithm SHA256).Hash
+$shaV1=Get-Sha256Archivo $xmlV1
 $global:Altas=@();$global:BajasVivas=@();$cuenta=$global:Llamadas.Count
 function Assert-SinAltaHabilitada { foreach($a in $global:Altas){ if($a.habilitada){ throw ('ALTA HABILITADA de '+$a.fuente) } } }
-function Assert-OriginalIntacto { if((Get-FileHash -LiteralPath $xmlV1 -Algorithm SHA256).Hash -ne $shaV1){ throw 'EXPORTACION ORIGINAL MODIFICADA' } }
+function Assert-OriginalIntacto { if((Get-Sha256Archivo $xmlV1) -ne $shaV1){ throw 'EXPORTACION ORIGINAL MODIFICADA' } }
 '''
 
 
@@ -777,6 +796,59 @@ $r=Invoke-Caso 'revertir-sin-tarea' 'Revertir' 0 @{XmlAnterior=$xmlV1}
 if($r.estado -ne 'revertida_deshabilitada' -or $r.habilitada -or $r.version_tarea -ne 1){throw ('REVERSION: '+$r.estado+' '+$r.error)}
 Assert-SinAltaHabilitada; Assert-OriginalIntacto
 ''')
+
+
+# Sustituto que falla como cuando el CI de Windows no resolvió Get-FileHash: una función de la sesión
+# tiene precedencia sobre el comando del módulo, así que cualquier uso restante lo delataría.
+_SIN_GET_FILEHASH = "function Get-FileHash { throw 'GET-FILEHASH NO DISPONIBLE' }\n"
+
+
+def test_sha256_de_prueba_coincide_con_hashlib_y_detecta_un_byte_alterado(tarea):
+    """F92-CI-01: el ayudante da la misma huella que hashlib sobre los bytes del archivo, sin
+    Get-FileHash. Un solo byte distinto cambia la huella; el archivo queda liberado y sin cambios."""
+    carpeta = tarea["raiz"] / "huellas con espacios y ñ"
+    carpeta.mkdir()
+    binario = bytes(range(256)) * 300  # varios bloques de lectura
+    alterado = bytearray(binario)
+    alterado[40_000] ^= 0x01
+    muestras = {"vacio.bin": b"", "exportada utf16.xml": "﻿<Task>ñ</Task>\r\n".encode("utf-16-le"),
+                "binario.bin": binario, "binario alterado.bin": bytes(alterado)}
+    for nombre, contenido in muestras.items():
+        (carpeta / nombre).write_bytes(contenido)
+    salida = tarea["raiz"] / "huellas.json"
+    _sesion(tarea, _SIN_GET_FILEHASH + _SHA256_ARCHIVO + r'''
+$huellas=[ordered]@{}
+foreach($a in @(Get-ChildItem -LiteralPath ''' + _ps_literal(carpeta) + r''' -File | Sort-Object Name)){
+    $huellas[$a.Name]=Get-Sha256Archivo $a.FullName
+    $exclusivo=[IO.File]::Open($a.FullName,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None); $exclusivo.Dispose()
+}
+$relativa=$false; try { Get-Sha256Archivo 'relativa.bin' | Out-Null } catch { $relativa=$_.Exception.Message -match 'RUTA NO ABSOLUTA' }
+if(-not $relativa){throw 'RUTA RELATIVA ACEPTADA'}
+[IO.File]::WriteAllText(''' + _ps_literal(salida) + r''',($huellas | ConvertTo-Json),(New-Object Text.UTF8Encoding($false)))
+''')
+    huellas = json.loads(salida.read_text(encoding="utf-8"))
+    assert huellas == {n: hashlib.sha256(c).hexdigest().upper() for n, c in muestras.items()}
+    assert huellas["binario.bin"] != huellas["binario alterado.bin"]
+    assert {n: (carpeta / n).read_bytes() for n in muestras} == muestras
+
+
+def test_reversion_compara_el_xml_original_sin_get_filehash(tarea):
+    """F92-CI-01: el preámbulo de la reversión no depende de Get-FileHash. La huella del XML original
+    coincide con hashlib y Assert-OriginalIntacto detecta un byte alterado y acepta los bytes restaurados."""
+    salida = tarea["raiz"] / "huella-v1.json"
+    _sesion(tarea, _SIN_GET_FILEHASH + _REVERSION + r'''
+Assert-OriginalIntacto
+[IO.File]::WriteAllText(''' + _ps_literal(salida) + r''',(@{xml=$xmlV1;sha256=$shaV1} | ConvertTo-Json),(New-Object Text.UTF8Encoding($false)))
+$original=[IO.File]::ReadAllBytes($xmlV1)
+$alterado=[byte[]]$original.Clone(); $alterado[$alterado.Length-2]=$alterado[$alterado.Length-2] -bxor 1
+[IO.File]::WriteAllBytes($xmlV1,$alterado)
+$detectada=$false; try { Assert-OriginalIntacto } catch { $detectada=$_.Exception.Message -eq 'EXPORTACION ORIGINAL MODIFICADA' }
+if(-not $detectada){throw 'ALTERACION DEL XML ORIGINAL NO DETECTADA'}
+[IO.File]::WriteAllBytes($xmlV1,$original); Assert-OriginalIntacto
+''')
+    datos = json.loads(salida.read_text(encoding="utf-8"))
+    assert datos["sha256"] == hashlib.sha256(Path(datos["xml"]).read_bytes()).hexdigest().upper()
+    assert "Get-FileHash" not in _REVERSION
 
 
 # F92-NAT-01: el Programador nativo registra la v2 con StartWhenAvailable=false y la exporta sin el
