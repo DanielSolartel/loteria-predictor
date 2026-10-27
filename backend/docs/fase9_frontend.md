@@ -1,14 +1,21 @@
 # Fase 9.1 — Frontend de consulta (React) y pasarela local
 
+**Entrega 9.3 (sobre `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`, merge del PR #101 que integró la 9.2):** explicación guardada, clasificación de candidatos y fiabilidad observada, solo de consulta.
+
+- **Verificación:** en Linux/Cloud con datos sintéticos (Python, Vitest, tipos, compilación, canario y recorrido en Chromium a 360, 390 y 1280 px).
+- **Pendiente:** auditoría, validación en Windows 11 nativo con Brave ([protocolo dirigido](fase9_windows.md#entrega-93-protocolo-dirigido)) y publicación manual.
+
+[Detalle de la entrega](#entrega-93-explicación-clasificación-de-candidatos-y-fiabilidad). La Fase 9 global sigue abierta.
+
 **Entrega 9.2 (sobre `9966a4bbcb8d81953fb283b07544636f4c11fc95`, merge del PR #100 que integró la 9.1):** páginas de las métricas anteriores en el mismo índice y la misma ruta de métrica.
 
 - **Validación:** en Linux y en Windows 11 nativo con Brave, sobre datos sintéticos.
 - **Auditoría:** aprobada el 26 de octubre de 2026 ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)).
-- **Pendiente:** la publicación manual y el CI del nuevo PR.
+- **Integración:** PR #101, merge `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`, con sus cinco checks aprobados (ejecuciones de Actions `40291140855` y `40291140889`); incluye el arreglo de pruebas `e38362bf2341cb30389141c67eb37b5b89a6e2fe`. Hasta entonces figuraba como pendiente de publicación manual y del CI del nuevo PR.
 
-[Detalle de la entrega](#entrega-92-páginas-de-las-métricas-anteriores). La Fase 9 global sigue abierta.
+[Detalle de la entrega](#entrega-92-páginas-de-las-métricas-anteriores).
 
-**Estado:** entrega 9.1 v2 implementada sobre `615f3832296d74a7acea44e5ecdf7dc84a11d70a` (merge del PR #99, Fase 8; CI `40133227968` corresponde a esa base). Auditoría local y validaciones Linux/Cloud y Windows nativo con Brave instalado completadas sobre datos sintéticos. La evidencia Windows fue ejecutada por Daniel y auditada por ChatGPT; no se atribuye a Claude ni al CI. *Actualización posterior:* la 9.1 se integró en PR #100 (merge `9966a4b`). La **Fase 9 global sigue abierta**: la 9.1 cubre las consultas existentes de `/api/v1` y su criterio final se decide después ([matriz de huecos](#matriz-de-huecos-de-la-fase-9)). Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. [Validación del operador](fase9_validacion_operador_2026-10-25.md).
+**Estado:** entrega 9.1 v2 implementada sobre `615f3832296d74a7acea44e5ecdf7dc84a11d70a` (merge del PR #99, Fase 8; CI `40133227968` corresponde a esa base). Auditoría local y validaciones Linux/Cloud y Windows nativo con Brave instalado completadas sobre datos sintéticos. La evidencia Windows fue ejecutada por Daniel y auditada por ChatGPT; no se atribuye a Claude ni al CI. *Actualización posterior:* la 9.1 se integró en PR #100 (merge `9966a4b`). La **Fase 9 global sigue abierta**: la 9.1 cubre las consultas existentes de `/api/v1`; el alcance restante sigue el plan de cinco partes aceptado ([matriz de huecos](#matriz-de-huecos-de-la-fase-9)). Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. [Validación del operador](fase9_validacion_operador_2026-10-25.md).
 
 **v2 (auditoría de la v1, F9-LIM-01):** el plazo total del cliente de la pasarela cubre ahora toda la consulta y la conexión se cierra también en las salidas por error; el resto de la 9.1 no cambia ([verificación de la v2](#v2-plazo-total-del-cliente-f9-lim-01)).
 
@@ -47,14 +54,15 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 | Sorteo `/juegos/:codigo/sorteos/:numero` | `…/sorteos/{n}` | 1 |
 | Estadísticas `/juegos/:codigo/estadisticas` (`?hasta_numero_sorteo`) | `…/estadisticas` (índice) y `…/panel` | 1 + 5 |
 | Métrica `/juegos/:codigo/estadisticas/:metrica` (corte y `anio`, `mes`, `dia_semana`, `ventana` o `color` según el selector; `pagina` si el índice la declara) | `…/estadisticas/{metrica}` | 5 |
-| Predicción guardada `/juegos/:codigo/prediccion` (`?cartera`) | `…/predicciones` | 3 |
+| Predicción guardada `/juegos/:codigo/prediccion` (`?cartera`) | `…/predicciones`; `…/fiabilidad?hasta=<corte>` solo al pulsar «Consultar fiabilidad» | carga automática 4 con catálogo sin caché (1 + 3); acción explícita posterior 3 |
+| Fiabilidad `/juegos/:codigo/fiabilidad` (`?hasta`), 9.3 | `…/fiabilidad` | 3 |
 | Simulaciones `/juegos/:codigo/simulaciones` (`?limite`) | `…/simulaciones` | 2 |
 | Simulación `/simulaciones/:id` | `simulaciones/{id}` | 2 |
 | Servicio `/servicio` | `salud` y `estado` | 0 + 1 |
 
 - **Frescura:** la informan el resumen, el panel y cada métrica (`al_dia`, `desactualizado` con sus días, `sin_datos`). La consulta de predicciones no la informa: la pantalla muestra corte, última fecha y el estado de la base, marca la frescura como «no informada por esta consulta» y advierte que «base disponible» no equivale a «datos al día». Un campo ausente se muestra como «no informado».
 - **Métricas:** solo tienen página las que declara el índice real. En la 9.1 eran 18 en Baloto y Revancha, 11 en MiLoto y 5 en ColorLoto. Con la 9.2 son 30, 30, 22 y 36, porque se suman las métricas anteriores; las cuentas se comprueban en el recorrido. Las que no aplican muestran su motivo. La tabla genérica muestra columnas, unidades y formatos declarados y, si una fila trae claves no declaradas (p. ej. `contraste`, `motivo_p_value` en correlaciones), una columna «Datos adicionales»: no se pierde contenido. La gráfica de la consola HTMX se sustituye por una nota con su tabla y su referencia.
-- **Predicción:** historial con selección por `?cartera=`, modelo proyectado, clasificación temporal, integridad informada, combinaciones (números y superbalota o pares número-color), resultado observado con aciertos por línea y frente a la base. Explicación, clasificación de candidatos y fiabilidad quedan pendientes.
+- **Predicción:** historial con selección por `?cartera=`, modelo proyectado, clasificación temporal, integridad informada, combinaciones (números y superbalota o pares número-color), resultado observado con aciertos por línea y frente a la base. En la 9.1 y la 9.2 quedaban pendientes la explicación, la clasificación de candidatos y la fiabilidad; la 9.3 las añade ([detalle](#entrega-93-explicación-clasificación-de-candidatos-y-fiabilidad)).
 - **Simulaciones:** listado con integridad y motivo; detalle con parámetros (identidad completa), integridad, huella del contenido, estadísticas comparadas y familia. Una simulación alterada llega como 409 `alterado` y no se muestra su contenido.
 - **Servicio:** salud y estado **del proceso de la API**; la página dice que no informa de la operación automática ni de sus tareas.
 - **Avisos:** el pie de todas las pantallas recuerda que las estadísticas describen sorteos ocurridos y que predicciones y simulaciones son de uso experimental no acreditado; las pantallas de predicción y simulación muestran además el aviso y el contexto del backend.
@@ -71,7 +79,7 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 ## Pasarela: controles y límites
 
 - **Destino fijo:** `PASARELA_API_URL` solo `http://` sobre IP loopback con puerto, sin credenciales, ruta, consulta ni fragmento; nunca lo elige el navegador. No sigue redirecciones (un 3xx es 502 `respuesta_no_valida`).
-- **Rutas cerradas:** solo GET y las 13 plantillas del OpenAPI versionado, con su lista de parámetros; excluidas `/api/v1/docs` y `/api/v1/openapi.json`. Rechaza rutas ambiguas, `..`, separadores codificados, caracteres de control, barra final y rutas de más de 512 caracteres (400 `ruta_no_valida`); una ruta de API desconocida es 404 `ruta_no_disponible`.
+- **Rutas cerradas:** solo GET y las plantillas del OpenAPI versionado (13 en la 9.1 y la 9.2; 14 desde la 9.3, que añade la de fiabilidad con `hasta`), con su lista de parámetros; excluidas `/api/v1/docs` y `/api/v1/openapi.json`. Rechaza rutas ambiguas, `..`, separadores codificados, caracteres de control, barra final y rutas de más de 512 caracteres (400 `ruta_no_valida`); una ruta de API desconocida es 404 `ruta_no_disponible`.
 - **Parámetros:** como máximo 16, consulta ≤ 512 caracteres, valores ≤ 80 caracteres de `[A-Za-z0-9_.:-]`, sin repetir ni nombres no admitidos (422).
 - **Acceso:** cliente loopback; `Host` exacto entre `PASARELA_HOSTS` (una sola cabecera); en `/api` y `/pasarela/`, `Origin` (si viene) entre `PASARELA_ORIGENES` y `Sec-Fetch-Site` (si viene) `same-origin` o `none`. CORS deshabilitado. `X-Forwarded-For` se ignora.
 - **Cabeceras:** a la API solo `Accept`, `X-API-Key` propia, `User-Agent` y `Connection: close`; nunca cookies ni credenciales del cliente. Al navegador solo `Content-Type`, `X-Request-ID`, `Retry-After` (429/503) y `X-RateLimit-*`, más las de seguridad: CSP `default-src 'self'` (sin recursos externos, `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`, COOP/CORP `same-origin`, `Permissions-Policy` y `Cache-Control: no-store`.
@@ -84,7 +92,7 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 
 **Base:** `9966a4bbcb8d81953fb283b07544636f4c11fc95`, merge del PR #100.
 
-**Estado:** implementada y validada con datos sintéticos, en Linux y en Windows 11 nativo con Brave. La auditoría independiente la aprobó. Quedan pendientes la publicación manual y el CI del nuevo PR ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)).
+**Estado:** implementada y validada con datos sintéticos, en Linux y en Windows 11 nativo con Brave. La auditoría independiente la aprobó ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)). *Actualización:* integrada en el PR #101 (merge `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`), con sus cinco checks aprobados e incluido el arreglo de pruebas `e38362bf2341cb30389141c67eb37b5b89a6e2fe`; antes figuraban pendientes la publicación manual y el CI del nuevo PR.
 
 **Alcance.** El índice declara las métricas anteriores de la consola: 12 en Baloto y en Revancha, 11 en MiLoto y 31 en ColorLoto, incluidos colores, conteo por color y pares número-color. Lo hace con `titulo`, `grupo`, `origen` (`fase5` o `anterior`), `parametro` y `paginada`. Todas se consultan en `GET /api/v1/juegos/{codigo}/estadisticas/{metrica}`; no hay una ruta por métrica.
 
@@ -120,7 +128,7 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 | Parámetros no válidos | 422 | `parametro_no_valido` |
 | Base no disponible | 503 | `base_no_disponible` |
 
-**Presupuesto.** Una consulta de métrica por pantalla, con el mismo coste de cuota que las demás (5 fichas). Se conservan cuotas, `Retry-After`, 429, la lista de la pasarela y el plazo total de 15 s de la 9.1 v2. La pasarela solo añade `color` y `pagina` a los parámetros admitidos de esa ruta. Siguen siendo 13 plantillas.
+**Presupuesto.** Una consulta de métrica por pantalla, con el mismo coste de cuota que las demás (5 fichas). Se conservan cuotas, `Retry-After`, 429, la lista de la pasarela y el plazo total de 15 s de la 9.1 v2. La pasarela solo añade `color` y `pagina` a los parámetros admitidos de esa ruta. Siguen siendo 13 plantillas (la 9.3 añade la decimocuarta, la de fiabilidad).
 
 **Accesibilidad y móvil.** Se mantienen las tablas de la 9.1 (encabezados, desplazamiento propio y alineación). La paginación es la de Sorteos: `nav` «Paginación», enlaces con nombre accesible y `aria-current` en la página actual. El foco pasa al contenido al cambiar de ruta, como en la 9.1; cambiar filtro o página no lo mueve.
 
@@ -144,6 +152,117 @@ Los registros, los JUnit y el resultado del recorrido están en el ZIP de eviden
 - el recorrido `normal` en Brave, con 507 visitas y 26 comprobaciones sobre todas las métricas del índice (30/30/22/36).
 
 Los ajustes posteriores v3 y v4 solo tocan Fase 6 (controlador de la tarea, ensayo y sus pruebas), no el frontend, la API ni la pasarela. Por eso estas baterías conservan su atribución a la corrida sobre v2 y no se repitieron. Son resultados del operador, separados de la evidencia Linux anterior. [Validación del operador](fase9_2_validacion_operador_2026-10-26.md).
+
+## Entrega 9.3: explicación, clasificación de candidatos y fiabilidad
+
+**Base:** `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`, merge del PR #101, que integró la 9.2 con sus cinco checks aprobados e incluye el arreglo de pruebas `e38362bf2341cb30389141c67eb37b5b89a6e2fe`.
+
+**Estado:** 9.3 v2 validada en Linux y Windows nativo con Brave y aprobada por la auditoría; cierre documental preparado, con publicación manual de Daniel y CI del nuevo PR pendientes. [Cierre del operador](fase9_3_validacion_operador_2026-10-27.md). El [protocolo dirigido](fase9_windows.md#entrega-93-protocolo-dirigido) se conserva como referencia ya ejecutada, sin repetirlo por rutina. Fase 9 global abierta: 9.3 pendiente de integración y 9.4/9.5 planificadas.
+
+**Alcance (solo consulta, cuatro juegos).**
+- **Predicción guardada** (`/juegos/:codigo/prediccion`). Añade:
+  - la explicación guardada o el aviso de que falta o de que su almacén no la verifica;
+  - método y versión registrada;
+  - los cortes en filas separadas: entrada de la cartera, vector fuente y variables, y entrenamiento del estimador (solo existe aparte en las versiones registradas);
+  - las variables de los candidatos extremos y las importancias o coeficientes globales, cuando el estimador persistido los tiene;
+  - la clasificación de candidatos con su referencia uniforme: emitida, uniforme, diferencia y razón, con los formatos de la consola.
+
+  La superbalota va en una sección aparte. En ColorLoto se clasifican pares número-color, con su color en texto y su multiplicidad esperada en 6 balotas, y además números y colores por separado. Se conservan el historial y la selección por `?cartera=`.
+- **Fiabilidad para la cartera seleccionada**, en la misma pantalla: el botón accesible «Consultar fiabilidad» pide `GET …/fiabilidad?hasta=<corte de la cartera mostrada>`. La v2 contrasta el contexto de modelo, línea/perfil y versión registrada de la respuesta con el de la cartera; no basta compartir familia de modelo o corte. Si no acredita correspondencia, muestra de forma explícita que esa fiabilidad no está disponible para la cartera y no presenta filas o receta ajenas. Siempre conserva el enlace «Fiabilidad general de la configuración actual» a la pantalla general. Elegir otra cartera, volver por el historial o recargar conserva su identidad/corte y vuelve al estado manual, sin mostrar respuestas de otra selección. `hasta` solo filtra objetivos hasta ese número: no acredita que un informe o una emisión existiera al generar la cartera.
+- **Fiabilidad completa** (`/juegos/:codigo/fiabilidad`, pestaña «Fiabilidad»): con todos los resultados observados o, con `?hasta=`, los de un corte. Presenta por separado:
+  - las líneas: el vector fuente de la configuración y, si hay versión registrada, su línea de laboratorio;
+  - en cada línea, seguimiento y retrospectiva;
+  - la evaluación de la receta en su informe del laboratorio.
+
+  Muestra la muestra (sorteos incluidos, periodo, emisiones, pendientes y sin base), las exclusiones con su motivo y cuatro cifras por sorteo: Δ Log Loss, Δ Brier y aciertos observados − esperados en los extremos. Cada cifra lleva su media, su intervalo bootstrap al 95 % o la falta de intervalo, y la lectura del backend. Incluye los extremos y el método, con sus supuestos, limitaciones y fuentes.
+
+**Lectura.**
+- Δ es modelo − uniforme por sorteo. Positivo significa mayor pérdida que la uniforme; negativo, menor pérdida en esa muestra.
+- «Estimable» solo indica que hay sorteos suficientes (30) para calcular el intervalo. No significa ventaja acreditada.
+- No hay puntuación de confianza ni probabilidad de premio.
+- Un resultado ausente en la base se muestra como pendiente. No se deduce que el sorteo no haya ocurrido ni ninguna anterioridad.
+- Que la base esté disponible o haya respondido no equivale a datos al día.
+
+Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+
+**Contrato.**
+- **Ruta nueva:** `GET /api/v1/juegos/{codigo}/fiabilidad`, con `hasta` ≥ 1 opcional; cuesta 3 fichas. Reutiliza `CentroDePredicciones.fiabilidad` (Fase 4) y proyecta `Fiabilidad`:
+  - no expone el motivo de la base, que puede contener el mensaje de conexión, ni las líneas disponibles, ni el parámetro `linea` de la consola;
+  - la semilla del bootstrap, de hasta 60 bits, va como texto decimal para que JavaScript no la redondee;
+  - un `fallo_de_calculo` lleva un texto fijo en lugar del detalle interno.
+- **`GET …/predicciones`** añade, de forma compatible:
+  - `linea_de_modelo`;
+  - `registrado`, la versión registrada que usó la cartera;
+  - `explicacion`, la explicación guardada vigente, sin sello, contexto ni rankings repetidos;
+  - `explicaciones_ilegibles`, con la clave y el código fijo del almacén (p. ej. `contenido_alterado`);
+  - `reproduccion`: el caso de uso existente recalcula rankings y variables desde la cartera y los compara con los guardados.
+
+  `rankings` mantiene su contenido, pero pasa de objeto genérico a forma tipada. Por eso las filas de los juegos numéricos llevan `multiplicidad_esperada: null` y las secciones que no aplican llegan como `null`.
+- **Solo lectura:** ningún GET genera explicaciones, entrena, infiere, importa, recupera trabajos, guarda informes ni escribe. Si falta la explicación, la respuesta lo dice (`explicacion: null`).
+- **Pasarela:** 14 plantillas; la nueva solo admite `hasta`. No cambian la autenticación, la clave en el servidor, las cuotas, los errores, el tamaño máximo (4 MiB), la concurrencia ni el plazo total. La respuesta mayor de los datos sintéticos ocupa menos de 30 KB.
+- **Frontend:** OpenAPI, `esquema.d.ts` y decodificadores actualizados. La compilación comprueba que los tipos de presentación encajan en el contrato generado.
+
+**Presupuesto de fichas por carga de pantalla.**
+
+| Pantalla | Consultas | Fichas |
+|---|---|---|
+| Predicción: carga directa o recarga sin memoria | catálogo y predicciones; sin fiabilidad automática | 1 + 3 = 4, máximo autorizado 6 |
+| Predicción: navegación posterior con catálogo en memoria | predicciones; sin fiabilidad automática | 3 |
+| Predicción: acción explícita «Consultar fiabilidad» | fiabilidad con el filtro de objetivos de la cartera | 3 adicionales, fuera de la carga automática |
+| Fiabilidad general: carga directa o recarga sin memoria | catálogo y fiabilidad de la configuración actual | 1 + 3 = 4 |
+
+Todas las peticiones automáticas, incluido `/juegos` cuando la memoria está vacía, entran en el presupuesto. El catálogo solo se conserva en memoria durante esa página. No se precarga fiabilidad, no se añaden reintentos automáticos y las cuotas y costes no cambian. Con saldo de seis fichas, la carga inicial de predicción cabe; una acción explícita posterior de fiabilidad puede recibir 429 si no hay saldo suficiente y conserva el reintento manual con `Retry-After`.
+
+**Datos sintéticos.** `tests/fase9_api_sintetica.py` amplía su escenario:
+- Baloto usa una versión registrada sintética: bosque aleatorio, perfil reducido y corte de entrenamiento 2185. Tiene tres carteras con cortes 2190, 2191 y 2192; la última queda pendiente.
+- La cartera de Baloto Revancha no tiene explicación guardada.
+- La fiabilidad lee Producto 6 con series sintéticas, construidas con sus propias funciones. Cubren:
+  - diferencia positiva con el intervalo por encima de 0;
+  - retrospectiva con muestra insuficiente;
+  - diferencia negativa con el intervalo por debajo de 0;
+  - un intervalo que cruza 0;
+  - exclusiones;
+  - pares de ColorLoto uniformes, con diferencia exactamente 0.
+
+No es PostgreSQL ni usa modelos o almacenes operativos.
+
+**Muestras de las pruebas de componentes.**
+- `generar_respuestas_fase9.py` añade 14 respuestas:
+  - la fiabilidad de cada juego con y sin corte;
+  - la cartera anterior de Baloto con su corte;
+  - un 422;
+  - la explicación alterada;
+  - la base de la Fase 4 caída.
+- Se regeneran las cuatro respuestas de predicciones y `formatos.json`, que incorpora las cifras de fiabilidad, las especificaciones de formato y las etiquetas de la consola.
+- Las otras 88 no se reemplazan. Regeneradas, solo cambiarían la fecha de consulta, los días de frescura, UUID, horas y latencias, lo mismo que al regenerarlas sobre la base.
+
+**Antecedentes de la v1 en Linux/Cloud, ejecutados por Claude.** Estas cifras y recorridos corresponden a la v1 anterior a F93-REL-01/F93-LIM-01, no a ejecuciones nuevas de la v2. Verificación del 27 de octubre de 2026 con:
+- Python 3.14.6, pytest 9.1.1, Node 22.22.0 y npm 10.9.4;
+- Chromium 153.0.8010.12, preinstalado en el contenedor, con Playwright 1.56.1. Se usó mediante un adaptador externo, fuera del parche, que solo fija `executablePath`.
+
+No acredita Windows ni Brave.
+
+| Comprobación | Resultado |
+|---|---|
+| `test_api_publica_fiabilidad.py` (correspondencia con los casos de uso en los cuatro juegos, con y sin corte; corte por cartera; ausencias; explicación alterada; base caída; exclusiones; fallo de cálculo; privacidad; coste; 401, 404, 422 y 429; GET sin escrituras ni trabajadores) | 30 aprobadas |
+| `tests/unit/api_publica` y `tests/unit/pasarela` completas | 216 y 197 aprobadas (186 y 192 en la 9.2) |
+| Regresiones afectadas: 59 archivos que recorren árboles del repositorio o leen `seleccion_windows.txt` | 1415 aprobadas y 106 omitidas (ensayos de PowerShell de Fase 6 sin `pwsh` en el contenedor), sin fallos |
+| Vitest · `tipos:comprobar` · `typecheck` · `build` · `canario` | 665 aprobadas · igual · sin errores · correcto (JS 365,0 kB y CSS 232,9 kB) · 0 hallazgos |
+| Recorrido `fiabilidad` (360, 390 y 1280 px) | 30/30 visitas y 32/32 comprobaciones (4 juegos por ancho, cartera y corte, corte en la URL, 422 y teclado); su conteo v1 de 3 + 3 omitía el catálogo y consumía realmente 7 fichas; 6/6 controles directos de la ruta nueva; canario ausente en 286 respuestas |
+| Recorrido `normal`, que incluye el anterior | 537/537 visitas y 58/58 comprobaciones; 17/17 controles directos (los 11 de la 9.1 y los 6 de la fiabilidad); canario ausente en 3982 respuestas |
+| `cuota_fiabilidad` | 1/1: 429 en la fiabilidad al corte con la predicción visible, sin reintentos automáticos y reintento manual correcto |
+| `cuota` · `api_caida` · `sin_clave` · `clave_incorrecta` · `vite` | 1/1 · 3/3 visitas y 1/1 · 3/3 y 1/1 · 3/3 y 1/1 · 12/12 visitas, 1/1 y 3/3 controles directos |
+
+El primer intento del recorrido `fiabilidad` falló antes de abrir el navegador: faltaba el ejecutable que espera Playwright. Tras usar el adaptador, todos los escenarios pasaron a la primera. Registros, JUnit, códigos de salida y capturas están en el ZIP de la entrega.
+
+Las pruebas nuevas de Python están en `tests/unit/api_publica` y `tests/unit/pasarela`, que ya figuran en `tests/seleccion_windows.txt`. Entran en la selección de Windows sin cambiarla: 35 casos. El CI del frontend añade el escenario `cuota_fiabilidad`; `normal` ya incluye el recorrido dirigido.
+
+**Correcciones v2 (F93-REL-01 y F93-LIM-01).** La auditoría independiente de ChatGPT ejecutó sobre v1 otras 413 pruebas de API/pasarela y 665 de frontend, además de contrato, tipos, compilación y canario, en Linux/Python 3.12.14. Reprodujo las dos incidencias con sondas adicionales. Son antecedentes separados: no se suman a las cifras anteriores ni se presentan como validación nativa. La v2 conserva sus propios registros dirigidos y controles negativos/positivos en el ZIP de entrega. No se repiten por rutina los recorridos completos o las baterías grandes.
+
+**Validación nativa v2 de Daniel, 27 de octubre de 2026 (11:18:23–11:29:15, America/Bogota), aprobada por el auditor.** Windows 11/Python 3.14.6: 415 pruebas API/pasarela; Node 24.15.0: 690 Vitest, sin fallos, errores u omisiones. Las 25 regresiones de contexto ya están incluidas en los 690. OpenAPI, tipos, TypeScript, compilación y canario correctos; pip check limpio y dos deprecaciones Python conocidas. Brave instalado, con perfil temporal y adaptador externo: 30 visitas y 32 comprobaciones correctas a 360, 390 y 1280 px, más seis controles HTTP; cuota: dos comprobaciones y cero visitas en el contador genérico, aunque sí hubo navegación. El auditor revisó 16 capturas sin bloqueos; el resultado original decía pendiente porque se generó antes de la auditoría y se conserva intacto. No es certificación general de accesibilidad. Fuente v2 de 975 archivos y seis controles públicos de worktrees conservados; contención 2/2 con código 124 esperado; no se ejecutó la selección completa de Windows. No hubo consultas o ciclos operativos. Son resultados nativos de Daniel, separados de Linux y de la observación real de Fase 6. [Insumos y límites](fase9_3_validacion_operador_2026-10-27.md).
+
+**Linux v2 (Codex Cloud, antecedente de implementación; no se repite en el cierre):** 37 pruebas Python, 36 frontend y tres genéricas, con otras 34 deseleccionadas por filtro; las 25 nuevas están incluidas en las 36. Sondas de pantalla 3/3 y cuatro fichas automáticas; diagnóstico API 3/4 esperado, por su semántica de configuración actual. Contrato/tipos/build/canario y dos recorridos focales Chromium/Linux a 1280 px acreditados. No se suman estos grupos con Windows o v1.
+
 
 ## Verificación
 
@@ -188,23 +307,24 @@ Los grupos no se suman: son baterías distintas. El primer intento del recorrido
 
 ## Matriz de huecos de la Fase 9
 
-| Función de la consola HTMX | 9.1 y 9.2 | Pendiente para otra decisión |
+| Función de la consola HTMX | 9.1, 9.2 y 9.3 | Plan acordado o fuera del alcance actual |
 |---|---|---|
 | Juegos y reglas | Cubierto | — |
 | Resumen con frescura y corte | Cubierto | Gráficas de barras |
 | Sorteos: filtros, paginación y detalle | Cubierto | — |
 | Panel de Fase 5 y métricas con página (18/18/11/5) | Cubierto | Gráficas nuevas |
-| Páginas de las métricas anteriores: 12 en Baloto y en Revancha, 11 en MiLoto y 31 en ColorLoto. *Corrección:* la 9.1 decía «30 en Baloto», que es el total con las de Fase 5 | Cubierto en la entrega 9.2, validada en Windows con Brave y auditada; publicación pendiente | Gráficas de la consola (se sustituyen por tablas) |
-| Predicción guardada | Cubierto (historial, modelo, clasificación temporal, integridad, combinaciones, observado, frente a la base) | Explicación, clasificación de candidatos, fiabilidad |
+| Páginas de las métricas anteriores: 12 en Baloto y en Revancha, 11 en MiLoto y 31 en ColorLoto. *Corrección:* la 9.1 decía «30 en Baloto», que es el total con las de Fase 5 | Cubierto en la entrega 9.2, validada en Windows con Brave, auditada e integrada en el PR #101 | Gráficas de la consola (se sustituyen por tablas) |
+| Predicción guardada | Cubierto (historial, modelo, clasificación temporal, integridad, combinaciones, observado, frente a la base). La 9.3 añade explicación guardada, método y versión registrada, cortes de entrada y de entrenamiento, variables e importancias, y la clasificación de candidatos con la referencia uniforme: verificada en Linux, pendiente de Windows y de auditoría | Gráficas de la consola (se sustituyen por tablas); generar o explicar una predicción (escritura) |
+| Fiabilidad de las predicciones | 9.3 v2: consulta explícita para la cartera solo si corresponde su contexto; ausencia explícita en otro caso y acceso a la fiabilidad general de la configuración actual. Seguimiento, retrospectiva y receta por separado; `hasta` filtra objetivos. Pendiente de Windows y de auditoría | Elegir otra línea de Producto 6 (parámetro `linea` de la consola); gráficas nuevas para después |
 | Simulaciones guardadas | Cubierto | Lanzar simulaciones (escritura) |
 | Salud y estado de la API | Cubierto | — |
-| Modelos y laboratorio (Fase 3) | — | Modelos completos |
-| Carteras (Producto 5) y resultados avanzados (Producto 6) | — | Pendiente |
-| Exportaciones e impresión | — | Pendiente |
+| Modelos y laboratorio (Fase 3) | — | 9.4: consultas de modelos guardados; no implementadas aquí |
+| Carteras (Producto 5) y resultados avanzados (Producto 6) | — | 9.4: consultas de carteras y resultados guardados; no implementadas aquí |
+| Exportaciones e impresión | — | 9.5: exportación, impresión y revisión final de navegación, móvil y accesibilidad; no implementadas aquí |
 | Importación, generación, configuración y automatización | — | Acciones administrativas; requieren autenticación de escritura (Fase 10) |
 | Operación automática y panel diario | — | Sin consulta en la API v1; siguen en la consola local |
 
-El criterio final de la Fase 9 (paridad, alcance o sustitución de la consola) se decide después; esta entrega no lo cierra.
+**Plan acordado de cinco partes.** 9.1 (frontend de consulta y pasarela) y 9.2 (métricas anteriores y horario por juego) están integradas. La 9.3 cubre explicación guardada, clasificación de candidatos y fiabilidad observada y sigue en revisión. La 9.4 añadirá consultas de modelos, carteras y resultados guardados; la 9.5, exportación, impresión y revisión final de navegación, móvil y accesibilidad. La 9.4 y la 9.5 no se implementan en esta entrega. Administración y operación permanecen en HTMX; los gráficos nuevos quedan para después. La Fase 9 global continúa abierta.
 
 ## Limitaciones conocidas
 

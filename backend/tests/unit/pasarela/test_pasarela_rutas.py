@@ -87,6 +87,19 @@ def test_filtros_de_metrica_de_la_9_2_acotados(entorno, consulta, codigo):
     assert d.recibidas == []
 
 
+@pytest.mark.parametrize("consulta, codigo", [
+    (b"hasta=1&hasta=2", "parametro_repetido"), (b"hasta=2190%20", "parametro_no_valido"),
+    (b"linea=carteras:uniforme-v1", "parametro_no_admitido"), (b"cartera=" + b"a" * 64, "parametro_no_admitido"),
+    (b"hasta=" + b"9" * 81, "parametro_no_valido")])
+def test_fiabilidad_de_la_9_3_solo_admite_hasta(entorno, consulta, codigo):
+    """La ruta de fiabilidad (Fase 9.3) solo reenvia `hasta`, una vez y con caracteres admitidos; la
+    linea de Producto 6 no se elige desde el navegador."""
+    d, app = entorno
+    estado, _, cuerpo = fp.crudo(app, b"/api/v1/juegos/BALOTO/fiabilidad", consulta=consulta)
+    assert estado == 422 and json.loads(cuerpo)["error"]["codigo"] == codigo
+    assert d.recibidas == []
+
+
 def test_la_validacion_semantica_es_de_la_api(entorno):
     d, app = entorno
     d.json(422, {"error": {"codigo": "parametro_no_valido", "mensaje": "Parámetro no válido", "solicitud": "b" * 32,
@@ -110,6 +123,7 @@ def test_cada_plantilla_se_reenvia_con_su_ruta_y_consulta(entorno):
             "/api/v1/juegos/COLORLOTO/estadisticas/distribucion-conteo-color?color=ROJO&hasta_numero_sorteo=40",
             "/api/v1/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=3&hasta_numero_sorteo=2100",
             "/api/v1/juegos/BALOTO/predicciones?cartera=" + "a" * 64 + "&historial=50",
+            "/api/v1/juegos/BALOTO/fiabilidad?hasta=2190",
             "/api/v1/juegos/BALOTO/simulaciones?limite=50",
             "/api/v1/simulaciones/344d4a67-798a-4b2f-85fc-0f53dd183e99"]
     for url in urls:

@@ -20,7 +20,7 @@ def test_workflow_del_frontend_minimo_sin_secretos_y_completo():
     for paso in ("npm run tipos:comprobar", "npm run typecheck", "npx vitest run", "npm run build", "npm run canario",
                  "npx playwright install --with-deps chromium", "tests/unit/pasarela"):
         assert paso in texto, paso
-    for escenario in ("normal", "cuota", "api_caida", "sin_clave", "clave_incorrecta", "vite"):
+    for escenario in ("normal", "cuota", "api_caida", "sin_clave", "clave_incorrecta", "vite", "cuota_fiabilidad"):
         assert f"python -m tests.recorrido_fase9 --escenario {escenario}" in texto, escenario
     assert 'node: ["22", "24"]' in texto and "cache-dependency-path: frontend/package-lock.json" in texto
 

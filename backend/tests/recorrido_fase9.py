@@ -15,8 +15,13 @@ recursos inexistentes) y busca el canario en los registros de todos los
 procesos. La clave y su huella nunca se imprimen ni se escriben en los
 resultados: solo se informa de si aparecieron.
 
+Fase 9.3: `fiabilidad` (recorrido dirigido de explicacion, clasificacion y
+fiabilidad, con controles directos de la ruta nueva; tambien va dentro de
+`normal`) y `cuota_fiabilidad` (6 fichas por minuto: carga inicial 1+3=4;
+429 solo tras consultar explicitamente la fiabilidad, con reintento manual).
+
 Uso (desde backend/, con el venv del proyecto):
-    python -m tests.recorrido_fase9 --salida <carpeta> [--escenario normal|cuota|api_caida|sin_clave|clave_incorrecta|vite]
+    python -m tests.recorrido_fase9 --salida <carpeta> [--escenario normal|cuota|api_caida|sin_clave|clave_incorrecta|vite|fiabilidad|cuota_fiabilidad]
 """
 from __future__ import annotations
 
@@ -40,7 +45,8 @@ BACKEND = Path(__file__).resolve().parents[1]
 REPO = BACKEND.parent
 FRONTEND = REPO / "frontend"
 OPCIONES = ["--host", "127.0.0.1", "--no-access-log", "--no-proxy-headers"]
-ESCENARIOS = ("normal", "cuota", "api_caida", "sin_clave", "clave_incorrecta", "vite")
+ESCENARIOS = ("normal", "cuota", "api_caida", "sin_clave", "clave_incorrecta", "vite", "fiabilidad", "cuota_fiabilidad")
+FICHAS = {"cuota": "8", "cuota_fiabilidad": "6"}  # el resto: 100000 por minuto
 ESPERA_ARRANQUE = 180
 
 
@@ -122,6 +128,16 @@ CONTROLES_VITE = [
 ]
 
 
+CONTROLES_FIABILIDAD = [  # Fase 9.3: la ruta nueva a traves de la pasarela, fuera del navegador
+    ("fiabilidad_corte", "/api/v1/juegos/BALOTO/fiabilidad?hasta=2190", {}),
+    ("fiabilidad_linea_no_admitida", "/api/v1/juegos/BALOTO/fiabilidad?linea=carteras:uniforme-v1", {}),
+    ("fiabilidad_hasta_repetido", "/api/v1/juegos/BALOTO/fiabilidad?hasta=1&hasta=2", {}),
+    ("fiabilidad_hasta_no_valido", "/api/v1/juegos/BALOTO/fiabilidad?hasta=0", {}),
+    ("fiabilidad_juego_inexistente", "/api/v1/juegos/QUINELA/fiabilidad", {}),
+    ("fiabilidad_origen_ajeno", "/api/v1/juegos/BALOTO/fiabilidad", {"Origin": "http://ajeno.example"}),
+]
+
+
 def controles_directos(puerto: int, casos: list | None = None) -> list[dict]:
     """Peticiones HTTP directas (fuera del navegador) a la pasarela o, en modo Vite, a Vite."""
     casos = casos or [
@@ -166,7 +182,7 @@ def ejecutar(escenario: str, salida: Path, *, anchos: str, node: str) -> int:
     huella = hashlib.sha256(clave.encode("ascii")).hexdigest()
     p_api, p_pasarela = puerto_libre(), puerto_libre()
     p_vite = puerto_libre() if escenario == "vite" else None
-    fichas = "8" if escenario == "cuota" else "100000"
+    fichas = FICHAS.get(escenario, "100000")
     with ExitStack() as pila:
         raiz = Path(pila.enter_context(tempfile.TemporaryDirectory(prefix="f9-recorrido-")))
         entorno_api = entorno_minimo(F9_RAIZ=str(raiz / "api"), API_PUBLICA_CLAVES=f"f9:sha256:{huella}",
@@ -199,8 +215,11 @@ def ejecutar(escenario: str, salida: Path, *, anchos: str, node: str) -> int:
             pila.enter_context(proceso("vite", [node, vite], entorno_vite, registros, cwd=FRONTEND,
                                        listo=f"http://127.0.0.1:{p_vite}/"))
             base = f"http://127.0.0.1:{p_vite}"
-        resultado["controles_directos"] = (controles_directos(p_pasarela) if escenario == "normal" else
-                                           controles_directos(p_vite, CONTROLES_VITE) if p_vite is not None else [])
+        resultado["controles_directos"] = ([*controles_directos(p_pasarela), *controles_directos(p_pasarela, CONTROLES_FIABILIDAD)]
+                                           if escenario == "normal" else
+                                           controles_directos(p_vite, CONTROLES_VITE) if p_vite is not None else
+                                           controles_directos(p_pasarela, CONTROLES_FIABILIDAD) if escenario == "fiabilidad"
+                                           else [])
         navegador = salida / "navegador"
         cuerpos = raiz / "respuestas"  # temporal: no forma parte de las evidencias
         cuerpos.mkdir()
@@ -235,6 +254,9 @@ _ESPERADO = {
     "documentacion_excluida": (404, "ruta_no_disponible"), "openapi_excluido": (404, "ruta_no_disponible"),
     "vite_host_ajeno": (403, None), "vite_origen_ajeno": (403, "origen_no_permitido"),
     "vite_api_inexistente": (404, "ruta_no_disponible"),
+    "fiabilidad_corte": (200, None), "fiabilidad_linea_no_admitida": (422, "parametro_no_admitido"),
+    "fiabilidad_hasta_repetido": (422, "parametro_repetido"), "fiabilidad_hasta_no_valido": (422, "parametro_no_valido"),
+    "fiabilidad_juego_inexistente": (404, "no_encontrado"), "fiabilidad_origen_ajeno": (403, "origen_no_permitido"),
 }
 
 

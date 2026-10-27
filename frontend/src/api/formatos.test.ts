@@ -2,12 +2,53 @@
 import { describe, expect, it } from "vitest";
 // Texto sin transformar: el modulo JSON de Vite convertiria -0 en 0.
 import texto from "../pruebas/formatos.json?raw";
-import { abreviada, alineadoADerecha, ETIQUETAS_TIPO_P, fechaHora, formatear } from "./formatos";
+import {
+  abreviada,
+  alineadoADerecha,
+  COMPONENTES_FIABILIDAD,
+  especificacion,
+  ESTADOS_FIABILIDAD,
+  ETIQUETAS_TIPO_P,
+  fechaHora,
+  formatear,
+  formatearCifra,
+  TIPOS_FIABILIDAD,
+} from "./formatos";
 
 const casos = JSON.parse(texto) as {
   etiquetas_tipo_p: Record<string, string>;
   casos: { valor: number | string | null; formato: string; esperado: string }[];
+  cifras_de_fiabilidad: { valor: number | null; esperado: string }[];
+  especificaciones: { valor: number; especificacion: string; esperado: string }[];
+  etiquetas_fiabilidad: { estados: Record<string, string>; componentes: Record<string, string>; tipos: Record<string, string> };
 };
+
+describe("cifras y etiquetas de la fiabilidad y de los rankings (Fase 9.3)", () => {
+  it.each(casos.cifras_de_fiabilidad.map((c) => [JSON.stringify(c.valor), c.esperado, c.valor] as const))(
+    "formatear_cifra(%s) = %s",
+    (_texto, esperado, valor) => {
+      expect(formatearCifra(valor)).toBe(esperado);
+    },
+  );
+
+  it.each(casos.especificaciones.map((c) => [c.especificacion, JSON.stringify(c.valor), c.esperado, c.valor] as const))(
+    "format(%s, %s) = %s",
+    (spec, _texto, esperado, valor) => {
+      expect(especificacion(valor, spec)).toBe(esperado);
+    },
+  );
+
+  it("usa las etiquetas de estados, componentes y tipos de la consola", () => {
+    expect(ESTADOS_FIABILIDAD).toEqual(casos.etiquetas_fiabilidad.estados);
+    expect(COMPONENTES_FIABILIDAD).toEqual(casos.etiquetas_fiabilidad.componentes);
+    expect(TIPOS_FIABILIDAD).toEqual(casos.etiquetas_fiabilidad.tipos);
+  });
+
+  it("sin valor no inventa una cifra", () => {
+    expect(especificacion(null, ".6f")).toBe("—");
+    expect(() => especificacion(1, ".2e")).toThrow();
+  });
+});
 
 describe("formatear", () => {
   it("usa las mismas etiquetas de tipo de p-value que el backend", () => {

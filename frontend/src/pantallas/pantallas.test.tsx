@@ -297,7 +297,7 @@ describe("prediccion guardada", () => {
     expect(screen.getByText("no informada por esta consulta")).toBeTruthy();
     expect(screen.getByText(/«Base disponible» indica que la base respondió, no que los datos estén al día/)).toBeTruthy();
     expect(screen.getByText(/correcta \(verificada por la API al leerla\)/)).toBeTruthy();
-    expect(screen.getByText("Referencia uniforme", { exact: false })).toBeTruthy();
+    expect(screen.getAllByText("Referencia uniforme", { exact: false }).length).toBeGreaterThan(0);
   });
 
   it("la seleccion del historial va en la URL", async () => {

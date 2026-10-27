@@ -1,6 +1,8 @@
-# Fase 9.1 y 9.2 en Windows — validación nativa completada
+# Fase 9 en Windows — 9.1, 9.2 y 9.3 v2 validadas; publicación de 9.3 pendiente
 
-**Estado de la 9.2:** validada en Windows 11 nativo por Daniel y aprobada por la auditoría independiente el 26 de octubre de 2026, incluido el ensayo nativo B con el Programador de tareas real. Quedan pendientes la publicación manual, el CI del nuevo PR y la migración controlada de `LP6-01023009031fcabd`; Fase 9 global abierta. [Informe de cierre](fase9_2_validacion_operador_2026-10-26.md).
+**Estado de la 9.3:** v2 validada en Linux y Windows nativo con Brave y aprobada por la auditoría; cierre documental preparado, con publicación manual de Daniel y CI del nuevo PR pendientes. [Validación del operador](fase9_3_validacion_operador_2026-10-27.md). El [protocolo dirigido](#entrega-93-protocolo-dirigido) se conserva como referencia: no recrear worktree/entorno ni repetir baterías o aplicar de nuevo el parche completo por este cierre.
+
+**Estado de la 9.2:** validada en Windows 11 nativo por Daniel y aprobada por la auditoría independiente el 26 de octubre de 2026, incluido el ensayo nativo B con el Programador de tareas real. Entonces quedaban pendientes la publicación manual, el CI del nuevo PR y la migración controlada de `LP6-01023009031fcabd`. *Actualización:* la 9.2 se integró en el PR #101 (merge `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`, cinco checks aprobados, con el arreglo de pruebas `e38362bf2341cb30389141c67eb37b5b89a6e2fe`). Daniel migró y activó en Windows `LP6-01023009031fcabd` con el horario por juego. Según la confirmación del auditor (no son pruebas de esta entrega), en la captura del 27 de octubre de 2026 a las 00:11, hora de Colombia, quedaron verificadas nueve ejecuciones programadas y quince consultas en sus franjas: siete de MiLoto, tres de Baloto, tres de Revancha y dos de ColorLoto, sin consultas duplicadas ni fallos de sincronización reportados. Aquella captura no tenía resultados nuevos. La observación posterior del 27 de octubre a las 10:21, auditada sobre la captura de Daniel, acredita una novedad incorporada automáticamente y su siguiente predicción con explicación guardada en cada juego: 20 ciclos conservados, 33 consultas (8 de MiLoto, 9 de Baloto, 9 de Revancha y 7 de ColorLoto), sin parejas juego/oportunidad repetidas ni fallos de sincronización reportados; los 29 intentos sin novedad no emitieron otra predicción. Configuración, selecciones de modelos, tarea versión 2 y plan conservados. El último inicio informado es 09:24:45: no acredita disparo exacto a las 09:00 ni recuperación matinal con resultados pendientes, pues los cuatro juegos terminaron de madrugada. Esa recuperación y la limpieza histórica siguen pendientes. Es operación real observada, separada de las pruebas sintéticas 9.3; Codex no ejecutó ciclos ni SQL operativo. [Actualización real de Fase 6](fase9_3_validacion_operador_2026-10-27.md#actualizacion-real-de-fase-6-del-27-de-octubre). Fase 9 global abierta. [Informe de cierre](fase9_2_validacion_operador_2026-10-26.md).
 
 **Estado de la 9.1:** entrega 9.1 v2 validada en Windows 11 nativo por Daniel y auditada el 25 de octubre de 2026. Python 3.14.6, Node 24.15.0, npm 11.12.1 y Brave instalado (motor 156.0.8078.48), con datos sintéticos. Los seis escenarios se consolidan desde dos corridas; no es una nueva batería completa. Publicación manual y checks del PR pendientes; Fase 9 global abierta. *Actualización posterior:* la 9.1 se integró en PR #100 (merge `9966a4b`). [Detalle de la evidencia](fase9_validacion_operador_2026-10-25.md); [diseño](fase9_frontend.md).
 
@@ -46,10 +48,76 @@ Las baterías de la etapa A conservan su atribución a la corrida sobre v2; no s
 - **F92-NAT-01:** el Programador omite `StartWhenAvailable` cuando vale su predeterminado `false`. Se corrigió en la v3.
 - **F92-TEST-01:** un ayudante de prueba era incompatible con Windows PowerShell 5.1. Se corrigió en la v4.
 
-La selección `tests\seleccion_windows.txt` incluye las pruebas nuevas de horario y `test_fase6_auditoria_v1.py`. Su ejecución completa queda para el CI del nuevo PR. Las evidencias se devolvieron sin claves ni rutas privadas, y sus huellas constan en el informe de cierre.
+La selección `tests\seleccion_windows.txt` incluye las pruebas nuevas de horario y `test_fase6_auditoria_v1.py`. Su ejecución completa quedaba para el CI del nuevo PR; *actualización:* el CI del PR #101 la aprobó (check «Windows - seleccion de tests/seleccion_windows.txt», ejecución `40291140855`). Las evidencias se devolvieron sin claves ni rutas privadas, y sus huellas constan en el informe de cierre.
 
 
-## Resultado auditado
+## Entrega 9.3: protocolo dirigido
+
+**Estado v2:** validada por Daniel en Windows 11 con Brave el 27 de octubre y aprobada por el auditor; cierre documental preparado, publicación manual y CI pendientes. El worktree `C:\GitHub\loteria-predictor-f93-v2` ya está validado. Los comandos siguientes son referencia del protocolo propuesto; la ejecución real comprendió 415 pruebas API/pasarela y 690 Vitest, sin repetir ahora esas baterías.
+
+**Validación nativa v2 de Daniel, 27 de octubre de 2026 (11:18:23–11:29:15, America/Bogota), aprobada por el auditor.** Windows 11/Python 3.14.6: 415 pruebas API/pasarela; Node 24.15.0: 690 Vitest, sin fallos, errores u omisiones. Las 25 regresiones de contexto ya están incluidas en los 690. OpenAPI, tipos, TypeScript, compilación y canario correctos; pip check limpio y dos deprecaciones Python conocidas. Brave instalado, con perfil temporal y adaptador externo: 30 visitas y 32 comprobaciones correctas a 360, 390 y 1280 px, más seis controles HTTP; cuota: dos comprobaciones y cero visitas en el contador genérico, aunque sí hubo navegación. El auditor revisó 16 capturas sin bloqueos; el resultado original decía pendiente porque se generó antes de la auditoría y se conserva intacto. No es certificación general de accesibilidad. Fuente v2 de 975 archivos y seis controles públicos de worktrees conservados; contención 2/2 con código 124 esperado; no se ejecutó la selección completa de Windows. No hubo consultas o ciclos operativos. Son resultados nativos de Daniel, separados de Linux y de la observación real de Fase 6. [Insumos y límites](fase9_3_validacion_operador_2026-10-27.md).
+
+**Reglas.**
+- **Worktree NUEVO**, desacoplado en `ed0ee427f7a6fcd2a33cbc538435a3df2e299710` (merge del PR #101), con el parche completo de la 9.3.
+- **No se tocan:** el checkout principal, los worktrees anteriores, `C:\GitHub\loteria-predictor-fase6` ni su venv `C:\GitHub\venvs\loteria-fase6`. Sostienen la tarea `LP6-01023009031fcabd` y la comprobación operativa del horario, que sigue en curso. Tampoco se tocan la tarea, su configuración ni sus horarios.
+- **Datos:** solo sintéticos. Nada usa PostgreSQL, modelos ni almacenes operativos.
+- **Claves:** solo de prueba, en variables de la sesión.
+
+1. **Worktree y parche:**
+
+   ```
+   git -C <clon> worktree add --detach C:\GitHub\loteria-predictor-f93-v2 ed0ee427f7a6fcd2a33cbc538435a3df2e299710
+   cd C:\GitHub\loteria-predictor-f93-v2
+   Get-FileHash -Algorithm SHA256 <ruta>\fase9-3-completo-v2.patch
+   git apply --check <ruta>\fase9-3-completo-v2.patch
+   git apply <ruta>\fase9-3-completo-v2.patch
+   git diff --check
+   git status --short
+   ```
+
+   Comparar el SHA-256 y la lista de `git status` con el manifiesto de la entrega.
+2. **Python:** un venv **nuevo** fuera del worktree, p. ej. `C:\GitHub\venvs\loteria-f93-v2`, con `pip install -r backend\requirements.txt`, `pip install httpx==0.28.1` y `pip check`. Si la ruta propuesta ya existe, conservarla y elegir otra nueva. No se usa el venv de Fase 6.
+3. **Frontend**, desde `frontend\`, como en el paso 3 de la 9.1:
+   - `npm ci --no-audit --no-fund --ignore-scripts`;
+   - `npm run tipos:comprobar` y `npm run typecheck`;
+   - Vitest con JUnit;
+   - `npm run build` y `npm run canario`.
+4. **Python dirigido**, desde `backend\`:
+
+   ```
+   python -m pytest -p no:cacheprovider -rsw tests\unit\api_publica\test_api_publica_fiabilidad.py tests\unit\api_publica\test_api_publica_preservacion.py tests\unit\pasarela\test_pasarela_contrato.py --junitxml=..\f93-dirigidas-windows.xml
+   ```
+
+   La ejecución nativa completada comprendió las carpetas API/pasarela (415 pruebas); se conserva este comando dirigido como referencia. La selección completa de Windows no se ejecutó y el CI del nuevo PR queda pendiente. No repetir baterías por el cierre documental.
+5. **Recorrido**, con Brave mediante Playwright y perfil temporal, como en la validación de la 9.2. Desde `backend\`:
+
+   ```
+   python -m tests.recorrido_fase9 --escenario fiabilidad --salida ..\f93-recorrido-windows\fiabilidad
+   python -m tests.recorrido_fase9 --escenario cuota_fiabilidad --anchos 1280 --salida ..\f93-recorrido-windows\cuota_fiabilidad
+   ```
+
+   `normal` es opcional: incluye `fiabilidad` y todas las métricas.
+6. **Brave a mano**, con perfil temporal, como en el paso 6 de la 9.1. Revisar, a 360, 390 y 1280 px:
+   - **Predicción de Baloto:** explicación, versión registrada, cortes 2192 (entrada) y 2185 (entrenamiento), importancias y superbalota aparte. Con memoria vacía, la carga inicial pide catálogo (1) y predicción (3): 4 fichas, sin fiabilidad automática. Pulsar «Consultar fiabilidad» solicita 3 fichas adicionales y muestra la evidencia solo si corresponde al contexto de la cartera; en otro caso, ausencia explícita y enlace «Fiabilidad general de la configuración actual».
+   - **Cambio de cartera:** al elegir el objetivo 2191, la URL lleva `?cartera=` y conserva el corte 2190. Atrás, adelante y recarga conservan identidad/corte y dejan la fiabilidad sin consultar hasta pulsar de nuevo el botón; nunca muestran cifras de otra selección. `hasta` filtra objetivos, no la disponibilidad temporal de informes o emisiones.
+   - **Baloto Revancha:** dice que no hay explicación guardada.
+   - **ColorLoto:** pares número-color con su color en texto, y números y colores por separado.
+   - **Pestaña «Fiabilidad»:** consulta general de la configuración actual, diferenciada de la cartera; seguimiento, retrospectiva y receta por separado; el filtro de objetivos `2190` en la URL; `?hasta=0` da 422.
+   - **Lectura:** el texto sobre Δ positivo y negativo y «estimable» sin ventaja acreditada.
+   - **Teclado:** «Universo completo» se abre con Enter, «Consultar fiabilidad» se activa con teclado y las tablas son enfocables.
+   - **Cuota:** con seis fichas la carga inicial de predicción no recibe 429; la consulta explícita posterior puede recibirlo. No hay reintento automático; el botón de reintento respeta `Retry-After`.
+   - **Comprobaciones generales:** sin desplazamiento horizontal de la página; consola sin errores; red solo a `127.0.0.1:8020`, sin `X-API-Key`; almacenamiento vacío.
+
+**Evidencia a devolver.**
+- Versiones.
+- Salidas y códigos de salida de cada paso, JUnit, `recorrido.json` y `resultados.json`.
+- Capturas de Brave.
+- `git status --short` final del worktree nuevo, y que `C:\GitHub\loteria-predictor-fase6` no cambió.
+
+No se incluyen claves, `.env` ni rutas privadas.
+
+
+## Resultado auditado de la 9.1 (antecedente; no acredita la 9.3)
 
 - Tipos, TypeScript, compilación y canario: correctos.
 - Vitest 379, pasarela 186 y API pública 92: sin fallos, errores ni omisiones.

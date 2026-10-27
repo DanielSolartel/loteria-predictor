@@ -32,11 +32,14 @@ export function nombresDeMuestras(): string[] {
   return Object.keys(archivos).map((k) => k.replace("./respuestas/", "").replace(/\.json$/, ""));
 }
 
+/** Variantes con la misma URL que la respuesta normal (9.3: explicacion alterada y base de la Fase 4 caida). */
+const VARIANTES_EXPLICITAS = ["--sin_configuracion", "--sin_sorteos", "--explicacion_alterada", "--sin_base"];
+
 /** Respuestas normales por URL; las variantes y los errores se piden de forma explicita. */
 function porUrl(): Map<string, Muestra> {
   const mapa = new Map<string, Muestra>();
   for (const nombre of nombresDeMuestras()) {
-    if (nombre.startsWith("global--error--") || nombre.endsWith("--sin_configuracion") || nombre.endsWith("--sin_sorteos")) {
+    if (nombre.startsWith("global--error--") || VARIANTES_EXPLICITAS.some((v) => nombre.endsWith(v))) {
       continue;
     }
     const m = muestra(nombre);

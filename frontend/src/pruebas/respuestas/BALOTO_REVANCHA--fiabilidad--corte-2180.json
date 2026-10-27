@@ -1,0 +1,139 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO_REVANCHA/fiabilidad?hasta=2180",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO_REVANCHA",
+  "nombre": "Baloto Revancha",
+  "estado_de_uso": "experimental_no_acreditado",
+  "aviso": "Probabilidad emitida, rendimiento observado e incertidumbre se presentan por separado. Ninguna cifra es un nivel de confianza ni acredita ventaja futura.",
+  "contexto": {
+   "uso": "experimental_no_acreditado",
+   "AUTORIZA_EVALUACION": false,
+   "no_go_ae39": "vigente",
+   "resultado_acreditado": false
+  },
+  "configuracion": "vigente",
+  "registrado": null,
+  "base": {
+   "estado": "consultada",
+   "ultimo_sorteo": 2180,
+   "fecha": "2021-10-26",
+   "sorteos": 100
+  },
+  "hasta": 2180,
+  "metodo": {
+   "version": "fase4-fiabilidad-1",
+   "unidad": "sorteo (una cifra por sorteo; los candidatos de un sorteo no son independientes)",
+   "estimacion": "media de la serie de sorteos",
+   "incertidumbre": "intervalo de percentiles al 95% con bootstrap de bloques móviles; bloque ceil(n^(1/3)); 2000 remuestras; semilla derivada de la línea, el tipo, el componente, la cifra y los objetivos incluidos (la misma muestra da el mismo intervalo)",
+   "minimo_para_intervalo": 30,
+   "supuestos": "estacionariedad débil y dependencia de corto alcance de la serie de sorteos",
+   "limitaciones": [
+    "Con muestras pequeñas la cobertura real del intervalo puede quedar por debajo de la nominal.",
+    "No corrige la selección de un modelo después de ver una comparación (sesgo de selección).",
+    "No cubre cambios de régimen ni las emisiones excluidas o pendientes.",
+    "El umbral de 30 sorteos solo decide si se calcula el intervalo: no es una validación.",
+    "Ninguna cifra acredita ventaja futura: siguen experimental_no_acreditado, el NO-GO de AE-39 y AUTORIZA_EVALUACION = False."
+   ],
+   "extremos": {
+    "numeros": 10,
+    "pares": 10,
+    "superbalota": 4
+   },
+   "presentacion": {
+    "umbral_absoluto_proximo_a_cero": 1e-12,
+    "criterio": "Una media con magnitud hasta 1e-12 se describe como próxima a 0, solo para su lectura. El umbral se declara siete órdenes por debajo del paso decimal 0.00001; no diagnostica el origen de la diferencia ni sustituye valores por cero. No afirma igualdad matemática ni relevancia estadística. Media e intervalo originales se conservan; la inclusión de 0 se decide con los límites originales.",
+    "formato": "Cinco decimales; todo valor no nulo de magnitud menor que 0.00005 se muestra en notación científica con cinco cifras significativas, incluidos los límites del intervalo."
+   },
+   "fuentes": [
+    {
+     "cita": "Künsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. The Annals of Statistics, 17(3), 1217-1241.",
+     "doi": "10.1214/aos/1176347265",
+     "uso": "bootstrap de bloques móviles para la media de una serie estacionaria con dependencia"
+    },
+    {
+     "cita": "Hall, P., Horowitz, J. L. y Jing, B.-Y. (1995). On blocking rules for the bootstrap with dependent data. Biometrika, 82(3), 561-574.",
+     "doi": "10.1093/biomet/82.3.561",
+     "uso": "orden de magnitud de la longitud de bloque (n^(1/3) para varianza y sesgo)"
+    },
+    {
+     "cita": "Diebold, F. X. y Mariano, R. S. (1995). Comparing predictive accuracy. Journal of Business & Economic Statistics, 13(3), 253-263.",
+     "doi": null,
+     "uso": "comparar dos pronósticos con la serie de diferencias de pérdida por periodo, con dependencia serial"
+    },
+    {
+     "cita": "Gneiting, T. y Raftery, A. E. (2007). Strictly proper scoring rules, prediction, and estimation. Journal of the American Statistical Association, 102(477), 359-378.",
+     "doi": "10.1198/016214506000001437",
+     "uso": "Log Loss y Brier como reglas de puntuación propias"
+    }
+   ]
+  },
+  "lineas": [
+   {
+    "linea": "carteras:uniforme-v1-reducido",
+    "papel": "vector fuente del modelo de la configuración (carteras de Producto 5)",
+    "nombre": "Referencia uniforme v1 (reducido) · vector fuente",
+    "estimador": "receta reajustada al generar cada emisión con el histórico hasta su corte",
+    "evaluaciones": [
+     {
+      "tipo": "seguimiento",
+      "descripcion": "Seguimiento: emisiones cuyo objetivo no estaba cargado en la base local al emitir.",
+      "estado": "sin_datos",
+      "motivo": "no hay emisiones de esta línea y tipo",
+      "muestra": {
+       "sorteos": 0,
+       "periodo": null,
+       "hasta": 2180,
+       "emisiones": 0,
+       "pendientes": 0,
+       "sin_base": 0,
+       "exclusiones": [],
+       "estado_del_candidato": null,
+       "excluidos_de_la_muestra_comun": null
+      },
+      "componentes": {},
+      "origen": null,
+      "informe": null,
+      "corte_del_informe": null,
+      "clasificacion_componentes": null
+     },
+     {
+      "tipo": "retrospectiva",
+      "descripcion": "Retrospectiva: emisiones cuyo objetivo ya estaba en la base al emitir (reconstrucción con datos hasta el corte).",
+      "estado": "sin_datos",
+      "motivo": "no hay emisiones de esta línea y tipo",
+      "muestra": {
+       "sorteos": 0,
+       "periodo": null,
+       "hasta": 2180,
+       "emisiones": 0,
+       "pendientes": 0,
+       "sin_base": 0,
+       "exclusiones": [],
+       "estado_del_candidato": null,
+       "excluidos_de_la_muestra_comun": null
+      },
+      "componentes": {},
+      "origen": null,
+      "informe": null,
+      "corte_del_informe": null,
+      "clasificacion_componentes": null
+     }
+    ]
+   }
+  ],
+  "receta": {
+   "tipo": "evaluacion_de_receta",
+   "descripcion": null,
+   "estado": "sin_datos",
+   "motivo": "no hay un informe legible del laboratorio con esta receta",
+   "muestra": null,
+   "componentes": {},
+   "origen": "informe más reciente del laboratorio que evalúa la receta con el mismo perfil",
+   "informe": null,
+   "corte_del_informe": null,
+   "clasificacion_componentes": null
+  }
+ }
+}

@@ -25,7 +25,8 @@ def _consultas(a, ident: str, clave: str | None) -> list[str]:
             "/api/v1/juegos/MILOTO/estadisticas", "/api/v1/juegos/MILOTO/estadisticas/resumen",
             "/api/v1/juegos/COLORLOTO/estadisticas/panel", "/api/v1/juegos/COLORLOTO/estadisticas/correlaciones",
             "/api/v1/juegos/MILOTO/predicciones", "/api/v1/juegos/MILOTO/simulaciones", f"/api/v1/simulaciones/{ident}",
-            "/api/v1/juegos/BALOTO/predicciones"]
+            "/api/v1/juegos/BALOTO/predicciones", "/api/v1/juegos/MILOTO/fiabilidad",
+            "/api/v1/juegos/BALOTO/fiabilidad", "/api/v1/juegos/MILOTO/fiabilidad?hasta=87"]  # 9.3
     if clave:
         urls.append(f"/api/v1/juegos/MILOTO/predicciones?cartera={clave}")
     return urls
@@ -63,6 +64,44 @@ def test_las_consultas_no_escriben_ni_lanzan_trabajos(tmp_path, monkeypatch):
     assert a.app.state.monitor.resumen()["solicitudes"] == 2 * len(_consultas(a, ident, clave))
 
 
+def test_cartera_historica_y_fiabilidad_general_conservan_su_contexto_sin_escrituras(tmp_path, monkeypatch):
+    """La ruta general sigue la configuración actual, sin alterar la cartera.
+
+    La preparación solo genera una cartera uniforme sintética; no ajusta un
+    estimador. Cambiar después la configuración es una acción explícita de la
+    fixture, previa al control de archivos/filas y al bloqueo de escritores.
+    """
+    entorno4 = f4.entorno(tmp_path / "f4")
+    entorno4.configurar("MILOTO", "uniforme")
+    centro = entorno4.centro()
+    centro.ahora("MILOTO")
+    a = fa.api(tmp_path, centro=centro, fichas_por_minuto=10_000)
+    original = a.get("/api/v1/juegos/MILOTO/predicciones").json()["prediccion"]
+    ruta_fiabilidad = f"/api/v1/juegos/MILOTO/fiabilidad?hasta={original['corte']}"
+    linea_original = "carteras:" + original["linea_de_modelo"]["id"]
+    control = a.get(ruta_fiabilidad)
+    assert control.status_code == 200
+    assert linea_original in [linea["linea"] for linea in control.json()["lineas"]]
+
+    entorno4.configurar("MILOTO", "actual_frecuencia_contraida")
+    archivos, filas = fa.arbol(entorno4.raiz), fa.filas(a.entorno)
+    llamadas = _bloquear_escritores(monkeypatch)
+    ruta_cartera = f"/api/v1/juegos/MILOTO/predicciones?cartera={original['clave']}"
+    for _ in range(2):
+        seleccionada, general = a.get(ruta_cartera), a.get(ruta_fiabilidad)
+        assert seleccionada.status_code == general.status_code == 200
+        assert seleccionada.json()["prediccion"] == original
+        fiabilidad = general.json()
+        assert fiabilidad["hasta"] == original["corte"]
+        assert linea_original not in [linea["linea"] for linea in fiabilidad["lineas"]]
+        assert any(linea["linea"].startswith("carteras:actual_frecuencia_contraida-")
+                   for linea in fiabilidad["lineas"])
+        assert fiabilidad["contexto"]["AUTORIZA_EVALUACION"] is False
+        assert fiabilidad["contexto"]["no_go_ae39"] == "vigente"
+    assert llamadas == []
+    assert fa.arbol(entorno4.raiz) == archivos and fa.filas(a.entorno) == filas
+
+
 def _arbol_completo(raiz):
     return sorted(str(p.relative_to(raiz)) for p in raiz.rglob("*"))
 
@@ -95,7 +134,8 @@ def test_cableado_predeterminado_no_crea_ni_toca_almacenes(tmp_path, monkeypatch
         assert c.get(url, headers=cabeceras).status_code == 200, url
     # Las lecturas de predicciones y simulaciones usan `SET TRANSACTION READ ONLY` sin variante SQLite:
     # aqui pueden informar base no disponible; con PostgreSQL lo cubre tests/postgres_fase8.py.
-    for url in ("/api/v1/juegos/MILOTO/predicciones", "/api/v1/juegos/MILOTO/simulaciones",
+    for url in ("/api/v1/juegos/MILOTO/predicciones", "/api/v1/juegos/MILOTO/fiabilidad",
+                "/api/v1/juegos/MILOTO/simulaciones",
                 "/api/v1/simulaciones/00000000-0000-0000-0000-000000000000", "/api/v1/estado"):
         assert c.get(url, headers=cabeceras).status_code in (200, 404, 503), url
     assert llamadas == [] and fa.filas(e) == filas

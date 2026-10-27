@@ -13,6 +13,13 @@
  * numero de llamadas. Escribe `resultados.json` y capturas etiquetadas
  * Chromium/Linux.
  *
+ * Fase 9.3 (escenario `fiabilidad`, incluido tambien en `normal`): explicacion,
+ * clasificacion de candidatos y fiabilidad de los cuatro juegos en cada ancho,
+ * con todas las consultas automaticas, incluido el catalogo (1 + 3 = 4), y la
+ * consulta explicita de fiabilidad (3) por separado; cartera y corte, URL y
+ * teclado. `cuota_fiabilidad`: la carga inicial cabe en seis; solo la accion
+ * explicita posterior recibe 429, conserva la prediccion y permite reintento manual.
+ *
  * Uso: node e2e/recorrido.mjs --base URL --escenario normal --salida DIR [--anchos 360,390,1280] [--cuerpos DIR]
  */
 import { mkdir, writeFile } from "node:fs/promises";
@@ -43,7 +50,16 @@ const CAPTURAS = new Set(["inicio", "ficha-BALOTO", "sorteos-COLORLOTO", "metric
   "metrica-COLORLOTO-pruebas-uniformidad", "prediccion-MILOTO", "prediccion-COLORLOTO", "servicio",
   "estadisticas-COLORLOTO", "sorteo-COLORLOTO", "metrica-COLORLOTO-frecuencia-pares-numero-color",
   "metrica-COLORLOTO-coocurrencia-trios-colores", "metrica-BALOTO-coocurrencia-trios", "metrica-MILOTO-atrasos-numeros",
-  "metrica-paginada-BALOTO-2", "metrica-color-COLORLOTO-ROJO"]);
+  "metrica-paginada-BALOTO-2", "metrica-color-COLORLOTO-ROJO",
+  "prediccion-explicacion-BALOTO", "prediccion-explicacion-COLORLOTO", "prediccion-explicacion-BALOTO_REVANCHA",
+  "fiabilidad-BALOTO", "fiabilidad-COLORLOTO"]);
+// Fase 9.3: lo que el escenario sintetico debe mostrar en cada juego.
+const ESPERADO_93 = {
+  BALOTO: { clasificacion: "numeros", explicacion: "guardada", importancias: "disponible", superbalota: true },
+  BALOTO_REVANCHA: { clasificacion: "numeros", explicacion: "ausente", importancias: null, superbalota: true },
+  MILOTO: { clasificacion: "numeros", explicacion: "guardada", importancias: "no_disponible", superbalota: false },
+  COLORLOTO: { clasificacion: "pares", explicacion: "guardada", importancias: "no_disponible", superbalota: false },
+};
 
 await mkdir(join(opciones.salida, "capturas"), { recursive: true });
 const navegador = await chromium.launch();
@@ -126,7 +142,7 @@ async function almacenamiento(pagina) {
 }
 
 /** Visita `ruta` en una pestaña nueva (carga completa) y registra sus comprobaciones. */
-async function visitar(ancho, nombre, ruta, { esperarError = null, admitidos = [], captura = CAPTURAS.has(nombre) } = {}) {
+async function visitar(ancho, nombre, ruta, { esperarError = null, admitidos = [], captura = CAPTURAS.has(nombre), consultarFiabilidad = false } = {}) {
   const permitidos = new Set([...(esperarError ? [esperarError] : []), ...admitidos]);
   const { contexto, pagina, registro } = await nuevaPestana(ancho);
   const visita = { ancho, nombre, ruta, ok: true, motivos: [] };
@@ -134,6 +150,17 @@ async function visitar(ancho, nombre, ruta, { esperarError = null, admitidos = [
     await pagina.goto(BASE + ruta, { waitUntil: "networkidle" });
     await esperarContenido(pagina);
     await pagina.waitForLoadState("networkidle");
+    // La foto automatica se toma antes de cualquier accion explicita: no se
+    // descarta el catalogo ni se oculta una consulta extra de la SPA.
+    visita.peticiones_api_automaticas = rutasApi(await Promise.all(registro.peticiones));
+    if (consultarFiabilidad) {
+      visita.fiabilidad_inicial_sin_tabla = await pagina.locator("main [data-fiabilidad-corte] table").count() === 0;
+      await pagina.getByRole("button", { name: "Consultar fiabilidad", exact: true }).click();
+      await pagina.waitForSelector("main [data-fiabilidad-corte] table", { timeout: 30000 });
+      await pagina.waitForLoadState("networkidle");
+      visita.peticiones_api_explicitas = rutasApi(await Promise.all(registro.peticiones))
+        .slice(visita.peticiones_api_automaticas.length);
+    }
     visita.titulo = await pagina.locator("main h1").first().innerText();
     const alerta = pagina.locator("main [role=alert][data-codigo]");
     visita.errores_mostrados = await alerta.evaluateAll((xs) => xs.map((x) => x.getAttribute("data-codigo")));
@@ -175,7 +202,8 @@ async function visitar(ancho, nombre, ruta, { esperarError = null, admitidos = [
     }
     visita.marcas = await pagina.evaluate(() =>
       Object.fromEntries(
-        ["prediccion", "frescura", "observado", "frente", "integridad", "configuracion", "estado", "base", "salud", "metrica", "paginacion"]
+        ["prediccion", "frescura", "observado", "frente", "integridad", "configuracion", "estado", "base", "salud", "metrica", "paginacion",
+          "clasificacion", "explicacion", "importancias", "superbalota", "fiabilidad-corte", "evaluacion", "hasta", "receta", "linea"]
           .map((k) => [k, [...document.querySelectorAll(`[data-${k}]`)].map((e) => e.getAttribute(`data-${k}`))])
           .filter(([, v]) => v.length > 0),
       ),
@@ -349,6 +377,204 @@ async function llamadasEnNavegacion() {
   await contexto.close();
 }
 
+/** Todas las consultas a la API, incluido el catalogo de una memoria vacia. */
+function rutasApi(peticiones) {
+  return peticiones.filter((p) => new URL(p.url).pathname.startsWith("/api/v1/"))
+    .map((p) => new URL(p.url).pathname + new URL(p.url).search);
+}
+
+function mismasConsultas(actuales, esperadas) {
+  const a = [...actuales].sort();
+  const b = [...esperadas].sort();
+  return a.length === b.length && a.every((ruta, i) => ruta === b[i]);
+}
+
+/** Costes existentes de las rutas del recorrido dirigido; una ruta extra falla. */
+function fichas93(rutas) {
+  return rutas.reduce((total, ruta) => {
+    const path = new URL(ruta, BASE).pathname;
+    if (path === "/api/v1/juegos") return total + 1;
+    if (/^\/api\/v1\/juegos\/[A-Z_]+\/(predicciones|fiabilidad)$/.test(path)) return total + 3;
+    throw new Error(`consulta fuera del presupuesto dirigido: ${ruta}`);
+  }, 0);
+}
+
+/** Fase 9.3: carga automatica y accion explicita se registran por separado. */
+async function pantallasFiabilidad(ancho) {
+  for (const juego of JUEGOS) {
+    const e = ESPERADO_93[juego];
+    const v = await visitar(ancho, `prediccion-explicacion-${juego}`, `/juegos/${juego}/prediccion`, { consultarFiabilidad: true });
+    const m = v.marcas ?? {};
+    const corte = (m["fiabilidad-corte"] ?? [])[0];
+    const automaticas = v.peticiones_api_automaticas ?? [];
+    const explicitas = v.peticiones_api_explicitas ?? [];
+    comprobar(`prediccion-9-3-${juego}-${ancho}`,
+      v.ok && m.clasificacion?.[0] === e.clasificacion && m.explicacion?.[0] === e.explicacion &&
+        (m.importancias?.[0] ?? null) === e.importancias && ((m.superbalota ?? []).length > 0) === e.superbalota &&
+        corte !== undefined && v.fiabilidad_inicial_sin_tabla &&
+        mismasConsultas(automaticas, ["/api/v1/juegos", `/api/v1/juegos/${juego}/predicciones`]) &&
+        fichas93(automaticas) === 4 && fichas93(automaticas) <= 6 &&
+        mismasConsultas(explicitas, [`/api/v1/juegos/${juego}/fiabilidad?hasta=${corte}`]) && fichas93(explicitas) === 3,
+      { marcas: m, automaticas, fichas_automaticas: fichas93(automaticas), explicitas, fichas_accion_explicita: fichas93(explicitas) });
+    const f = await visitar(ancho, `fiabilidad-${juego}`, `/juegos/${juego}/fiabilidad`);
+    const consultas = f.peticiones_api_automaticas ?? [];
+    comprobar(`fiabilidad-9-3-${juego}-${ancho}`,
+      f.ok && mismasConsultas(consultas, ["/api/v1/juegos", `/api/v1/juegos/${juego}/fiabilidad`]) &&
+        fichas93(consultas) === 4 && f.marcas?.hasta?.[0] === "todos" &&
+        (f.marcas?.receta ?? []).length === 1 && (f.marcas?.evaluacion ?? []).includes("evaluacion_de_receta"),
+      { marcas: f.marcas, automaticas: consultas, fichas_automaticas: fichas93(consultas) });
+  }
+  const corte = await visitar(ancho, "fiabilidad-corte-BALOTO", "/juegos/BALOTO/fiabilidad?hasta=2190");
+  const consultas = corte.peticiones_api_automaticas ?? [];
+  comprobar(`fiabilidad-corte-url-${ancho}`, corte.ok && corte.marcas?.hasta?.[0] === "2190" &&
+    mismasConsultas(consultas, ["/api/v1/juegos", "/api/v1/juegos/BALOTO/fiabilidad?hasta=2190"]) && fichas93(consultas) === 4,
+    { marcas: corte.marcas?.hasta, automaticas: consultas, fichas_automaticas: fichas93(consultas) });
+  await visitar(ancho, "fiabilidad-corte-no-valido", "/juegos/BALOTO/fiabilidad?hasta=0", { esperarError: "parametro_no_valido" });
+  await tecladoFiabilidad(ancho);
+}
+
+/** Teclado: la consulta explicita y el universo plegado admiten Enter; tabla enfocable. */
+async function tecladoFiabilidad(ancho) {
+  const { contexto, pagina } = await nuevaPestana(ancho);
+  await pagina.goto(`${BASE}/juegos/BALOTO/prediccion`, { waitUntil: "networkidle" });
+  await esperarContenido(pagina);
+  const consulta = pagina.getByRole("button", { name: "Consultar fiabilidad", exact: true });
+  await consulta.focus();
+  const botonEnfocado = await pagina.evaluate(() => document.activeElement?.textContent?.trim());
+  await pagina.keyboard.press("Enter");
+  await pagina.waitForSelector("main [data-fiabilidad-corte] table", { timeout: 30000 });
+  const resumen = pagina.locator("main [data-clasificacion] details > summary").first();
+  await resumen.focus();
+  await pagina.keyboard.press("Enter");
+  const abierto = await pagina.locator("main [data-clasificacion] details").first().evaluate((d) => d.open);
+  const enfocado = await pagina.evaluate(() => {
+    const e = document.activeElement;
+    const s = e ? getComputedStyle(e) : null;
+    return { etiqueta: e?.tagName, visible: Boolean(s && (s.outlineStyle !== "none" || s.boxShadow !== "none")) };
+  });
+  await pagina.locator("main [data-fiabilidad-corte] .tabla-desplazable").first().focus();
+  const region = await pagina.evaluate(() => document.activeElement?.getAttribute("aria-label"));
+  await pagina.keyboard.press("Tab");
+  const siguiente = await pagina.evaluate(() => document.activeElement?.tagName);
+  comprobar(`teclado-fiabilidad-${ancho}`, botonEnfocado === "Consultar fiabilidad" && abierto &&
+    enfocado.etiqueta === "SUMMARY" && enfocado.visible && region === "Fiabilidad hasta el sorteo 2192" && Boolean(siguiente),
+    { botonEnfocado, abierto, enfocado, region, siguiente });
+  await contexto.close();
+}
+
+/** La identidad/corte siguen la cartera; cada seleccion vuelve a consulta explicita. */
+async function carteraYCorte() {
+  const { contexto, pagina, registro } = await nuevaPestana(1280);
+  const api = async () => rutasApi(await Promise.all(registro.peticiones));
+  async function manual(corte) {
+    await pagina.waitForSelector(`main [data-fiabilidad-corte='${corte}']`, { timeout: 30000 });
+    await esperarContenido(pagina);
+    await pagina.waitForLoadState("networkidle");
+    return await pagina.getByRole("button", { name: "Consultar fiabilidad", exact: true }).count() === 1 &&
+      await pagina.locator("main [data-fiabilidad-corte] table").count() === 0;
+  }
+  async function consultar(corte) {
+    await pagina.getByRole("button", { name: "Consultar fiabilidad", exact: true }).click();
+    await pagina.waitForSelector(`main [data-fiabilidad-corte='${corte}'] table`, { timeout: 30000 });
+    await pagina.waitForLoadState("networkidle");
+  }
+  await pagina.goto(`${BASE}/juegos/BALOTO/prediccion`, { waitUntil: "networkidle" });
+  const inicioManual = await manual(2192);
+  const iniciales = await api();
+  await consultar(2192);
+  const inicio = (await api()).length;
+  await pagina.click("main a[aria-label='Ver la predicción del objetivo 2191']");
+  await pagina.waitForURL(/cartera=[0-9a-f]{64}/);
+  const seleccionManual = await manual(2190);
+  const entrada = await pagina.locator("main [data-corte=entrada] td.text-end").innerText();
+  const clave = new URL(pagina.url()).searchParams.get("cartera");
+  const alElegir = (await api()).slice(inicio);
+  const antesExplicita = (await api()).length;
+  await consultar(2190);
+  const explicitas = (await api()).slice(antesExplicita);
+  const antesAtras = (await api()).length;
+  await pagina.goBack();
+  await pagina.waitForURL((u) => !/cartera=/.test(u.toString()));
+  const atrasManual = await manual(2192);
+  const alVolver = (await api()).slice(antesAtras);
+  const antesAdelante = (await api()).length;
+  await pagina.goForward();
+  const adelanteManual = await manual(2190);
+  const alAvanzar = (await api()).slice(antesAdelante);
+  const antesRecarga = (await api()).length;
+  await pagina.reload({ waitUntil: "networkidle" });
+  const recargaManual = await manual(2190);
+  const alRecargar = (await api()).slice(antesRecarga);
+  const prediccionElegida = `/api/v1/juegos/BALOTO/predicciones?cartera=${clave}`;
+  comprobar("cartera-actualiza-el-corte", entrada === "2190" && inicioManual && seleccionManual && atrasManual &&
+    adelanteManual && recargaManual && new URL(pagina.url()).searchParams.get("cartera") === clave &&
+    mismasConsultas(iniciales, ["/api/v1/juegos", "/api/v1/juegos/BALOTO/predicciones"]) && fichas93(iniciales) === 4 &&
+    mismasConsultas(alElegir, [prediccionElegida]) && fichas93(alElegir) === 3 &&
+    mismasConsultas(explicitas, ["/api/v1/juegos/BALOTO/fiabilidad?hasta=2190"]) &&
+    mismasConsultas(alVolver, ["/api/v1/juegos/BALOTO/predicciones"]) && mismasConsultas(alAvanzar, [prediccionElegida]) &&
+    mismasConsultas(alRecargar, ["/api/v1/juegos", prediccionElegida]) && fichas93(alRecargar) === 4,
+    { entrada, iniciales, alElegir, explicitas, alVolver, alAvanzar, alRecargar,
+      manual: { inicioManual, seleccionManual, atrasManual, adelanteManual, recargaManual } });
+  await pagina.getByRole("link", { name: "Fiabilidad general de la configuración actual", exact: true }).click();
+  await pagina.waitForURL(/\/juegos\/BALOTO\/fiabilidad$/);
+  await pagina.waitForSelector("main [data-hasta='todos']", { timeout: 30000 });
+  await pagina.fill("#corte", "2190");
+  await pagina.click("form[aria-label='Corte de la muestra'] button[type=submit]");
+  await pagina.waitForURL(/hasta=2190/);
+  await pagina.waitForSelector("main [data-hasta='2190']", { timeout: 30000 });
+  await pagina.goBack();
+  await pagina.waitForSelector("main [data-hasta='todos']", { timeout: 30000 });
+  await pagina.goForward();
+  await pagina.waitForSelector("main [data-hasta='2190']", { timeout: 30000 });
+  await pagina.reload({ waitUntil: "networkidle" });
+  await pagina.waitForSelector("main [data-hasta='2190']", { timeout: 30000 });
+  const valor = await pagina.inputValue("#corte");
+  const todas = await api();
+  comprobar("fiabilidad-corte-en-la-url", valor === "2190" && todas.includes("/api/v1/juegos/BALOTO/fiabilidad?hasta=2190") &&
+    todas.includes("/api/v1/juegos/BALOTO/fiabilidad"), { valor, api: todas.slice(-6) });
+  await contexto.close();
+}
+
+async function recorridoFiabilidad() {
+  for (const ancho of ANCHOS) {
+    await pantallasFiabilidad(ancho);
+  }
+  await carteraYCorte();
+}
+
+/** Cuota 6: carga inicial 1+3; el 429 solo ocurre tras consultar fiabilidad a mano. */
+async function recorridoCuotaFiabilidad() {
+  const { contexto, pagina, registro } = await nuevaPestana(1280);
+  const deFiabilidad = async () => rutasApi(await Promise.all(registro.peticiones)).filter((p) => new URL(p, BASE).pathname.endsWith("/fiabilidad")).length;
+  await pagina.goto(`${BASE}/juegos/BALOTO/prediccion`, { waitUntil: "networkidle" });
+  await esperarContenido(pagina);
+  await pagina.waitForLoadState("networkidle");
+  const automaticas = rutasApi(await Promise.all(registro.peticiones));
+  const sinFiabilidadAutomatica = await deFiabilidad() === 0;
+  const sinErrorInicial = await pagina.locator("main [role=alert][data-codigo]").count() === 0;
+  const prediccionVisible = await pagina.locator("main [data-clasificacion]").count();
+  comprobar("cuota-carga-inicial-dentro-de-seis", mismasConsultas(automaticas, ["/api/v1/juegos", "/api/v1/juegos/BALOTO/predicciones"]) &&
+    fichas93(automaticas) === 4 && sinFiabilidadAutomatica && sinErrorInicial && prediccionVisible === 1,
+    { automaticas, fichas_automaticas: fichas93(automaticas), sinFiabilidadAutomatica, sinErrorInicial, prediccionVisible });
+  await pagina.getByRole("button", { name: "Consultar fiabilidad", exact: true }).click();
+  await pagina.waitForSelector("main [data-fiabilidad-corte] [role=alert][data-codigo=limite_excedido]", { timeout: 30000 });
+  const texto = await pagina.locator("main [data-fiabilidad-corte] [role=alert]").innerText();
+  const deshabilitado = await pagina.locator("main [data-fiabilidad-corte] [role=alert] button").isDisabled();
+  await pagina.screenshot({ path: join(opciones.salida, "capturas", `chromium-${PLATAFORMA}-1280-cuota-fiabilidad-429.png`), fullPage: true });
+  const antes = await deFiabilidad();
+  await pagina.waitForFunction(() => !document.querySelector("main [data-fiabilidad-corte] [role=alert] button")?.hasAttribute("disabled"), null, { timeout: 90000 });
+  const durante = await deFiabilidad();
+  await pagina.click("main [data-fiabilidad-corte] [role=alert] button");
+  await pagina.waitForSelector("main [data-fiabilidad-corte] table", { timeout: 30000 });
+  const despues = await deFiabilidad();
+  comprobar("cuota-fiabilidad-429", /Podrás reintentar en \d+ s/.test(texto) && deshabilitado && prediccionVisible === 1 &&
+    antes === 1 && durante === 1 && despues === 2, {
+    texto: texto.slice(0, 300), boton_deshabilitado: deshabilitado, prediccion_visible: prediccionVisible,
+    peticiones_de_fiabilidad: { antes, durante, despues },
+  });
+  await contexto.close();
+}
+
 async function recorridoNormal() {
   for (const ancho of ANCHOS) {
     await visitar(ancho, "inicio", "/");
@@ -404,9 +630,11 @@ async function recorridoNormal() {
     await visitar(ancho, "metrica-pagina-fuera", "/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=999",
       { esperarError: "parametro_no_valido" });
     await teclado(ancho);
+    await pantallasFiabilidad(ancho);  // Fase 9.3
   }
   await historialYRecarga();
   await llamadasEnNavegacion();
+  await carteraYCorte();
   // Estados informados que el escenario sintetico debe mostrar.
   const ver = (n) => resultados.visitas.filter((v) => v.nombre === n);
   comprobar("simulacion-alterada-vista", ver("simulacion-alterada").length === ANCHOS.length && ver("simulacion-alterada").every((v) => v.ok));
@@ -483,6 +711,12 @@ try {
     await recorridoErrorUnico("no_autenticado");
   } else if (opciones.escenario === "vite") {
     await recorridoVite();
+  } else if (opciones.escenario === "fiabilidad") {
+    await recorridoFiabilidad();
+  } else if (opciones.escenario === "cuota_fiabilidad") {
+    await recorridoCuotaFiabilidad();
+  } else {
+    fallo("recorrido", `escenario desconocido: ${opciones.escenario}`);
   }
 } catch (error) {
   fallo("recorrido", String(error).split("\n")[0]);

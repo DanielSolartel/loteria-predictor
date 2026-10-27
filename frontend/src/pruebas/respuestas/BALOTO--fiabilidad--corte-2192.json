@@ -1,0 +1,1007 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/fiabilidad?hasta=2192",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "nombre": "Baloto",
+  "estado_de_uso": "experimental_no_acreditado",
+  "aviso": "Probabilidad emitida, rendimiento observado e incertidumbre se presentan por separado. Ninguna cifra es un nivel de confianza ni acredita ventaja futura.",
+  "contexto": {
+   "uso": "experimental_no_acreditado",
+   "AUTORIZA_EVALUACION": false,
+   "no_go_ae39": "vigente",
+   "resultado_acreditado": false
+  },
+  "configuracion": "vigente",
+  "registrado": {
+   "clave": "fed797caa44cc85359a4865d89113c65bcbbb8d295e99815aafc94c878382c07",
+   "numero": 1,
+   "estado": "compatible"
+  },
+  "base": {
+   "estado": "consultada",
+   "ultimo_sorteo": 2192,
+   "fecha": "2021-12-01",
+   "sorteos": 112
+  },
+  "hasta": 2192,
+  "metodo": {
+   "version": "fase4-fiabilidad-1",
+   "unidad": "sorteo (una cifra por sorteo; los candidatos de un sorteo no son independientes)",
+   "estimacion": "media de la serie de sorteos",
+   "incertidumbre": "intervalo de percentiles al 95% con bootstrap de bloques móviles; bloque ceil(n^(1/3)); 2000 remuestras; semilla derivada de la línea, el tipo, el componente, la cifra y los objetivos incluidos (la misma muestra da el mismo intervalo)",
+   "minimo_para_intervalo": 30,
+   "supuestos": "estacionariedad débil y dependencia de corto alcance de la serie de sorteos",
+   "limitaciones": [
+    "Con muestras pequeñas la cobertura real del intervalo puede quedar por debajo de la nominal.",
+    "No corrige la selección de un modelo después de ver una comparación (sesgo de selección).",
+    "No cubre cambios de régimen ni las emisiones excluidas o pendientes.",
+    "El umbral de 30 sorteos solo decide si se calcula el intervalo: no es una validación.",
+    "Ninguna cifra acredita ventaja futura: siguen experimental_no_acreditado, el NO-GO de AE-39 y AUTORIZA_EVALUACION = False."
+   ],
+   "extremos": {
+    "numeros": 10,
+    "pares": 10,
+    "superbalota": 4
+   },
+   "presentacion": {
+    "umbral_absoluto_proximo_a_cero": 1e-12,
+    "criterio": "Una media con magnitud hasta 1e-12 se describe como próxima a 0, solo para su lectura. El umbral se declara siete órdenes por debajo del paso decimal 0.00001; no diagnostica el origen de la diferencia ni sustituye valores por cero. No afirma igualdad matemática ni relevancia estadística. Media e intervalo originales se conservan; la inclusión de 0 se decide con los límites originales.",
+    "formato": "Cinco decimales; todo valor no nulo de magnitud menor que 0.00005 se muestra en notación científica con cinco cifras significativas, incluidos los límites del intervalo."
+   },
+   "fuentes": [
+    {
+     "cita": "Künsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. The Annals of Statistics, 17(3), 1217-1241.",
+     "doi": "10.1214/aos/1176347265",
+     "uso": "bootstrap de bloques móviles para la media de una serie estacionaria con dependencia"
+    },
+    {
+     "cita": "Hall, P., Horowitz, J. L. y Jing, B.-Y. (1995). On blocking rules for the bootstrap with dependent data. Biometrika, 82(3), 561-574.",
+     "doi": "10.1093/biomet/82.3.561",
+     "uso": "orden de magnitud de la longitud de bloque (n^(1/3) para varianza y sesgo)"
+    },
+    {
+     "cita": "Diebold, F. X. y Mariano, R. S. (1995). Comparing predictive accuracy. Journal of Business & Economic Statistics, 13(3), 253-263.",
+     "doi": null,
+     "uso": "comparar dos pronósticos con la serie de diferencias de pérdida por periodo, con dependencia serial"
+    },
+    {
+     "cita": "Gneiting, T. y Raftery, A. E. (2007). Strictly proper scoring rules, prediction, and estimation. Journal of the American Statistical Association, 102(477), 359-378.",
+     "doi": "10.1198/016214506000001437",
+     "uso": "Log Loss y Brier como reglas de puntuación propias"
+    }
+   ]
+  },
+  "lineas": [
+   {
+    "linea": "carteras:random_forest_clasificador-v1-reg1-reducido",
+    "papel": "vector fuente del modelo de la configuración (carteras de Producto 5)",
+    "nombre": "Random Forest (clasificacion) v1 (reducido) · versión registrada 1 · vector fuente",
+    "estimador": "estimador congelado (versión registrada, sin reajustes)",
+    "evaluaciones": [
+     {
+      "tipo": "seguimiento",
+      "descripcion": "Seguimiento: emisiones cuyo objetivo no estaba cargado en la base local al emitir.",
+      "estado": "estimable",
+      "motivo": null,
+      "muestra": {
+       "sorteos": 42,
+       "periodo": [
+        2121,
+        2192
+       ],
+       "hasta": 2192,
+       "emisiones": 44,
+       "pendientes": 0,
+       "sin_base": 0,
+       "exclusiones": [
+        {
+         "estado": "excluido",
+         "motivo": "vectores_fuente_distintos_en_el_objetivo",
+         "emisiones": 2
+        }
+       ],
+       "estado_del_candidato": null,
+       "excluidos_de_la_muestra_comun": null
+      },
+      "componentes": {
+       "numeros": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 42,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "estimable",
+          "n": 42,
+          "media": 0.03263169067826439,
+          "intervalo": [
+           0.021111048716952706,
+           0.04614971704207779
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. El intervalo numérico no incluye 0: está por encima. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "85024141721302960",
+          "error_estandar_bootstrap": 0.006385799667337864
+         },
+         "diferencia_brier": {
+          "estado": "estimable",
+          "n": 42,
+          "media": 0.008562480345978618,
+          "intervalo": [
+           0.005678277014134242,
+           0.012274814337819252
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. El intervalo numérico no incluye 0: está por encima. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "288199670929053622",
+          "error_estandar_bootstrap": 0.00163702339707395
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 42,
+          "media": -1.5943173322166428,
+          "intervalo": [
+           -2.0,
+           -1.3562220941214047
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. El intervalo numérico no incluye 0: está por debajo. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "209160834810909454",
+          "error_estandar_bootstrap": 0.1678821789737209
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 42,
+          "media": 0.5538954223007561,
+          "intervalo": [
+           0.3158001842055181,
+           0.8225108225108225
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: más aciertos que los esperados por el modelo. El intervalo numérico no incluye 0: está por encima. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "761301821152106910",
+          "error_estandar_bootstrap": 0.1320854780286018
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 10,
+          "observado": 56.0,
+          "esperado": 122.961327953099,
+          "razon_observado_esperado": 0.45542774246354933
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 10,
+          "observado": 49.0,
+          "esperado": 25.73639226336824,
+          "razon_observado_esperado": 1.9039187582536148
+         }
+        },
+        "identidad_remuestreo": null
+       },
+       "superbalota": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 42,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "estimable",
+          "n": 42,
+          "media": 0.2354101619156594,
+          "intervalo": [
+           0.04719886522422199,
+           0.35258729799405897
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. El intervalo numérico no incluye 0: está por encima. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "357658229792448085",
+          "error_estandar_bootstrap": 0.07571603320058534
+         },
+         "diferencia_brier": {
+          "estado": "estimable",
+          "n": 42,
+          "media": 0.051212421922084236,
+          "intervalo": [
+           0.015153061224489839,
+           0.07501700680272111
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. El intervalo numérico no incluye 0: está por encima. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "845974931991435390",
+          "error_estandar_bootstrap": 0.015039466599197087
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 42,
+          "media": -0.26636848965305787,
+          "intervalo": [
+           -0.3641723356009218,
+           -0.12857142857142861
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. El intervalo numérico no incluye 0: está por debajo. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "704254878553222552",
+          "error_estandar_bootstrap": 0.05816599026649955
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 42,
+          "media": 0.09092315841471765,
+          "intervalo": [
+           -0.051933984442425175,
+           0.20952380952380953
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: más aciertos que los esperados por el modelo. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "1143468289065709607",
+          "error_estandar_bootstrap": 0.06433832427024465
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 4,
+          "observado": 9.0,
+          "esperado": 20.18747656542843,
+          "razon_observado_esperado": 0.44582095096584434
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 4,
+          "observado": 11.0,
+          "esperado": 7.181227346581857,
+          "razon_observado_esperado": 1.5317715857075342
+         }
+        },
+        "identidad_remuestreo": null
+       }
+      },
+      "origen": null,
+      "informe": null,
+      "corte_del_informe": null,
+      "clasificacion_componentes": null
+     },
+     {
+      "tipo": "retrospectiva",
+      "descripcion": "Retrospectiva: emisiones cuyo objetivo ya estaba en la base al emitir (reconstrucción con datos hasta el corte).",
+      "estado": "muestra_insuficiente",
+      "motivo": null,
+      "muestra": {
+       "sorteos": 12,
+       "periodo": [
+        2151,
+        2162
+       ],
+       "hasta": 2192,
+       "emisiones": 12,
+       "pendientes": 0,
+       "sin_base": 0,
+       "exclusiones": [],
+       "estado_del_candidato": null,
+       "excluidos_de_la_muestra_comun": null
+      },
+      "componentes": {
+       "numeros": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 12,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": 0.05348902775346531,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         },
+         "diferencia_brier": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": 0.013896673604623851,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": -2.1666666666666665,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": -0.022727272727272707,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 10,
+          "observado": 10.0,
+          "esperado": 36.0,
+          "razon_observado_esperado": 0.2777777777777778
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 10,
+          "observado": 7.0,
+          "esperado": 7.272727272727273,
+          "razon_observado_esperado": 0.9624999999999999
+         }
+        },
+        "identidad_remuestreo": null
+       },
+       "superbalota": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 12,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": 0.0,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media numérica 0 en esta muestra. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         },
+         "diferencia_brier": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": 0.0,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media numérica 0 en esta muestra. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": 0.0,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media numérica 0 en esta muestra. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "muestra_insuficiente",
+          "n": 12,
+          "media": -0.08333333333333333,
+          "intervalo": null,
+          "motivo": "12 sorteos; el intervalo se calcula desde 30",
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. Muestra insuficiente para un intervalo.",
+          "bloque": null,
+          "remuestreos": null,
+          "nivel": null,
+          "semilla": null,
+          "error_estandar_bootstrap": null
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 4,
+          "observado": 3.0,
+          "esperado": 3.0,
+          "razon_observado_esperado": 1.0
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 4,
+          "observado": 2.0,
+          "esperado": 3.0,
+          "razon_observado_esperado": 0.6666666666666666
+         }
+        },
+        "identidad_remuestreo": null
+       }
+      },
+      "origen": null,
+      "informe": null,
+      "corte_del_informe": null,
+      "clasificacion_componentes": null
+     }
+    ]
+   },
+   {
+    "linea": "laboratorio:random_forest_clasificador-v1-reg1-reducido",
+    "papel": "pronósticos del estimador congelado de la versión registrada (laboratorio)",
+    "nombre": "random_forest_clasificador-v1-reg1-reducido",
+    "estimador": "estimador congelado (versión registrada, sin reajustes)",
+    "evaluaciones": [
+     {
+      "tipo": "seguimiento",
+      "descripcion": "Seguimiento: emisiones cuyo objetivo no estaba cargado en la base local al emitir.",
+      "estado": "estimable",
+      "motivo": null,
+      "muestra": {
+       "sorteos": 36,
+       "periodo": [
+        2121,
+        2156
+       ],
+       "hasta": 2192,
+       "emisiones": 36,
+       "pendientes": 0,
+       "sin_base": 0,
+       "exclusiones": [],
+       "estado_del_candidato": null,
+       "excluidos_de_la_muestra_comun": null
+      },
+      "componentes": {
+       "numeros": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 36,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "estimable",
+          "n": 36,
+          "media": -0.015527731548082358,
+          "intervalo": [
+           -0.0245898999141747,
+           -0.004653129508771534
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: menor pérdida que la uniforme. El intervalo numérico no incluye 0: está por debajo. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "363379471789067045",
+          "error_estandar_bootstrap": 0.005146149346692734
+         },
+         "diferencia_brier": {
+          "estado": "estimable",
+          "n": 36,
+          "media": -0.003617616584084957,
+          "intervalo": [
+           -0.005643691284578264,
+           -0.0009161836500938837
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: menor pérdida que la uniforme. El intervalo numérico no incluye 0: está por debajo. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "1030904962042806633",
+          "error_estandar_bootstrap": 0.0011975653026606295
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": -0.2222222222222222,
+          "intervalo": [
+           -0.5833333333333334,
+           0.027777777777777776
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "183873431460334381",
+          "error_estandar_bootstrap": 0.1527740511215461
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.10353535353535352,
+          "intervalo": [
+           -0.09090909090909095,
+           0.38131313131313127
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: más aciertos que los esperados por el modelo. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "122038658893986661",
+          "error_estandar_bootstrap": 0.12601891740634005
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 10,
+          "observado": 82.0,
+          "esperado": 90.0,
+          "razon_observado_esperado": 0.9111111111111111
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 10,
+          "observado": 31.0,
+          "esperado": 27.272727272727273,
+          "razon_observado_esperado": 1.1366666666666667
+         }
+        },
+        "identidad_remuestreo": null
+       },
+       "superbalota": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 36,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.0,
+          "intervalo": [
+           0.0,
+           0.0
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media numérica 0 en esta muestra. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "1131588593489994474",
+          "error_estandar_bootstrap": 0.0
+         },
+         "diferencia_brier": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.0,
+          "intervalo": [
+           0.0,
+           0.0
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media numérica 0 en esta muestra. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "305433406863607093",
+          "error_estandar_bootstrap": 0.0
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.1388888888888889,
+          "intervalo": [
+           0.027777777777777776,
+           0.2777777777777778
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media en esta muestra: más aciertos que los esperados por el modelo. El intervalo numérico no incluye 0: está por encima. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "1018035779254475915",
+          "error_estandar_bootstrap": 0.061959338305524365
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": -0.1111111111111111,
+          "intervalo": [
+           -0.19444444444444445,
+           0.0
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "398414227871338709",
+          "error_estandar_bootstrap": 0.0576212841094832
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 4,
+          "observado": 14.0,
+          "esperado": 9.0,
+          "razon_observado_esperado": 1.5555555555555556
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 4,
+          "observado": 5.0,
+          "esperado": 9.0,
+          "razon_observado_esperado": 0.5555555555555556
+         }
+        },
+        "identidad_remuestreo": null
+       }
+      },
+      "origen": null,
+      "informe": null,
+      "corte_del_informe": null,
+      "clasificacion_componentes": null
+     },
+     {
+      "tipo": "retrospectiva",
+      "descripcion": "Retrospectiva: emisiones cuyo objetivo ya estaba en la base al emitir (reconstrucción con datos hasta el corte).",
+      "estado": "estimable",
+      "motivo": null,
+      "muestra": {
+       "sorteos": 36,
+       "periodo": [
+        2131,
+        2166
+       ],
+       "hasta": 2192,
+       "emisiones": 36,
+       "pendientes": 0,
+       "sin_base": 0,
+       "exclusiones": [],
+       "estado_del_candidato": null,
+       "excluidos_de_la_muestra_comun": null
+      },
+      "componentes": {
+       "numeros": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 36,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.0008166533223887196,
+          "intervalo": [
+           -0.00014281343380881384,
+           0.001639053399129473
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "964151851695218601",
+          "error_estandar_bootstrap": 0.0004762802020820731
+         },
+         "diferencia_brier": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.00017618040873854487,
+          "intervalo": [
+           -2.9363401456425815e-05,
+           0.0003530949025135017
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media en esta muestra: mayor pérdida que la uniforme. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "117058790011763452",
+          "error_estandar_bootstrap": 9.991783722924963e-05
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": -0.25387596899224796,
+          "intervalo": [
+           -0.42054263565891464,
+           -0.059431524547803524
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. El intervalo numérico no incluye 0: está por debajo. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "910510152728139484",
+          "error_estandar_bootstrap": 0.09712803826288931
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": -0.10993657505285429,
+          "intervalo": [
+           -0.4710476861639653,
+           0.14006342494714571
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: menos aciertos que los esperados por el modelo. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "169759593802244216",
+          "error_estandar_bootstrap": 0.15256445407657007
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 10,
+          "observado": 39.0,
+          "esperado": 48.13953488372093,
+          "razon_observado_esperado": 0.8101449275362319
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 10,
+          "observado": 36.0,
+          "esperado": 39.957716701902754,
+          "razon_observado_esperado": 0.9009523809523808
+         }
+        },
+        "identidad_remuestreo": null
+       },
+       "superbalota": {
+        "estado": null,
+        "motivo": null,
+        "sorteos": 36,
+        "metricas": {
+         "diferencia_log_loss": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.0,
+          "intervalo": [
+           0.0,
+           0.0
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+          "lectura": "Media numérica 0 en esta muestra. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "946810488505405946",
+          "error_estandar_bootstrap": 0.0
+         },
+         "diferencia_brier": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.0,
+          "intervalo": [
+           0.0,
+           0.0
+          ],
+          "motivo": null,
+          "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+          "lectura": "Media numérica 0 en esta muestra. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "883570266822187460",
+          "error_estandar_bootstrap": 0.0
+         },
+         "fuertes_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.05555555555555555,
+          "intervalo": [
+           -0.08333333333333333,
+           0.19444444444444445
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+          "lectura": "Media en esta muestra: más aciertos que los esperados por el modelo. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "276875758359578125",
+          "error_estandar_bootstrap": 0.07142517213374822
+         },
+         "debiles_observado_menos_esperado": {
+          "estado": "estimable",
+          "n": 36,
+          "media": 0.027777777777777776,
+          "intervalo": [
+           -0.1111111111111111,
+           0.19444444444444445
+          ],
+          "motivo": null,
+          "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+          "lectura": "Media en esta muestra: más aciertos que los esperados por el modelo. El intervalo numérico incluye 0. No acredita ventaja futura ni relevancia estadística por sí solo.",
+          "bloque": 4,
+          "remuestreos": 2000,
+          "nivel": 0.95,
+          "semilla": "924520726951245998",
+          "error_estandar_bootstrap": 0.07582853555482823
+         }
+        },
+        "extremos": {
+         "fuertes": {
+          "candidatos_por_sorteo": 4,
+          "observado": 11.0,
+          "esperado": 9.0,
+          "razon_observado_esperado": 1.2222222222222223
+         },
+         "debiles": {
+          "candidatos_por_sorteo": 4,
+          "observado": 10.0,
+          "esperado": 9.0,
+          "razon_observado_esperado": 1.1111111111111112
+         }
+        },
+        "identidad_remuestreo": null
+       }
+      },
+      "origen": null,
+      "informe": null,
+      "corte_del_informe": null,
+      "clasificacion_componentes": null
+     }
+    ]
+   }
+  ],
+  "receta": {
+   "tipo": "evaluacion_de_receta",
+   "descripcion": "Evaluación de la receta en su informe del laboratorio: reajustes por bloque antes de cada bloque de objetivos (walk-forward). Mide la receta, no un estimador congelado.",
+   "estado": "muestra_insuficiente",
+   "motivo": null,
+   "muestra": {
+    "sorteos": 20,
+    "periodo": [
+     2166,
+     2185
+    ],
+    "hasta": 2192,
+    "emisiones": null,
+    "pendientes": null,
+    "sin_base": null,
+    "exclusiones": [],
+    "estado_del_candidato": "completo",
+    "excluidos_de_la_muestra_comun": 0
+   },
+   "componentes": {
+    "numeros": {
+     "estado": null,
+     "motivo": null,
+     "sorteos": 20,
+     "metricas": {
+      "diferencia_log_loss": {
+       "estado": "muestra_insuficiente",
+       "n": 20,
+       "media": 0.00033380910264999984,
+       "intervalo": null,
+       "motivo": "20 sorteos; el intervalo se calcula desde 30",
+       "etiqueta": "Δ Log Loss (modelo − uniforme) por sorteo",
+       "lectura": "Media en esta muestra: mayor pérdida que la uniforme. Muestra insuficiente para un intervalo.",
+       "bloque": null,
+       "remuestreos": null,
+       "nivel": null,
+       "semilla": null,
+       "error_estandar_bootstrap": null
+      },
+      "diferencia_brier": {
+       "estado": "muestra_insuficiente",
+       "n": 20,
+       "media": 5.350301274999539e-05,
+       "intervalo": null,
+       "motivo": "20 sorteos; el intervalo se calcula desde 30",
+       "etiqueta": "Δ Brier (modelo − uniforme) por sorteo",
+       "lectura": "Media en esta muestra: mayor pérdida que la uniforme. Muestra insuficiente para un intervalo.",
+       "bloque": null,
+       "remuestreos": null,
+       "nivel": null,
+       "semilla": null,
+       "error_estandar_bootstrap": null
+      },
+      "fuertes_observado_menos_esperado": {
+       "estado": "no_disponible",
+       "n": null,
+       "media": null,
+       "intervalo": null,
+       "motivo": "el informe no guarda las probabilidades por candidato de cada objetivo",
+       "etiqueta": "aciertos observados − esperados en los candidatos más probables",
+       "lectura": null,
+       "bloque": null,
+       "remuestreos": null,
+       "nivel": null,
+       "semilla": null,
+       "error_estandar_bootstrap": null
+      },
+      "debiles_observado_menos_esperado": {
+       "estado": "no_disponible",
+       "n": null,
+       "media": null,
+       "intervalo": null,
+       "motivo": "el informe no guarda las probabilidades por candidato de cada objetivo",
+       "etiqueta": "aciertos observados − esperados en los candidatos menos probables",
+       "lectura": null,
+       "bloque": null,
+       "remuestreos": null,
+       "nivel": null,
+       "semilla": null,
+       "error_estandar_bootstrap": null
+      }
+     },
+     "extremos": null,
+     "identidad_remuestreo": {
+      "version_metodo": "fase4-fiabilidad-1",
+      "componente_semilla": "numeros",
+      "motivo": "El componente y su token de semilla no cambian."
+     }
+    },
+    "superbalota": {
+     "estado": "no_disponible",
+     "motivo": "el informe solo guarda agregados de la superbalota, no la serie por objetivo",
+     "sorteos": null,
+     "metricas": null,
+     "extremos": null,
+     "identidad_remuestreo": null
+    }
+   },
+   "origen": "informe de procedencia de la versión registrada",
+   "informe": "b10f1c2839430198ca906623ac771a6529f421e3056797c71c063090da5b732f",
+   "corte_del_informe": 2185,
+   "clasificacion_componentes": {
+    "version": "fase4-componentes-receta-2",
+    "contrato_reglas": "multiconjunto_de_pares_numero_color"
+   }
+  }
+ }
+}

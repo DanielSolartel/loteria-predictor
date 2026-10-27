@@ -1,7 +1,8 @@
-/** Rutas de la SPA (9.1): solo consultas de /api/v1. */
+/** Rutas de la SPA (9.1; la 9.3 anade la fiabilidad): solo consultas de /api/v1. */
 import { Link, Route, Routes } from "react-router-dom";
 import { Marco } from "./componentes/Marco";
 import { Estadisticas, Metrica } from "./pantallas/Estadisticas";
+import { Fiabilidad } from "./pantallas/Fiabilidad";
 import { Ficha } from "./pantallas/Ficha";
 import { Inicio } from "./pantallas/Inicio";
 import { Prediccion } from "./pantallas/Prediccion";
@@ -31,6 +32,7 @@ export function App() {
         <Route path="/juegos/:codigo/estadisticas" element={<Estadisticas />} />
         <Route path="/juegos/:codigo/estadisticas/:metrica" element={<Metrica />} />
         <Route path="/juegos/:codigo/prediccion" element={<Prediccion />} />
+        <Route path="/juegos/:codigo/fiabilidad" element={<Fiabilidad />} />
         <Route path="/juegos/:codigo/simulaciones" element={<Simulaciones />} />
         <Route path="/simulaciones/:identificador" element={<DetalleSimulacion />} />
         <Route path="/servicio" element={<Servicio />} />
