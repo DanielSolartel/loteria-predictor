@@ -22,7 +22,7 @@
    "objetivo": 2181
   },
   "prediccion": {
-   "clave": "7e711ee4c12f65847a967cfecc2f2dbcca6608a9210a456d372f0fcc8dcab623",
+   "clave": "8c2114aa6721a651efb14f72ce4e4d194e43a503e2136296a481438b735ac73f",
    "integridad": "correcta",
    "linea": "uniforme-v1-n3-libre-s42-reducido",
    "objetivo": 2181,
@@ -88,742 +88,833 @@
    ],
    "rankings": {
     "aviso": "«Fuerte» y «débil» describen la clasificación de este modelo para este objetivo. No son números garantizados, no indican causas y no acreditan ninguna ventaja frente al azar.",
+    "objetivo": 2181,
     "corte": 2180,
     "numeros": {
-     "debiles": [
-      {
-       "candidato": 9,
-       "diferencia": -0.0,
-       "posicion": 43,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 8,
-       "diferencia": -0.0,
-       "posicion": 42,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 7,
-       "diferencia": -0.0,
-       "posicion": 41,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 6,
-       "diferencia": -0.0,
-       "posicion": 40,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 5,
-       "diferencia": -0.0,
-       "posicion": 39,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 43,
-       "diferencia": -0.0,
-       "posicion": 38,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 42,
-       "diferencia": -0.0,
-       "posicion": 37,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 41,
-       "diferencia": -0.0,
-       "posicion": 36,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 40,
-       "diferencia": -0.0,
-       "posicion": 35,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 4,
-       "diferencia": -0.0,
-       "posicion": 34,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      }
-     ],
-     "denominador": "43 números; uniforme = 5/43",
-     "empate_en_el_limite": {
-      "debiles": true,
-      "fuertes": true
-     },
-     "fuertes": [
-      {
-       "candidato": 1,
-       "diferencia": -0.0,
-       "posicion": 1,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 10,
-       "diferencia": -0.0,
-       "posicion": 2,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 11,
-       "diferencia": -0.0,
-       "posicion": 3,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 12,
-       "diferencia": -0.0,
-       "posicion": 4,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 13,
-       "diferencia": -0.0,
-       "posicion": 5,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 14,
-       "diferencia": -0.0,
-       "posicion": 6,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 15,
-       "diferencia": -0.0,
-       "posicion": 7,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 16,
-       "diferencia": -0.0,
-       "posicion": 8,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 17,
-       "diferencia": -0.0,
-       "posicion": 9,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 18,
-       "diferencia": -0.0,
-       "posicion": 10,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      }
-     ],
-     "nota_empates": "Hay candidatos con la misma probabilidad emitida en el límite del extremo: entre ellos el orden sigue el del candidato (desempate fijo) y no expresa ninguna diferencia del modelo.",
-     "por_extremo": 10,
-     "suma": 4.999999999981,
      "todos": [
       {
-       "candidato": 1,
-       "diferencia": -0.0,
        "posicion": 1,
+       "candidato": 1,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 10,
-       "diferencia": -0.0,
        "posicion": 2,
+       "candidato": 10,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 11,
-       "diferencia": -0.0,
        "posicion": 3,
+       "candidato": 11,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 12,
-       "diferencia": -0.0,
        "posicion": 4,
+       "candidato": 12,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 13,
-       "diferencia": -0.0,
        "posicion": 5,
+       "candidato": 13,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 14,
-       "diferencia": -0.0,
        "posicion": 6,
+       "candidato": 14,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 15,
-       "diferencia": -0.0,
        "posicion": 7,
+       "candidato": 15,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 16,
-       "diferencia": -0.0,
        "posicion": 8,
+       "candidato": 16,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 17,
-       "diferencia": -0.0,
        "posicion": 9,
+       "candidato": 17,
        "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 18,
+       "uniforme": 0.116279069767,
        "diferencia": -0.0,
-       "posicion": 10,
-       "probabilidad": 0.116279069767,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
+       "posicion": 10,
+       "candidato": 18,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 11,
        "candidato": 19,
-       "diferencia": -0.0,
-       "posicion": 11,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 2,
-       "diferencia": -0.0,
        "posicion": 12,
+       "candidato": 2,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
+       "posicion": 13,
        "candidato": 20,
-       "diferencia": -0.0,
-       "posicion": 13,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
+       "posicion": 14,
        "candidato": 21,
-       "diferencia": -0.0,
-       "posicion": 14,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
+       "posicion": 15,
        "candidato": 22,
-       "diferencia": -0.0,
-       "posicion": 15,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
+       "posicion": 16,
        "candidato": 23,
-       "diferencia": -0.0,
-       "posicion": 16,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 24,
-       "diferencia": -0.0,
        "posicion": 17,
+       "candidato": 24,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 25,
-       "diferencia": -0.0,
        "posicion": 18,
+       "candidato": 25,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 26,
-       "diferencia": -0.0,
        "posicion": 19,
+       "candidato": 26,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 27,
-       "diferencia": -0.0,
        "posicion": 20,
+       "candidato": 27,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 28,
-       "diferencia": -0.0,
        "posicion": 21,
+       "candidato": 28,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 29,
-       "diferencia": -0.0,
        "posicion": 22,
+       "candidato": 29,
        "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
        "razon": 0.999999999996,
-       "uniforme": 0.116279069767
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 3,
-       "diferencia": -0.0,
        "posicion": 23,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 30,
-       "diferencia": -0.0,
-       "posicion": 24,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 31,
-       "diferencia": -0.0,
-       "posicion": 25,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 32,
-       "diferencia": -0.0,
-       "posicion": 26,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 33,
-       "diferencia": -0.0,
-       "posicion": 27,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 34,
-       "diferencia": -0.0,
-       "posicion": 28,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 35,
-       "diferencia": -0.0,
-       "posicion": 29,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 36,
-       "diferencia": -0.0,
-       "posicion": 30,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 37,
-       "diferencia": -0.0,
-       "posicion": 31,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 38,
-       "diferencia": -0.0,
-       "posicion": 32,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 39,
-       "diferencia": -0.0,
-       "posicion": 33,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 4,
-       "diferencia": -0.0,
-       "posicion": 34,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 40,
-       "diferencia": -0.0,
-       "posicion": 35,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 41,
-       "diferencia": -0.0,
-       "posicion": 36,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 42,
-       "diferencia": -0.0,
-       "posicion": 37,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 43,
-       "diferencia": -0.0,
-       "posicion": 38,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 5,
-       "diferencia": -0.0,
-       "posicion": 39,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 6,
-       "diferencia": -0.0,
-       "posicion": 40,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 7,
-       "diferencia": -0.0,
-       "posicion": 41,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 8,
-       "diferencia": -0.0,
-       "posicion": 42,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      },
-      {
-       "candidato": 9,
-       "diferencia": -0.0,
-       "posicion": 43,
-       "probabilidad": 0.116279069767,
-       "razon": 0.999999999996,
-       "uniforme": 0.116279069767
-      }
-     ],
-     "unidad": "probabilidad marginal de aparición (las marginales suman 5)",
-     "universo": 43
-    },
-    "objetivo": 2181,
-    "superbalota": {
-     "debiles": [
-      {
-       "candidato": 11,
-       "diferencia": -0.04525862069,
-       "posicion": 16,
-       "probabilidad": 0.01724137931,
-       "razon": 0.27586206896,
-       "uniforme": 0.0625
-      },
-      {
-       "candidato": 8,
-       "diferencia": -0.019396551724,
-       "posicion": 15,
-       "probabilidad": 0.043103448276,
-       "razon": 0.689655172416,
-       "uniforme": 0.0625
-      },
-      {
-       "candidato": 4,
-       "diferencia": -0.019396551724,
-       "posicion": 14,
-       "probabilidad": 0.043103448276,
-       "razon": 0.689655172416,
-       "uniforme": 0.0625
-      },
-      {
        "candidato": 3,
-       "diferencia": -0.019396551724,
-       "posicion": 13,
-       "probabilidad": 0.043103448276,
-       "razon": 0.689655172416,
-       "uniforme": 0.0625
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 24,
+       "candidato": 30,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 25,
+       "candidato": 31,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 26,
+       "candidato": 32,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 27,
+       "candidato": 33,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 28,
+       "candidato": 34,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 29,
+       "candidato": 35,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 30,
+       "candidato": 36,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 31,
+       "candidato": 37,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 32,
+       "candidato": 38,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 33,
+       "candidato": 39,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 34,
+       "candidato": 4,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 35,
+       "candidato": 40,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 36,
+       "candidato": 41,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 37,
+       "candidato": 42,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 38,
+       "candidato": 43,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 39,
+       "candidato": 5,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 40,
+       "candidato": 6,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 41,
+       "candidato": 7,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 42,
+       "candidato": 8,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 43,
+       "candidato": 9,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
       }
      ],
-     "denominador": "16 superbalotas; uniforme = 1/16",
-     "empate_en_el_limite": {
-      "debiles": false,
-      "fuertes": false
-     },
-     "estrategia": "frecuencia_con_suavizado_de_laplace",
      "fuertes": [
       {
-       "candidato": 6,
-       "diferencia": 0.049568965517,
        "posicion": 1,
-       "probabilidad": 0.112068965517,
-       "razon": 1.793103448272,
-       "uniforme": 0.0625
+       "candidato": 1,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 15,
-       "diferencia": 0.032327586207,
        "posicion": 2,
-       "probabilidad": 0.094827586207,
-       "razon": 1.517241379312,
-       "uniforme": 0.0625
+       "candidato": 10,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 12,
-       "diferencia": 0.023706896552,
        "posicion": 3,
-       "probabilidad": 0.086206896552,
-       "razon": 1.379310344832,
-       "uniforme": 0.0625
+       "candidato": 11,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 14,
-       "diferencia": 0.015086206897,
        "posicion": 4,
-       "probabilidad": 0.077586206897,
-       "razon": 1.241379310352,
-       "uniforme": 0.0625
+       "candidato": 12,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 5,
+       "candidato": 13,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 6,
+       "candidato": 14,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 7,
+       "candidato": 15,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 8,
+       "candidato": 16,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 9,
+       "candidato": 17,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 10,
+       "candidato": 18,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
       }
      ],
-     "nota": "objetivo separado; el modelo de los numeros no aprende la superbalota",
-     "nota_empates": null,
-     "por_extremo": 4,
-     "suma": 0.999999999999,
+     "debiles": [
+      {
+       "posicion": 43,
+       "candidato": 9,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 42,
+       "candidato": 8,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 41,
+       "candidato": 7,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 40,
+       "candidato": 6,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 39,
+       "candidato": 5,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 38,
+       "candidato": 43,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 37,
+       "candidato": 42,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 36,
+       "candidato": 41,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 35,
+       "candidato": 40,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 34,
+       "candidato": 4,
+       "probabilidad": 0.116279069767,
+       "uniforme": 0.116279069767,
+       "diferencia": -0.0,
+       "razon": 0.999999999996,
+       "multiplicidad_esperada": null
+      }
+     ],
+     "universo": 43,
+     "por_extremo": 10,
+     "empate_en_el_limite": {
+      "fuertes": true,
+      "debiles": true
+     },
+     "nota_empates": "Hay candidatos con la misma probabilidad emitida en el límite del extremo: entre ellos el orden sigue el del candidato (desempate fijo) y no expresa ninguna diferencia del modelo.",
+     "suma": 4.999999999981,
+     "unidad": "probabilidad marginal de aparición (las marginales suman 5)",
+     "denominador": "43 números; uniforme = 5/43",
+     "nota": null,
+     "estrategia": null
+    },
+    "superbalota": {
      "todos": [
       {
-       "candidato": 6,
-       "diferencia": 0.049568965517,
        "posicion": 1,
+       "candidato": 6,
        "probabilidad": 0.112068965517,
+       "uniforme": 0.0625,
+       "diferencia": 0.049568965517,
        "razon": 1.793103448272,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 15,
-       "diferencia": 0.032327586207,
        "posicion": 2,
+       "candidato": 15,
        "probabilidad": 0.094827586207,
+       "uniforme": 0.0625,
+       "diferencia": 0.032327586207,
        "razon": 1.517241379312,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 12,
-       "diferencia": 0.023706896552,
        "posicion": 3,
+       "candidato": 12,
        "probabilidad": 0.086206896552,
+       "uniforme": 0.0625,
+       "diferencia": 0.023706896552,
        "razon": 1.379310344832,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 14,
-       "diferencia": 0.015086206897,
        "posicion": 4,
+       "candidato": 14,
        "probabilidad": 0.077586206897,
+       "uniforme": 0.0625,
+       "diferencia": 0.015086206897,
        "razon": 1.241379310352,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 1,
-       "diferencia": 0.006465517241,
        "posicion": 5,
+       "candidato": 1,
        "probabilidad": 0.068965517241,
-       "razon": 1.103448275856,
-       "uniforme": 0.0625
-      },
-      {
-       "candidato": 13,
+       "uniforme": 0.0625,
        "diferencia": 0.006465517241,
-       "posicion": 6,
-       "probabilidad": 0.068965517241,
        "razon": 1.103448275856,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 10,
-       "diferencia": -0.002155172414,
+       "posicion": 6,
+       "candidato": 13,
+       "probabilidad": 0.068965517241,
+       "uniforme": 0.0625,
+       "diferencia": 0.006465517241,
+       "razon": 1.103448275856,
+       "multiplicidad_esperada": null
+      },
+      {
        "posicion": 7,
+       "candidato": 10,
        "probabilidad": 0.060344827586,
+       "uniforme": 0.0625,
+       "diferencia": -0.002155172414,
        "razon": 0.965517241376,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 16,
-       "diferencia": -0.002155172414,
        "posicion": 8,
+       "candidato": 16,
        "probabilidad": 0.060344827586,
+       "uniforme": 0.0625,
+       "diferencia": -0.002155172414,
        "razon": 0.965517241376,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 5,
-       "diferencia": -0.002155172414,
        "posicion": 9,
+       "candidato": 5,
        "probabilidad": 0.060344827586,
-       "razon": 0.965517241376,
-       "uniforme": 0.0625
-      },
-      {
-       "candidato": 7,
+       "uniforme": 0.0625,
        "diferencia": -0.002155172414,
-       "posicion": 10,
-       "probabilidad": 0.060344827586,
        "razon": 0.965517241376,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 2,
-       "diferencia": -0.010775862069,
+       "posicion": 10,
+       "candidato": 7,
+       "probabilidad": 0.060344827586,
+       "uniforme": 0.0625,
+       "diferencia": -0.002155172414,
+       "razon": 0.965517241376,
+       "multiplicidad_esperada": null
+      },
+      {
        "posicion": 11,
+       "candidato": 2,
        "probabilidad": 0.051724137931,
-       "razon": 0.827586206896,
-       "uniforme": 0.0625
-      },
-      {
-       "candidato": 9,
+       "uniforme": 0.0625,
        "diferencia": -0.010775862069,
-       "posicion": 12,
-       "probabilidad": 0.051724137931,
        "razon": 0.827586206896,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 3,
-       "diferencia": -0.019396551724,
+       "posicion": 12,
+       "candidato": 9,
+       "probabilidad": 0.051724137931,
+       "uniforme": 0.0625,
+       "diferencia": -0.010775862069,
+       "razon": 0.827586206896,
+       "multiplicidad_esperada": null
+      },
+      {
        "posicion": 13,
+       "candidato": 3,
        "probabilidad": 0.043103448276,
+       "uniforme": 0.0625,
+       "diferencia": -0.019396551724,
        "razon": 0.689655172416,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 4,
-       "diferencia": -0.019396551724,
        "posicion": 14,
+       "candidato": 4,
        "probabilidad": 0.043103448276,
-       "razon": 0.689655172416,
-       "uniforme": 0.0625
-      },
-      {
-       "candidato": 8,
+       "uniforme": 0.0625,
        "diferencia": -0.019396551724,
-       "posicion": 15,
-       "probabilidad": 0.043103448276,
        "razon": 0.689655172416,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       },
       {
-       "candidato": 11,
-       "diferencia": -0.04525862069,
+       "posicion": 15,
+       "candidato": 8,
+       "probabilidad": 0.043103448276,
+       "uniforme": 0.0625,
+       "diferencia": -0.019396551724,
+       "razon": 0.689655172416,
+       "multiplicidad_esperada": null
+      },
+      {
        "posicion": 16,
+       "candidato": 11,
        "probabilidad": 0.01724137931,
+       "uniforme": 0.0625,
+       "diferencia": -0.04525862069,
        "razon": 0.27586206896,
-       "uniforme": 0.0625
+       "multiplicidad_esperada": null
       }
      ],
+     "fuertes": [
+      {
+       "posicion": 1,
+       "candidato": 6,
+       "probabilidad": 0.112068965517,
+       "uniforme": 0.0625,
+       "diferencia": 0.049568965517,
+       "razon": 1.793103448272,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 2,
+       "candidato": 15,
+       "probabilidad": 0.094827586207,
+       "uniforme": 0.0625,
+       "diferencia": 0.032327586207,
+       "razon": 1.517241379312,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 3,
+       "candidato": 12,
+       "probabilidad": 0.086206896552,
+       "uniforme": 0.0625,
+       "diferencia": 0.023706896552,
+       "razon": 1.379310344832,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 4,
+       "candidato": 14,
+       "probabilidad": 0.077586206897,
+       "uniforme": 0.0625,
+       "diferencia": 0.015086206897,
+       "razon": 1.241379310352,
+       "multiplicidad_esperada": null
+      }
+     ],
+     "debiles": [
+      {
+       "posicion": 16,
+       "candidato": 11,
+       "probabilidad": 0.01724137931,
+       "uniforme": 0.0625,
+       "diferencia": -0.04525862069,
+       "razon": 0.27586206896,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 15,
+       "candidato": 8,
+       "probabilidad": 0.043103448276,
+       "uniforme": 0.0625,
+       "diferencia": -0.019396551724,
+       "razon": 0.689655172416,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 14,
+       "candidato": 4,
+       "probabilidad": 0.043103448276,
+       "uniforme": 0.0625,
+       "diferencia": -0.019396551724,
+       "razon": 0.689655172416,
+       "multiplicidad_esperada": null
+      },
+      {
+       "posicion": 13,
+       "candidato": 3,
+       "probabilidad": 0.043103448276,
+       "uniforme": 0.0625,
+       "diferencia": -0.019396551724,
+       "razon": 0.689655172416,
+       "multiplicidad_esperada": null
+      }
+     ],
+     "universo": 16,
+     "por_extremo": 4,
+     "empate_en_el_limite": {
+      "fuertes": false,
+      "debiles": false
+     },
+     "nota_empates": null,
+     "suma": 0.999999999999,
      "unidad": "probabilidad de cada superbalota (suman 1)",
-     "universo": 16
-    }
+     "denominador": "16 superbalotas; uniforme = 1/16",
+     "nota": "objetivo separado; el modelo de los numeros no aprende la superbalota",
+     "estrategia": "frecuencia_con_suavizado_de_laplace"
+    },
+    "pares": null,
+    "colores": null
    },
    "observado": {
     "historico_hasta_el_corte": "coincide",
@@ -838,11 +929,22 @@
     "base_avanzo": false,
     "nuevos_desde_el_corte": 0
    },
-   "explicacion_disponible": true
+   "explicacion_disponible": false,
+   "linea_de_modelo": {
+    "id": "uniforme-v1-reducido",
+    "modelo": "uniforme",
+    "version": "1",
+    "perfil": "reducido",
+    "nombre": "Referencia uniforme v1 (reducido) · vector fuente"
+   },
+   "registrado": null,
+   "explicacion": null,
+   "explicaciones_ilegibles": [],
+   "reproduccion": null
   },
   "historial": [
    {
-    "clave": "7e711ee4c12f65847a967cfecc2f2dbcca6608a9210a456d372f0fcc8dcab623",
+    "clave": "8c2114aa6721a651efb14f72ce4e4d194e43a503e2136296a481438b735ac73f",
     "linea": "uniforme-v1-n3-libre-s42-reducido",
     "objetivo": 2181,
     "corte": 2180,

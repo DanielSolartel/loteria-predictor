@@ -1243,6 +1243,117 @@
         }
       }
     },
+    "/api/v1/juegos/{codigo}/fiabilidad": {
+      "get": {
+        "tags": [
+          "predicciones"
+        ],
+        "summary": "Fiabilidad observada: seguimiento, retrospectiva y evaluación de la receta, por separado",
+        "operationId": "fiabilidad_api_v1_juegos__codigo__fiabilidad_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO",
+              "examples": [
+                "BALOTO"
+              ],
+              "title": "Codigo"
+            },
+            "description": "Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO"
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Solo objetivos hasta este sorteo; no acredita que el informe o la emisión existieran al generar una cartera",
+              "title": "Hasta"
+            },
+            "description": "Solo objetivos hasta este sorteo; no acredita que el informe o la emisión existieran al generar una cartera"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fiabilidad"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Clave ausente o no válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de uso excedido (cabecera Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API sin claves configuradas o base no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Juego o recurso inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parámetro no válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/juegos/{codigo}/simulaciones": {
       "get": {
         "tags": [
@@ -1450,6 +1561,53 @@
   },
   "components": {
     "schemas": {
+      "BaseDeFiabilidad": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "title": "Estado",
+            "description": "consultada o no_disponible"
+          },
+          "ultimo_sorteo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ultimo Sorteo"
+          },
+          "fecha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha"
+          },
+          "sorteos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sorteos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "BaseDeFiabilidad"
+      },
       "BaseDelJuego": {
         "properties": {
           "estado": {
@@ -1507,6 +1665,51 @@
         ],
         "title": "BaseDelJuego"
       },
+      "CarteraDeLaExplicacion": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "linea": {
+            "type": "string",
+            "title": "Linea"
+          },
+          "objetivo": {
+            "type": "integer",
+            "title": "Objetivo"
+          },
+          "corte": {
+            "type": "integer",
+            "title": "Corte",
+            "description": "Corte de entrada de la cartera"
+          },
+          "sha256_historico": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256 Historico"
+          },
+          "sha256_fuente": {
+            "type": "string",
+            "title": "Sha256 Fuente"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "linea",
+          "objetivo",
+          "corte",
+          "sha256_fuente"
+        ],
+        "title": "CarteraDeLaExplicacion"
+      },
       "ColumnaDeMetrica": {
         "properties": {
           "clave": {
@@ -1536,6 +1739,84 @@
           "unidad"
         ],
         "title": "ColumnaDeMetrica"
+      },
+      "ComponenteDeFiabilidad": {
+        "properties": {
+          "estado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado",
+            "description": "Solo si el componente no tiene cifras (p. ej. no_disponible)"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "sorteos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sorteos"
+          },
+          "metricas": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MetricaDeFiabilidad"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metricas"
+          },
+          "extremos": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtremosDeFiabilidad"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "identidad_remuestreo": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identidad Remuestreo"
+          }
+        },
+        "type": "object",
+        "title": "ComponenteDeFiabilidad"
       },
       "ContenidoDeMetrica": {
         "properties": {
@@ -1647,6 +1928,58 @@
           "selector"
         ],
         "title": "ContenidoDeMetrica"
+      },
+      "EntrenamientoDelMetodo": {
+        "properties": {
+          "estimador": {
+            "type": "string",
+            "title": "Estimador"
+          },
+          "corte_de_entrenamiento": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte De Entrenamiento",
+            "description": "Solo versiones registradas: corte del ajuste congelado"
+          },
+          "periodo": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Periodo"
+          },
+          "parametros_ajustados": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parametros Ajustados"
+          },
+          "detalle": {
+            "title": "Detalle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estimador"
+        ],
+        "title": "EntrenamientoDelMetodo"
       },
       "ErrorDetalle": {
         "properties": {
@@ -1798,6 +2131,522 @@
         ],
         "title": "EstadoDelServicio"
       },
+      "EvaluacionDeFiabilidad": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "seguimiento",
+              "retrospectiva",
+              "evaluacion_de_receta"
+            ],
+            "title": "Tipo"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado",
+            "description": "estimable, muestra_insuficiente, sin_resultados, sin_base, excluidas, sin_datos, no_disponible o fallo_de_calculo"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "muestra": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MuestraDeFiabilidad"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "componentes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComponenteDeFiabilidad"
+            },
+            "type": "object",
+            "title": "Componentes"
+          },
+          "origen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origen",
+            "description": "Solo la receta: de qué informe del laboratorio sale"
+          },
+          "informe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Informe"
+          },
+          "corte_del_informe": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte Del Informe"
+          },
+          "clasificacion_componentes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clasificacion Componentes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "estado"
+        ],
+        "title": "EvaluacionDeFiabilidad"
+      },
+      "ExclusionDeFiabilidad": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "motivo": {
+            "type": "string",
+            "title": "Motivo"
+          },
+          "emisiones": {
+            "type": "integer",
+            "title": "Emisiones"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado",
+          "motivo",
+          "emisiones"
+        ],
+        "title": "ExclusionDeFiabilidad"
+      },
+      "Explicacion": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "esquema": {
+            "type": "string",
+            "title": "Esquema"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "cartera": {
+            "$ref": "#/components/schemas/CarteraDeLaExplicacion"
+          },
+          "metodo": {
+            "$ref": "#/components/schemas/MetodoDeLaExplicacion"
+          },
+          "variables": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VariablesDeCandidatos"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "importancias": {
+            "$ref": "#/components/schemas/Importancias"
+          },
+          "avisos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Avisos"
+          },
+          "generacion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeneracionDeLaExplicacion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "esquema",
+          "version",
+          "cartera",
+          "metodo",
+          "variables",
+          "importancias",
+          "avisos",
+          "generacion"
+        ],
+        "title": "Explicacion",
+        "description": "Explicación guardada (Fase 4) de la cartera, verificada por su almacén. La API no la genera."
+      },
+      "ExplicacionIlegible": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "motivo": {
+            "type": "string",
+            "title": "Motivo",
+            "description": "Código fijo del almacén (p. ej. contenido_alterado)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "motivo"
+        ],
+        "title": "ExplicacionIlegible"
+      },
+      "ExtremoObservado": {
+        "properties": {
+          "candidatos_por_sorteo": {
+            "type": "integer",
+            "title": "Candidatos Por Sorteo"
+          },
+          "observado": {
+            "type": "number",
+            "title": "Observado"
+          },
+          "esperado": {
+            "type": "number",
+            "title": "Esperado"
+          },
+          "razon_observado_esperado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Razon Observado Esperado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidatos_por_sorteo",
+          "observado",
+          "esperado",
+          "razon_observado_esperado"
+        ],
+        "title": "ExtremoObservado"
+      },
+      "ExtremosDeFiabilidad": {
+        "properties": {
+          "fuertes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtremoObservado"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "debiles": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtremoObservado"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ExtremosDeFiabilidad"
+      },
+      "Fiabilidad": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "title": "Estado De Uso"
+          },
+          "aviso": {
+            "type": "string",
+            "title": "Aviso"
+          },
+          "contexto": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Contexto"
+          },
+          "configuracion": {
+            "type": "string",
+            "title": "Configuracion",
+            "description": "Estado de la configuración del juego (p. ej. vigente o sin_configuracion)"
+          },
+          "registrado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionRegistradaDeLaConfiguracion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base": {
+            "$ref": "#/components/schemas/BaseDeFiabilidad"
+          },
+          "hasta": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hasta",
+            "description": "Solo objetivos hasta este sorteo; null = todos los resultados observados. No acredita disponibilidad temporal al generar una cartera."
+          },
+          "metodo": {
+            "$ref": "#/components/schemas/MetodoDeFiabilidad"
+          },
+          "lineas": {
+            "items": {
+              "$ref": "#/components/schemas/LineaDeFiabilidad"
+            },
+            "type": "array",
+            "title": "Lineas"
+          },
+          "receta": {
+            "$ref": "#/components/schemas/EvaluacionDeFiabilidad"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "nombre",
+          "estado_de_uso",
+          "aviso",
+          "contexto",
+          "configuracion",
+          "registrado",
+          "base",
+          "hasta",
+          "metodo",
+          "lineas",
+          "receta"
+        ],
+        "title": "Fiabilidad",
+        "description": "Rendimiento observado e incertidumbre de la Fase 4 (lectura de emisiones congeladas y de\ninformes del laboratorio). No es una puntuación de confianza ni una probabilidad de premio."
+      },
+      "FilaDeRanking": {
+        "properties": {
+          "posicion": {
+            "type": "integer",
+            "title": "Posicion"
+          },
+          "candidato": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Candidato",
+            "description": "Número, color o par [número, color] (ColorLoto)"
+          },
+          "probabilidad": {
+            "type": "number",
+            "title": "Probabilidad",
+            "description": "Probabilidad emitida por el modelo (unidad en la sección)"
+          },
+          "uniforme": {
+            "type": "number",
+            "title": "Uniforme",
+            "description": "Referencia uniforme del mismo universo y unidad"
+          },
+          "diferencia": {
+            "type": "number",
+            "title": "Diferencia",
+            "description": "probabilidad − uniforme"
+          },
+          "razon": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Razon",
+            "description": "probabilidad / uniforme"
+          },
+          "multiplicidad_esperada": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Multiplicidad Esperada",
+            "description": "Solo ColorLoto: balotas × probabilidad por balota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "posicion",
+          "candidato",
+          "probabilidad",
+          "uniforme",
+          "diferencia",
+          "razon"
+        ],
+        "title": "FilaDeRanking"
+      },
+      "FuenteDelMetodo": {
+        "properties": {
+          "cita": {
+            "type": "string",
+            "title": "Cita"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "uso": {
+            "type": "string",
+            "title": "Uso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cita",
+          "doi",
+          "uso"
+        ],
+        "title": "FuenteDelMetodo"
+      },
+      "GeneracionDeLaExplicacion": {
+        "properties": {
+          "generado_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generado En"
+          },
+          "origen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origen"
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "title": "GeneracionDeLaExplicacion"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1810,6 +2659,148 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ImportanciaDeVariable": {
+        "properties": {
+          "variable": {
+            "type": "string",
+            "title": "Variable"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          },
+          "columnas": {
+            "type": "integer",
+            "title": "Columnas"
+          },
+          "es_identidad": {
+            "type": "boolean",
+            "title": "Es Identidad"
+          },
+          "resumen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumenDeImportancia"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "variable",
+          "valor",
+          "columnas",
+          "es_identidad"
+        ],
+        "title": "ImportanciaDeVariable"
+      },
+      "Importancias": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "disponible",
+              "no_disponible"
+            ],
+            "title": "Estado"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "estimador": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimador"
+          },
+          "calibrado": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calibrado"
+          },
+          "valores": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ImportanciaDeVariable"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valores"
+          },
+          "aviso": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aviso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "Importancias"
       },
       "IndicadorDeMetrica": {
         "properties": {
@@ -2070,6 +3061,410 @@
         ],
         "title": "Juegos"
       },
+      "LineaDeFiabilidad": {
+        "properties": {
+          "linea": {
+            "type": "string",
+            "title": "Linea",
+            "description": "procedencia:línea de Producto 6"
+          },
+          "papel": {
+            "type": "string",
+            "title": "Papel"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "estimador": {
+            "type": "string",
+            "title": "Estimador"
+          },
+          "evaluaciones": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluacionDeFiabilidad"
+            },
+            "type": "array",
+            "title": "Evaluaciones",
+            "description": "Seguimiento y retrospectiva, por separado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "linea",
+          "papel",
+          "nombre",
+          "estimador",
+          "evaluaciones"
+        ],
+        "title": "LineaDeFiabilidad"
+      },
+      "LineaDeModelo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "modelo": {
+            "type": "string",
+            "title": "Modelo"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "perfil": {
+            "type": "string",
+            "title": "Perfil"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "modelo",
+          "version",
+          "perfil",
+          "nombre"
+        ],
+        "title": "LineaDeModelo"
+      },
+      "MetodoDeFiabilidad": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "unidad": {
+            "type": "string",
+            "title": "Unidad"
+          },
+          "estimacion": {
+            "type": "string",
+            "title": "Estimacion"
+          },
+          "incertidumbre": {
+            "type": "string",
+            "title": "Incertidumbre"
+          },
+          "minimo_para_intervalo": {
+            "type": "integer",
+            "title": "Minimo Para Intervalo"
+          },
+          "supuestos": {
+            "type": "string",
+            "title": "Supuestos"
+          },
+          "limitaciones": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitaciones"
+          },
+          "extremos": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Extremos",
+            "description": "Candidatos por sorteo en cada extremo, por componente"
+          },
+          "presentacion": {
+            "$ref": "#/components/schemas/PresentacionDelMetodo"
+          },
+          "fuentes": {
+            "items": {
+              "$ref": "#/components/schemas/FuenteDelMetodo"
+            },
+            "type": "array",
+            "title": "Fuentes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "unidad",
+          "estimacion",
+          "incertidumbre",
+          "minimo_para_intervalo",
+          "supuestos",
+          "limitaciones",
+          "extremos",
+          "presentacion",
+          "fuentes"
+        ],
+        "title": "MetodoDeFiabilidad"
+      },
+      "MetodoDeLaExplicacion": {
+        "properties": {
+          "modelo": {
+            "type": "string",
+            "title": "Modelo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "version_de_la_receta": {
+            "type": "string",
+            "title": "Version De La Receta"
+          },
+          "perfil": {
+            "type": "string",
+            "title": "Perfil"
+          },
+          "salida": {
+            "type": "string",
+            "title": "Salida"
+          },
+          "objetivo": {
+            "type": "integer",
+            "title": "Objetivo"
+          },
+          "corte": {
+            "type": "integer",
+            "title": "Corte",
+            "description": "Corte de entrada del vector fuente (calculado hasta este sorteo)"
+          },
+          "familia": {
+            "type": "string",
+            "title": "Familia"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          },
+          "variables": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VariablesDelMetodo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transformacion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TransformacionDelMetodo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parametros": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parametros"
+          },
+          "pesos": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PesoDeComponente"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pesos"
+          },
+          "entrenamiento": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntrenamientoDelMetodo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registrado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegistradoDelMetodo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "modelo",
+          "nombre",
+          "version_de_la_receta",
+          "perfil",
+          "salida",
+          "objetivo",
+          "corte",
+          "familia"
+        ],
+        "title": "MetodoDeLaExplicacion"
+      },
+      "MetricaDeFiabilidad": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "title": "Estado",
+            "description": "estimable, muestra_insuficiente, sin_datos, no_disponible o fallo_de_calculo"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media"
+          },
+          "intervalo": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intervalo",
+            "description": "Percentiles bootstrap [inferior, superior]; null sin intervalo"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "etiqueta": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etiqueta"
+          },
+          "lectura": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lectura"
+          },
+          "bloque": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bloque"
+          },
+          "remuestreos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remuestreos"
+          },
+          "nivel": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nivel"
+          },
+          "semilla": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semilla",
+            "description": "Semilla del bootstrap en texto decimal (hasta 60 bits)"
+          },
+          "error_estandar_bootstrap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Estandar Bootstrap"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "MetricaDeFiabilidad"
+      },
       "MetricaDisponible": {
         "properties": {
           "metrica": {
@@ -2189,6 +3584,113 @@
         },
         "type": "object",
         "title": "ModeloDeLaPrediccion"
+      },
+      "MuestraDeFiabilidad": {
+        "properties": {
+          "sorteos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sorteos",
+            "description": "Sorteos incluidos en las cifras"
+          },
+          "periodo": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Periodo"
+          },
+          "hasta": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hasta",
+            "description": "Solo objetivos hasta este sorteo; null = todos los resultados"
+          },
+          "emisiones": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emisiones"
+          },
+          "pendientes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pendientes",
+            "description": "Emisiones sin resultado observado en la base consultada"
+          },
+          "sin_base": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sin Base"
+          },
+          "exclusiones": {
+            "items": {
+              "$ref": "#/components/schemas/ExclusionDeFiabilidad"
+            },
+            "type": "array",
+            "title": "Exclusiones"
+          },
+          "estado_del_candidato": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado Del Candidato"
+          },
+          "excluidos_de_la_muestra_comun": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluidos De La Muestra Comun"
+          }
+        },
+        "type": "object",
+        "title": "MuestraDeFiabilidad"
       },
       "OpcionDeSelector": {
         "properties": {
@@ -2334,6 +3836,24 @@
         ],
         "title": "Par"
       },
+      "PesoDeComponente": {
+        "properties": {
+          "componente": {
+            "type": "string",
+            "title": "Componente"
+          },
+          "peso": {
+            "type": "number",
+            "title": "Peso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "componente",
+          "peso"
+        ],
+        "title": "PesoDeComponente"
+      },
       "Prediccion": {
         "properties": {
           "clave": {
@@ -2411,14 +3931,12 @@
           "rankings": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/Rankings"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Rankings"
+            ]
           },
           "observado": {
             "anyOf": [
@@ -2447,6 +3965,57 @@
           "explicacion_disponible": {
             "type": "boolean",
             "title": "Explicacion Disponible"
+          },
+          "linea_de_modelo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LineaDeModelo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Línea de modelo de Producto 6 (vector fuente)"
+          },
+          "registrado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionRegistradaDeLaCartera"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Versión registrada que usó la cartera"
+          },
+          "explicacion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Explicacion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Explicación guardada vigente; null si no hay ninguna"
+          },
+          "explicaciones_ilegibles": {
+            "items": {
+              "$ref": "#/components/schemas/ExplicacionIlegible"
+            },
+            "type": "array",
+            "title": "Explicaciones Ilegibles"
+          },
+          "reproduccion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Reproduccion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rankings y variables recalculados desde la cartera y comparados con la explicación"
           }
         },
         "type": "object",
@@ -2638,6 +4207,169 @@
           }
         ]
       },
+      "PresentacionDelMetodo": {
+        "properties": {
+          "umbral_absoluto_proximo_a_cero": {
+            "type": "number",
+            "title": "Umbral Absoluto Proximo A Cero"
+          },
+          "criterio": {
+            "type": "string",
+            "title": "Criterio"
+          },
+          "formato": {
+            "type": "string",
+            "title": "Formato"
+          }
+        },
+        "type": "object",
+        "required": [
+          "umbral_absoluto_proximo_a_cero",
+          "criterio",
+          "formato"
+        ],
+        "title": "PresentacionDelMetodo"
+      },
+      "Rankings": {
+        "properties": {
+          "aviso": {
+            "type": "string",
+            "title": "Aviso"
+          },
+          "objetivo": {
+            "type": "integer",
+            "title": "Objetivo"
+          },
+          "corte": {
+            "type": "integer",
+            "title": "Corte"
+          },
+          "numeros": {
+            "$ref": "#/components/schemas/SeccionDeRanking"
+          },
+          "superbalota": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeccionDeRanking"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pares": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeccionDeRanking"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "colores": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeccionDeRanking"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "aviso",
+          "objetivo",
+          "corte",
+          "numeros"
+        ],
+        "title": "Rankings",
+        "description": "Clasificación de candidatos del vector fuente congelado (la de la explicación guardada o la\ndeterminista de la cartera). La superbalota y, en ColorLoto, números y colores van aparte."
+      },
+      "RegistradoDelMetodo": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "numero": {
+            "type": "integer",
+            "title": "Numero"
+          },
+          "corte_de_entrenamiento": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte De Entrenamiento"
+          },
+          "sha256_estimador": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256 Estimador"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "numero"
+        ],
+        "title": "RegistradoDelMetodo"
+      },
+      "Reproduccion": {
+        "properties": {
+          "exacta": {
+            "type": "boolean",
+            "title": "Exacta"
+          },
+          "distintos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Distintos"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exacta"
+        ],
+        "title": "Reproduccion"
+      },
       "RespuestaDeMetrica": {
         "properties": {
           "juego": {
@@ -2687,6 +4419,29 @@
         ],
         "title": "Resumen",
         "description": "Salida del caso de uso de resumen por juego (Producto 1)."
+      },
+      "ResumenDeImportancia": {
+        "properties": {
+          "minimo": {
+            "type": "number",
+            "title": "Minimo"
+          },
+          "maximo": {
+            "type": "number",
+            "title": "Maximo"
+          },
+          "media_absoluta": {
+            "type": "number",
+            "title": "Media Absoluta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "minimo",
+          "maximo",
+          "media_absoluta"
+        ],
+        "title": "ResumenDeImportancia"
       },
       "Ruta": {
         "properties": {
@@ -2754,6 +4509,135 @@
             "estado": "ok"
           }
         ]
+      },
+      "SeccionDeRanking": {
+        "properties": {
+          "todos": {
+            "items": {
+              "$ref": "#/components/schemas/FilaDeRanking"
+            },
+            "type": "array",
+            "title": "Todos",
+            "description": "Universo completo, de mayor a menor probabilidad"
+          },
+          "fuertes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FilaDeRanking"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuertes"
+          },
+          "debiles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FilaDeRanking"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debiles"
+          },
+          "universo": {
+            "type": "integer",
+            "title": "Universo"
+          },
+          "por_extremo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Por Extremo"
+          },
+          "empate_en_el_limite": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empate En El Limite"
+          },
+          "nota_empates": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota Empates"
+          },
+          "suma": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suma"
+          },
+          "unidad": {
+            "type": "string",
+            "title": "Unidad"
+          },
+          "denominador": {
+            "type": "string",
+            "title": "Denominador"
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota"
+          },
+          "estrategia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estrategia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "todos",
+          "universo",
+          "unidad",
+          "denominador"
+        ],
+        "title": "SeccionDeRanking"
       },
       "SelectorDeMetrica": {
         "properties": {
@@ -3176,6 +5060,63 @@
         ],
         "title": "TablaDeMetrica"
       },
+      "TransformacionDelMetodo": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "detalle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detalle"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "epsilon": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Epsilon"
+          },
+          "tolerancia": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerancia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo"
+        ],
+        "title": "TransformacionDelMetodo"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -3215,6 +5156,134 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VariablesDeCandidatos": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "nombres": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nombres"
+          },
+          "por_candidato": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Por Candidato",
+            "description": "Valores por candidato (`n` o `n|COLOR`) en el orden de `nombres`"
+          },
+          "usadas_por_el_modelo": {
+            "type": "boolean",
+            "title": "Usadas Por El Modelo"
+          },
+          "calculado_hasta_sorteo": {
+            "type": "integer",
+            "title": "Calculado Hasta Sorteo"
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "nombres",
+          "por_candidato",
+          "usadas_por_el_modelo",
+          "calculado_hasta_sorteo"
+        ],
+        "title": "VariablesDeCandidatos"
+      },
+      "VariablesDelMetodo": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "nombres": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nombres"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "nombres"
+        ],
+        "title": "VariablesDelMetodo"
+      },
+      "VersionRegistradaDeLaCartera": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "numero": {
+            "type": "integer",
+            "title": "Numero"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "numero"
+        ],
+        "title": "VersionRegistradaDeLaCartera"
+      },
+      "VersionRegistradaDeLaConfiguracion": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "numero": {
+            "type": "integer",
+            "title": "Numero"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado",
+            "description": "compatible, incompatible, alterado o no_encontrado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "numero",
+          "estado"
+        ],
+        "title": "VersionRegistradaDeLaConfiguracion"
       }
     },
     "securitySchemes": {

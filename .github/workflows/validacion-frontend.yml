@@ -78,6 +78,9 @@ jobs:
       - name: Recorrido con cuota agotada (429)
         working-directory: backend
         run: python -m tests.recorrido_fase9 --escenario cuota --salida ../recorrido/cuota --anchos 1280
+      - name: Recorrido con cuota agotada en la fiabilidad al corte (429, Fase 9.3)
+        working-directory: backend
+        run: python -m tests.recorrido_fase9 --escenario cuota_fiabilidad --salida ../recorrido/cuota_fiabilidad --anchos 1280
       - name: Recorrido con la API caida
         working-directory: backend
         run: python -m tests.recorrido_fase9 --escenario api_caida --salida ../recorrido/api_caida

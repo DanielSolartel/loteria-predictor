@@ -16,10 +16,12 @@ import {
   type Json,
   booleano,
   celda,
+  diccionario,
   entero,
   esObjeto,
   etiqueta,
   EstructuraNoReconocida,
+  json,
   lista,
   literal,
   nulable,
@@ -540,6 +542,110 @@ export interface FrenteALaBase {
   base_avanzo: boolean | null;
   nuevos_desde_el_corte: number | null;
 }
+// Clasificacion de candidatos y explicacion guardada (Fase 9.3). La API ya
+// envia los rankings ordenados con su referencia uniforme: aqui no se recalculan.
+
+export type Candidato = number | string | ParNumeroColor;
+export interface FilaDeRanking {
+  posicion: number;
+  candidato: Candidato;
+  probabilidad: number;
+  uniforme: number;
+  diferencia: number;
+  razon: number | null;
+  multiplicidad_esperada: number | null;
+}
+export interface SeccionDeRanking {
+  todos: FilaDeRanking[];
+  fuertes: FilaDeRanking[] | null;
+  debiles: FilaDeRanking[] | null;
+  universo: number;
+  por_extremo: number | null;
+  empate_en_el_limite: Record<string, boolean> | null;
+  nota_empates: string | null;
+  suma: number | null;
+  unidad: string;
+  denominador: string;
+  nota: string | null;
+  estrategia: string | null;
+}
+export interface Rankings {
+  aviso: string;
+  objetivo: number;
+  corte: number;
+  numeros: SeccionDeRanking;
+  superbalota: SeccionDeRanking | null;
+  pares: SeccionDeRanking | null;
+  colores: SeccionDeRanking | null;
+}
+export type LineaDeModelo = Esquema["LineaDeModelo"];
+export type VersionRegistradaDeLaCartera = Esquema["VersionRegistradaDeLaCartera"];
+export interface MetodoDeLaExplicacion {
+  modelo: string;
+  nombre: string;
+  version_de_la_receta: string;
+  perfil: string;
+  salida: string;
+  objetivo: number;
+  corte: number;
+  familia: string;
+  tipo: string | null;
+  variables: { version: string; nombres: string[]; descripcion: string | null } | null;
+  transformacion: { tipo: string; detalle: string | null; delta: number | null; epsilon: number | null; tolerancia: number | null } | null;
+  parametros: Record<string, Json> | null;
+  pesos: { componente: string; peso: number }[] | null;
+  entrenamiento: {
+    estimador: string;
+    corte_de_entrenamiento: number | null;
+    periodo: Record<string, Json> | null;
+    parametros_ajustados: Record<string, Json> | null;
+    detalle: Json;
+  } | null;
+  registrado: { clave: string; numero: number; corte_de_entrenamiento: number | null; sha256_estimador: string | null } | null;
+}
+export interface VariablesDeCandidatos {
+  version: string;
+  nombres: string[];
+  por_candidato: Record<string, number[]>;
+  usadas_por_el_modelo: boolean;
+  calculado_hasta_sorteo: number;
+  nota: string | null;
+}
+export interface ImportanciaDeVariable {
+  variable: string;
+  valor: number | null;
+  columnas: number;
+  es_identidad: boolean;
+  resumen: { minimo: number; maximo: number; media_absoluta: number } | null;
+}
+export interface Importancias {
+  estado: "disponible" | "no_disponible";
+  motivo: string | null;
+  tipo: string | null;
+  descripcion: string | null;
+  estimador: string | null;
+  calibrado: boolean | null;
+  valores: ImportanciaDeVariable[] | null;
+  aviso: string | null;
+}
+export interface Explicacion {
+  clave: string;
+  esquema: string;
+  version: string;
+  cartera: Esquema["CarteraDeLaExplicacion"];
+  metodo: MetodoDeLaExplicacion;
+  variables: VariablesDeCandidatos | null;
+  importancias: Importancias;
+  avisos: string[];
+  generacion: { generado_en: string | null; origen: string | null; nota: string | null } | null;
+}
+export interface Reproduccion {
+  exacta: boolean;
+  distintos: string[];
+  motivo: string | null;
+  nota: string | null;
+}
+
 export interface Prediccion {
   clave: string;
   integridad: string;
@@ -551,9 +657,15 @@ export interface Prediccion {
   clasificacion_temporal: ClasificacionTemporal | null;
   modelo: ModeloDeLaPrediccion;
   combinaciones: Combinacion[];
+  rankings: Rankings | null;
   observado: Observado | null;
   frente_a_la_base: FrenteALaBase | null;
   explicacion_disponible: boolean;
+  linea_de_modelo: LineaDeModelo | null;
+  registrado: VersionRegistradaDeLaCartera | null;
+  explicacion: Explicacion | null;
+  explicaciones_ilegibles: Esquema["ExplicacionIlegible"][];
+  reproduccion: Reproduccion | null;
 }
 export interface Predicciones {
   juego: string;
@@ -578,6 +690,115 @@ const decCombinacion: Decodificador<Combinacion> = (v, r) => ({
     unidad_de_los_elementos: nulable(texto),
     probabilidad_de_su_superbalota: nulable(numero),
   })(v, r),
+});
+
+const candidato: Decodificador<Candidato> = (v, r) =>
+  typeof v === "string" ? v : Array.isArray(v) ? parNumeroColor(v, r) : entero(v, r);
+const decFilaDeRanking = objeto<FilaDeRanking>({
+  posicion: entero,
+  candidato,
+  probabilidad: numero,
+  uniforme: numero,
+  diferencia: numero,
+  razon: nulable(numero),
+  multiplicidad_esperada: nulable(numero),
+});
+const decSeccionDeRanking = objeto<SeccionDeRanking>({
+  todos: lista(decFilaDeRanking),
+  fuertes: nulable(lista(decFilaDeRanking)),
+  debiles: nulable(lista(decFilaDeRanking)),
+  universo: entero,
+  por_extremo: nulable(entero),
+  empate_en_el_limite: nulable(diccionario(booleano)),
+  nota_empates: nulable(texto),
+  suma: nulable(numero),
+  unidad: texto,
+  denominador: texto,
+  nota: nulable(texto),
+  estrategia: nulable(texto),
+});
+export const decRankings = objeto<Rankings>({
+  aviso: texto,
+  objetivo: entero,
+  corte: entero,
+  numeros: decSeccionDeRanking,
+  superbalota: nulable(decSeccionDeRanking),
+  pares: nulable(decSeccionDeRanking),
+  colores: nulable(decSeccionDeRanking),
+});
+const decExplicacion = objeto<Explicacion>({
+  clave: texto,
+  esquema: texto,
+  version: texto,
+  cartera: objeto<Esquema["CarteraDeLaExplicacion"]>({
+    clave: texto,
+    linea: texto,
+    objetivo: entero,
+    corte: entero,
+    sha256_historico: nulable(texto),
+    sha256_fuente: texto,
+  }),
+  metodo: objeto<MetodoDeLaExplicacion>({
+    modelo: texto,
+    nombre: texto,
+    version_de_la_receta: texto,
+    perfil: texto,
+    salida: texto,
+    objetivo: entero,
+    corte: entero,
+    familia: texto,
+    tipo: nulable(texto),
+    variables: nulable(objeto({ version: texto, nombres: lista(texto), descripcion: nulable(texto) })),
+    transformacion: nulable(
+      objeto({ tipo: texto, detalle: nulable(texto), delta: nulable(numero), epsilon: nulable(numero), tolerancia: nulable(numero) }),
+    ),
+    parametros: nulable(objetoJson),
+    pesos: nulable(lista(objeto({ componente: texto, peso: numero }))),
+    entrenamiento: nulable(
+      objeto({
+        estimador: texto,
+        corte_de_entrenamiento: nulable(entero),
+        periodo: nulable(objetoJson),
+        parametros_ajustados: nulable(objetoJson),
+        detalle: (v, r) => (v === undefined ? null : json(v, r)),
+      }),
+    ),
+    registrado: nulable(
+      objeto({ clave: texto, numero: entero, corte_de_entrenamiento: nulable(entero), sha256_estimador: nulable(texto) }),
+    ),
+  }),
+  variables: nulable(
+    objeto<VariablesDeCandidatos>({
+      version: texto,
+      nombres: lista(texto),
+      por_candidato: diccionario(lista(numero)),
+      usadas_por_el_modelo: booleano,
+      calculado_hasta_sorteo: entero,
+      nota: nulable(texto),
+    }),
+  ),
+  importancias: objeto<Importancias>({
+    estado: literal("disponible", "no_disponible"),
+    motivo: nulable(texto),
+    tipo: nulable(texto),
+    descripcion: nulable(texto),
+    estimador: nulable(texto),
+    calibrado: nulable(booleano),
+    valores: nulable(
+      lista(
+        objeto<ImportanciaDeVariable>({
+          variable: texto,
+          valor: nulable(numero),
+          columnas: entero,
+          es_identidad: booleano,
+          resumen: nulable(objeto({ minimo: numero, maximo: numero, media_absoluta: numero })),
+        }),
+      ),
+    ),
+    aviso: nulable(texto),
+  }),
+  avisos: lista(texto),
+  generacion: nulable(objeto({ generado_en: nulable(texto), origen: nulable(texto), nota: nulable(texto) })),
 });
 
 export const decPredicciones = objeto<Predicciones>({
@@ -622,6 +843,7 @@ export const decPredicciones = objeto<Predicciones>({
         version: nulable(texto),
       }),
       combinaciones: lista(decCombinacion),
+      rankings: nulable(decRankings),
       observado: nulable(
         objeto<Observado>({
           estado: texto,
@@ -651,6 +873,13 @@ export const decPredicciones = objeto<Predicciones>({
         }),
       ),
       explicacion_disponible: booleano,
+      linea_de_modelo: nulable(objeto<LineaDeModelo>({ id: texto, modelo: texto, version: texto, perfil: texto, nombre: texto })),
+      registrado: nulable(objeto<VersionRegistradaDeLaCartera>({ clave: texto, numero: entero })),
+      explicacion: nulable(decExplicacion),
+      explicaciones_ilegibles: lista(objeto<Esquema["ExplicacionIlegible"]>({ clave: texto, motivo: texto })),
+      reproduccion: nulable(
+        objeto<Reproduccion>({ exacta: booleano, distintos: lista(texto), motivo: nulable(texto), nota: nulable(texto) }),
+      ),
     }),
   ),
   historial: lista(
@@ -666,6 +895,199 @@ export const decPredicciones = objeto<Predicciones>({
   ),
   historial_total: entero,
 });
+
+// ---------------------------------------------------------------------------
+// Fiabilidad observada (Fase 4, consultada en la 9.3): rendimiento observado e
+// incertidumbre por separado; no hay puntuacion de confianza que mostrar.
+// ---------------------------------------------------------------------------
+
+export type IntervaloDeFiabilidad = [number, number];
+export interface MetricaDeFiabilidad {
+  estado: string;
+  n: number | null;
+  media: number | null;
+  intervalo: IntervaloDeFiabilidad | null;
+  motivo: string | null;
+  etiqueta: string | null;
+  lectura: string | null;
+  bloque: number | null;
+  remuestreos: number | null;
+  nivel: number | null;
+  /** Texto decimal: la semilla puede superar la precision entera de JavaScript. */
+  semilla: string | null;
+  error_estandar_bootstrap: number | null;
+}
+export interface ExtremoObservado {
+  candidatos_por_sorteo: number;
+  observado: number;
+  esperado: number;
+  razon_observado_esperado: number | null;
+}
+export interface ComponenteDeFiabilidad {
+  estado: string | null;
+  motivo: string | null;
+  sorteos: number | null;
+  metricas: Record<string, MetricaDeFiabilidad> | null;
+  extremos: { fuertes: ExtremoObservado | null; debiles: ExtremoObservado | null } | null;
+  identidad_remuestreo: Record<string, string> | null;
+}
+export interface MuestraDeFiabilidad {
+  sorteos: number | null;
+  periodo: Intervalo | null;
+  hasta: number | null;
+  emisiones: number | null;
+  pendientes: number | null;
+  sin_base: number | null;
+  exclusiones: Esquema["ExclusionDeFiabilidad"][];
+  estado_del_candidato: string | null;
+  excluidos_de_la_muestra_comun: number | null;
+}
+export interface EvaluacionDeFiabilidad {
+  tipo: "seguimiento" | "retrospectiva" | "evaluacion_de_receta";
+  descripcion: string | null;
+  estado: string;
+  motivo: string | null;
+  muestra: MuestraDeFiabilidad | null;
+  componentes: Record<string, ComponenteDeFiabilidad>;
+  origen: string | null;
+  informe: string | null;
+  corte_del_informe: number | null;
+  clasificacion_componentes: Record<string, string> | null;
+}
+export interface LineaDeFiabilidad {
+  linea: string;
+  papel: string;
+  nombre: string;
+  estimador: string;
+  evaluaciones: EvaluacionDeFiabilidad[];
+}
+export interface MetodoDeFiabilidad {
+  version: string;
+  unidad: string;
+  estimacion: string;
+  incertidumbre: string;
+  minimo_para_intervalo: number;
+  supuestos: string;
+  limitaciones: string[];
+  extremos: Record<string, number>;
+  presentacion: Esquema["PresentacionDelMetodo"];
+  fuentes: Esquema["FuenteDelMetodo"][];
+}
+export interface Fiabilidad {
+  juego: string;
+  nombre: string;
+  estado_de_uso: string;
+  aviso: string;
+  contexto: Record<string, Json>;
+  configuracion: string;
+  registrado: Esquema["VersionRegistradaDeLaConfiguracion"] | null;
+  base: { estado: string; ultimo_sorteo: number | null; fecha: string | null; sorteos: number | null };
+  hasta: number | null;
+  metodo: MetodoDeFiabilidad;
+  lineas: LineaDeFiabilidad[];
+  receta: EvaluacionDeFiabilidad;
+}
+
+const intervaloReal: Decodificador<IntervaloDeFiabilidad> = tupla(numero, numero);
+const decExtremo = objeto<ExtremoObservado>({
+  candidatos_por_sorteo: entero,
+  observado: numero,
+  esperado: numero,
+  razon_observado_esperado: nulable(numero),
+});
+const decMetricaDeFiabilidad = objeto<MetricaDeFiabilidad>({
+  estado: texto,
+  n: nulable(entero),
+  media: nulable(numero),
+  intervalo: nulable(intervaloReal),
+  motivo: nulable(texto),
+  etiqueta: nulable(texto),
+  lectura: nulable(texto),
+  bloque: nulable(entero),
+  remuestreos: nulable(entero),
+  nivel: nulable(numero),
+  semilla: nulable(texto),
+  error_estandar_bootstrap: nulable(numero),
+});
+const decEvaluacionDeFiabilidad = objeto<EvaluacionDeFiabilidad>({
+  tipo: literal("seguimiento", "retrospectiva", "evaluacion_de_receta"),
+  descripcion: nulable(texto),
+  estado: texto,
+  motivo: nulable(texto),
+  muestra: nulable(
+    objeto<MuestraDeFiabilidad>({
+      sorteos: nulable(entero),
+      periodo: nulable(intervalo),
+      hasta: nulable(entero),
+      emisiones: nulable(entero),
+      pendientes: nulable(entero),
+      sin_base: nulable(entero),
+      exclusiones: lista(objeto<Esquema["ExclusionDeFiabilidad"]>({ estado: texto, motivo: texto, emisiones: entero })),
+      estado_del_candidato: nulable(texto),
+      excluidos_de_la_muestra_comun: nulable(entero),
+    }),
+  ),
+  componentes: diccionario(
+    objeto<ComponenteDeFiabilidad>({
+      estado: nulable(texto),
+      motivo: nulable(texto),
+      sorteos: nulable(entero),
+      metricas: nulable(diccionario(decMetricaDeFiabilidad)),
+      extremos: nulable(objeto({ fuertes: nulable(decExtremo), debiles: nulable(decExtremo) })),
+      identidad_remuestreo: nulable(diccionario(texto)),
+    }),
+  ),
+  origen: nulable(texto),
+  informe: nulable(texto),
+  corte_del_informe: nulable(entero),
+  clasificacion_componentes: nulable(diccionario(texto)),
+});
+export const decFiabilidad = objeto<Fiabilidad>({
+  juego: texto,
+  nombre: texto,
+  estado_de_uso: texto,
+  aviso: texto,
+  contexto: objetoJson,
+  configuracion: texto,
+  registrado: nulable(objeto<Esquema["VersionRegistradaDeLaConfiguracion"]>({ clave: texto, numero: entero, estado: texto })),
+  base: objeto({ estado: texto, ultimo_sorteo: nulable(entero), fecha: nulable(texto), sorteos: nulable(entero) }),
+  hasta: nulable(entero),
+  metodo: objeto<MetodoDeFiabilidad>({
+    version: texto,
+    unidad: texto,
+    estimacion: texto,
+    incertidumbre: texto,
+    minimo_para_intervalo: entero,
+    supuestos: texto,
+    limitaciones: lista(texto),
+    extremos: diccionario(entero),
+    presentacion: objeto<Esquema["PresentacionDelMetodo"]>({
+      umbral_absoluto_proximo_a_cero: numero,
+      criterio: texto,
+      formato: texto,
+    }),
+    fuentes: lista(objeto<Esquema["FuenteDelMetodo"]>({ cita: texto, doi: nulable(texto), uso: texto })),
+  }),
+  lineas: lista(
+    objeto<LineaDeFiabilidad>({
+      linea: texto,
+      papel: texto,
+      nombre: texto,
+      estimador: texto,
+      evaluaciones: lista(decEvaluacionDeFiabilidad),
+    }),
+  ),
+  receta: decEvaluacionDeFiabilidad,
+});
+
+// Los tipos de presentacion (sin campos opcionales) encajan en el contrato generado.
+type Encaja<A extends B, B> = A;
+export type ComprobacionesDelContrato = [
+  Encaja<Rankings, Esquema["Rankings"]>,
+  Encaja<Explicacion, Esquema["Explicacion"]>,
+  Encaja<Reproduccion, Esquema["Reproduccion"]>,
+  Encaja<Fiabilidad, Esquema["Fiabilidad"]>,
+];
 
 // ---------------------------------------------------------------------------
 // Simulaciones guardadas (Fase 7)

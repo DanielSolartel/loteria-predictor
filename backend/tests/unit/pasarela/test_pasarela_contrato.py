@@ -51,12 +51,25 @@ def test_el_openapi_versionado_coincide_con_la_api_publica_de_la_base():
     assert OPENAPI.read_bytes().endswith(b"\n") and versionado["info"]["version"] == actual["info"]["version"]
 
 
+def test_hasta_describe_objetivos_sin_acreditar_disponibilidad_temporal():
+    """Un filtro numérico no acredita cuándo existía un informe o una emisión."""
+    for documento in (exportar.openapi_publico(), json.loads(OPENAPI.read_text(encoding="utf-8"))):
+        operacion = documento["paths"]["/api/v1/juegos/{codigo}/fiabilidad"]["get"]
+        parametro = next(p for p in operacion["parameters"] if p["name"] == "hasta")
+        campo = documento["components"]["schemas"]["Fiabilidad"]["properties"]["hasta"]
+        for descripcion in (parametro["description"], campo["description"]):
+            texto = descripcion.lower()
+            assert "objetivos" in texto and "no acredita" in texto
+            assert "evidencia disponible en el corte" not in texto
+
+
 def test_las_respuestas_sinteticas_del_frontend_siguen_los_contratos_publicos():
     from app.api.publica import esquemas as e
 
     contratos = {"juegos": e.Juegos, "juego": e.JuegoDetalle, "sorteos": e.PaginaDeSorteos, "sorteo": e.Sorteo,
                  "indice": e.IndiceDeEstadisticas, "resumen": e.Resumen, "panel": e.Estadisticas,
-                 "metrica": e.RespuestaDeMetrica, "predicciones": e.Predicciones, "simulaciones": e.Simulaciones,
+                 "metrica": e.RespuestaDeMetrica, "predicciones": e.Predicciones, "fiabilidad": e.Fiabilidad,
+                 "simulaciones": e.Simulaciones,
                  "simulacion": e.Simulacion, "estado": e.EstadoDelServicio, "salud": e.Salud}
     archivos = sorted(RESPUESTAS.glob("*.json"))
     assert len(archivos) >= 20

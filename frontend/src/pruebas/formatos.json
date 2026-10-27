@@ -1461,5 +1461,893 @@
    "formato": "desconocido",
    "esperado": "otro"
   }
- ]
+ ],
+ "cifras_de_fiabilidad": [
+  {
+   "valor": null,
+   "esperado": "—"
+  },
+  {
+   "valor": 0,
+   "esperado": "0.00000"
+  },
+  {
+   "valor": -0.0,
+   "esperado": "0.00000"
+  },
+  {
+   "valor": 1,
+   "esperado": "1.00000"
+  },
+  {
+   "valor": -1,
+   "esperado": "-1.00000"
+  },
+  {
+   "valor": 0.5,
+   "esperado": "0.50000"
+  },
+  {
+   "valor": 0.123456789,
+   "esperado": "0.12346"
+  },
+  {
+   "valor": -0.000123456,
+   "esperado": "-0.00012"
+  },
+  {
+   "valor": 1.5e-05,
+   "esperado": "1.5000e-05"
+  },
+  {
+   "valor": -4e-05,
+   "esperado": "-4.0000e-05"
+  },
+  {
+   "valor": 5e-05,
+   "esperado": "0.00005"
+  },
+  {
+   "valor": 4.99999e-05,
+   "esperado": "5.0000e-05"
+  },
+  {
+   "valor": 12345.678901,
+   "esperado": "12345.67890"
+  },
+  {
+   "valor": 1.2345e-06,
+   "esperado": "1.2345e-06"
+  },
+  {
+   "valor": 1e-12,
+   "esperado": "1.0000e-12"
+  },
+  {
+   "valor": -2.5e-13,
+   "esperado": "-2.5000e-13"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "esperado": "0.30000"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "esperado": "0.33333"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "esperado": "-0.66667"
+  },
+  {
+   "valor": 0.0373412,
+   "esperado": "0.03734"
+  },
+  {
+   "valor": 0.0009765625,
+   "esperado": "0.00098"
+  },
+  {
+   "valor": 9.9995,
+   "esperado": "9.99950"
+  },
+  {
+   "valor": 116.27906976744187,
+   "esperado": "116.27907"
+  }
+ ],
+ "especificaciones": [
+  {
+   "valor": 0,
+   "especificacion": ".6f",
+   "esperado": "0.000000"
+  },
+  {
+   "valor": -0.0,
+   "especificacion": ".6f",
+   "esperado": "-0.000000"
+  },
+  {
+   "valor": 1,
+   "especificacion": ".6f",
+   "esperado": "1.000000"
+  },
+  {
+   "valor": -1,
+   "especificacion": ".6f",
+   "esperado": "-1.000000"
+  },
+  {
+   "valor": 0.5,
+   "especificacion": ".6f",
+   "esperado": "0.500000"
+  },
+  {
+   "valor": 0.123456789,
+   "especificacion": ".6f",
+   "esperado": "0.123457"
+  },
+  {
+   "valor": -0.000123456,
+   "especificacion": ".6f",
+   "esperado": "-0.000123"
+  },
+  {
+   "valor": 1.5e-05,
+   "especificacion": ".6f",
+   "esperado": "0.000015"
+  },
+  {
+   "valor": -4e-05,
+   "especificacion": ".6f",
+   "esperado": "-0.000040"
+  },
+  {
+   "valor": 5e-05,
+   "especificacion": ".6f",
+   "esperado": "0.000050"
+  },
+  {
+   "valor": 4.99999e-05,
+   "especificacion": ".6f",
+   "esperado": "0.000050"
+  },
+  {
+   "valor": 12345.678901,
+   "especificacion": ".6f",
+   "esperado": "12345.678901"
+  },
+  {
+   "valor": 1.2345e-06,
+   "especificacion": ".6f",
+   "esperado": "0.000001"
+  },
+  {
+   "valor": 1e-12,
+   "especificacion": ".6f",
+   "esperado": "0.000000"
+  },
+  {
+   "valor": -2.5e-13,
+   "especificacion": ".6f",
+   "esperado": "-0.000000"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "especificacion": ".6f",
+   "esperado": "0.300000"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "especificacion": ".6f",
+   "esperado": "0.333333"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "especificacion": ".6f",
+   "esperado": "-0.666667"
+  },
+  {
+   "valor": 0.0373412,
+   "especificacion": ".6f",
+   "esperado": "0.037341"
+  },
+  {
+   "valor": 0.0009765625,
+   "especificacion": ".6f",
+   "esperado": "0.000977"
+  },
+  {
+   "valor": 9.9995,
+   "especificacion": ".6f",
+   "esperado": "9.999500"
+  },
+  {
+   "valor": 116.27906976744187,
+   "especificacion": ".6f",
+   "esperado": "116.279070"
+  },
+  {
+   "valor": 0,
+   "especificacion": "+.6f",
+   "esperado": "+0.000000"
+  },
+  {
+   "valor": -0.0,
+   "especificacion": "+.6f",
+   "esperado": "-0.000000"
+  },
+  {
+   "valor": 1,
+   "especificacion": "+.6f",
+   "esperado": "+1.000000"
+  },
+  {
+   "valor": -1,
+   "especificacion": "+.6f",
+   "esperado": "-1.000000"
+  },
+  {
+   "valor": 0.5,
+   "especificacion": "+.6f",
+   "esperado": "+0.500000"
+  },
+  {
+   "valor": 0.123456789,
+   "especificacion": "+.6f",
+   "esperado": "+0.123457"
+  },
+  {
+   "valor": -0.000123456,
+   "especificacion": "+.6f",
+   "esperado": "-0.000123"
+  },
+  {
+   "valor": 1.5e-05,
+   "especificacion": "+.6f",
+   "esperado": "+0.000015"
+  },
+  {
+   "valor": -4e-05,
+   "especificacion": "+.6f",
+   "esperado": "-0.000040"
+  },
+  {
+   "valor": 5e-05,
+   "especificacion": "+.6f",
+   "esperado": "+0.000050"
+  },
+  {
+   "valor": 4.99999e-05,
+   "especificacion": "+.6f",
+   "esperado": "+0.000050"
+  },
+  {
+   "valor": 12345.678901,
+   "especificacion": "+.6f",
+   "esperado": "+12345.678901"
+  },
+  {
+   "valor": 1.2345e-06,
+   "especificacion": "+.6f",
+   "esperado": "+0.000001"
+  },
+  {
+   "valor": 1e-12,
+   "especificacion": "+.6f",
+   "esperado": "+0.000000"
+  },
+  {
+   "valor": -2.5e-13,
+   "especificacion": "+.6f",
+   "esperado": "-0.000000"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "especificacion": "+.6f",
+   "esperado": "+0.300000"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "especificacion": "+.6f",
+   "esperado": "+0.333333"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "especificacion": "+.6f",
+   "esperado": "-0.666667"
+  },
+  {
+   "valor": 0.0373412,
+   "especificacion": "+.6f",
+   "esperado": "+0.037341"
+  },
+  {
+   "valor": 0.0009765625,
+   "especificacion": "+.6f",
+   "esperado": "+0.000977"
+  },
+  {
+   "valor": 9.9995,
+   "especificacion": "+.6f",
+   "esperado": "+9.999500"
+  },
+  {
+   "valor": 116.27906976744187,
+   "especificacion": "+.6f",
+   "esperado": "+116.279070"
+  },
+  {
+   "valor": 0,
+   "especificacion": ".3f",
+   "esperado": "0.000"
+  },
+  {
+   "valor": -0.0,
+   "especificacion": ".3f",
+   "esperado": "-0.000"
+  },
+  {
+   "valor": 1,
+   "especificacion": ".3f",
+   "esperado": "1.000"
+  },
+  {
+   "valor": -1,
+   "especificacion": ".3f",
+   "esperado": "-1.000"
+  },
+  {
+   "valor": 0.5,
+   "especificacion": ".3f",
+   "esperado": "0.500"
+  },
+  {
+   "valor": 0.123456789,
+   "especificacion": ".3f",
+   "esperado": "0.123"
+  },
+  {
+   "valor": -0.000123456,
+   "especificacion": ".3f",
+   "esperado": "-0.000"
+  },
+  {
+   "valor": 1.5e-05,
+   "especificacion": ".3f",
+   "esperado": "0.000"
+  },
+  {
+   "valor": -4e-05,
+   "especificacion": ".3f",
+   "esperado": "-0.000"
+  },
+  {
+   "valor": 5e-05,
+   "especificacion": ".3f",
+   "esperado": "0.000"
+  },
+  {
+   "valor": 4.99999e-05,
+   "especificacion": ".3f",
+   "esperado": "0.000"
+  },
+  {
+   "valor": 12345.678901,
+   "especificacion": ".3f",
+   "esperado": "12345.679"
+  },
+  {
+   "valor": 1.2345e-06,
+   "especificacion": ".3f",
+   "esperado": "0.000"
+  },
+  {
+   "valor": 1e-12,
+   "especificacion": ".3f",
+   "esperado": "0.000"
+  },
+  {
+   "valor": -2.5e-13,
+   "especificacion": ".3f",
+   "esperado": "-0.000"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "especificacion": ".3f",
+   "esperado": "0.300"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "especificacion": ".3f",
+   "esperado": "0.333"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "especificacion": ".3f",
+   "esperado": "-0.667"
+  },
+  {
+   "valor": 0.0373412,
+   "especificacion": ".3f",
+   "esperado": "0.037"
+  },
+  {
+   "valor": 0.0009765625,
+   "especificacion": ".3f",
+   "esperado": "0.001"
+  },
+  {
+   "valor": 9.9995,
+   "especificacion": ".3f",
+   "esperado": "9.999"
+  },
+  {
+   "valor": 116.27906976744187,
+   "especificacion": ".3f",
+   "esperado": "116.279"
+  },
+  {
+   "valor": 0,
+   "especificacion": ".4f",
+   "esperado": "0.0000"
+  },
+  {
+   "valor": -0.0,
+   "especificacion": ".4f",
+   "esperado": "-0.0000"
+  },
+  {
+   "valor": 1,
+   "especificacion": ".4f",
+   "esperado": "1.0000"
+  },
+  {
+   "valor": -1,
+   "especificacion": ".4f",
+   "esperado": "-1.0000"
+  },
+  {
+   "valor": 0.5,
+   "especificacion": ".4f",
+   "esperado": "0.5000"
+  },
+  {
+   "valor": 0.123456789,
+   "especificacion": ".4f",
+   "esperado": "0.1235"
+  },
+  {
+   "valor": -0.000123456,
+   "especificacion": ".4f",
+   "esperado": "-0.0001"
+  },
+  {
+   "valor": 1.5e-05,
+   "especificacion": ".4f",
+   "esperado": "0.0000"
+  },
+  {
+   "valor": -4e-05,
+   "especificacion": ".4f",
+   "esperado": "-0.0000"
+  },
+  {
+   "valor": 5e-05,
+   "especificacion": ".4f",
+   "esperado": "0.0001"
+  },
+  {
+   "valor": 4.99999e-05,
+   "especificacion": ".4f",
+   "esperado": "0.0000"
+  },
+  {
+   "valor": 12345.678901,
+   "especificacion": ".4f",
+   "esperado": "12345.6789"
+  },
+  {
+   "valor": 1.2345e-06,
+   "especificacion": ".4f",
+   "esperado": "0.0000"
+  },
+  {
+   "valor": 1e-12,
+   "especificacion": ".4f",
+   "esperado": "0.0000"
+  },
+  {
+   "valor": -2.5e-13,
+   "especificacion": ".4f",
+   "esperado": "-0.0000"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "especificacion": ".4f",
+   "esperado": "0.3000"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "especificacion": ".4f",
+   "esperado": "0.3333"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "especificacion": ".4f",
+   "esperado": "-0.6667"
+  },
+  {
+   "valor": 0.0373412,
+   "especificacion": ".4f",
+   "esperado": "0.0373"
+  },
+  {
+   "valor": 0.0009765625,
+   "especificacion": ".4f",
+   "esperado": "0.0010"
+  },
+  {
+   "valor": 9.9995,
+   "especificacion": ".4f",
+   "esperado": "9.9995"
+  },
+  {
+   "valor": 116.27906976744187,
+   "especificacion": ".4f",
+   "esperado": "116.2791"
+  },
+  {
+   "valor": 0,
+   "especificacion": ".5f",
+   "esperado": "0.00000"
+  },
+  {
+   "valor": -0.0,
+   "especificacion": ".5f",
+   "esperado": "-0.00000"
+  },
+  {
+   "valor": 1,
+   "especificacion": ".5f",
+   "esperado": "1.00000"
+  },
+  {
+   "valor": -1,
+   "especificacion": ".5f",
+   "esperado": "-1.00000"
+  },
+  {
+   "valor": 0.5,
+   "especificacion": ".5f",
+   "esperado": "0.50000"
+  },
+  {
+   "valor": 0.123456789,
+   "especificacion": ".5f",
+   "esperado": "0.12346"
+  },
+  {
+   "valor": -0.000123456,
+   "especificacion": ".5f",
+   "esperado": "-0.00012"
+  },
+  {
+   "valor": 1.5e-05,
+   "especificacion": ".5f",
+   "esperado": "0.00002"
+  },
+  {
+   "valor": -4e-05,
+   "especificacion": ".5f",
+   "esperado": "-0.00004"
+  },
+  {
+   "valor": 5e-05,
+   "especificacion": ".5f",
+   "esperado": "0.00005"
+  },
+  {
+   "valor": 4.99999e-05,
+   "especificacion": ".5f",
+   "esperado": "0.00005"
+  },
+  {
+   "valor": 12345.678901,
+   "especificacion": ".5f",
+   "esperado": "12345.67890"
+  },
+  {
+   "valor": 1.2345e-06,
+   "especificacion": ".5f",
+   "esperado": "0.00000"
+  },
+  {
+   "valor": 1e-12,
+   "especificacion": ".5f",
+   "esperado": "0.00000"
+  },
+  {
+   "valor": -2.5e-13,
+   "especificacion": ".5f",
+   "esperado": "-0.00000"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "especificacion": ".5f",
+   "esperado": "0.30000"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "especificacion": ".5f",
+   "esperado": "0.33333"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "especificacion": ".5f",
+   "esperado": "-0.66667"
+  },
+  {
+   "valor": 0.0373412,
+   "especificacion": ".5f",
+   "esperado": "0.03734"
+  },
+  {
+   "valor": 0.0009765625,
+   "especificacion": ".5f",
+   "esperado": "0.00098"
+  },
+  {
+   "valor": 9.9995,
+   "especificacion": ".5f",
+   "esperado": "9.99950"
+  },
+  {
+   "valor": 116.27906976744187,
+   "especificacion": ".5f",
+   "esperado": "116.27907"
+  },
+  {
+   "valor": 0,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": -0.0,
+   "especificacion": ".1f",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 1,
+   "especificacion": ".1f",
+   "esperado": "1.0"
+  },
+  {
+   "valor": -1,
+   "especificacion": ".1f",
+   "esperado": "-1.0"
+  },
+  {
+   "valor": 0.5,
+   "especificacion": ".1f",
+   "esperado": "0.5"
+  },
+  {
+   "valor": 0.123456789,
+   "especificacion": ".1f",
+   "esperado": "0.1"
+  },
+  {
+   "valor": -0.000123456,
+   "especificacion": ".1f",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 1.5e-05,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": -4e-05,
+   "especificacion": ".1f",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 5e-05,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 4.99999e-05,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 12345.678901,
+   "especificacion": ".1f",
+   "esperado": "12345.7"
+  },
+  {
+   "valor": 1.2345e-06,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 1e-12,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": -2.5e-13,
+   "especificacion": ".1f",
+   "esperado": "-0.0"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "especificacion": ".1f",
+   "esperado": "0.3"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "especificacion": ".1f",
+   "esperado": "0.3"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "especificacion": ".1f",
+   "esperado": "-0.7"
+  },
+  {
+   "valor": 0.0373412,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 0.0009765625,
+   "especificacion": ".1f",
+   "esperado": "0.0"
+  },
+  {
+   "valor": 9.9995,
+   "especificacion": ".1f",
+   "esperado": "10.0"
+  },
+  {
+   "valor": 116.27906976744187,
+   "especificacion": ".1f",
+   "esperado": "116.3"
+  },
+  {
+   "valor": 0,
+   "especificacion": ".4g",
+   "esperado": "0"
+  },
+  {
+   "valor": -0.0,
+   "especificacion": ".4g",
+   "esperado": "-0"
+  },
+  {
+   "valor": 1,
+   "especificacion": ".4g",
+   "esperado": "1"
+  },
+  {
+   "valor": -1,
+   "especificacion": ".4g",
+   "esperado": "-1"
+  },
+  {
+   "valor": 0.5,
+   "especificacion": ".4g",
+   "esperado": "0.5"
+  },
+  {
+   "valor": 0.123456789,
+   "especificacion": ".4g",
+   "esperado": "0.1235"
+  },
+  {
+   "valor": -0.000123456,
+   "especificacion": ".4g",
+   "esperado": "-0.0001235"
+  },
+  {
+   "valor": 1.5e-05,
+   "especificacion": ".4g",
+   "esperado": "1.5e-05"
+  },
+  {
+   "valor": -4e-05,
+   "especificacion": ".4g",
+   "esperado": "-4e-05"
+  },
+  {
+   "valor": 5e-05,
+   "especificacion": ".4g",
+   "esperado": "5e-05"
+  },
+  {
+   "valor": 4.99999e-05,
+   "especificacion": ".4g",
+   "esperado": "5e-05"
+  },
+  {
+   "valor": 12345.678901,
+   "especificacion": ".4g",
+   "esperado": "1.235e+04"
+  },
+  {
+   "valor": 1.2345e-06,
+   "especificacion": ".4g",
+   "esperado": "1.234e-06"
+  },
+  {
+   "valor": 1e-12,
+   "especificacion": ".4g",
+   "esperado": "1e-12"
+  },
+  {
+   "valor": -2.5e-13,
+   "especificacion": ".4g",
+   "esperado": "-2.5e-13"
+  },
+  {
+   "valor": 0.30000000000000004,
+   "especificacion": ".4g",
+   "esperado": "0.3"
+  },
+  {
+   "valor": 0.3333333333333333,
+   "especificacion": ".4g",
+   "esperado": "0.3333"
+  },
+  {
+   "valor": -0.6666666666666666,
+   "especificacion": ".4g",
+   "esperado": "-0.6667"
+  },
+  {
+   "valor": 0.0373412,
+   "especificacion": ".4g",
+   "esperado": "0.03734"
+  },
+  {
+   "valor": 0.0009765625,
+   "especificacion": ".4g",
+   "esperado": "0.0009766"
+  },
+  {
+   "valor": 9.9995,
+   "especificacion": ".4g",
+   "esperado": "9.999"
+  },
+  {
+   "valor": 116.27906976744187,
+   "especificacion": ".4g",
+   "esperado": "116.3"
+  }
+ ],
+ "etiquetas_fiabilidad": {
+  "estados": {
+   "estimable": "estimable",
+   "muestra_insuficiente": "muestra insuficiente",
+   "sin_resultados": "sin resultados todavía",
+   "sin_base": "base no disponible",
+   "excluidas": "emisiones excluidas",
+   "sin_datos": "sin datos",
+   "no_disponible": "no disponible",
+   "fallo_de_calculo": "fallo de cálculo"
+  },
+  "componentes": {
+   "numeros": "Números principales",
+   "pares": "Pares número-color",
+   "superbalota": "Superbalota (aparte)"
+  },
+  "tipos": {
+   "seguimiento": "Seguimiento",
+   "retrospectiva": "Retrospectiva",
+   "evaluacion_de_receta": "Evaluación de la receta (informe del laboratorio)"
+  }
+ }
 }

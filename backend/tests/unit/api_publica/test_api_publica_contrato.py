@@ -19,6 +19,7 @@ CONSULTAS = ["/api/v1/juegos", "/api/v1/juegos/{codigo}", "/api/v1/juegos/{codig
              "/api/v1/juegos/{codigo}/sorteos/{numero_sorteo}", "/api/v1/juegos/{codigo}/estadisticas",
              "/api/v1/juegos/{codigo}/estadisticas/resumen", "/api/v1/juegos/{codigo}/estadisticas/panel",
              "/api/v1/juegos/{codigo}/estadisticas/{metrica}", "/api/v1/juegos/{codigo}/predicciones",
+             "/api/v1/juegos/{codigo}/fiabilidad",  # Fase 9.3
              "/api/v1/juegos/{codigo}/simulaciones", "/api/v1/simulaciones/{identificador}", "/api/v1/estado"]
 
 

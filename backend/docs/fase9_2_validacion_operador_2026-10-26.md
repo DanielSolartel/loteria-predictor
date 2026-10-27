@@ -1,7 +1,7 @@
 # Fase 9.2 — validación del operador, 26 de octubre de 2026
 
 **Estado:** la validación de la entrega 9.2 y el ensayo nativo B con el Programador
-de tareas real están aprobados por la auditoría independiente. Quedan pendientes:
+de tareas real están aprobados por la auditoría independiente. Quedan pendientes (a la fecha de este cierre; ver la actualización posterior al final):
 
 - la publicación manual;
 - el CI del nuevo PR;
@@ -201,3 +201,19 @@ nativas descritas aquí usaron ese código corregido.
 Las horas de la propuesta inicial son configurables y no son horarios oficiales de
 publicación. La matriz de huecos y el criterio final de la Fase 9 no cambian con
 este cierre ([matriz](fase9_frontend.md#matriz-de-huecos-de-la-fase-9)).
+
+## Actualización posterior (27 de octubre de 2026)
+
+Este cierre se conserva tal como se emitió. Después, la 9.2 se integró en el PR #101 (merge `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`), con sus cinco checks aprobados e incluido el arreglo de pruebas `e38362bf2341cb30389141c67eb37b5b89a6e2fe`. Daniel migró y activó en Windows `LP6-01023009031fcabd` con el horario por juego. Según la confirmación del auditor (no son pruebas de esta entrega), en la captura del 27 de octubre de 2026 a las 00:11, hora de Colombia, quedaron verificadas nueve ejecuciones programadas y quince consultas en sus franjas: siete de MiLoto, tres de Baloto, tres de Revancha y dos de ColorLoto, sin consultas duplicadas ni fallos de sincronización reportados. Todas fueron sin resultados nuevos: siguen pendientes la incorporación de una novedad real y la recuperación de las 09:00, y esas comprobaciones no están cerradas.
+
+## Actualización posterior: observación real y validación de 9.3 (27 de octubre de 2026)
+
+El cuerpo anterior conserva íntegro el cierre del 26 de octubre y su actualización de las 00:11. La observación posterior de las **10:21, America/Bogota**, aportada por Daniel y aprobada por el auditor, acredita una novedad automática en los cuatro juegos con el horario migrado: BALOTO y BALOTO_REVANCHA 2726 → 2727 (646 → 647 sorteos cada uno), MILOTO 629 → 630 (98 → 99) y COLORLOTO 229 → 230 (229 → 230). Cada sincronización registra `completado`, `nuevos: 1`, seguida de la predicción del objetivo siguiente con explicación `guardada`: 2728 de Baloto/Revancha, fecha 28-10-2026; 631 de MiLoto, fecha 27-10-2026; y 231 de ColorLoto, fecha 29-10-2026.
+
+Los 20 ciclos conservados contienen 33 consultas programadas (8 MiLoto, 9 Baloto, 9 Revancha y 7 ColorLoto), sin parejas juego/oportunidad repetidas ni fallos de sincronización reportados. Los 29 intentos previos sin novedad no emitieron una predicción nueva. Configuración y selecciones de modelos se conservan respecto a la captura anterior. Fuente: `f92-observacion-horario-737f2a0d.zip`, 37.824 bytes, SHA-256 `2e2367cf1041b8de61da58d0e5413b3e0dcc67e928c2bf51de154feaf7fa090f`.
+
+El Programador informó último inicio **09:24:45**, no un disparo acreditado exactamente a las 09:00. Los cuatro juegos ya se habían actualizado durante la madrugada; **la recuperación matinal con resultados pendientes sigue sin observarse**. Se conserva la tarea versión 2 y su plan; no se confunden las versiones de entrega con la versión de tarea ni se declara resuelta la limpieza histórica. Son resultados de operación real, no pruebas sintéticas de 9.3 ni ciclos ejecutados por este cierre.
+
+Separadamente, **9.3 v2 fue validada por Daniel en Windows con Brave y aprobada por el auditor**, incluida la revisión de sus 16 capturas. El cierre documental queda preparado para revisión; la publicación manual y el CI del nuevo PR siguen pendientes, sin inventar commits, PR o checks de 9.3. La Fase 9 global permanece abierta: 9.1 y 9.2 integradas, 9.3 pendiente de integración, 9.4 consultas de modelos/carteras/resultados guardados y 9.5 exportación, impresión y revisión final de navegación, móvil y accesibilidad. No se implementan 9.4 ni 9.5, la administración y operación siguen en HTMX y los gráficos nuevos quedan para después.
+
+Los insumos, atribuciones, conservación y límites figuran en el [informe del 27 de octubre](fase9_3_validacion_operador_2026-10-27.md) y su [observación real del 27 de octubre](fase9_3_validacion_operador_2026-10-27.md#actualizacion-real-de-fase-6-del-27-de-octubre). Se mantienen `experimental_no_acreditado`, AE-39 NO-GO y `AUTORIZA_EVALUACION = False`.

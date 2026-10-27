@@ -7,6 +7,12 @@ escenario de `tests/fase9_api_sintetica.py` (sin PostgreSQL ni datos reales):
 `{"escenario", "url", "estado", "cuerpo"}`. Los errores (401, 404, 422, 429,
 500 y 503) tambien los produce la propia API, con proveedores sustituidos.
 Nombre: `<juego o global>--<tipo>[--<variante>].json`.
+
+Fase 9.3: la fiabilidad de cada juego con todos los resultados y al corte de su
+prediccion (`--corte-<n>`), la cartera anterior de BALOTO con su corte, una
+explicacion alterada a proposito (`--explicacion_alterada`) y la base de la
+Fase 4 caida (`--sin_base`). Estas dos variantes comparten URL con la respuesta
+normal: las pruebas las piden de forma explicita.
 """
 from __future__ import annotations
 
@@ -23,15 +29,24 @@ VALORES_DE_FORMATO = (None, 0, -0.0, 1, 7, -3, 2.5, 0.125, 0.375, 2.675, 1.005, 
                       0.00005, 0.0001, 0.12345678, 3.14159, 100, 100.25, 1234567.891, -0.00004)
 TEXTOS_DE_FORMATO = ("texto", "asintotico", "permutacion_exacta", "permutacion_monte_carlo", "otro")
 FORMATOS = ("entero", "texto", "dec1", "dec2", "dec3", "pct", "pp", "p", "tipo_p", "color", "desconocido")
+# Fase 9.3: cifras de la fiabilidad (`formatear_cifra`) y especificaciones de las plantillas de predicciones.
+VALORES_DE_CIFRA = (None, 0, -0.0, 1, -1, 0.5, 0.123456789, -0.000123456, 1.5e-05, -4e-05, 0.00005, 4.99999e-05,
+                    12345.678901, 1.2345e-06, 1e-12, -2.5e-13, 0.30000000000000004, 1 / 3, -2 / 3, 0.0373412,
+                    0.0009765625, 9.9995, 116.27906976744187)
+ESPECIFICACIONES = (".6f", "+.6f", ".3f", ".4f", ".5f", ".1f", ".4g")
 
 
 def casos_de_formato() -> dict:
     """Salida de `formatear` de la consola HTMX para valores y formatos fijos: la
     misma tabla la comprueba Vitest contra `formatear` del frontend. Con formato
     `texto` o `tipo_p` un numero se muestra con `str` (Python) o `String` (JS):
-    solo entran los numeros en que ambos coinciden."""
+    solo entran los numeros en que ambos coinciden. La 9.3 anade `formatear_cifra`
+    de la fiabilidad, las especificaciones de `format` de las plantillas de
+    predicciones y las etiquetas de estados, componentes y tipos de su router."""
     from app.api.web.routers.estadisticas_descriptivas import formatear
+    from app.api.web.routers.predicciones import COMPONENTES, ESTADOS_FIABILIDAD, TIPOS
     from app.application.estadisticas.descriptivas import ETIQUETAS_TIPO_P_VALUE
+    from app.application.ml.predicciones_fiabilidad import formatear_cifra
 
     casos = []
     for formato in FORMATOS:
@@ -39,8 +54,14 @@ def casos_de_formato() -> dict:
             if formato in ("texto", "tipo_p") and isinstance(valor, float) and valor not in (2.5, 12.345, 3.14159, 100.25):
                 continue
             casos.append({"valor": valor, "formato": formato, "esperado": formatear(valor, formato)})
+    numeros = [v for v in VALORES_DE_CIFRA if v is not None]
     return {"origen": "app.api.web.routers.estadisticas_descriptivas.formatear",
-            "etiquetas_tipo_p": dict(ETIQUETAS_TIPO_P_VALUE), "casos": casos}
+            "etiquetas_tipo_p": dict(ETIQUETAS_TIPO_P_VALUE), "casos": casos,
+            "cifras_de_fiabilidad": [{"valor": v, "esperado": formatear_cifra(v)} for v in VALORES_DE_CIFRA],
+            "especificaciones": [{"valor": v, "especificacion": s, "esperado": format(float(v), s)}
+                                 for s in ESPECIFICACIONES for v in numeros],
+            "etiquetas_fiabilidad": {"estados": dict(ESTADOS_FIABILIDAD), "componentes": dict(COMPONENTES),
+                                     "tipos": dict(TIPOS)}}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,6 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     from app.api.publica import dependencias as d
     from app.api.publica.configuracion import ConfiguracionPublica, leer_claves
     from app.api.publica.seguridad import generar_clave, huella
+    from app.application.ml.registro_prospectivo import serializar_entrada
     from tests import fase9_api_sintetica as f9
     from tests.unit import fixtures_fase4 as f4
 
@@ -77,11 +99,36 @@ def main(argv: list[str] | None = None) -> int:
     guardar("global--juegos", "/api/v1/juegos")
     guardar("global--salud", "/api/v1/salud")
     guardar("global--estado", "/api/v1/estado")
+    predicciones = {}
     for j in JUEGOS:
         guardar(f"{j}--juego", f"/api/v1/juegos/{j}")
         guardar(f"{j}--indice", f"/api/v1/juegos/{j}/estadisticas")
-        guardar(f"{j}--predicciones", f"/api/v1/juegos/{j}/predicciones")
+        predicciones[j] = guardar(f"{j}--predicciones", f"/api/v1/juegos/{j}/predicciones")
         guardar(f"{j}--simulaciones", f"/api/v1/juegos/{j}/simulaciones")
+    # Fase 9.3: fiabilidad con todos los resultados y con la evidencia disponible al corte de cada prediccion.
+    for j in JUEGOS:
+        guardar(f"{j}--fiabilidad", f"/api/v1/juegos/{j}/fiabilidad")
+        corte = predicciones[j]["prediccion"]["corte"]
+        guardar(f"{j}--fiabilidad--corte-{corte}", f"/api/v1/juegos/{j}/fiabilidad?hasta={corte}")
+    anterior = predicciones["BALOTO"]["historial"][-1]  # la cartera mas antigua: otro corte
+    guardar("BALOTO--predicciones--anterior", f"/api/v1/juegos/BALOTO/predicciones?cartera={anterior['clave']}")
+    guardar(f"BALOTO--fiabilidad--corte-{anterior['corte']}", f"/api/v1/juegos/BALOTO/fiabilidad?hasta={anterior['corte']}")
+    guardar("BALOTO--fiabilidad--error--422", "/api/v1/juegos/BALOTO/fiabilidad?hasta=0")
+    explicaciones = sorted((datos["e4"].raiz / "predicciones" / "explicaciones" / "MILOTO").glob("*.json"))
+    original = explicaciones[0].read_bytes()  # una sola explicacion: se altera y se restaura
+    alterada = json.loads(original)
+    alterada["rankings"]["numeros"]["todos"][0]["probabilidad"] = 0.5  # JSON canonico, huella que no coincide
+    explicaciones[0].write_bytes(serializar_entrada(alterada))
+    try:
+        guardar("MILOTO--predicciones--explicacion_alterada", "/api/v1/juegos/MILOTO/predicciones")
+    finally:
+        explicaciones[0].write_bytes(original)
+    datos["e4"].base_caida = True  # base de la Fase 4 caida: lo guardado se sigue consultando
+    try:
+        guardar("MILOTO--predicciones--sin_base", "/api/v1/juegos/MILOTO/predicciones")
+        guardar("MILOTO--fiabilidad--sin_base", "/api/v1/juegos/MILOTO/fiabilidad")
+    finally:
+        datos["e4"].base_caida = False
     for j in ("BALOTO", "MILOTO", "COLORLOTO"):
         guardar(f"{j}--resumen", f"/api/v1/juegos/{j}/estadisticas/resumen")
         pagina = guardar(f"{j}--sorteos", f"/api/v1/juegos/{j}/sorteos?por_pagina=3")

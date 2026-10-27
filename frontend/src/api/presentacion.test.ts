@@ -5,6 +5,7 @@ import { type Decodificador, decodificar, EstructuraNoReconocida } from "./decod
 import {
   decError,
   decEstado,
+  decFiabilidad,
   decIndice,
   decJuegoDetalle,
   decJuegos,
@@ -31,6 +32,7 @@ const POR_TIPO: Record<string, Decodificador<unknown>> = {
   sorteos: decPaginaDeSorteos,
   sorteo: decSorteo,
   predicciones: decPredicciones,
+  fiabilidad: decFiabilidad,
   simulaciones: decSimulaciones,
   simulacion: decSimulacion,
 };
@@ -70,6 +72,69 @@ describe("respuestas sinteticas de la API", () => {
     expect(baloto.superbalota).not.toBeNull();
     const prediccion = decodificar(decPredicciones, muestra("COLORLOTO--predicciones").cuerpo).prediccion;
     expect(prediccion?.combinaciones[0]?.resultado).toHaveProperty("pares");
+  });
+
+  it("9.3: rankings con la superbalota aparte, explicacion con importancias y cortes separados", () => {
+    const p = decodificar(decPredicciones, muestra("BALOTO--predicciones").cuerpo).prediccion;
+    expect(p?.rankings?.superbalota?.todos.length).toBe(16);
+    expect(p?.rankings?.numeros.fuertes?.length).toBe(10);
+    expect(p?.explicacion?.importancias.estado).toBe("disponible");
+    expect(p?.explicacion?.importancias.valores?.length).toBeGreaterThan(0);
+    expect(p?.explicacion?.metodo.entrenamiento?.corte_de_entrenamiento).toBe(2185);
+    expect(p?.corte).toBe(2192);
+    expect(p?.registrado?.numero).toBe(1);
+    expect(p?.reproduccion?.exacta).toBe(true);
+  });
+
+  it("9.3: ColorLoto conserva los pares numero-color y separa numeros y colores", () => {
+    const r = decodificar(decPredicciones, muestra("COLORLOTO--predicciones").cuerpo).prediccion?.rankings;
+    const par = r?.pares?.fuertes?.[0]?.candidato;
+    expect(Array.isArray(par) && typeof par[0] === "number" && typeof par[1] === "string").toBe(true);
+    expect(r?.numeros.todos.every((f) => typeof f.candidato === "number")).toBe(true);
+    expect(r?.colores?.todos.every((f) => typeof f.candidato === "string")).toBe(true);
+    expect(r?.superbalota).toBeNull();
+    expect(r?.pares?.todos[0]?.multiplicidad_esperada).not.toBeNull();
+  });
+
+  it("9.3: sin explicacion, alterada o con la base caida la API lo informa sin generarla", () => {
+    const sin = decodificar(decPredicciones, muestra("BALOTO_REVANCHA--predicciones").cuerpo).prediccion;
+    expect(sin?.explicacion).toBeNull();
+    expect(sin?.explicacion_disponible).toBe(false);
+    expect(sin?.rankings).not.toBeNull();
+    const alterada = decodificar(decPredicciones, muestra("MILOTO--predicciones--explicacion_alterada").cuerpo).prediccion;
+    expect(alterada?.explicacion).toBeNull();
+    expect(alterada?.explicaciones_ilegibles).toEqual([{ clave: expect.stringMatching(/^[0-9a-f]{64}$/), motivo: "contenido_alterado" }]);
+    const caida = decodificar(decFiabilidad, muestra("MILOTO--fiabilidad--sin_base").cuerpo);
+    expect(caida.base).toEqual({ estado: "no_disponible", ultimo_sorteo: null, fecha: null, sorteos: null });
+    expect(caida.lineas[0]?.evaluaciones[0]?.estado).toBe("sin_base");
+  });
+
+  it("9.3: la fiabilidad separa tipos, trae la semilla como texto y el corte pedido", () => {
+    const f = decodificar(decFiabilidad, muestra("BALOTO--fiabilidad--corte-2192").cuerpo);
+    expect(f.hasta).toBe(2192);
+    expect(f.lineas.map((l) => l.evaluaciones.map((e) => e.tipo))).toEqual([
+      ["seguimiento", "retrospectiva"],
+      ["seguimiento", "retrospectiva"],
+    ]);
+    expect(f.receta.tipo).toBe("evaluacion_de_receta");
+    const m = f.lineas[0]?.evaluaciones[0]?.componentes.numeros?.metricas?.diferencia_log_loss;
+    expect(m?.semilla).toMatch(/^\d+$/);
+    expect(m?.intervalo).toHaveLength(2);
+    const todos = decodificar(decFiabilidad, muestra("BALOTO--fiabilidad").cuerpo);
+    expect(todos.hasta).toBeNull();
+    expect(todos.lineas[0]?.evaluaciones[0]?.muestra?.pendientes).toBe(1);
+    expect(f.lineas[0]?.evaluaciones[0]?.muestra?.pendientes).toBe(0);
+  });
+
+  it("9.3: una fiabilidad con un intervalo mal formado se rechaza con la ruta del campo", () => {
+    const cuerpo = muestra("BALOTO--fiabilidad").cuerpo as {
+      lineas: { evaluaciones: { componentes: { numeros: { metricas: { diferencia_log_loss: { intervalo: number[] } } } } }[] }[];
+    };
+    const metrica = cuerpo.lineas[0]?.evaluaciones[0]?.componentes.numeros.metricas.diferencia_log_loss;
+    if (metrica) {
+      metrica.intervalo = [0, 1, 2];
+    }
+    expect(() => decodificar(decFiabilidad, cuerpo)).toThrow("respuesta.lineas[0].evaluaciones[0].componentes.numeros.metricas.diferencia_log_loss.intervalo");
   });
 
   it("las filas de metrica conservan las claves no declaradas en columnas", () => {

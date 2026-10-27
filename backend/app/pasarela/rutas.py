@@ -1,5 +1,6 @@
 """Lista cerrada de consultas `/api/v1` que la pasarela reenvia (Fase 9.1; la 9.2 anade
-`color` y `pagina` a la ruta de metrica, como el OpenAPI publico).
+`color` y `pagina` a la ruta de metrica y la 9.3 la ruta de fiabilidad con `hasta`,
+como el OpenAPI publico).
 
 Cada plantilla es una ruta GET del OpenAPI publico versionado
 (`frontend/src/api/openapi.json`); las pruebas comprueban la igualdad de
@@ -54,6 +55,7 @@ RUTAS: tuple[RutaPublica, ...] = (
     RutaPublica("/api/v1/juegos/{codigo}/estadisticas/{metrica}",
                 frozenset({"hasta_numero_sorteo", "anio", "mes", "dia_semana", "ventana", "color", "pagina"})),
     RutaPublica("/api/v1/juegos/{codigo}/predicciones", frozenset({"cartera", "historial"})),
+    RutaPublica("/api/v1/juegos/{codigo}/fiabilidad", frozenset({"hasta"})),
     RutaPublica("/api/v1/juegos/{codigo}/simulaciones", frozenset({"limite"})),
     RutaPublica("/api/v1/simulaciones/{identificador}", frozenset()),
 )

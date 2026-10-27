@@ -3,7 +3,8 @@ Endpoints de la API publica v1. Todos son GET y de solo lectura; cada uno
 reutiliza un caso de uso existente y proyecta un contrato publico propio.
 
 Coste en fichas de la cuota por clave: 1 consultas ligeras, 2 listados,
-3 predicciones (almacenes y base), 5 estadisticas (recorren el historico).
+3 predicciones y su fiabilidad (almacenes y base), 5 estadisticas (recorren el
+historico).
 `/salud` es la unica ruta sin clave (ademas de la documentacion).
 """
 from __future__ import annotations
@@ -220,8 +221,15 @@ def metrica(codigo: str = CodigoJuego, metrica: str = Path(examples=["frecuencia
 # Predicciones guardadas (Fase 4)
 # ---------------------------------------------------------------------------
 
+def _explicacion_publica(x: dict | None) -> dict | None:
+    """Explicacion guardada sin sus campos internos (sello, rankings repetidos, contexto);
+    los objetos anidados los acota su modelo publico."""
+    return None if x is None else {k: x.get(k) for k in e.Explicacion.model_fields}
+
+
 def _prediccion_publica(p: dict) -> dict:
     generacion, modelo, datos = p.get("generacion") or {}, p.get("modelo") or {}, p.get("datos") or {}
+    registrado = (p.get("linea_del_artefacto") or {}).get("registrado")
     return {"clave": p["clave"], "integridad": p["integridad"], "linea": p["linea"], "objetivo": p["objetivo"],
             "corte": datos.get("corte"), "sha256_historico": datos.get("sha256_historico"),
             "generado_en": generacion.get("generado_en"),
@@ -229,7 +237,13 @@ def _prediccion_publica(p: dict) -> dict:
             "modelo": {k: modelo.get(k) for k in e.ModeloDeLaPrediccion.model_fields},
             "combinaciones": p.get("combinaciones") or [], "rankings": p.get("rankings"),
             "observado": p.get("observado"), "frente_a_la_base": p.get("frente_a_la_base"),
-            "explicacion_disponible": p.get("explicacion") is not None}
+            "explicacion_disponible": p.get("explicacion") is not None,
+            "linea_de_modelo": p.get("linea_de_modelo"),
+            "registrado": None if not registrado else {"clave": registrado["clave"], "numero": registrado["numero"]},
+            "explicacion": _explicacion_publica(p.get("explicacion")),
+            "explicaciones_ilegibles": [{"clave": x["clave"], "motivo": x["motivo"]}
+                                        for x in p.get("explicaciones_ilegibles") or []],
+            "reproduccion": p.get("reproduccion")}
 
 
 @router.get("/juegos/{codigo}/predicciones", response_model=e.Predicciones, tags=["predicciones"],
@@ -252,6 +266,62 @@ def predicciones(codigo: str = CodigoJuego,
             "base": base,
             "prediccion": None if r.get("prediccion") is None else _prediccion_publica(r["prediccion"]),
             "historial": guardadas[:historial], "historial_total": len(guardadas)}
+
+
+# ---------------------------------------------------------------------------
+# Fiabilidad observada de las predicciones (Fase 4)
+# ---------------------------------------------------------------------------
+
+_FALLO_DE_CALCULO = "no se pudieron calcular las cifras; el detalle queda en la consola local"
+
+
+def _motivo_publico(x: dict) -> str | None:
+    return _FALLO_DE_CALCULO if x.get("estado") == "fallo_de_calculo" else x.get("motivo")
+
+
+def _metrica_de_fiabilidad(m: dict) -> dict:
+    return {**{k: m.get(k) for k in e.MetricaDeFiabilidad.model_fields}, "motivo": _motivo_publico(m),
+            "semilla": None if m.get("semilla") is None else str(m["semilla"])}
+
+
+def _componente_de_fiabilidad(c: dict) -> dict:
+    metricas = c.get("metricas")
+    return {**{k: c.get(k) for k in e.ComponenteDeFiabilidad.model_fields}, "motivo": _motivo_publico(c),
+            "metricas": None if metricas is None else {n: _metrica_de_fiabilidad(m) for n, m in metricas.items()}}
+
+
+def _evaluacion_de_fiabilidad(ev: dict) -> dict:
+    muestra = ev.get("muestra")
+    return {**{k: ev.get(k) for k in e.EvaluacionDeFiabilidad.model_fields}, "motivo": _motivo_publico(ev),
+            "muestra": None if muestra is None else {**{k: muestra.get(k) for k in e.MuestraDeFiabilidad.model_fields},
+                                                      "exclusiones": muestra.get("exclusiones") or []},
+            "componentes": {n: _componente_de_fiabilidad(c) for n, c in (ev.get("componentes") or {}).items()}}
+
+
+@router.get("/juegos/{codigo}/fiabilidad", response_model=e.Fiabilidad, tags=["predicciones"],
+            responses=_errores(404, 422, 503),
+            summary="Fiabilidad observada: seguimiento, retrospectiva y evaluación de la receta, por separado")
+def fiabilidad(codigo: str = CodigoJuego,
+               hasta: int | None = Query(None, ge=1, description="Solo objetivos hasta este sorteo; no acredita que "
+                                                                 "el informe o la emisión existieran al generar una cartera"),
+               _: str = Depends(acceso(PREDICCIONES)),
+               centro: CentroDePredicciones = Depends(d.centro_de_predicciones)):
+    try:
+        f = centro.fiabilidad(_juego(codigo), hasta=hasta)
+    except PrediccionesError as error:
+        raise _de_caso(error) from error
+    registrado, base = f.get("registrado"), f.get("base") or {}
+    return {"juego": f["juego"], "nombre": f["nombre"], "estado_de_uso": e.ESTADO_DE_USO, "aviso": f["aviso"],
+            "contexto": f["contexto"], "configuracion": (f.get("configuracion") or {}).get("estado") or "desconocido",
+            "registrado": None if not registrado else {
+                k: registrado.get(k) for k in e.VersionRegistradaDeLaConfiguracion.model_fields},
+            "base": {**{k: base.get(k) for k in e.BaseDeFiabilidad.model_fields},
+                     "estado": base.get("estado") or "desconocido"},
+            "hasta": f["hasta"], "metodo": f["metodo"],
+            "lineas": [{**{k: linea.get(k) for k in ("linea", "papel", "nombre", "estimador")},
+                        "evaluaciones": [_evaluacion_de_fiabilidad(ev) for ev in linea.get("evaluaciones") or []]}
+                       for linea in f.get("lineas") or []],
+            "receta": _evaluacion_de_fiabilidad(f["receta"])}
 
 
 # ---------------------------------------------------------------------------

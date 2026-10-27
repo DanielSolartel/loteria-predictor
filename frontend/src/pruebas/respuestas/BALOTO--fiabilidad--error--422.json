@@ -1,0 +1,21 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/fiabilidad?hasta=0",
+ "estado": 422,
+ "cuerpo": {
+  "error": {
+   "codigo": "parametro_no_valido",
+   "mensaje": "Parámetro no válido",
+   "solicitud": "6f033012801741d390073ae1dce69024",
+   "detalles": [
+    {
+     "ubicacion": [
+      "query",
+      "hasta"
+     ],
+     "mensaje": "Input should be greater than or equal to 1"
+    }
+   ]
+  }
+ }
+}

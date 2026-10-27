@@ -72,6 +72,86 @@ export function formatear(valor: number | string | null | undefined, formato: st
   }
 }
 
+/**
+ * Las especificaciones de `format` de Python que usa la consola HTMX en las
+ * predicciones (`.6f`, `+.6f`, `.3f`, `.4f`, `.5f`, `.1f` y `.4g`). Solo presenta.
+ */
+export function especificacion(valor: number | null | undefined, spec: string): string {
+  if (valor === null || valor === undefined) {
+    return "—";
+  }
+  const fija = /^(\+?)\.(\d)f$/.exec(spec);
+  if (fija) {
+    const cifras = fijo(valor, Number(fija[2]));
+    return fija[1] && !cifras.startsWith("-") ? `+${cifras}` : cifras;
+  }
+  const general = /^\.(\d)g$/.exec(spec);
+  if (!general) {
+    throw new Error(`especificación no admitida: ${spec}`);
+  }
+  // `%g` de Python: notación científica si el exponente es < -4 o >= la precisión; sin ceros finales.
+  const p = Math.max(1, Number(general[1]));
+  if (valor === 0) {
+    return Object.is(valor, -0) ? "-0" : "0";
+  }
+  const [mantisa, e] = partesExponenciales(valor, p - 1);
+  const sinCeros = (s: string) => (s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s);
+  if (e < -4 || e >= p) {
+    return `${sinCeros(mantisa)}e${e < 0 ? "-" : "+"}${String(Math.abs(e)).padStart(2, "0")}`;
+  }
+  return sinCeros(fijo(valor, p - 1 - e));
+}
+
+/**
+ * `formatear_cifra` de la fiabilidad (backend/app/application/ml/predicciones_fiabilidad.py):
+ * cinco decimales y, si el valor no es nulo y su magnitud es menor que 0.00005,
+ * notación científica con cinco cifras significativas. Nunca redondea un no-cero a 0.
+ */
+export function formatearCifra(valor: number | null | undefined): string {
+  if (valor === null || valor === undefined) {
+    return "—";
+  }
+  if (valor !== 0 && Math.abs(valor) < 0.00005) {
+    return especificacionCientifica(valor);
+  }
+  return fijo(valor === 0 ? 0 : valor, 5);
+}
+
+/** Mantisa y exponente de `toExponential(decimales)`. */
+function partesExponenciales(valor: number, decimales: number): [string, number] {
+  const texto = valor.toExponential(decimales);
+  const posicion = texto.indexOf("e");
+  return [texto.slice(0, posicion), Number(texto.slice(posicion + 1))];
+}
+
+/** Como `format(x, ".4e")` de Python (exponente con al menos dos cifras). */
+function especificacionCientifica(valor: number): string {
+  const [mantisa, e] = partesExponenciales(valor, 4);
+  return `${mantisa}e${e < 0 ? "-" : "+"}${String(Math.abs(e)).padStart(2, "0")}`;
+}
+
+/** Etiquetas de la consola HTMX (backend/app/api/web/routers/predicciones.py); una prueba las compara. */
+export const ESTADOS_FIABILIDAD: Readonly<Record<string, string>> = {
+  estimable: "estimable",
+  muestra_insuficiente: "muestra insuficiente",
+  sin_resultados: "sin resultados todavía",
+  sin_base: "base no disponible",
+  excluidas: "emisiones excluidas",
+  sin_datos: "sin datos",
+  no_disponible: "no disponible",
+  fallo_de_calculo: "fallo de cálculo",
+};
+export const COMPONENTES_FIABILIDAD: Readonly<Record<string, string>> = {
+  numeros: "Números principales",
+  pares: "Pares número-color",
+  superbalota: "Superbalota (aparte)",
+};
+export const TIPOS_FIABILIDAD: Readonly<Record<string, string>> = {
+  seguimiento: "Seguimiento",
+  retrospectiva: "Retrospectiva",
+  evaluacion_de_receta: "Evaluación de la receta (informe del laboratorio)",
+};
+
 export function alineadoADerecha(formato: string): boolean {
   return formato !== "texto" && formato !== "tipo_p" && formato !== "color";
 }

@@ -7,7 +7,7 @@
 Una entrada FastAPI **separada** de la aplicación local: `app.api.publica.aplicacion:app`.
 
 - Expone consultas de los cuatro juegos (Baloto, Baloto Revancha, MiLoto y ColorLoto) bajo `/api/v1`: juegos, sorteos, estadísticas, predicciones guardadas y simulaciones guardadas.
-- Reutiliza los casos de uso existentes: `ListarJuegos`, `ObtenerJuego`, `ListarSorteos`, `ConsultarResumenJuego`, `ConsultarEstadisticasDescriptivas`, `CentroDePredicciones.consultar` y `SimulacionesFase7.listar/obtener`. No reconstruye estadísticas, predicciones, simulaciones ni lógica ML.
+- Reutiliza los casos de uso existentes: `ListarJuegos`, `ObtenerJuego`, `ListarSorteos`, `ConsultarResumenJuego`, `ConsultarEstadisticasDescriptivas`, `CentroDePredicciones.consultar` (y, desde la Fase 9.3, `CentroDePredicciones.fiabilidad`) y `SimulacionesFase7.listar/obtener`. No reconstruye estadísticas, predicciones, simulaciones ni lógica ML.
 - **No monta** la web administrativa, los estáticos ni ningún router REST interno. Las escrituras de `/api/sorteos` (POST y DELETE) y los POST de la web no existen en esta entrada; tampoco hay una ruta alternativa a ellas.
 - Todas las rutas son GET. Las consultas no entrenan, simulan, generan, sincronizan, recuperan trabajos ni modifican datos o artefactos del producto.
 
@@ -74,14 +74,15 @@ Prefijo `/api/v1`. Todas requieren `X-API-Key` salvo `/salud` y la documentació
 | `/juegos/{codigo}/estadisticas/resumen` | `hasta_numero_sorteo` | 5 | resumen del juego (Producto 1) | 401, 404, 422, 429, 503 |
 | `/juegos/{codigo}/estadisticas/panel` | `hasta_numero_sorteo` | 5 | panel descriptivo (Fase 5) | 401, 404, 422, 429, 503 |
 | `/juegos/{codigo}/estadisticas/{metrica}` | `hasta_numero_sorteo`, y según la métrica `anio`, `mes`, `dia_semana` o `ventana` | 5 | una métrica (Fase 5) | 401, 404, 422, 429, 503 |
-| `/juegos/{codigo}/predicciones` | `cartera` (64 hex, opcional); `historial` 0–50 (20) | 3 | predicción guardada (la última o la indicada) e historial acotado | 401, 404, 409, 422, 429, 503 |
+| `/juegos/{codigo}/predicciones` | `cartera` (64 hex, opcional); `historial` 0–50 (20) | 3 | predicción guardada (la última o la indicada) e historial acotado; desde la Fase 9.3, también su explicación guardada y su clasificación de candidatos tipada | 401, 404, 409, 422, 429, 503 |
+| `/juegos/{codigo}/fiabilidad` (Fase 9.3) | `hasta` ≥ 1 (opcional: solo objetivos hasta ese sorteo) | 3 | fiabilidad observada de la Fase 4: seguimiento, retrospectiva y evaluación de la receta, por separado | 401, 404, 422, 429, 503 |
 | `/juegos/{codigo}/simulaciones` | `limite` 1–50 (20) | 2 | simulaciones guardadas con su integridad | 401, 404, 422, 429, 503 |
 | `/simulaciones/{identificador}` | UUID de la fila | 2 | identidad, contenido y `contenido_sha256`, verificados | 401, 404, 409, 422, 429, 503 |
 
 Los contratos (pydantic) están en `app/api/publica/esquemas.py` y en el OpenAPI.
 
 - **Sin identificadores internos:** los juegos y los sorteos omiten los UUID internos y la fuente de importación.
-- **Predicciones:** se proyectan sin enlaces web internos, identificadores de ejecución ni configuración completa.
+- **Predicciones:** se proyectan sin enlaces web internos, identificadores de ejecución ni configuración completa. Fase 9.3: la explicación guardada se proyecta sin su sello ni campos repetidos; la fiabilidad, sin el motivo de la base ni las líneas disponibles, con la semilla del bootstrap como texto y un texto fijo en los fallos de cálculo ([contrato](fase9_frontend.md#entrega-93-explicación-clasificación-de-candidatos-y-fiabilidad)).
 - **Simulaciones:** se publican sin los metadatos de ejecución (lote, entorno y origen). Un tercero puede recomputar la `clave` desde `parametros` y `contenido_sha256` desde `contenido`.
 
 ## Errores

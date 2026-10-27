@@ -191,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/juegos/{codigo}/fiabilidad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fiabilidad observada: seguimiento, retrospectiva y evaluación de la receta, por separado */
+        get: operations["fiabilidad_api_v1_juegos__codigo__fiabilidad_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/juegos/{codigo}/simulaciones": {
         parameters: {
             query?: never;
@@ -229,6 +246,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BaseDeFiabilidad */
+        BaseDeFiabilidad: {
+            /**
+             * Estado
+             * @description consultada o no_disponible
+             */
+            estado: string;
+            /** Ultimo Sorteo */
+            ultimo_sorteo?: number | null;
+            /** Fecha */
+            fecha?: string | null;
+            /** Sorteos */
+            sorteos?: number | null;
+        };
         /** BaseDelJuego */
         BaseDelJuego: {
             /** Estado */
@@ -241,6 +272,24 @@ export interface components {
             ultima_fecha?: string | null;
             /** Objetivo */
             objetivo?: number | null;
+        };
+        /** CarteraDeLaExplicacion */
+        CarteraDeLaExplicacion: {
+            /** Clave */
+            clave: string;
+            /** Linea */
+            linea: string;
+            /** Objetivo */
+            objetivo: number;
+            /**
+             * Corte
+             * @description Corte de entrada de la cartera
+             */
+            corte: number;
+            /** Sha256 Historico */
+            sha256_historico?: string | null;
+            /** Sha256 Fuente */
+            sha256_fuente: string;
         };
         /** ColumnaDeMetrica */
         ColumnaDeMetrica: {
@@ -257,6 +306,27 @@ export interface components {
             unidad: string;
         } & {
             [key: string]: unknown;
+        };
+        /** ComponenteDeFiabilidad */
+        ComponenteDeFiabilidad: {
+            /**
+             * Estado
+             * @description Solo si el componente no tiene cifras (p. ej. no_disponible)
+             */
+            estado?: string | null;
+            /** Motivo */
+            motivo?: string | null;
+            /** Sorteos */
+            sorteos?: number | null;
+            /** Metricas */
+            metricas?: {
+                [key: string]: components["schemas"]["MetricaDeFiabilidad"];
+            } | null;
+            extremos?: components["schemas"]["ExtremosDeFiabilidad"] | null;
+            /** Identidad Remuestreo */
+            identidad_remuestreo?: {
+                [key: string]: string;
+            } | null;
         };
         /** ContenidoDeMetrica */
         ContenidoDeMetrica: {
@@ -293,6 +363,26 @@ export interface components {
             selector: components["schemas"]["SelectorDeMetrica"] | null;
         } & {
             [key: string]: unknown;
+        };
+        /** EntrenamientoDelMetodo */
+        EntrenamientoDelMetodo: {
+            /** Estimador */
+            estimador: string;
+            /**
+             * Corte De Entrenamiento
+             * @description Solo versiones registradas: corte del ajuste congelado
+             */
+            corte_de_entrenamiento?: number | null;
+            /** Periodo */
+            periodo?: {
+                [key: string]: unknown;
+            } | null;
+            /** Parametros Ajustados */
+            parametros_ajustados?: {
+                [key: string]: unknown;
+            } | null;
+            /** Detalle */
+            detalle?: unknown;
         };
         /** ErrorDetalle */
         ErrorDetalle: {
@@ -370,10 +460,221 @@ export interface components {
             /** Claves Configuradas */
             claves_configuradas: number;
         };
+        /** EvaluacionDeFiabilidad */
+        EvaluacionDeFiabilidad: {
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo: "seguimiento" | "retrospectiva" | "evaluacion_de_receta";
+            /** Descripcion */
+            descripcion?: string | null;
+            /**
+             * Estado
+             * @description estimable, muestra_insuficiente, sin_resultados, sin_base, excluidas, sin_datos, no_disponible o fallo_de_calculo
+             */
+            estado: string;
+            /** Motivo */
+            motivo?: string | null;
+            muestra?: components["schemas"]["MuestraDeFiabilidad"] | null;
+            /** Componentes */
+            componentes?: {
+                [key: string]: components["schemas"]["ComponenteDeFiabilidad"];
+            };
+            /**
+             * Origen
+             * @description Solo la receta: de qué informe del laboratorio sale
+             */
+            origen?: string | null;
+            /** Informe */
+            informe?: string | null;
+            /** Corte Del Informe */
+            corte_del_informe?: number | null;
+            /** Clasificacion Componentes */
+            clasificacion_componentes?: {
+                [key: string]: string;
+            } | null;
+        };
+        /** ExclusionDeFiabilidad */
+        ExclusionDeFiabilidad: {
+            /** Estado */
+            estado: string;
+            /** Motivo */
+            motivo: string;
+            /** Emisiones */
+            emisiones: number;
+        };
+        /**
+         * Explicacion
+         * @description Explicación guardada (Fase 4) de la cartera, verificada por su almacén. La API no la genera.
+         */
+        Explicacion: {
+            /** Clave */
+            clave: string;
+            /** Esquema */
+            esquema: string;
+            /** Version */
+            version: string;
+            cartera: components["schemas"]["CarteraDeLaExplicacion"];
+            metodo: components["schemas"]["MetodoDeLaExplicacion"];
+            variables: components["schemas"]["VariablesDeCandidatos"] | null;
+            importancias: components["schemas"]["Importancias"];
+            /** Avisos */
+            avisos: string[];
+            generacion: components["schemas"]["GeneracionDeLaExplicacion"] | null;
+        };
+        /** ExplicacionIlegible */
+        ExplicacionIlegible: {
+            /** Clave */
+            clave: string;
+            /**
+             * Motivo
+             * @description Código fijo del almacén (p. ej. contenido_alterado)
+             */
+            motivo: string;
+        };
+        /** ExtremoObservado */
+        ExtremoObservado: {
+            /** Candidatos Por Sorteo */
+            candidatos_por_sorteo: number;
+            /** Observado */
+            observado: number;
+            /** Esperado */
+            esperado: number;
+            /** Razon Observado Esperado */
+            razon_observado_esperado: number | null;
+        };
+        /** ExtremosDeFiabilidad */
+        ExtremosDeFiabilidad: {
+            fuertes?: components["schemas"]["ExtremoObservado"] | null;
+            debiles?: components["schemas"]["ExtremoObservado"] | null;
+        };
+        /**
+         * Fiabilidad
+         * @description Rendimiento observado e incertidumbre de la Fase 4 (lectura de emisiones congeladas y de
+         *     informes del laboratorio). No es una puntuación de confianza ni una probabilidad de premio.
+         */
+        Fiabilidad: {
+            /** Juego */
+            juego: string;
+            /** Nombre */
+            nombre: string;
+            /** Estado De Uso */
+            estado_de_uso: string;
+            /** Aviso */
+            aviso: string;
+            /** Contexto */
+            contexto: {
+                [key: string]: unknown;
+            };
+            /**
+             * Configuracion
+             * @description Estado de la configuración del juego (p. ej. vigente o sin_configuracion)
+             */
+            configuracion: string;
+            registrado: components["schemas"]["VersionRegistradaDeLaConfiguracion"] | null;
+            base: components["schemas"]["BaseDeFiabilidad"];
+            /**
+             * Hasta
+             * @description Solo objetivos hasta este sorteo; null = todos los resultados observados. No acredita disponibilidad temporal al generar una cartera.
+             */
+            hasta: number | null;
+            metodo: components["schemas"]["MetodoDeFiabilidad"];
+            /** Lineas */
+            lineas: components["schemas"]["LineaDeFiabilidad"][];
+            receta: components["schemas"]["EvaluacionDeFiabilidad"];
+        };
+        /** FilaDeRanking */
+        FilaDeRanking: {
+            /** Posicion */
+            posicion: number;
+            /**
+             * Candidato
+             * @description Número, color o par [número, color] (ColorLoto)
+             */
+            candidato: number | string | (number | string)[];
+            /**
+             * Probabilidad
+             * @description Probabilidad emitida por el modelo (unidad en la sección)
+             */
+            probabilidad: number;
+            /**
+             * Uniforme
+             * @description Referencia uniforme del mismo universo y unidad
+             */
+            uniforme: number;
+            /**
+             * Diferencia
+             * @description probabilidad − uniforme
+             */
+            diferencia: number;
+            /**
+             * Razon
+             * @description probabilidad / uniforme
+             */
+            razon: number | null;
+            /**
+             * Multiplicidad Esperada
+             * @description Solo ColorLoto: balotas × probabilidad por balota
+             */
+            multiplicidad_esperada?: number | null;
+        };
+        /** FuenteDelMetodo */
+        FuenteDelMetodo: {
+            /** Cita */
+            cita: string;
+            /** Doi */
+            doi: string | null;
+            /** Uso */
+            uso: string;
+        };
+        /** GeneracionDeLaExplicacion */
+        GeneracionDeLaExplicacion: {
+            /** Generado En */
+            generado_en?: string | null;
+            /** Origen */
+            origen?: string | null;
+            /** Nota */
+            nota?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ImportanciaDeVariable */
+        ImportanciaDeVariable: {
+            /** Variable */
+            variable: string;
+            /** Valor */
+            valor: number | null;
+            /** Columnas */
+            columnas: number;
+            /** Es Identidad */
+            es_identidad: boolean;
+            resumen?: components["schemas"]["ResumenDeImportancia"] | null;
+        };
+        /** Importancias */
+        Importancias: {
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "disponible" | "no_disponible";
+            /** Motivo */
+            motivo?: string | null;
+            /** Tipo */
+            tipo?: string | null;
+            /** Descripcion */
+            descripcion?: string | null;
+            /** Estimador */
+            estimador?: string | null;
+            /** Calibrado */
+            calibrado?: boolean | null;
+            /** Valores */
+            valores?: components["schemas"]["ImportanciaDeVariable"][] | null;
+            /** Aviso */
+            aviso?: string | null;
         };
         /** IndicadorDeMetrica */
         IndicadorDeMetrica: {
@@ -487,6 +788,135 @@ export interface components {
             /** Juegos */
             juegos: components["schemas"]["Juego"][];
         };
+        /** LineaDeFiabilidad */
+        LineaDeFiabilidad: {
+            /**
+             * Linea
+             * @description procedencia:línea de Producto 6
+             */
+            linea: string;
+            /** Papel */
+            papel: string;
+            /** Nombre */
+            nombre: string;
+            /** Estimador */
+            estimador: string;
+            /**
+             * Evaluaciones
+             * @description Seguimiento y retrospectiva, por separado
+             */
+            evaluaciones: components["schemas"]["EvaluacionDeFiabilidad"][];
+        };
+        /** LineaDeModelo */
+        LineaDeModelo: {
+            /** Id */
+            id: string;
+            /** Modelo */
+            modelo: string;
+            /** Version */
+            version: string;
+            /** Perfil */
+            perfil: string;
+            /** Nombre */
+            nombre: string;
+        };
+        /** MetodoDeFiabilidad */
+        MetodoDeFiabilidad: {
+            /** Version */
+            version: string;
+            /** Unidad */
+            unidad: string;
+            /** Estimacion */
+            estimacion: string;
+            /** Incertidumbre */
+            incertidumbre: string;
+            /** Minimo Para Intervalo */
+            minimo_para_intervalo: number;
+            /** Supuestos */
+            supuestos: string;
+            /** Limitaciones */
+            limitaciones: string[];
+            /**
+             * Extremos
+             * @description Candidatos por sorteo en cada extremo, por componente
+             */
+            extremos: {
+                [key: string]: number;
+            };
+            presentacion: components["schemas"]["PresentacionDelMetodo"];
+            /** Fuentes */
+            fuentes: components["schemas"]["FuenteDelMetodo"][];
+        };
+        /** MetodoDeLaExplicacion */
+        MetodoDeLaExplicacion: {
+            /** Modelo */
+            modelo: string;
+            /** Nombre */
+            nombre: string;
+            /** Version De La Receta */
+            version_de_la_receta: string;
+            /** Perfil */
+            perfil: string;
+            /** Salida */
+            salida: string;
+            /** Objetivo */
+            objetivo: number;
+            /**
+             * Corte
+             * @description Corte de entrada del vector fuente (calculado hasta este sorteo)
+             */
+            corte: number;
+            /** Familia */
+            familia: string;
+            /** Tipo */
+            tipo?: string | null;
+            variables?: components["schemas"]["VariablesDelMetodo"] | null;
+            transformacion?: components["schemas"]["TransformacionDelMetodo"] | null;
+            /** Parametros */
+            parametros?: {
+                [key: string]: unknown;
+            } | null;
+            /** Pesos */
+            pesos?: components["schemas"]["PesoDeComponente"][] | null;
+            entrenamiento?: components["schemas"]["EntrenamientoDelMetodo"] | null;
+            registrado?: components["schemas"]["RegistradoDelMetodo"] | null;
+        };
+        /** MetricaDeFiabilidad */
+        MetricaDeFiabilidad: {
+            /**
+             * Estado
+             * @description estimable, muestra_insuficiente, sin_datos, no_disponible o fallo_de_calculo
+             */
+            estado: string;
+            /** N */
+            n?: number | null;
+            /** Media */
+            media?: number | null;
+            /**
+             * Intervalo
+             * @description Percentiles bootstrap [inferior, superior]; null sin intervalo
+             */
+            intervalo?: number[] | null;
+            /** Motivo */
+            motivo?: string | null;
+            /** Etiqueta */
+            etiqueta?: string | null;
+            /** Lectura */
+            lectura?: string | null;
+            /** Bloque */
+            bloque?: number | null;
+            /** Remuestreos */
+            remuestreos?: number | null;
+            /** Nivel */
+            nivel?: number | null;
+            /**
+             * Semilla
+             * @description Semilla del bootstrap en texto decimal (hasta 60 bits)
+             */
+            semilla?: string | null;
+            /** Error Estandar Bootstrap */
+            error_estandar_bootstrap?: number | null;
+        };
         /** MetricaDisponible */
         MetricaDisponible: {
             /** Metrica */
@@ -524,6 +954,36 @@ export interface components {
             tipo?: string | null;
             /** Version */
             version?: string | null;
+        };
+        /** MuestraDeFiabilidad */
+        MuestraDeFiabilidad: {
+            /**
+             * Sorteos
+             * @description Sorteos incluidos en las cifras
+             */
+            sorteos?: number | null;
+            /** Periodo */
+            periodo?: number[] | null;
+            /**
+             * Hasta
+             * @description Solo objetivos hasta este sorteo; null = todos los resultados
+             */
+            hasta?: number | null;
+            /** Emisiones */
+            emisiones?: number | null;
+            /**
+             * Pendientes
+             * @description Emisiones sin resultado observado en la base consultada
+             */
+            pendientes?: number | null;
+            /** Sin Base */
+            sin_base?: number | null;
+            /** Exclusiones */
+            exclusiones?: components["schemas"]["ExclusionDeFiabilidad"][];
+            /** Estado Del Candidato */
+            estado_del_candidato?: string | null;
+            /** Excluidos De La Muestra Comun */
+            excluidos_de_la_muestra_comun?: number | null;
         };
         /** OpcionDeSelector */
         OpcionDeSelector: {
@@ -574,6 +1034,13 @@ export interface components {
             /** Color Nombre */
             color_nombre: string;
         };
+        /** PesoDeComponente */
+        PesoDeComponente: {
+            /** Componente */
+            componente: string;
+            /** Peso */
+            peso: number;
+        };
         /** Prediccion */
         Prediccion: {
             /** Clave */
@@ -599,10 +1066,7 @@ export interface components {
             combinaciones: {
                 [key: string]: unknown;
             }[];
-            /** Rankings */
-            rankings: {
-                [key: string]: unknown;
-            } | null;
+            rankings: components["schemas"]["Rankings"] | null;
             /** Observado */
             observado: {
                 [key: string]: unknown;
@@ -613,6 +1077,16 @@ export interface components {
             } | null;
             /** Explicacion Disponible */
             explicacion_disponible: boolean;
+            /** @description Línea de modelo de Producto 6 (vector fuente) */
+            linea_de_modelo?: components["schemas"]["LineaDeModelo"] | null;
+            /** @description Versión registrada que usó la cartera */
+            registrado?: components["schemas"]["VersionRegistradaDeLaCartera"] | null;
+            /** @description Explicación guardada vigente; null si no hay ninguna */
+            explicacion?: components["schemas"]["Explicacion"] | null;
+            /** Explicaciones Ilegibles */
+            explicaciones_ilegibles?: components["schemas"]["ExplicacionIlegible"][];
+            /** @description Rankings y variables recalculados desde la cartera y comparados con la explicación */
+            reproduccion?: components["schemas"]["Reproduccion"] | null;
         };
         /** PrediccionGuardada */
         PrediccionGuardada: {
@@ -680,6 +1154,54 @@ export interface components {
             /** Historial Total */
             historial_total: number;
         };
+        /** PresentacionDelMetodo */
+        PresentacionDelMetodo: {
+            /** Umbral Absoluto Proximo A Cero */
+            umbral_absoluto_proximo_a_cero: number;
+            /** Criterio */
+            criterio: string;
+            /** Formato */
+            formato: string;
+        };
+        /**
+         * Rankings
+         * @description Clasificación de candidatos del vector fuente congelado (la de la explicación guardada o la
+         *     determinista de la cartera). La superbalota y, en ColorLoto, números y colores van aparte.
+         */
+        Rankings: {
+            /** Aviso */
+            aviso: string;
+            /** Objetivo */
+            objetivo: number;
+            /** Corte */
+            corte: number;
+            numeros: components["schemas"]["SeccionDeRanking"];
+            superbalota?: components["schemas"]["SeccionDeRanking"] | null;
+            pares?: components["schemas"]["SeccionDeRanking"] | null;
+            colores?: components["schemas"]["SeccionDeRanking"] | null;
+        };
+        /** RegistradoDelMetodo */
+        RegistradoDelMetodo: {
+            /** Clave */
+            clave: string;
+            /** Numero */
+            numero: number;
+            /** Corte De Entrenamiento */
+            corte_de_entrenamiento?: number | null;
+            /** Sha256 Estimador */
+            sha256_estimador?: string | null;
+        };
+        /** Reproduccion */
+        Reproduccion: {
+            /** Exacta */
+            exacta: boolean;
+            /** Distintos */
+            distintos?: string[];
+            /** Motivo */
+            motivo?: string | null;
+            /** Nota */
+            nota?: string | null;
+        };
         /**
          * RespuestaDeMetrica
          * @description Una métrica del juego (Fase 5 o anterior) sobre la muestra hasta el corte.
@@ -708,6 +1230,15 @@ export interface components {
             total_sorteos: number;
         } & {
             [key: string]: unknown;
+        };
+        /** ResumenDeImportancia */
+        ResumenDeImportancia: {
+            /** Minimo */
+            minimo: number;
+            /** Maximo */
+            maximo: number;
+            /** Media Absoluta */
+            media_absoluta: number;
         };
         /** Ruta */
         Ruta: {
@@ -738,6 +1269,38 @@ export interface components {
             estado: string;
             /** Api */
             api: string;
+        };
+        /** SeccionDeRanking */
+        SeccionDeRanking: {
+            /**
+             * Todos
+             * @description Universo completo, de mayor a menor probabilidad
+             */
+            todos: components["schemas"]["FilaDeRanking"][];
+            /** Fuertes */
+            fuertes?: components["schemas"]["FilaDeRanking"][] | null;
+            /** Debiles */
+            debiles?: components["schemas"]["FilaDeRanking"][] | null;
+            /** Universo */
+            universo: number;
+            /** Por Extremo */
+            por_extremo?: number | null;
+            /** Empate En El Limite */
+            empate_en_el_limite?: {
+                [key: string]: boolean;
+            } | null;
+            /** Nota Empates */
+            nota_empates?: string | null;
+            /** Suma */
+            suma?: number | null;
+            /** Unidad */
+            unidad: string;
+            /** Denominador */
+            denominador: string;
+            /** Nota */
+            nota?: string | null;
+            /** Estrategia */
+            estrategia?: string | null;
         };
         /** SelectorDeMetrica */
         SelectorDeMetrica: {
@@ -880,6 +1443,19 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** TransformacionDelMetodo */
+        TransformacionDelMetodo: {
+            /** Tipo */
+            tipo: string;
+            /** Detalle */
+            detalle?: string | null;
+            /** Delta */
+            delta?: number | null;
+            /** Epsilon */
+            epsilon?: number | null;
+            /** Tolerancia */
+            tolerancia?: number | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -892,6 +1468,54 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VariablesDeCandidatos */
+        VariablesDeCandidatos: {
+            /** Version */
+            version: string;
+            /** Nombres */
+            nombres: string[];
+            /**
+             * Por Candidato
+             * @description Valores por candidato (`n` o `n|COLOR`) en el orden de `nombres`
+             */
+            por_candidato: {
+                [key: string]: number[];
+            };
+            /** Usadas Por El Modelo */
+            usadas_por_el_modelo: boolean;
+            /** Calculado Hasta Sorteo */
+            calculado_hasta_sorteo: number;
+            /** Nota */
+            nota?: string | null;
+        };
+        /** VariablesDelMetodo */
+        VariablesDelMetodo: {
+            /** Version */
+            version: string;
+            /** Nombres */
+            nombres: string[];
+            /** Descripcion */
+            descripcion?: string | null;
+        };
+        /** VersionRegistradaDeLaCartera */
+        VersionRegistradaDeLaCartera: {
+            /** Clave */
+            clave: string;
+            /** Numero */
+            numero: number;
+        };
+        /** VersionRegistradaDeLaConfiguracion */
+        VersionRegistradaDeLaConfiguracion: {
+            /** Clave */
+            clave: string;
+            /** Numero */
+            numero: number;
+            /**
+             * Estado
+             * @description compatible, incompatible, alterado o no_encontrado
+             */
+            estado: string;
         };
     };
     responses: never;
@@ -1588,6 +2212,77 @@ export interface operations {
             };
             /** @description Recurso guardado no íntegro o histórico no válido */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Parámetro no válido */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Límite de uso excedido (cabecera Retry-After) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description API sin claves configuradas o base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+        };
+    };
+    fiabilidad_api_v1_juegos__codigo__fiabilidad_get: {
+        parameters: {
+            query?: {
+                /** @description Solo objetivos hasta este sorteo; no acredita que el informe o la emisión existieran al generar una cartera */
+                hasta?: number | null;
+            };
+            header?: never;
+            path: {
+                /** @description Código del juego: BALOTO, BALOTO_REVANCHA, MILOTO, COLORLOTO */
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fiabilidad"];
+                };
+            };
+            /** @description Clave ausente o no válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Juego o recurso inexistente */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

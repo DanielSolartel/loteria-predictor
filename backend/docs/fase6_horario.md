@@ -6,8 +6,14 @@
 - **En Windows nativo:** validado el 26 de octubre de 2026 y aprobado por la auditoría independiente:
   - pruebas dirigidas con Windows PowerShell 5.1;
   - ensayo nativo B con el Programador de tareas real y un testigo sintético ([validación del operador](fase9_2_validacion_operador_2026-10-26.md)).
-- **Tarea real:** el horario **no está aplicado** a `LP6-01023009031fcabd`, que sigue habilitada con la programación anterior. Su migración es un procedimiento manual posterior, separado y con reversión ([plan y procedimiento](fase6_migracion_lp6.md)).
-- **Pendiente también:** la publicación manual y el CI del nuevo PR.
+- **Tarea real:** cuando se validó, el horario no estaba aplicado a `LP6-01023009031fcabd`, que seguía con la programación anterior; su migración era un procedimiento manual posterior, separado y con reversión ([plan y procedimiento](fase6_migracion_lp6.md)). *Actualización:* Daniel migró y activó en Windows `LP6-01023009031fcabd` con el horario por juego. Como antecedente, el auditor confirmó que la captura del 27 de octubre de 2026 a las 00:11, hora de Bogotá, registraba nueve ejecuciones programadas y quince consultas en sus franjas: siete de MiLoto, tres de Baloto, tres de Revancha y dos de ColorLoto, sin duplicados ni fallos de sincronización reportados. Todas fueron sin resultados nuevos; esa captura todavía no acreditaba la incorporación de una novedad real ni la recuperación matinal con pendientes.
+- **Publicación:** integrado en el PR #101 (merge `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`), con sus cinco checks aprobados; antes figuraban pendientes la publicación manual y el CI del nuevo PR.
+
+**Observación posterior (27 de octubre de 2026, 10:21, America/Bogota).** La operación real de Daniel, auditada sobre sus registros, ya acredita una novedad automática en cada juego con el horario nuevo: BALOTO y BALOTO_REVANCHA 2726 → 2727 (646 → 647 sorteos cada uno), MILOTO 629 → 630 (98 → 99) y COLORLOTO 229 → 230 (229 → 230). Cada incorporación registra sincronización `completado`, `nuevos: 1` y la siguiente predicción con explicación `guardada`: objetivos 2728 de Baloto/Revancha (28-10-2026), 631 de MiLoto (27-10-2026) y 231 de ColorLoto (29-10-2026).
+
+Los 20 ciclos conservados contienen 33 consultas programadas (8 MiLoto, 9 Baloto, 9 Revancha y 7 ColorLoto), sin parejas juego/oportunidad repetidas ni fallos de sincronización reportados. Los 29 intentos previos sin novedad no emitieron una predicción nueva; configuración y selecciones de modelos se conservan respecto de la observación anterior. Son hechos de operación real, separados de las pruebas sintéticas de 9.3; este cierre no ejecuta ciclos ni SQL operativo.
+
+El Programador informó último inicio **09:24:45**: no acredita un disparo exactamente a las 09:00. Los cuatro juegos ya habían terminado de actualizarse durante la madrugada; la **recuperación matinal con resultados pendientes sigue sin observarse**. Se conserva la tarea **versión 2** y su plan, sin cambios; las versiones v3/v4 de las entregas no son versiones de la tarea. La limpieza histórica sigue pendiente y no queda resuelta por esta observación. Véase [observación real del 27 de octubre](fase9_3_validacion_operador_2026-10-27.md#actualizacion-real-de-fase-6-del-27-de-octubre).
 
 Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 
@@ -44,7 +50,7 @@ Una política solo se acepta si no contradice el calendario de sorteo (`validar_
 
 ## Propuesta inicial (configurable; no instalada)
 
-Propuesta del auditor para el entorno aislado. No son horas oficiales de publicación. El fin cae el día siguiente.
+Se conserva aquí la propuesta inicial del auditor para el entorno aislado, con su encabezado histórico. La migración posterior aplicó el horario a la tarea real versión 2, como se indica en el estado anterior. No son horas oficiales de publicación. El fin cae el día siguiente.
 
 | Juego | Día del sorteo que origina la franja | Inicio | Fin (día siguiente) |
 |---|---|---|---|
