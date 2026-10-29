@@ -1,9 +1,11 @@
 # Fase 9.1 — Frontend de consulta (React) y pasarela local
 
+**Entrega 9.4 (sobre `4f4dd639581168b08c95816660f80fc4f735b1ac`, merge del PR #102):** consultas de modelos registrados, carteras de Producto 5 y resultados de Producto 6. V2 validada en Linux y Windows nativo con Brave y aprobada por auditoría; publicación manual, integración y CI pendientes. [Validación del operador](fase9_4_validacion_operador_2026-10-28.md); [diseño](#entrega-94-modelos-carteras-y-resultados-guardados); [protocolo nativo](fase9_windows.md#entrega-94-validación-nativa-completada).
+
 **Entrega 9.3 (sobre `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`, merge del PR #101 que integró la 9.2):** explicación guardada, clasificación de candidatos y fiabilidad observada, solo de consulta.
 
-- **Verificación:** en Linux/Cloud con datos sintéticos (Python, Vitest, tipos, compilación, canario y recorrido en Chromium a 360, 390 y 1280 px).
-- **Pendiente:** auditoría, validación en Windows 11 nativo con Brave ([protocolo dirigido](fase9_windows.md#entrega-93-protocolo-dirigido)) y publicación manual.
+- **Validación 9.3 v2:** Linux/Cloud y Windows 11 nativo con Brave; auditoría aprobada ([cierre del operador](fase9_3_validacion_operador_2026-10-27.md)).
+- **Integración 9.3:** integrada en PR #102 (merge `4f4dd639581168b08c95816660f80fc4f735b1ac`), con los cinco trabajos aprobados: Node 22, Node 24, Chromium/Linux, Python/Linux y Python/Windows (workflows `40589232731` y `40589232763`). Son antecedentes de la 9.3, no resultados de la 9.4.
 
 [Detalle de la entrega](#entrega-93-explicación-clasificación-de-candidatos-y-fiabilidad). La Fase 9 global sigue abierta.
 
@@ -56,6 +58,11 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 | Métrica `/juegos/:codigo/estadisticas/:metrica` (corte y `anio`, `mes`, `dia_semana`, `ventana` o `color` según el selector; `pagina` si el índice la declara) | `…/estadisticas/{metrica}` | 5 |
 | Predicción guardada `/juegos/:codigo/prediccion` (`?cartera`) | `…/predicciones`; `…/fiabilidad?hasta=<corte>` solo al pulsar «Consultar fiabilidad» | carga automática 4 con catálogo sin caché (1 + 3); acción explícita posterior 3 |
 | Fiabilidad `/juegos/:codigo/fiabilidad` (`?hasta`), 9.3 | `…/fiabilidad` | 3 |
+| Modelos registrados `/juegos/:codigo/modelos` (página, modelo y perfil) | `…/modelos-guardados` | 2; 3 con catálogo frío |
+| Modelo registrado `/juegos/:codigo/modelos/:identificador` | `…/modelos-guardados/{clave}` | 2; 3 con catálogo frío |
+| Carteras Producto 5 `/juegos/:codigo/carteras` (página, línea e intervalo de objetivos) | `…/carteras-guardadas` | 2; 3 con catálogo frío |
+| Cartera Producto 5 `/juegos/:codigo/carteras/:identificador` | `…/carteras-guardadas/{clave}` | 2; 3 con catálogo frío |
+| Resultados Producto 6 `/juegos/:codigo/resultados` (procedencia, línea, tipo, objetivos y página) | `…/resultados` | 5; 6 con catálogo frío |
 | Simulaciones `/juegos/:codigo/simulaciones` (`?limite`) | `…/simulaciones` | 2 |
 | Simulación `/simulaciones/:id` | `simulaciones/{id}` | 2 |
 | Servicio `/servicio` | `salud` y `estado` | 0 + 1 |
@@ -79,7 +86,7 @@ Antes, una sola vez por cambio del frontend: `npm ci` y `npm run build` en `fron
 ## Pasarela: controles y límites
 
 - **Destino fijo:** `PASARELA_API_URL` solo `http://` sobre IP loopback con puerto, sin credenciales, ruta, consulta ni fragmento; nunca lo elige el navegador. No sigue redirecciones (un 3xx es 502 `respuesta_no_valida`).
-- **Rutas cerradas:** solo GET y las plantillas del OpenAPI versionado (13 en la 9.1 y la 9.2; 14 desde la 9.3, que añade la de fiabilidad con `hasta`), con su lista de parámetros; excluidas `/api/v1/docs` y `/api/v1/openapi.json`. Rechaza rutas ambiguas, `..`, separadores codificados, caracteres de control, barra final y rutas de más de 512 caracteres (400 `ruta_no_valida`); una ruta de API desconocida es 404 `ruta_no_disponible`.
+- **Rutas cerradas:** solo GET y las plantillas del OpenAPI versionado (13 en la 9.1/9.2, 14 en la 9.3 y 19 en la 9.4, con los cinco GET de modelos, carteras y resultados guardados), con su lista de parámetros; excluidas `/api/v1/docs` y `/api/v1/openapi.json`. Rechaza rutas ambiguas, `..`, separadores codificados, caracteres de control, barra final y rutas de más de 512 caracteres (400 `ruta_no_valida`); una ruta de API desconocida es 404 `ruta_no_disponible`.
 - **Parámetros:** como máximo 16, consulta ≤ 512 caracteres, valores ≤ 80 caracteres de `[A-Za-z0-9_.:-]`, sin repetir ni nombres no admitidos (422).
 - **Acceso:** cliente loopback; `Host` exacto entre `PASARELA_HOSTS` (una sola cabecera); en `/api` y `/pasarela/`, `Origin` (si viene) entre `PASARELA_ORIGENES` y `Sec-Fetch-Site` (si viene) `same-origin` o `none`. CORS deshabilitado. `X-Forwarded-For` se ignora.
 - **Cabeceras:** a la API solo `Accept`, `X-API-Key` propia, `User-Agent` y `Connection: close`; nunca cookies ni credenciales del cliente. Al navegador solo `Content-Type`, `X-Request-ID`, `Retry-After` (429/503) y `X-RateLimit-*`, más las de seguridad: CSP `default-src 'self'` (sin recursos externos, `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`, COOP/CORP `same-origin`, `Permissions-Policy` y `Cache-Control: no-store`.
@@ -157,7 +164,7 @@ Los ajustes posteriores v3 y v4 solo tocan Fase 6 (controlador de la tarea, ensa
 
 **Base:** `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`, merge del PR #101, que integró la 9.2 con sus cinco checks aprobados e incluye el arreglo de pruebas `e38362bf2341cb30389141c67eb37b5b89a6e2fe`.
 
-**Estado:** 9.3 v2 validada en Linux y Windows nativo con Brave y aprobada por la auditoría; cierre documental preparado, con publicación manual de Daniel y CI del nuevo PR pendientes. [Cierre del operador](fase9_3_validacion_operador_2026-10-27.md). El [protocolo dirigido](fase9_windows.md#entrega-93-protocolo-dirigido) se conserva como referencia ya ejecutada, sin repetirlo por rutina. Fase 9 global abierta: 9.3 pendiente de integración y 9.4/9.5 planificadas.
+**Estado:** 9.3 v2 validada en Linux y Windows nativo con Brave y aprobada por la auditoría; integrada en PR #102 (merge `4f4dd639581168b08c95816660f80fc4f735b1ac`), con los cinco trabajos aprobados: Node 22, Node 24, Chromium/Linux, Python/Linux y Python/Windows (workflows `40589232731` y `40589232763`). Son antecedentes de la 9.3, no resultados de la 9.4. [Cierre del operador](fase9_3_validacion_operador_2026-10-27.md). El [protocolo dirigido](fase9_windows.md#entrega-93-protocolo-dirigido) se conserva como referencia ya ejecutada, sin repetirlo por rutina. Fase 9 global abierta: 9.3 integrada en PR #102; 9.4 v2 validada en Linux y Windows/Brave y aprobada por auditoría, con publicación manual, integración y CI pendientes; 9.5 planificada.
 
 **Alcance (solo consulta, cuatro juegos).**
 - **Predicción guardada** (`/juegos/:codigo/prediccion`). Añade:
@@ -305,26 +312,58 @@ Los grupos no se suman: son baterías distintas. El primer intento del recorrido
 
 **Windows y Brave:** validación nativa completada y auditada el 25 de octubre de 2026: 379 pruebas Vitest, 186 de pasarela y 92 de API pública sin fallos, errores ni omisiones; seis escenarios Brave, incluido Vite mediante el adaptador externo corregido. Son resultados propios del operador, separados de los antecedentes Linux anteriores. [Evidencia y límites](fase9_validacion_operador_2026-10-25.md); [protocolo](fase9_windows.md).
 
+## Entrega 9.4: modelos, carteras y resultados guardados
+
+**Base:** `4f4dd639581168b08c95816660f80fc4f735b1ac`, merge del PR #102; árbol de 976 archivos `3aa63d583a9c4df7a139b7eafe5a161fadcbe441`. El código y cierre de la 9.3 están integrados. Sus cinco checks de Actions (Node 22/24, Chromium/Linux, Python/Linux y Python/Windows; workflows `40589232731` y `40589232763`) son antecedentes de la base. No se ejecutan Actions ni se modifica facturación en esta entrega.
+
+**Estado de 9.4 v2:** validada en Linux y Windows nativo con Brave y aprobada por auditoría. Publicación manual, integración y CI pendientes. [Evidencia y límites](fase9_4_validacion_operador_2026-10-28.md); los cinco checks del PR #102 siguen atribuidos exclusivamente a 9.3/base.
+
+**Alcance implementado.** Para BALOTO, BALOTO_REVANCHA, MILOTO y COLORLOTO:
+
+| Consulta pública y pantalla | Lector/HTMX existente | Contrato y coste |
+|---|---|---|
+| `…/modelos-guardados` y `…/modelos-guardados/{clave}` | `LaboratorioFileStore.modelos/obtener_modelo`, `modelos_registrados.resumen/compatibilidad`; `laboratorio/modelos.html` y `modelo.html` | Listado paginado y ficha de versiones realmente registradas, separados del catálogo de candidatos. Identidad, familia, perfil, versión, cortes y metadatos disponibles. 2 fichas; 3 con catálogo frío |
+| `…/carteras-guardadas` y `…/carteras-guardadas/{clave}` | `CarterasDeModelos.lineas/carteras_de_linea/cartera`; `carteras/juego.html` y `cartera.html` | Carteras Producto 5, distintas de la predicción de 9.3: combinaciones, objetivo/corte, método/modelo/versiones y reproducción guardada. 2 fichas; 3 con catálogo frío |
+| `…/resultados` | `CentroDeResultados.consultar`, `Filtros`; `resultados/juego.html` y sus parciales de resumen/comparación/carteras | Emisiones y observados, líneas/procedencias, muestra, exclusiones y referencia uniforme, con filtros y paginación actuales. 5 fichas; 6 con catálogo frío |
+
+No se deserializa ni ejecuta el estimador al leer metadatos; el lector valida el manifiesto canónico, su reserva y las huellas/tamaños. Ausencia, alteración e incompatibilidad se informan y no se reparan. Los detalles verifican el juego y la identidad del artefacto; no atribuyen otra versión, la configuración actual ni una receta ajena a una cartera histórica. No se guardan informes ni marcas. Las agregaciones de Producto 6 vienen del caso de uso existente, no de un nuevo motor en la API o React. Un resultado pendiente conserva valores no observados, nunca cero aciertos inventados. Superbalota y pares número-color mantienen su representación.
+
+**F94-ROB-01 cerrado en v2.** La proyección contiene los metadatos necesarios incompletos por artefacto: el listado conserva la cartera como alterada y las sanas siguen disponibles; la ficha afectada devuelve 409. El nombre opcional ausente se publica como `null`, sin completar con la configuración actual. La sonda original, sin modificar, pasó de 1/3 (código 1) sobre v1 a 3/3 (código 0) sobre v2.
+
+**Filtros y contexto.** Modelos admite `pagina`, `por_pagina`, `modelo` y `perfil`; carteras, `pagina`, `por_pagina`, `linea`, `desde` y `hasta`; resultados, `procedencia`, `linea`, `tipo`, `desde`, `hasta`, `objetivo`, `pagina` y `por_pagina`. `desde`/`hasta` se refieren a números objetivo, no a fecha de disponibilidad de la emisión. La URL conserva filtros, navegación directa, recarga y atrás/adelante. Un cambio de juego/filtro/selección invalida la respuesta anterior; las tardías incompatibles no se muestran. Los detalles se consultan mediante acción explícita, sin precarga de paneles secundarios.
+
+**Presupuesto y conservación.** Toda carga automática nueva incluye el catálogo en su coste: modelos/carteras 1 + 2 = 3; resultados 1 + 5 = 6. No se reducen costes ni aumentan cuotas. Se conservan la carga de predicción de 9.3 (1 + 3 = 4), la fiabilidad por acción explícita y su acreditación de contexto, 429/`Retry-After` sin reintentos automáticos, autenticación, clave en servidor, proyección pública, errores saneados, `no-store`, `X-Request-ID`, límites, concurrencia y plazo total.
+
+**Validación y atribución.** Daniel completó la validación nativa de v2 el 28 de octubre de 2026 en Windows 11/Python 3.14.6. Las 173 pruebas API/pasarela y la sonda 3/3 proceden de la primera corrida `d5a768db` y se retuvieron sin repetir; contención 2/2, con código 124 esperado en el ensayo de plazo. La continuación `1463b159` ejecutó 780 Vitest nuevos en Windows y completó tipos, TypeScript, compilación y canario. Node 24.15.0, npm 11.12.1, Brave instalado (motor 156.0.8078.48) y Playwright 1.56.1. Los resultados llevan la etiqueta genérica Chromium; la identidad del ejecutable externo acredita Brave. Los registros Linux del implementador y del auditor conservan su atribución, incluidos los frontend/recorridos v1 retenidos durante el ajuste Linux v2; no se suman grupos solapados.
+
+Los cinco escenarios Brave suman 87 visitas, 15 comprobaciones de navegador, ocho controles HTTP y 88 capturas a 360, 390 y 1280 px. Cuota registra cero visitas en su contador genérico aunque sí hubo navegación, y una comprobación: 429/`Retry-After`, sin reintento automático y recuperación por acción explícita. La auditoría visual posterior aprobó las 88 capturas sin bloqueos; el campo pendiente de la salida original se conserva como histórico. No es una certificación general de accesibilidad. [Cadena nativa, tabla por escenario y procedencia](fase9_4_validacion_operador_2026-10-28.md).
+
+**Salvedad documental de OpenAPI aceptada.** El generado en Windows usa `Unprocessable Content` donde el versionado dice `Unprocessable Entity`, exclusivamente en las cinco descripciones de respuesta 422 de los endpoints nuevos. El resto del JSON completo coincide. El comparador externo conserva ambos documentos y su diferencia, acepta sólo ese conjunto auditado y rechaza cualquier cambio adicional; declara `documentos_json_iguales=false` y `cinco_descripciones_422_auditadas_aceptadas=true`. No se modificaron el producto, OpenAPI versionado, tipos o contrato funcional. Es una salvedad de validación del producto v2, sin entrega v3.
+
+**Límites conservados.** Datos sintéticos, SQLite y almacenes aislados; API y pasarela reales y SPA compilada, con presupuestos fríos 3/6, canario ausente, mapas de huellas e índices/controles públicos conservados. Los ajustes reducidos preparan versiones sintéticas antes de los GET, durante los cuales se bloquean escritura, entrenamiento, carga/inferencia y trabajadores; no son una batería ML. Las carpetas API/pasarela siguen incluidas en `tests/seleccion_windows.txt`, pero no se ejecutaron la selección completa Windows, suite completa, mediciones, PostgreSQL, otra batería ML ni operación u observación de Fase 6. Este cierre sólo verifica documentos. La Fase 9 global continúa abierta; publicación manual, integración y CI de 9.4 permanecen pendientes.
+
+La operación de Fase 6 y sus documentos históricos se conservan: tarea versión 2, novedades automáticas observadas en los cuatro juegos y límite explícito de la recuperación matinal con pendientes. El inicio registrado 09:24:45 no acredita un disparo a las 09:00. No se consulta SQL operativo ni se ejecutan ciclos. Continúan `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`. La 9.5, despliegue y aplicación personal no forman parte de esta entrega.
+
 ## Matriz de huecos de la Fase 9
 
-| Función de la consola HTMX | 9.1, 9.2 y 9.3 | Plan acordado o fuera del alcance actual |
+| Función de la consola HTMX | 9.1–9.4 | Plan acordado o fuera del alcance actual |
 |---|---|---|
 | Juegos y reglas | Cubierto | — |
 | Resumen con frescura y corte | Cubierto | Gráficas de barras |
 | Sorteos: filtros, paginación y detalle | Cubierto | — |
 | Panel de Fase 5 y métricas con página (18/18/11/5) | Cubierto | Gráficas nuevas |
 | Páginas de las métricas anteriores: 12 en Baloto y en Revancha, 11 en MiLoto y 31 en ColorLoto. *Corrección:* la 9.1 decía «30 en Baloto», que es el total con las de Fase 5 | Cubierto en la entrega 9.2, validada en Windows con Brave, auditada e integrada en el PR #101 | Gráficas de la consola (se sustituyen por tablas) |
-| Predicción guardada | Cubierto (historial, modelo, clasificación temporal, integridad, combinaciones, observado, frente a la base). La 9.3 añade explicación guardada, método y versión registrada, cortes de entrada y de entrenamiento, variables e importancias, y la clasificación de candidatos con la referencia uniforme: verificada en Linux, pendiente de Windows y de auditoría | Gráficas de la consola (se sustituyen por tablas); generar o explicar una predicción (escritura) |
-| Fiabilidad de las predicciones | 9.3 v2: consulta explícita para la cartera solo si corresponde su contexto; ausencia explícita en otro caso y acceso a la fiabilidad general de la configuración actual. Seguimiento, retrospectiva y receta por separado; `hasta` filtra objetivos. Pendiente de Windows y de auditoría | Elegir otra línea de Producto 6 (parámetro `linea` de la consola); gráficas nuevas para después |
+| Predicción guardada | Cubierto (historial, modelo, clasificación temporal, integridad, combinaciones, observado, frente a la base). La 9.3 añade explicación guardada, método y versión registrada, cortes de entrada y de entrenamiento, variables e importancias, y la clasificación de candidatos con la referencia uniforme: validada en Linux y Windows/Brave, auditada e integrada en PR #102 | Gráficas de la consola (se sustituyen por tablas); generar o explicar una predicción (escritura) |
+| Fiabilidad de las predicciones | 9.3 v2: consulta explícita para la cartera solo si corresponde su contexto; ausencia explícita en otro caso y acceso a la fiabilidad general de la configuración actual. Seguimiento, retrospectiva y receta por separado; `hasta` filtra objetivos. Validada, auditada e integrada en PR #102 | Resultados de Producto 6 con línea explícita cubiertos por 9.4; gráficas nuevas para después |
 | Simulaciones guardadas | Cubierto | Lanzar simulaciones (escritura) |
 | Salud y estado de la API | Cubierto | — |
-| Modelos y laboratorio (Fase 3) | — | 9.4: consultas de modelos guardados; no implementadas aquí |
-| Carteras (Producto 5) y resultados avanzados (Producto 6) | — | 9.4: consultas de carteras y resultados guardados; no implementadas aquí |
+| Modelos y laboratorio (Fase 3) | 9.4: listado y ficha de versiones realmente registradas; estados íntegro/ausente/alterado/incompatible, sin deserializar para ejecutar. V2 validada en Linux y Windows/Brave y aprobada por auditoría; publicación manual, integración y CI pendientes | Entrenar, comparar, registrar o reparar (escritura) |
+| Carteras (Producto 5) y resultados avanzados (Producto 6) | 9.4: listado/detalle de carteras y emisiones/resultados, filtros/paginación y agregados existentes. V2 validada en Linux y Windows/Brave y aprobada por auditoría; publicación manual, integración y CI pendientes | Generar carteras, verificar/persistir seguimiento o informes (escritura) |
 | Exportaciones e impresión | — | 9.5: exportación, impresión y revisión final de navegación, móvil y accesibilidad; no implementadas aquí |
 | Importación, generación, configuración y automatización | — | Acciones administrativas; requieren autenticación de escritura (Fase 10) |
 | Operación automática y panel diario | — | Sin consulta en la API v1; siguen en la consola local |
 
-**Plan acordado de cinco partes.** 9.1 (frontend de consulta y pasarela) y 9.2 (métricas anteriores y horario por juego) están integradas. La 9.3 cubre explicación guardada, clasificación de candidatos y fiabilidad observada y sigue en revisión. La 9.4 añadirá consultas de modelos, carteras y resultados guardados; la 9.5, exportación, impresión y revisión final de navegación, móvil y accesibilidad. La 9.4 y la 9.5 no se implementan en esta entrega. Administración y operación permanecen en HTMX; los gráficos nuevos quedan para después. La Fase 9 global continúa abierta.
+**Plan acordado de cinco partes.** 9.1, 9.2 y 9.3 están integradas en los PR #100, #101 y #102. La 9.4 implementa consultas de modelos registrados, carteras de Producto 5 y resultados de Producto 6, solo de lectura, sobre el merge exacto del PR #102. La v2 está validada en Linux y Windows nativo con Brave y aprobada por auditoría; publicación manual, integración y CI permanecen pendientes. La 9.5 conserva exportación, impresión y revisión final de navegación, móvil y accesibilidad, sin implementarse aquí. Administración y operación permanecen en HTMX; los gráficos nuevos quedan para después. La Fase 9 global continúa abierta.
 
 ## Limitaciones conocidas
 

@@ -1,0 +1,175 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/resultados?pagina=1&por_pagina=1",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "filtros": {
+   "procedencia": null,
+   "linea": null,
+   "tipo": "seguimiento",
+   "desde": null,
+   "hasta": null,
+   "objetivo": null
+  },
+  "base": {
+   "estado": "consultada",
+   "motivo": null,
+   "ultimo_sorteo": 2191,
+   "fecha": "2021-11-28",
+   "sorteos": 111
+  },
+  "procedencias": {
+   "operacion": {
+    "nombre": "Operación diaria (Productos 1-3)",
+    "elegida": true,
+    "estado": "sin_artefactos",
+    "lineas": 0,
+    "emisiones": 0,
+    "ilegibles": 0,
+    "error": null
+   },
+   "laboratorio": {
+    "nombre": "Laboratorio de modelos (Producto 4)",
+    "elegida": true,
+    "estado": "sin_artefactos",
+    "lineas": 0,
+    "emisiones": 0,
+    "ilegibles": 0,
+    "error": null
+   },
+   "carteras": {
+    "nombre": "Modelo de cartera (Producto 5, vector fuente)",
+    "elegida": true,
+    "estado": "con_lineas",
+    "lineas": 1,
+    "emisiones": 2,
+    "ilegibles": 0,
+    "error": null
+   }
+  },
+  "lineas": [
+   {
+    "clave": "carteras:logistica_regularizada-v1-reg2-reducido",
+    "procedencia": "carteras",
+    "linea": "logistica_regularizada-v1-reg2-reducido",
+    "nombre": "Regresion logistica regularizada v1 (reducido) · versión registrada 2 · vector fuente",
+    "modelo": "logistica_regularizada",
+    "version": "1",
+    "perfil": "reducido",
+    "registrado": null
+   }
+  ],
+  "seleccion": [
+   "carteras:logistica_regularizada-v1-reg2-reducido"
+  ],
+  "resumenes": {
+   "carteras:logistica_regularizada-v1-reg2-reducido": {
+    "objetivos": 2,
+    "incluidos": 1,
+    "pendientes": 1,
+    "excluidos": 0,
+    "sin_base": 0,
+    "excluidos_por_motivo": {},
+    "muestra_pequena": true,
+    "aciertos": null,
+    "perdidas": {
+     "log_loss": {
+      "modelo": 0.36390340355416856,
+      "uniforme": 0.35944514751279105,
+      "diferencia": 0.004458256041377506,
+      "objetivos": 1,
+      "veredicto": "la_uniforme_fue_mejor"
+     },
+     "brier": {
+      "modelo": 0.10369447179829339,
+      "uniforme": 0.10275824770146025,
+      "diferencia": 0.0009362240968331381,
+      "objetivos": 1,
+      "veredicto": "la_uniforme_fue_mejor"
+     }
+    },
+    "superbalota": {
+     "aciertos": 0,
+     "objetivos": 1,
+     "log_loss": {
+      "modelo": 2.4383866341483804,
+      "uniforme": 2.772588722239781,
+      "diferencia": -0.33420208809140073,
+      "objetivos": null,
+      "veredicto": "menor_perdida_que_la_uniforme_en_esta_muestra"
+     },
+     "brier": {
+      "modelo": 0.8961955152426753,
+      "uniforme": 0.9375,
+      "diferencia": -0.04130448475732473,
+      "objetivos": null,
+      "veredicto": "menor_perdida_que_la_uniforme_en_esta_muestra"
+     }
+    }
+   }
+  },
+  "comparacion": {
+   "tipo": "seguimiento",
+   "lineas": [
+    "carteras:logistica_regularizada-v1-reg2-reducido"
+   ],
+   "totales_individuales": {
+    "carteras:logistica_regularizada-v1-reg2-reducido": 1
+   },
+   "objetivos_comunes": [],
+   "fuera_de_la_muestra_comun": [],
+   "por_linea": {},
+   "uniforme": null,
+   "clasificacion": [],
+   "estado": "sin_muestra_comun",
+   "motivo": "elige al menos dos lineas para una comparacion directa",
+   "signo": "Diferencia = pérdida del modelo − pérdida de la uniforme en los mismos objetivos. Negativa: menor pérdida en esta muestra; positiva: la uniforme fue mejor. Describe estos objetivos; no demuestra ventaja futura.",
+   "muestra_pequena": null
+  },
+  "historial": {
+   "filas": [
+    {
+     "juego": "BALOTO",
+     "procedencia": "carteras",
+     "linea": "logistica_regularizada-v1-reg2-reducido",
+     "clave_linea": "carteras:logistica_regularizada-v1-reg2-reducido",
+     "objetivo": 2192,
+     "tipo": "seguimiento",
+     "identificador": "4d8a4e4398f522b40ae6029cf2bacaa6ad018debe3c9f18056ba3ac2a9b34284",
+     "versiones": null,
+     "integridad": "legible",
+     "historico": "coincide",
+     "resultado_estado": "pendiente",
+     "estado": "pendiente",
+     "motivo": "emision_no_admitida; consulte los estados de integridad, histórico y resultado",
+     "fecha_sorteo": null,
+     "resultado": null,
+     "aciertos": null,
+     "de": null,
+     "metricas": null,
+     "superbalota": null
+    }
+   ],
+   "total": 2,
+   "pagina": 1,
+   "paginas": 2,
+   "por_pagina": 1
+  },
+  "sin_resultados_de_seguimiento": false,
+  "politica": "Una emisión por procedencia, línea y objetivo: la primera según el orden sellado de su procedencia (nunca la fecha, el nombre del archivo ni la versión con más aciertos). Si la primera no es evaluable, el objetivo se excluye sin sustituirla por otra versión.",
+  "nota_seguimiento": "«El objetivo no estaba cargado al generar» describe la base local; no acredita que la emision precediera al sorteo real.",
+  "signo": "Diferencia = pérdida del modelo − pérdida de la uniforme en los mismos objetivos. Negativa: menor pérdida en esta muestra; positiva: la uniforme fue mejor. Describe estos objetivos; no demuestra ventaja futura.",
+  "unidades": {
+   "log_loss": "Log Loss media por objetivo (números: binaria por número candidato; ColorLoto: por balota); menor es mejor",
+   "brier": "Brier medio por objetivo (mismas filas que el Log Loss); menor es mejor",
+   "log_loss_multiconjunto": "Log Loss del multiconjunto de 6 pares de ColorLoto (aparte del Log Loss por balota)",
+   "diferencia": "pérdida del modelo − pérdida de la uniforme del mismo artefacto y objetivo (negativa = menor pérdida)",
+   "aciertos": "números (0-5) o pares con multiplicidad (0-6) de la sugerencia de la emisión; el vector fuente de Producto 5 no tiene sugerencia propia (ver carteras)",
+   "superbalota": "Log Loss y Brier multiclase de la superbalota, aparte; nunca se suma a los números",
+   "denominador": "objetivos incluidos de la línea (o de la muestra común en la comparación directa)"
+  },
+  "nota": "Lectura y agregaciones de Producto 6. Solo las emisiones incluidas entran en métricas; pendiente y sin base no son cero aciertos. Desde/hasta filtran sorteos objetivo y no acreditan disponibilidad anterior de la emisión. No se guardan informes."
+ }
+}

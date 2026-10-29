@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/modelos-guardados/e7fcde88aa6878d4fd86ee68f557345147bd994b4ec0efa5c3e048b1e24b2e5f",
+ "estado": 409,
+ "cuerpo": {
+  "error": {
+   "codigo": "alterado",
+   "mensaje": "Artefacto guardado alterado o incompleto",
+   "solicitud": "491dda8237574657aa895ecf1a32f8c5"
+  }
+ }
+}

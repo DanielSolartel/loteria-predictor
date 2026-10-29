@@ -1,0 +1,65 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/carteras-guardadas",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "MILOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "pagina": 1,
+  "paginas": 1,
+  "por_pagina": 20,
+  "total": 2,
+  "elementos": [
+   {
+    "clave": "b7a13a9e0755c451d91eb9733de943f533b35b5af9b96c206d6157edb7c4b413",
+    "juego": "MILOTO",
+    "estado": "disponible",
+    "motivo": null,
+    "linea": "logistica_regularizada-v1-reg1-n3-libre-s42-reducido",
+    "objetivo": 89,
+    "corte": 88,
+    "modelo": "logistica_regularizada",
+    "nombre": "Regresion logistica regularizada",
+    "version_receta": "1",
+    "perfil": "reducido",
+    "version": 1,
+    "versiones": 1,
+    "cantidad": 3,
+    "generado_en": "2026-10-07T01:00:03+00:00",
+    "registrado": {
+     "clave": "f866026be6bb6947c8b2f605356aadc6a28e6b49f529218284c28661466ddaff",
+     "numero": 1
+    }
+   },
+   {
+    "clave": "bd282af2f2effc44b5990fcfafc34632660193a0d06f76b1655167f8b523353d",
+    "juego": "MILOTO",
+    "estado": "disponible",
+    "motivo": null,
+    "linea": "logistica_regularizada-v1-reg1-n3-libre-s42-reducido",
+    "objetivo": 88,
+    "corte": 87,
+    "modelo": "logistica_regularizada",
+    "nombre": "Regresion logistica regularizada",
+    "version_receta": "1",
+    "perfil": "reducido",
+    "version": 1,
+    "versiones": 1,
+    "cantidad": 3,
+    "generado_en": "2026-10-07T01:00:03+00:00",
+    "registrado": {
+     "clave": "f866026be6bb6947c8b2f605356aadc6a28e6b49f529218284c28661466ddaff",
+     "numero": 1
+    }
+   }
+  ],
+  "lineas": [
+   "logistica_regularizada-v1-reg1-n3-libre-s42-reducido"
+  ],
+  "linea": null,
+  "desde": null,
+  "hasta": null,
+  "incidencias_sin_objetivo": 0,
+  "nota": "Carteras guardadas de Producto 5, distintas de las predicciones de Fase 9.3. Se muestran combinaciones y parámetros guardados; no se generan ni reproducen. Desde/hasta filtran el objetivo, no la fecha de disponibilidad."
+ }
+}

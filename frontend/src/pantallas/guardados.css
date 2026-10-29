@@ -1,0 +1,5 @@
+/* Las tablas de resultados conservan su desplazamiento y foco propios.
+   El contenedor posicionado mantiene su contenido dentro de esa región. */
+.resultados-guardados .tabla-desplazable {
+  position: relative;
+}

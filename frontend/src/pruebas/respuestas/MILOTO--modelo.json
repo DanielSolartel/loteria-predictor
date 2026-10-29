@@ -1,0 +1,59 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/modelos-guardados/f866026be6bb6947c8b2f605356aadc6a28e6b49f529218284c28661466ddaff",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "MILOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "modelo": {
+   "clave": "f866026be6bb6947c8b2f605356aadc6a28e6b49f529218284c28661466ddaff",
+   "juego": "MILOTO",
+   "estado": "disponible",
+   "motivo": null,
+   "modelo": "logistica_regularizada",
+   "nombre": "Regresion logistica regularizada",
+   "familia": "lineal",
+   "perfil": "reducido",
+   "version_receta": "1",
+   "numero": 1,
+   "corte": 82,
+   "sorteos": 82,
+   "entrenado_en": "2026-10-27T10:00:00+00:00",
+   "linea": "logistica_regularizada-v1-reg1-reducido"
+  },
+  "periodo": {
+   "primer_sorteo": 1,
+   "ultimo_sorteo": 82,
+   "primera_fecha": "2021-01-02",
+   "ultima_fecha": "2021-09-02",
+   "sorteos": 82
+  },
+  "sha256_historico": "55c7e79c91c79b6f09f8f5b441ce2abef5f20495fab3a4765a122e0b1b7ae6b3",
+  "variables": [
+   "candidato",
+   "frecuencia_ventana_5",
+   "frecuencia_ventana_10",
+   "frecuencia_ventana_20",
+   "frecuencia_acumulada",
+   "aparecio_en_sorteo_anterior",
+   "atraso",
+   "nunca_aparecio"
+  ],
+  "semilla": 42,
+  "hilos": 2,
+  "objetivo_estadistico": "probabilidad marginal de aparicion de cada numero en el sorteo siguiente",
+  "contrato_de_inferencia": "Corte de entrada C >= corte de entrenamiento. Las variables del objetivo C + 1 se calculan solo con los sorteos <= C (variables causales producto4-variables-1); estimador, calibracion y parametros elegidos quedan congelados (no se reajustan). Un corte anterior al de entrenamiento se rechaza porque el modelo ya vio esos resultados.",
+  "experimento": "d607f982c80d27195f2baad5eea3da5d35d5ec3c781b80874fa9e19b184699bc",
+  "evaluacion": {
+   "estado": "completo",
+   "veredicto": "la_uniforme_fue_mejor",
+   "corte": 82,
+   "objetivos": 10,
+   "muestra_pequena": true,
+   "log_loss": 0.397604445507,
+   "log_loss_uniforme": 0.382960430768,
+   "nota": "La evaluacion asociada es la del informe de procedencia: mide la receta con reajustes por bloque antes del corte. El estimador congelado se ajusto despues con todo el historico hasta el corte; su rendimiento propio se observa en el seguimiento de sus pronosticos. No acredita ventaja futura."
+  },
+  "nota": "Son versiones realmente registradas, no el catálogo de candidatos. La lectura comprueba manifiesto y huellas del estimador, sin deserializarlo ni comprobar su ejecución. Compatible no acredita ventaja predictiva."
+ }
+}

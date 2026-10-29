@@ -1,0 +1,59 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/modelos-guardados/350680d51a5bab4c56b8eb49052f966b78cd0b672ff67f8feb14bb58b1fafcbe",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "COLORLOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "modelo": {
+   "clave": "350680d51a5bab4c56b8eb49052f966b78cd0b672ff67f8feb14bb58b1fafcbe",
+   "juego": "COLORLOTO",
+   "estado": "disponible",
+   "motivo": null,
+   "modelo": "poisson_regularizado",
+   "nombre": "Regresion de Poisson regularizada",
+   "familia": "lineal",
+   "perfil": "reducido",
+   "version_receta": "1",
+   "numero": 1,
+   "corte": 85,
+   "sorteos": 85,
+   "entrenado_en": "2026-10-27T10:00:00+00:00",
+   "linea": "poisson_regularizado-v1-reg1-reducido"
+  },
+  "periodo": {
+   "primer_sorteo": 1,
+   "ultimo_sorteo": 85,
+   "primera_fecha": "2024-08-06",
+   "ultima_fecha": "2025-04-15",
+   "sorteos": 85
+  },
+  "sha256_historico": "9605abc70723fd66ffcc7d01a65356342e80e75270953814e8169221d3a3edc5",
+  "variables": [
+   "par",
+   "conteo_medio_ventana_5",
+   "conteo_medio_ventana_10",
+   "conteo_medio_ventana_20",
+   "conteo_medio_acumulado",
+   "conteo_en_sorteo_anterior",
+   "atraso",
+   "nunca_aparecio"
+  ],
+  "semilla": 42,
+  "hilos": 2,
+  "objetivo_estadistico": "distribucion de los pares numero-color de cada balota (conteos con multiplicidad normalizados)",
+  "contrato_de_inferencia": "Corte de entrada C >= corte de entrenamiento. Las variables del objetivo C + 1 se calculan solo con los sorteos <= C (variables causales producto4-variables-1); estimador, calibracion y parametros elegidos quedan congelados (no se reajustan). Un corte anterior al de entrenamiento se rechaza porque el modelo ya vio esos resultados.",
+  "experimento": "cd7f9a298be0e72d73d60737a0c998bee7d4de65d2c696e2bdee6a18057ca525",
+  "evaluacion": {
+   "estado": "completo",
+   "veredicto": "la_uniforme_fue_mejor",
+   "corte": 85,
+   "objetivos": 10,
+   "muestra_pequena": true,
+   "log_loss": 3.739203113911,
+   "log_loss_uniforme": 3.737669618283,
+   "nota": "La evaluacion asociada es la del informe de procedencia: mide la receta con reajustes por bloque antes del corte. El estimador congelado se ajusto despues con todo el historico hasta el corte; su rendimiento propio se observa en el seguimiento de sus pronosticos. No acredita ventaja futura."
+  },
+  "nota": "Son versiones realmente registradas, no el catálogo de candidatos. La lectura comprueba manifiesto y huellas del estimador, sin deserializarlo ni comprobar su ejecución. Compatible no acredita ventaja predictiva."
+ }
+}

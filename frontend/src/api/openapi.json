@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Lotería Predictor — API pública",
-    "description": "\nAPI pública de **solo lectura** del Sistema Predictivo de Loterías (Baloto, Baloto Revancha,\nMiLoto y ColorLoto): juegos, sorteos, estadísticas descriptivas, predicciones guardadas y\nsimulaciones guardadas.\n\n- **Autenticación:** cabecera `X-API-Key` con una clave emitida por el operador. Sin clave\n  válida: 401. Sin claves configuradas en el servidor: 503.\n- **Límites:** cubeta de fichas **por proceso** (por clave y por IP). Al superarla: 429 con\n  `Retry-After`. Coste: 1 consultas ligeras, 2 listados, 3 predicciones, 5 estadísticas.\n- **Errores:** `{\"error\": {\"codigo\", \"mensaje\", \"solicitud\"}}`; `solicitud` coincide con la\n  cabecera `X-Request-ID`.\n\nUso **experimental_no_acreditado**: AE-39 sigue en NO-GO y `AUTORIZA_EVALUACION = False`. Las\npredicciones no acreditan ventaja frente al azar.\n",
+    "description": "\nAPI pública de **solo lectura** del Sistema Predictivo de Loterías (Baloto, Baloto Revancha,\nMiLoto y ColorLoto): juegos, sorteos, estadísticas descriptivas, predicciones guardadas y\nsimulaciones guardadas, modelos registrados, carteras de Producto 5 y resultados observados de Producto 6.\n\n- **Autenticación:** cabecera `X-API-Key` con una clave emitida por el operador. Sin clave\n  válida: 401. Sin claves configuradas en el servidor: 503.\n- **Límites:** cubeta de fichas **por proceso** (por clave y por IP). Al superarla: 429 con\n  `Retry-After`. Coste: 1 consultas ligeras, 2 listados y fichas guardadas, 3 predicciones, 5 estadísticas y resultados.\n- **Errores:** `{\"error\": {\"codigo\", \"mensaje\", \"solicitud\"}}`; `solicitud` coincide con la\n  cabecera `X-Request-ID`.\n\nUso **experimental_no_acreditado**: AE-39 sigue en NO-GO y `AUTORIZA_EVALUACION = False`. Las\npredicciones no acreditan ventaja frente al azar.\n",
     "version": "1.0.0"
   },
   "paths": {
@@ -1557,10 +1557,836 @@
           }
         }
       }
+    },
+    "/api/v1/juegos/{codigo}/modelos-guardados": {
+      "get": {
+        "tags": [
+          "modelos guardados"
+        ],
+        "summary": "Versiones registradas: metadatos sin cargar el estimador (coste 2)",
+        "operationId": "modelos_api_v1_juegos__codigo__modelos_guardados_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO",
+              "title": "Codigo"
+            },
+            "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Pagina"
+            }
+          },
+          {
+            "name": "por_pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Por Pagina"
+            }
+          },
+          {
+            "name": "modelo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80,
+                  "pattern": "^[A-Za-z0-9_.:-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Modelo"
+            }
+          },
+          {
+            "name": "perfil",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "predeterminado",
+                    "reducido"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Perfil"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelosGuardados"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/modelos-guardados/{clave}": {
+      "get": {
+        "tags": [
+          "modelos guardados"
+        ],
+        "summary": "Ficha de una versión registrada, sin deserializar ni ejecutar (coste 2)",
+        "operationId": "modelo_api_v1_juegos__codigo__modelos_guardados__clave__get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO",
+              "title": "Codigo"
+            },
+            "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO"
+          },
+          {
+            "name": "clave",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "Clave SHA-256 del artefacto guardado",
+              "title": "Clave"
+            },
+            "description": "Clave SHA-256 del artefacto guardado"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FichaModeloGuardado"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/carteras-guardadas": {
+      "get": {
+        "tags": [
+          "carteras guardadas"
+        ],
+        "summary": "Carteras guardadas de Producto 5 (coste 2)",
+        "operationId": "carteras_api_v1_juegos__codigo__carteras_guardadas_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO",
+              "title": "Codigo"
+            },
+            "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO"
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Pagina"
+            }
+          },
+          {
+            "name": "por_pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Por Pagina"
+            }
+          },
+          {
+            "name": "linea",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9_.:-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Identidad de línea emitida por el lector existente",
+              "title": "Linea"
+            },
+            "description": "Identidad de línea emitida por el lector existente"
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarterasGuardadas"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/carteras-guardadas/{clave}": {
+      "get": {
+        "tags": [
+          "carteras guardadas"
+        ],
+        "summary": "Combinaciones y reproducción guardadas, sin generar ni reproducir (coste 2)",
+        "operationId": "cartera_api_v1_juegos__codigo__carteras_guardadas__clave__get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO",
+              "title": "Codigo"
+            },
+            "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO"
+          },
+          {
+            "name": "clave",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "Clave SHA-256 del artefacto guardado",
+              "title": "Clave"
+            },
+            "description": "Clave SHA-256 del artefacto guardado"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FichaCarteraGuardada"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/juegos/{codigo}/resultados": {
+      "get": {
+        "tags": [
+          "resultados guardados"
+        ],
+        "summary": "Emisiones y resultados de Producto 6: selección y agregados existentes (coste 5)",
+        "description": "Desde/hasta filtran sorteos objetivo, no la disponibilidad de una emisión. Pendientes y sin base no son cero aciertos. No se guardan informes ni se comparan modelos de nuevo.",
+        "operationId": "resultados_api_v1_juegos__codigo__resultados_get",
+        "security": [
+          {
+            "ClaveDeAPI": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO",
+              "title": "Codigo"
+            },
+            "description": "BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO"
+          },
+          {
+            "name": "procedencia",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "operacion",
+                    "laboratorio",
+                    "carteras"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Procedencia"
+            }
+          },
+          {
+            "name": "linea",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9_.:-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Identidad de línea emitida por el lector existente",
+              "title": "Linea"
+            },
+            "description": "Identidad de línea emitida por el lector existente"
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "seguimiento",
+                "retrospectiva"
+              ],
+              "type": "string",
+              "default": "seguimiento",
+              "title": "Tipo"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta"
+            }
+          },
+          {
+            "name": "objetivo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Objetivo"
+            }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Pagina"
+            }
+          },
+          {
+            "name": "por_pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Por Pagina"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadosGuardados"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuesta"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AciertosGuardados": {
+        "properties": {
+          "suma": {
+            "type": "integer",
+            "title": "Suma"
+          },
+          "promedio": {
+            "type": "number",
+            "title": "Promedio"
+          },
+          "de": {
+            "type": "integer",
+            "title": "De"
+          },
+          "objetivos": {
+            "type": "integer",
+            "title": "Objetivos"
+          },
+          "distribucion": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Distribucion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "suma",
+          "promedio",
+          "de",
+          "objetivos",
+          "distribucion"
+        ],
+        "title": "AciertosGuardados"
+      },
       "BaseDeFiabilidad": {
         "properties": {
           "estado": {
@@ -1665,6 +2491,63 @@
         ],
         "title": "BaseDelJuego"
       },
+      "BaseResultadosGuardados": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "ultimo_sorteo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ultimo Sorteo"
+          },
+          "fecha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha"
+          },
+          "sorteos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sorteos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "BaseResultadosGuardados"
+      },
       "CarteraDeLaExplicacion": {
         "properties": {
           "clave": {
@@ -1710,6 +2593,306 @@
         ],
         "title": "CarteraDeLaExplicacion"
       },
+      "CarteraGuardada": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "disponible",
+              "alterado"
+            ],
+            "title": "Estado"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "linea": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linea"
+          },
+          "objetivo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objetivo"
+          },
+          "corte": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte"
+          },
+          "modelo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelo"
+          },
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "version_receta": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Receta"
+          },
+          "perfil": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Perfil"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "versiones": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versiones"
+          },
+          "cantidad": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cantidad"
+          },
+          "generado_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generado En"
+          },
+          "registrado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenciaRegistrada"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "juego",
+          "estado"
+        ],
+        "title": "CarteraGuardada"
+      },
+      "CarterasGuardadas": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "const": "experimental_no_acreditado",
+            "title": "Estado De Uso",
+            "default": "experimental_no_acreditado"
+          },
+          "pagina": {
+            "type": "integer",
+            "title": "Pagina"
+          },
+          "paginas": {
+            "type": "integer",
+            "title": "Paginas"
+          },
+          "por_pagina": {
+            "type": "integer",
+            "title": "Por Pagina"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "elementos": {
+            "items": {
+              "$ref": "#/components/schemas/CarteraGuardada"
+            },
+            "type": "array",
+            "title": "Elementos"
+          },
+          "lineas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lineas"
+          },
+          "linea": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linea"
+          },
+          "desde": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desde"
+          },
+          "hasta": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hasta"
+          },
+          "incidencias_sin_objetivo": {
+            "type": "integer",
+            "title": "Incidencias Sin Objetivo",
+            "default": 0
+          },
+          "nota": {
+            "type": "string",
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "pagina",
+          "paginas",
+          "por_pagina",
+          "total",
+          "elementos",
+          "lineas",
+          "nota"
+        ],
+        "title": "CarterasGuardadas"
+      },
+      "ClasificacionGuardada": {
+        "properties": {
+          "linea": {
+            "type": "string",
+            "title": "Linea"
+          },
+          "log_loss": {
+            "type": "number",
+            "title": "Log Loss"
+          },
+          "uniforme": {
+            "type": "number",
+            "title": "Uniforme"
+          },
+          "diferencia": {
+            "type": "number",
+            "title": "Diferencia"
+          },
+          "veredicto": {
+            "type": "string",
+            "title": "Veredicto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "linea",
+          "log_loss",
+          "uniforme",
+          "diferencia",
+          "veredicto"
+        ],
+        "title": "ClasificacionGuardada"
+      },
       "ColumnaDeMetrica": {
         "properties": {
           "clave": {
@@ -1739,6 +2922,163 @@
           "unidad"
         ],
         "title": "ColumnaDeMetrica"
+      },
+      "CombinacionGuardada": {
+        "properties": {
+          "linea": {
+            "type": "integer",
+            "title": "Linea"
+          },
+          "origen": {
+            "type": "string",
+            "title": "Origen"
+          },
+          "numeros": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Numeros"
+          },
+          "superbalota": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superbalota"
+          },
+          "pares": {
+            "items": {
+              "$ref": "#/components/schemas/ParGuardado"
+            },
+            "type": "array",
+            "title": "Pares"
+          }
+        },
+        "type": "object",
+        "required": [
+          "linea",
+          "origen",
+          "numeros",
+          "pares"
+        ],
+        "title": "CombinacionGuardada"
+      },
+      "ComparacionResultadosGuardados": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "lineas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lineas"
+          },
+          "totales_individuales": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Totales Individuales"
+          },
+          "objetivos_comunes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Objetivos Comunes"
+          },
+          "fuera_de_la_muestra_comun": {
+            "items": {
+              "$ref": "#/components/schemas/ExclusionComparacionGuardada"
+            },
+            "type": "array",
+            "title": "Fuera De La Muestra Comun"
+          },
+          "por_linea": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ResumenResultadoGuardado"
+            },
+            "type": "object",
+            "title": "Por Linea"
+          },
+          "uniforme": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "type": "object"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uniforme"
+          },
+          "clasificacion": {
+            "items": {
+              "$ref": "#/components/schemas/ClasificacionGuardada"
+            },
+            "type": "array",
+            "title": "Clasificacion"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "signo": {
+            "type": "string",
+            "title": "Signo"
+          },
+          "muestra_pequena": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Muestra Pequena"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "lineas",
+          "totales_individuales",
+          "objetivos_comunes",
+          "fuera_de_la_muestra_comun",
+          "por_linea",
+          "uniforme",
+          "clasificacion",
+          "estado",
+          "motivo",
+          "signo"
+        ],
+        "title": "ComparacionResultadosGuardados"
       },
       "ComponenteDeFiabilidad": {
         "properties": {
@@ -1928,6 +3268,200 @@
           "selector"
         ],
         "title": "ContenidoDeMetrica"
+      },
+      "EmisionGuardada": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "procedencia": {
+            "type": "string",
+            "title": "Procedencia"
+          },
+          "linea": {
+            "type": "string",
+            "title": "Linea"
+          },
+          "clave_linea": {
+            "type": "string",
+            "title": "Clave Linea"
+          },
+          "objetivo": {
+            "type": "integer",
+            "title": "Objetivo"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          },
+          "identificador": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identificador"
+          },
+          "versiones": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versiones"
+          },
+          "integridad": {
+            "type": "string",
+            "title": "Integridad"
+          },
+          "historico": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Historico"
+          },
+          "resultado_estado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado Estado"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "incluido",
+              "pendiente",
+              "excluido",
+              "sin_base"
+            ],
+            "title": "Estado"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "fecha_sorteo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Sorteo"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResultadoGuardado"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aciertos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aciertos"
+          },
+          "de": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "De"
+          },
+          "metricas": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metricas"
+          },
+          "superbalota": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SuperbalotaResultadoGuardado"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "procedencia",
+          "linea",
+          "clave_linea",
+          "objetivo",
+          "tipo",
+          "identificador",
+          "versiones",
+          "integridad",
+          "historico",
+          "resultado_estado",
+          "estado",
+          "motivo",
+          "fecha_sorteo",
+          "resultado",
+          "aciertos",
+          "de",
+          "metricas",
+          "superbalota"
+        ],
+        "title": "EmisionGuardada"
       },
       "EntrenamientoDelMetodo": {
         "properties": {
@@ -2242,6 +3776,126 @@
         ],
         "title": "EvaluacionDeFiabilidad"
       },
+      "EvaluacionGuardada": {
+        "properties": {
+          "estado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado"
+          },
+          "veredicto": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Veredicto"
+          },
+          "corte": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte"
+          },
+          "objetivos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objetivos"
+          },
+          "muestra_pequena": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Muestra Pequena"
+          },
+          "log_loss": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Loss"
+          },
+          "log_loss_uniforme": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Loss Uniforme"
+          },
+          "nota": {
+            "type": "string",
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nota"
+        ],
+        "title": "EvaluacionGuardada"
+      },
+      "ExclusionComparacionGuardada": {
+        "properties": {
+          "objetivo": {
+            "type": "integer",
+            "title": "Objetivo"
+          },
+          "linea": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linea"
+          },
+          "motivo": {
+            "type": "string",
+            "title": "Motivo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "objetivo",
+          "linea",
+          "motivo"
+        ],
+        "title": "ExclusionComparacionGuardada"
+      },
       "ExclusionDeFiabilidad": {
         "properties": {
           "estado": {
@@ -2496,6 +4150,141 @@
         "title": "Fiabilidad",
         "description": "Rendimiento observado e incertidumbre de la Fase 4 (lectura de emisiones congeladas y de\ninformes del laboratorio). No es una puntuación de confianza ni una probabilidad de premio."
       },
+      "FichaCarteraGuardada": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "const": "experimental_no_acreditado",
+            "title": "Estado De Uso",
+            "default": "experimental_no_acreditado"
+          },
+          "cartera": {
+            "$ref": "#/components/schemas/CarteraGuardada"
+          },
+          "combinaciones": {
+            "items": {
+              "$ref": "#/components/schemas/CombinacionGuardada"
+            },
+            "type": "array",
+            "title": "Combinaciones"
+          },
+          "parametros": {
+            "$ref": "#/components/schemas/ParametrosCarteraGuardada"
+          },
+          "sha256_historico": {
+            "type": "string",
+            "title": "Sha256 Historico"
+          },
+          "clasificacion_temporal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clasificacion Temporal"
+          },
+          "nota_temporal": {
+            "type": "string",
+            "title": "Nota Temporal"
+          },
+          "nota": {
+            "type": "string",
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "cartera",
+          "combinaciones",
+          "parametros",
+          "sha256_historico",
+          "nota_temporal",
+          "nota"
+        ],
+        "title": "FichaCarteraGuardada"
+      },
+      "FichaModeloGuardado": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "const": "experimental_no_acreditado",
+            "title": "Estado De Uso",
+            "default": "experimental_no_acreditado"
+          },
+          "modelo": {
+            "$ref": "#/components/schemas/ModeloGuardado"
+          },
+          "periodo": {
+            "$ref": "#/components/schemas/PeriodoGuardado"
+          },
+          "sha256_historico": {
+            "type": "string",
+            "title": "Sha256 Historico"
+          },
+          "variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Variables"
+          },
+          "semilla": {
+            "type": "integer",
+            "title": "Semilla"
+          },
+          "hilos": {
+            "type": "integer",
+            "title": "Hilos"
+          },
+          "objetivo_estadistico": {
+            "type": "string",
+            "title": "Objetivo Estadistico"
+          },
+          "contrato_de_inferencia": {
+            "type": "string",
+            "title": "Contrato De Inferencia"
+          },
+          "experimento": {
+            "type": "string",
+            "title": "Experimento"
+          },
+          "evaluacion": {
+            "$ref": "#/components/schemas/EvaluacionGuardada"
+          },
+          "nota": {
+            "type": "string",
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "modelo",
+          "periodo",
+          "sha256_historico",
+          "variables",
+          "semilla",
+          "hilos",
+          "objetivo_estadistico",
+          "contrato_de_inferencia",
+          "experimento",
+          "evaluacion",
+          "nota"
+        ],
+        "title": "FichaModeloGuardado"
+      },
       "FilaDeRanking": {
         "properties": {
           "posicion": {
@@ -2578,6 +4367,79 @@
         ],
         "title": "FilaDeRanking"
       },
+      "FiltrosResultadosGuardados": {
+        "properties": {
+          "procedencia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Procedencia"
+          },
+          "linea": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linea"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "desde": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desde"
+          },
+          "hasta": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hasta"
+          },
+          "objetivo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objetivo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "procedencia",
+          "linea",
+          "tipo",
+          "desde",
+          "hasta",
+          "objetivo"
+        ],
+        "title": "FiltrosResultadosGuardados"
+      },
       "FuenteDelMetodo": {
         "properties": {
           "cita": {
@@ -2659,6 +4521,42 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HistorialResultadosGuardados": {
+        "properties": {
+          "filas": {
+            "items": {
+              "$ref": "#/components/schemas/EmisionGuardada"
+            },
+            "type": "array",
+            "title": "Filas"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "pagina": {
+            "type": "integer",
+            "title": "Pagina"
+          },
+          "paginas": {
+            "type": "integer",
+            "title": "Paginas"
+          },
+          "por_pagina": {
+            "type": "integer",
+            "title": "Por Pagina"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filas",
+          "total",
+          "pagina",
+          "paginas",
+          "por_pagina"
+        ],
+        "title": "HistorialResultadosGuardados"
       },
       "ImportanciaDeVariable": {
         "properties": {
@@ -3132,6 +5030,77 @@
         ],
         "title": "LineaDeModelo"
       },
+      "LineaResultadoGuardado": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "procedencia": {
+            "type": "string",
+            "title": "Procedencia"
+          },
+          "linea": {
+            "type": "string",
+            "title": "Linea"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "modelo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelo"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "perfil": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Perfil"
+          },
+          "registrado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenciaRegistrada"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "procedencia",
+          "linea",
+          "nombre"
+        ],
+        "title": "LineaResultadoGuardado"
+      },
       "MetodoDeFiabilidad": {
         "properties": {
           "version": {
@@ -3585,6 +5554,229 @@
         "type": "object",
         "title": "ModeloDeLaPrediccion"
       },
+      "ModeloGuardado": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "disponible",
+              "incompatible",
+              "alterado"
+            ],
+            "title": "Estado"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "modelo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelo"
+          },
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "familia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Familia"
+          },
+          "perfil": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Perfil"
+          },
+          "version_receta": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Receta"
+          },
+          "numero": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numero"
+          },
+          "corte": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corte"
+          },
+          "sorteos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sorteos"
+          },
+          "entrenado_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entrenado En"
+          },
+          "linea": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linea"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "juego",
+          "estado"
+        ],
+        "title": "ModeloGuardado"
+      },
+      "ModelosGuardados": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "const": "experimental_no_acreditado",
+            "title": "Estado De Uso",
+            "default": "experimental_no_acreditado"
+          },
+          "pagina": {
+            "type": "integer",
+            "title": "Pagina"
+          },
+          "paginas": {
+            "type": "integer",
+            "title": "Paginas"
+          },
+          "por_pagina": {
+            "type": "integer",
+            "title": "Por Pagina"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "elementos": {
+            "items": {
+              "$ref": "#/components/schemas/ModeloGuardado"
+            },
+            "type": "array",
+            "title": "Elementos"
+          },
+          "modelo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelo"
+          },
+          "perfil": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Perfil"
+          },
+          "nota": {
+            "type": "string",
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "pagina",
+          "paginas",
+          "por_pagina",
+          "total",
+          "elementos",
+          "nota"
+        ],
+        "title": "ModelosGuardados"
+      },
       "MuestraDeFiabilidad": {
         "properties": {
           "sorteos": {
@@ -3835,6 +6027,134 @@
           "color_nombre"
         ],
         "title": "Par"
+      },
+      "ParGuardado": {
+        "properties": {
+          "numero": {
+            "type": "integer",
+            "title": "Numero"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color"
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero",
+          "color"
+        ],
+        "title": "ParGuardado"
+      },
+      "ParametrosCarteraGuardada": {
+        "properties": {
+          "cantidad": {
+            "type": "integer",
+            "title": "Cantidad"
+          },
+          "semilla": {
+            "type": "integer",
+            "title": "Semilla"
+          },
+          "diversidad": {
+            "type": "string",
+            "title": "Diversidad"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "algoritmo_rng": {
+            "type": "string",
+            "title": "Algoritmo Rng"
+          },
+          "presupuesto_de_intentos": {
+            "type": "integer",
+            "title": "Presupuesto De Intentos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cantidad",
+          "semilla",
+          "diversidad",
+          "version",
+          "algoritmo_rng",
+          "presupuesto_de_intentos"
+        ],
+        "title": "ParametrosCarteraGuardada"
+      },
+      "PerdidaGuardada": {
+        "properties": {
+          "modelo": {
+            "type": "number",
+            "title": "Modelo"
+          },
+          "uniforme": {
+            "type": "number",
+            "title": "Uniforme"
+          },
+          "diferencia": {
+            "type": "number",
+            "title": "Diferencia"
+          },
+          "objetivos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objetivos"
+          },
+          "veredicto": {
+            "type": "string",
+            "title": "Veredicto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "modelo",
+          "uniforme",
+          "diferencia",
+          "veredicto"
+        ],
+        "title": "PerdidaGuardada"
+      },
+      "PeriodoGuardado": {
+        "properties": {
+          "primer_sorteo": {
+            "type": "integer",
+            "title": "Primer Sorteo"
+          },
+          "ultimo_sorteo": {
+            "type": "integer",
+            "title": "Ultimo Sorteo"
+          },
+          "primera_fecha": {
+            "type": "string",
+            "title": "Primera Fecha"
+          },
+          "ultima_fecha": {
+            "type": "string",
+            "title": "Ultima Fecha"
+          },
+          "sorteos": {
+            "type": "integer",
+            "title": "Sorteos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "primer_sorteo",
+          "ultimo_sorteo",
+          "primera_fecha",
+          "ultima_fecha",
+          "sorteos"
+        ],
+        "title": "PeriodoGuardado"
       },
       "PesoDeComponente": {
         "properties": {
@@ -4230,6 +6550,55 @@
         ],
         "title": "PresentacionDelMetodo"
       },
+      "ProcedenciaGuardada": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "elegida": {
+            "type": "boolean",
+            "title": "Elegida"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "lineas": {
+            "type": "integer",
+            "title": "Lineas"
+          },
+          "emisiones": {
+            "type": "integer",
+            "title": "Emisiones"
+          },
+          "ilegibles": {
+            "type": "integer",
+            "title": "Ilegibles"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "elegida",
+          "estado",
+          "lineas",
+          "emisiones",
+          "ilegibles"
+        ],
+        "title": "ProcedenciaGuardada"
+      },
       "Rankings": {
         "properties": {
           "aviso": {
@@ -4287,6 +6656,24 @@
         ],
         "title": "Rankings",
         "description": "Clasificación de candidatos del vector fuente congelado (la de la explicación guardada o la\ndeterminista de la cartera). La superbalota y, en ColorLoto, números y colores van aparte."
+      },
+      "ReferenciaRegistrada": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          },
+          "numero": {
+            "type": "integer",
+            "title": "Numero"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave",
+          "numero"
+        ],
+        "title": "ReferenciaRegistrada"
       },
       "RegistradoDelMetodo": {
         "properties": {
@@ -4395,6 +6782,137 @@
         "title": "RespuestaDeMetrica",
         "description": "Una métrica del juego (Fase 5 o anterior) sobre la muestra hasta el corte."
       },
+      "ResultadoGuardado": {
+        "properties": {
+          "numeros": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Numeros"
+          },
+          "superbalota": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superbalota"
+          },
+          "pares": {
+            "items": {
+              "$ref": "#/components/schemas/ParGuardado"
+            },
+            "type": "array",
+            "title": "Pares"
+          }
+        },
+        "type": "object",
+        "title": "ResultadoGuardado"
+      },
+      "ResultadosGuardados": {
+        "properties": {
+          "juego": {
+            "type": "string",
+            "title": "Juego"
+          },
+          "estado_de_uso": {
+            "type": "string",
+            "const": "experimental_no_acreditado",
+            "title": "Estado De Uso",
+            "default": "experimental_no_acreditado"
+          },
+          "filtros": {
+            "$ref": "#/components/schemas/FiltrosResultadosGuardados"
+          },
+          "base": {
+            "$ref": "#/components/schemas/BaseResultadosGuardados"
+          },
+          "procedencias": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProcedenciaGuardada"
+            },
+            "type": "object",
+            "title": "Procedencias"
+          },
+          "lineas": {
+            "items": {
+              "$ref": "#/components/schemas/LineaResultadoGuardado"
+            },
+            "type": "array",
+            "title": "Lineas"
+          },
+          "seleccion": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Seleccion"
+          },
+          "resumenes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ResumenResultadoGuardado"
+            },
+            "type": "object",
+            "title": "Resumenes"
+          },
+          "comparacion": {
+            "$ref": "#/components/schemas/ComparacionResultadosGuardados"
+          },
+          "historial": {
+            "$ref": "#/components/schemas/HistorialResultadosGuardados"
+          },
+          "sin_resultados_de_seguimiento": {
+            "type": "boolean",
+            "title": "Sin Resultados De Seguimiento"
+          },
+          "politica": {
+            "type": "string",
+            "title": "Politica"
+          },
+          "nota_seguimiento": {
+            "type": "string",
+            "title": "Nota Seguimiento"
+          },
+          "signo": {
+            "type": "string",
+            "title": "Signo"
+          },
+          "unidades": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Unidades"
+          },
+          "nota": {
+            "type": "string",
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "juego",
+          "filtros",
+          "base",
+          "procedencias",
+          "lineas",
+          "seleccion",
+          "resumenes",
+          "comparacion",
+          "historial",
+          "sin_resultados_de_seguimiento",
+          "politica",
+          "nota_seguimiento",
+          "signo",
+          "unidades",
+          "nota"
+        ],
+        "title": "ResultadosGuardados"
+      },
       "Resumen": {
         "properties": {
           "codigo_juego": {
@@ -4442,6 +6960,89 @@
           "media_absoluta"
         ],
         "title": "ResumenDeImportancia"
+      },
+      "ResumenResultadoGuardado": {
+        "properties": {
+          "objetivos": {
+            "type": "integer",
+            "title": "Objetivos"
+          },
+          "incluidos": {
+            "type": "integer",
+            "title": "Incluidos"
+          },
+          "pendientes": {
+            "type": "integer",
+            "title": "Pendientes"
+          },
+          "excluidos": {
+            "type": "integer",
+            "title": "Excluidos"
+          },
+          "sin_base": {
+            "type": "integer",
+            "title": "Sin Base"
+          },
+          "excluidos_por_motivo": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Excluidos Por Motivo"
+          },
+          "muestra_pequena": {
+            "type": "boolean",
+            "title": "Muestra Pequena"
+          },
+          "aciertos": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AciertosGuardados"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "perdidas": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/PerdidaGuardada"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Perdidas"
+          },
+          "superbalota": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SuperbalotaAgregada"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "objetivos",
+          "incluidos",
+          "pendientes",
+          "excluidos",
+          "sin_base",
+          "excluidos_por_motivo",
+          "muestra_pequena",
+          "aciertos",
+          "perdidas",
+          "superbalota"
+        ],
+        "title": "ResumenResultadoGuardado"
       },
       "Ruta": {
         "properties": {
@@ -4998,6 +7599,65 @@
             "superbalota": 7
           }
         ]
+      },
+      "SuperbalotaAgregada": {
+        "properties": {
+          "aciertos": {
+            "type": "integer",
+            "title": "Aciertos"
+          },
+          "objetivos": {
+            "type": "integer",
+            "title": "Objetivos"
+          },
+          "log_loss": {
+            "$ref": "#/components/schemas/PerdidaGuardada"
+          },
+          "brier": {
+            "$ref": "#/components/schemas/PerdidaGuardada"
+          }
+        },
+        "type": "object",
+        "required": [
+          "aciertos",
+          "objetivos",
+          "log_loss",
+          "brier"
+        ],
+        "title": "SuperbalotaAgregada"
+      },
+      "SuperbalotaResultadoGuardado": {
+        "properties": {
+          "acierto": {
+            "type": "boolean",
+            "title": "Acierto"
+          },
+          "log_loss": {
+            "type": "number",
+            "title": "Log Loss"
+          },
+          "log_loss_uniforme": {
+            "type": "number",
+            "title": "Log Loss Uniforme"
+          },
+          "brier": {
+            "type": "number",
+            "title": "Brier"
+          },
+          "brier_uniforme": {
+            "type": "number",
+            "title": "Brier Uniforme"
+          }
+        },
+        "type": "object",
+        "required": [
+          "acierto",
+          "log_loss",
+          "log_loss_uniforme",
+          "brier",
+          "brier_uniforme"
+        ],
+        "title": "SuperbalotaResultadoGuardado"
       },
       "TablaDeMetrica": {
         "properties": {

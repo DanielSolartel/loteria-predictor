@@ -124,6 +124,12 @@ def test_cada_plantilla_se_reenvia_con_su_ruta_y_consulta(entorno):
             "/api/v1/juegos/BALOTO/estadisticas/coocurrencia-trios?pagina=3&hasta_numero_sorteo=2100",
             "/api/v1/juegos/BALOTO/predicciones?cartera=" + "a" * 64 + "&historial=50",
             "/api/v1/juegos/BALOTO/fiabilidad?hasta=2190",
+            "/api/v1/juegos/BALOTO/modelos-guardados?pagina=1&por_pagina=10&modelo=logistica&perfil=reducido",
+            "/api/v1/juegos/BALOTO/modelos-guardados/" + "b" * 64,
+            "/api/v1/juegos/COLORLOTO/carteras-guardadas?pagina=1&por_pagina=10&linea=uniforme_paleta-v1&desde=1&hasta=40",
+            "/api/v1/juegos/COLORLOTO/carteras-guardadas/" + "c" * 64,
+            "/api/v1/juegos/MILOTO/resultados?procedencia=carteras&linea=carteras%3Auniforme-v1&tipo=seguimiento"
+            "&desde=1&hasta=80&objetivo=60&pagina=1&por_pagina=10",
             "/api/v1/juegos/BALOTO/simulaciones?limite=50",
             "/api/v1/simulaciones/344d4a67-798a-4b2f-85fc-0f53dd183e99"]
     for url in urls:

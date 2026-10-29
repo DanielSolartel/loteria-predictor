@@ -1,11 +1,75 @@
-# Fase 9 en Windows — 9.1, 9.2 y 9.3 v2 validadas; publicación de 9.3 pendiente
+# Fase 9 en Windows — 9.1–9.3 integradas; 9.4 v2 validada
 
-**Estado de la 9.3:** v2 validada en Linux y Windows nativo con Brave y aprobada por la auditoría; cierre documental preparado, con publicación manual de Daniel y CI del nuevo PR pendientes. [Validación del operador](fase9_3_validacion_operador_2026-10-27.md). El [protocolo dirigido](#entrega-93-protocolo-dirigido) se conserva como referencia: no recrear worktree/entorno ni repetir baterías o aplicar de nuevo el parche completo por este cierre.
+**Estado de 9.4 v2:** validada en Linux y Windows nativo con Brave y aprobada por auditoría. Publicación manual, integración y CI pendientes. [Validación del operador](fase9_4_validacion_operador_2026-10-28.md). El producto continúa siendo v2; las revisiones del supervisor externo no son otra entrega. No repetir baterías, recrear el entorno o reaplicar el parche completo por este cierre documental.
+
+**Estado de la 9.3:** v2 validada en Linux y Windows nativo con Brave y aprobada por la auditoría; integrada en PR #102 (merge `4f4dd639581168b08c95816660f80fc4f735b1ac`), con los cinco trabajos aprobados: Node 22, Node 24, Chromium/Linux, Python/Linux y Python/Windows (workflows `40589232731` y `40589232763`). Son antecedentes de la 9.3, no resultados de la 9.4. [Validación del operador](fase9_3_validacion_operador_2026-10-27.md). El [protocolo dirigido](#entrega-93-protocolo-dirigido) se conserva como referencia: no recrear worktree/entorno ni repetir baterías o aplicar de nuevo el parche completo por este cierre.
 
 **Estado de la 9.2:** validada en Windows 11 nativo por Daniel y aprobada por la auditoría independiente el 26 de octubre de 2026, incluido el ensayo nativo B con el Programador de tareas real. Entonces quedaban pendientes la publicación manual, el CI del nuevo PR y la migración controlada de `LP6-01023009031fcabd`. *Actualización:* la 9.2 se integró en el PR #101 (merge `ed0ee427f7a6fcd2a33cbc538435a3df2e299710`, cinco checks aprobados, con el arreglo de pruebas `e38362bf2341cb30389141c67eb37b5b89a6e2fe`). Daniel migró y activó en Windows `LP6-01023009031fcabd` con el horario por juego. Según la confirmación del auditor (no son pruebas de esta entrega), en la captura del 27 de octubre de 2026 a las 00:11, hora de Colombia, quedaron verificadas nueve ejecuciones programadas y quince consultas en sus franjas: siete de MiLoto, tres de Baloto, tres de Revancha y dos de ColorLoto, sin consultas duplicadas ni fallos de sincronización reportados. Aquella captura no tenía resultados nuevos. La observación posterior del 27 de octubre a las 10:21, auditada sobre la captura de Daniel, acredita una novedad incorporada automáticamente y su siguiente predicción con explicación guardada en cada juego: 20 ciclos conservados, 33 consultas (8 de MiLoto, 9 de Baloto, 9 de Revancha y 7 de ColorLoto), sin parejas juego/oportunidad repetidas ni fallos de sincronización reportados; los 29 intentos sin novedad no emitieron otra predicción. Configuración, selecciones de modelos, tarea versión 2 y plan conservados. El último inicio informado es 09:24:45: no acredita disparo exacto a las 09:00 ni recuperación matinal con resultados pendientes, pues los cuatro juegos terminaron de madrugada. Esa recuperación y la limpieza histórica siguen pendientes. Es operación real observada, separada de las pruebas sintéticas 9.3; Codex no ejecutó ciclos ni SQL operativo. [Actualización real de Fase 6](fase9_3_validacion_operador_2026-10-27.md#actualizacion-real-de-fase-6-del-27-de-octubre). Fase 9 global abierta. [Informe de cierre](fase9_2_validacion_operador_2026-10-26.md).
 
 **Estado de la 9.1:** entrega 9.1 v2 validada en Windows 11 nativo por Daniel y auditada el 25 de octubre de 2026. Python 3.14.6, Node 24.15.0, npm 11.12.1 y Brave instalado (motor 156.0.8078.48), con datos sintéticos. Los seis escenarios se consolidan desde dos corridas; no es una nueva batería completa. Publicación manual y checks del PR pendientes; Fase 9 global abierta. *Actualización posterior:* la 9.1 se integró en PR #100 (merge `9966a4b`). [Detalle de la evidencia](fase9_validacion_operador_2026-10-25.md); [diseño](fase9_frontend.md).
 
+
+## Entrega 9.4: validación nativa completada
+
+**Corrección v2, F94-ROB-01:** las carteras con metadatos necesarios incompletos quedan como alteradas dentro del listado y su ficha devuelve 409, conservando las sanas. El nombre opcional ausente se publica como `null`. La sonda original, sin modificar, pasó de 1/3 (código 1) sobre v1 a 3/3 (código 0) en Linux v2; la ejecución nativa posterior confirmó 3/3. Su leyenda fija «Linux» se conserva: la atribución Windows procede de los metadatos del supervisor nativo.
+
+La base exacta es `4f4dd639581168b08c95816660f80fc4f735b1ac` (PR #102; árbol `3aa63d583a9c4df7a139b7eafe5a161fadcbe441`, 976 archivos). La fuente v2 aprobada tiene árbol `8f5be63c3a8f5205356d40504cc426f3eacf06f5` y 1027 archivos públicos. Los cinco trabajos del PR #102 pertenecen a 9.3/base. Este cierre es incremental sobre v2 exacta; publicación manual, integración y CI de 9.4 siguen pendientes, sin lanzar Actions ni cambiar facturación.
+
+**Ejecuciones nativas de Daniel, 28 de octubre de 2026, aprobadas por el auditor.** Windows 11/Python 3.14.6 x64; Node 24.15.0 y npm 11.12.1. La primera corrida `d5a768db` aprobó 173 pruebas API/pasarela y la sonda 3/3, retenidas sin repetir, y contención 2/2 (124 esperado en el ensayo de plazo). Tras la reanudación diagnóstica `f758ca05`, la continuación `1463b159` ejecutó 780 Vitest nuevos en Windows y completó tipos, TypeScript, compilación y canario, con código 0 y pip check correcto. Son tres corridas relacionadas, sin sumar baterías solapadas ni atribuir las 780 a una repetición Linux v2. [Tres ZIP, tamaños, huellas y procedencia](fase9_4_validacion_operador_2026-10-28.md).
+
+**OpenAPI: cinco descripciones 422 aceptadas.** Los primeros dos bloqueos fueron del control del documento: `Unprocessable Entity` en el versionado y `Unprocessable Content` en el generado Windows, sólo en las cinco descripciones 422 nuevas; el resto del JSON completo coincide. El comparador externo conserva ambos documentos y sus cinco diferencias, reconoce exclusivamente esas leyendas auditadas y rechaza cambios adicionales. Informa `documentos_json_iguales=false` y `cinco_descripciones_422_auditadas_aceptadas=true`. Producto, contrato funcional, OpenAPI versionado y tipos permanecen intactos; la salvedad documental no crea una v3. La emulación Linux de la leyenda runtime que efectuó el auditor fue una reproducción aislada, sin atribuirla a Windows.
+
+Brave instalado, motor 156.0.8078.48, Playwright 1.56.1, perfil temporal y plataforma `win32`. La etiqueta genérica Chromium se conserva; la huella del ejecutable externo acredita Brave, sin afirmar una validación de Google Chrome/Windows.
+
+| Escenario Brave | Visitas | Comprobaciones de navegador | HTTP directo | Capturas |
+|---|---:|---:|---:|---:|
+| Normal, cuatro juegos | 60 | 5 | 8 | 60 |
+| Vacío | 9 | 0 | 0 | 9 |
+| Alterado | 12 | 6 | 0 | 12 |
+| Incompatible | 6 | 3 | 0 | 6 |
+| Cuota | 0 | 1 | 0 | 1 |
+| **Total** | **87** | **15** | **8** | **88** |
+
+El contador genérico de cuota declara cero visitas aunque sí hubo navegación, espera y acción manual. Se comprobó 429 con `Retry-After`, sin reintento automático y con recuperación por clic explícito. API/pasarela reales y SPA compilada, datos sintéticos, SQLite y almacenes aislados: costes fríos 3/6, ausencia de canario, huellas e índices/controles públicos conservados. Los 409 esperados de artefactos alterados no son fallos de las pruebas.
+
+**Auditoría visual posterior:** 88 capturas aprobadas sin hallazgos bloqueantes. El campo pendiente de la salida original se conserva como histórico; el informe posterior acredita la aprobación. No es certificación general de accesibilidad. No se repitieron la selección completa Windows, suite completa, ML, PostgreSQL, mediciones ni otra observación F6. La revisión final de navegación, móvil y accesibilidad continúa planificada en 9.5.
+
+### Protocolo conservado como referencia histórica
+
+Los pasos siguientes conservan la preparación y las órdenes de referencia de la validación ya completada; el supervisor externo registró las etapas y resultados efectivos anteriores. No se ejecutan otra vez por este cierre ni se aplica de nuevo el parche completo. La carpeta Windows validada recibe únicamente el incremental documental sobre v2 exacta después de la revisión; se conservan worktree y entorno existentes.
+
+1. **Revisar el paquete con el auditor.** Comprobar el SHA-256 completo del ZIP, `SHA256SUMS`, manifiesto y prueba de aplicación/reversión. Conservar las entregas y worktrees anteriores.
+2. **Preparar una copia nueva**, desacoplada en esa base; por ejemplo `C:\GitHub\loteria-predictor-f94-v1`. No aplicar nada sobre el worktree operativo `C:\GitHub\loteria-predictor-fase6`, su Python `C:\GitHub\venvs\loteria-fase6\Scripts\python.exe` ni los worktrees ya validados. La tarea `LP6-01023009031fcabd`, versión 2, configuración, plan, almacenes y PostgreSQL operativo se conservan.
+3. **Aplicar y comprobar**, comparando rutas y huellas con el manifiesto, sin modificar el índice real:
+
+   ```
+   git rev-parse HEAD
+   git status --short
+   Get-FileHash -Algorithm SHA256 <ruta>\fase9-4-completo-v2.patch
+   git apply --check <ruta>\fase9-4-completo-v2.patch
+   git apply <ruta>\fase9-4-completo-v2.patch
+   git diff --check
+   git status --short
+   ```
+
+4. **Entorno separado de pruebas.** Detectar Python/Node/npm antes de instalar. Puede reutilizarse un entorno de consulta/pruebas compatible conservando sus dependencias, nunca el de Fase 6. La entrega no cambia dependencias. Referencia nativa de Daniel: Windows 11, Python 3.14.6, Node 24.15.0, npm 11.12.1 y Brave instalado; no actualizar por rutina.
+5. **Pruebas dirigidas de las consultas.** Ejecutar los módulos API pública/pasarela afectados, incluidos los nuevos de guardados y las regresiones de fiabilidad/contexto; frontend, contrato OpenAPI, tipos, TypeScript, compilación y canario. Guardar comandos, versiones, salidas, códigos y JUnit nuevos. La selección Windows ya incluye las carpetas API/pasarela; no ejecutar la suite completa, ML, demostraciones, PostgreSQL ni pruebas de Fase 6 por rutina.
+6. **Recorrido sintético focal.** Usar el supervisor nuevo de 9.4 y Brave instalado con perfil temporal, con API sintética real, pasarela y SPA compilada. Revisar modelos, carteras y resultados a 360, 390 y 1280 px; ausencia, alteración, incompatibilidad, paginación/filtros en URL, enlace directo, recarga y atrás/adelante. ColorLoto debe conservar pares número-color legibles; un pendiente no puede verse como cero aciertos. Comprobar memoria vacía: catálogo + modelos/carteras = 3 fichas y catálogo + resultados = 6; detalles por acción explícita, 429/`Retry-After` sin reintentos automáticos. Conservar los controles de predicción/fiabilidad de 9.3.
+
+   Desde `backend\`, usando el Python de pruebas y el ejecutable de Brave ya instalado (sustituir `<Brave>` por su ruta comprobada), conservar una carpeta de evidencia distinta por escenario:
+
+   ```powershell
+   python -m tests.recorrido_fase94 --escenario normal --anchos 360,390,1280 --navegador "<Brave>" --salida ..\f94-recorrido-windows\normal
+   python -m tests.recorrido_fase94 --escenario vacio --anchos 360,390,1280 --navegador "<Brave>" --salida ..\f94-recorrido-windows\vacio
+   python -m tests.recorrido_fase94 --escenario alterado --anchos 360,390,1280 --navegador "<Brave>" --salida ..\f94-recorrido-windows\alterado
+   python -m tests.recorrido_fase94 --escenario incompatible --anchos 360,390,1280 --navegador "<Brave>" --salida ..\f94-recorrido-windows\incompatible
+   python -m tests.recorrido_fase94 --escenario cuota --anchos 360,390,1280 --navegador "<Brave>" --salida ..\f94-recorrido-windows\cuota
+   ```
+
+   Cada orden crea sus propios almacenes sintéticos temporales, mantiene la clave en el proceso servidor y comprueba huellas antes/después. El supervisor inicia y termina solo sus procesos de ensayo; no consulta la base operativa ni ejecuta la tarea de Fase 6. El argumento del navegador cambia únicamente el ejecutable de este recorrido, sin cambiar la configuración del producto ni el navegador global. Un error conserva registros y devuelve una salida no cero; no continuar con otra etapa sin revisar la evidencia.
+7. **Devolver evidencia y detenerse.** JUnit, logs, resultado e inventario del recorrido y capturas de Brave, más estado/índice del nuevo worktree y controles públicos de conservación. No publicar ni activar operaciones reales. La auditoría posterior aprobó la validación nativa y las 88 capturas de 9.4; los resultados de 9.3 conservan su atribución histórica. Publicación manual, integración y CI siguen pendientes.
+
+La recuperación matinal de Fase 6 con resultados pendientes sigue sin acreditarse: el registro 09:24:45 no prueba el disparo de las 09:00. Esta validación no necesita ni autoriza otra observación operativa. Mantener `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 
 ## Entrega 9.2: validación nativa completada
 
@@ -53,7 +117,7 @@ La selección `tests\seleccion_windows.txt` incluye las pruebas nuevas de horari
 
 ## Entrega 9.3: protocolo dirigido
 
-**Estado v2:** validada por Daniel en Windows 11 con Brave el 27 de octubre y aprobada por el auditor; cierre documental preparado, publicación manual y CI pendientes. El worktree `C:\GitHub\loteria-predictor-f93-v2` ya está validado. Los comandos siguientes son referencia del protocolo propuesto; la ejecución real comprendió 415 pruebas API/pasarela y 690 Vitest, sin repetir ahora esas baterías.
+**Estado histórico v2:** validada por Daniel en Windows 11 con Brave el 27 de octubre y aprobada por el auditor; después integrada en PR #102 (`4f4dd639`) con los cinco trabajos aprobados. El protocolo y sus resultados se conservan como antecedentes de 9.3, sin atribuirlos a 9.4. El worktree `C:\GitHub\loteria-predictor-f93-v2` ya está validado. Los comandos siguientes son referencia del protocolo propuesto; la ejecución real comprendió 415 pruebas API/pasarela y 690 Vitest, sin repetir ahora esas baterías.
 
 **Validación nativa v2 de Daniel, 27 de octubre de 2026 (11:18:23–11:29:15, America/Bogota), aprobada por el auditor.** Windows 11/Python 3.14.6: 415 pruebas API/pasarela; Node 24.15.0: 690 Vitest, sin fallos, errores u omisiones. Las 25 regresiones de contexto ya están incluidas en los 690. OpenAPI, tipos, TypeScript, compilación y canario correctos; pip check limpio y dos deprecaciones Python conocidas. Brave instalado, con perfil temporal y adaptador externo: 30 visitas y 32 comprobaciones correctas a 360, 390 y 1280 px, más seis controles HTTP; cuota: dos comprobaciones y cero visitas en el contador genérico, aunque sí hubo navegación. El auditor revisó 16 capturas sin bloqueos; el resultado original decía pendiente porque se generó antes de la auditoría y se conserva intacto. No es certificación general de accesibilidad. Fuente v2 de 975 archivos y seis controles públicos de worktrees conservados; contención 2/2 con código 124 esperado; no se ejecutó la selección completa de Windows. No hubo consultas o ciclos operativos. Son resultados nativos de Daniel, separados de Linux y de la observación real de Fase 6. [Insumos y límites](fase9_3_validacion_operador_2026-10-27.md).
 

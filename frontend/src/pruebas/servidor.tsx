@@ -39,7 +39,8 @@ const VARIANTES_EXPLICITAS = ["--sin_configuracion", "--sin_sorteos", "--explica
 function porUrl(): Map<string, Muestra> {
   const mapa = new Map<string, Muestra>();
   for (const nombre of nombresDeMuestras()) {
-    if (nombre.startsWith("global--error--") || VARIANTES_EXPLICITAS.some((v) => nombre.endsWith(v))) {
+    const guardadoVariante = /--(?:modelos|modelo|carteras|cartera|resultados)--(?:vacio|alterado|incompatible)$/.test(nombre);
+    if (nombre.startsWith("global--error--") || VARIANTES_EXPLICITAS.some((v) => nombre.endsWith(v)) || guardadoVariante) {
       continue;
     }
     const m = muestra(nombre);

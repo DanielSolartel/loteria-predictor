@@ -1,0 +1,83 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/MILOTO/carteras-guardadas/b7a13a9e0755c451d91eb9733de943f533b35b5af9b96c206d6157edb7c4b413",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "MILOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "cartera": {
+   "clave": "b7a13a9e0755c451d91eb9733de943f533b35b5af9b96c206d6157edb7c4b413",
+   "juego": "MILOTO",
+   "estado": "disponible",
+   "motivo": null,
+   "linea": "logistica_regularizada-v1-reg1-n3-libre-s42-reducido",
+   "objetivo": 89,
+   "corte": 88,
+   "modelo": "logistica_regularizada",
+   "nombre": "Regresion logistica regularizada",
+   "version_receta": "1",
+   "perfil": "reducido",
+   "version": 1,
+   "versiones": 1,
+   "cantidad": 3,
+   "generado_en": "2026-10-07T01:00:03+00:00",
+   "registrado": {
+    "clave": "f866026be6bb6947c8b2f605356aadc6a28e6b49f529218284c28661466ddaff",
+    "numero": 1
+   }
+  },
+  "combinaciones": [
+   {
+    "linea": 1,
+    "origen": "sugerencia_del_modelo",
+    "numeros": [
+     3,
+     6,
+     10,
+     12,
+     23
+    ],
+    "superbalota": null,
+    "pares": []
+   },
+   {
+    "linea": 2,
+    "origen": "muestreo_ponderado",
+    "numeros": [
+     9,
+     15,
+     19,
+     20,
+     28
+    ],
+    "superbalota": null,
+    "pares": []
+   },
+   {
+    "linea": 3,
+    "origen": "muestreo_ponderado",
+    "numeros": [
+     2,
+     5,
+     10,
+     13,
+     23
+    ],
+    "superbalota": null,
+    "pares": []
+   }
+  ],
+  "parametros": {
+   "cantidad": 3,
+   "semilla": 42,
+   "diversidad": "libre",
+   "version": "producto5-cartera-1",
+   "algoritmo_rng": "numpy PCG64 con SeedSequence([semilla, 5, flujo, juego]); hijos 0 = numeros/pares, 1 = superbalota",
+   "presupuesto_de_intentos": 5000
+  },
+  "sha256_historico": "844290b89831ee8f353b5ea552de74ecaeb3d6e0232b5c3898783003fa783841",
+  "clasificacion_temporal": "pronostico_sobre_el_ultimo_dato_disponible",
+  "nota_temporal": "Corte de entrada y objetivo son distintos. El reloj local de emisión y un filtro por corte no acreditan que la emisión estuviera disponible antes del sorteo real.",
+  "nota": "Carteras guardadas de Producto 5, distintas de las predicciones de Fase 9.3. Se muestran combinaciones y parámetros guardados; no se generan ni reproducen."
+ }
+}

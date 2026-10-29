@@ -1,0 +1,17 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/modelos-guardados",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "pagina": 1,
+  "paginas": 1,
+  "por_pagina": 20,
+  "total": 0,
+  "elementos": [],
+  "modelo": null,
+  "perfil": null,
+  "nota": "Son versiones realmente registradas, no el catálogo de candidatos. La lectura comprueba manifiesto y huellas del estimador, sin deserializarlo ni comprobar su ejecución. Compatible no acredita ventaja predictiva."
+ }
+}

@@ -1,0 +1,44 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/carteras-guardadas?pagina=1&por_pagina=1",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "pagina": 1,
+  "paginas": 2,
+  "por_pagina": 1,
+  "total": 2,
+  "elementos": [
+   {
+    "clave": "4d8a4e4398f522b40ae6029cf2bacaa6ad018debe3c9f18056ba3ac2a9b34284",
+    "juego": "BALOTO",
+    "estado": "disponible",
+    "motivo": null,
+    "linea": "logistica_regularizada-v1-reg2-n3-libre-s42-reducido",
+    "objetivo": 2192,
+    "corte": 2191,
+    "modelo": "logistica_regularizada",
+    "nombre": "Regresion logistica regularizada",
+    "version_receta": "1",
+    "perfil": "reducido",
+    "version": 1,
+    "versiones": 1,
+    "cantidad": 3,
+    "generado_en": "2026-10-07T01:00:03+00:00",
+    "registrado": {
+     "clave": "e7fcde88aa6878d4fd86ee68f557345147bd994b4ec0efa5c3e048b1e24b2e5f",
+     "numero": 2
+    }
+   }
+  ],
+  "lineas": [
+   "logistica_regularizada-v1-reg2-n3-libre-s42-reducido"
+  ],
+  "linea": null,
+  "desde": null,
+  "hasta": null,
+  "incidencias_sin_objetivo": 0,
+  "nota": "Carteras guardadas de Producto 5, distintas de las predicciones de Fase 9.3. Se muestran combinaciones y parámetros guardados; no se generan ni reproducen. Desde/hasta filtran el objetivo, no la fecha de disponibilidad."
+ }
+}

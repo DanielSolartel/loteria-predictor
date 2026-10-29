@@ -353,3 +353,8 @@ def simulacion(identificador: str = Path(pattern="^[0-9a-fA-F-]{32,36}$", descri
             "ejecutado_en": f["ejecutado_en"], "duracion_ms": f["duracion_ms"], "integridad": f["integridad"],
             "estado_de_uso": e.ESTADO_DE_USO, "parametros": f["parametros"], "contenido": resumen_["contenido"],
             "contenido_sha256": resumen_["contenido_sha256"]}
+
+
+# Fase 9.4: consultas guardadas con contratos propios; misma seguridad/middleware.
+from app.api.publica.guardados import router as router_guardados
+router.include_router(router_guardados)

@@ -76,6 +76,11 @@ Prefijo `/api/v1`. Todas requieren `X-API-Key` salvo `/salud` y la documentació
 | `/juegos/{codigo}/estadisticas/{metrica}` | `hasta_numero_sorteo`, y según la métrica `anio`, `mes`, `dia_semana` o `ventana` | 5 | una métrica (Fase 5) | 401, 404, 422, 429, 503 |
 | `/juegos/{codigo}/predicciones` | `cartera` (64 hex, opcional); `historial` 0–50 (20) | 3 | predicción guardada (la última o la indicada) e historial acotado; desde la Fase 9.3, también su explicación guardada y su clasificación de candidatos tipada | 401, 404, 409, 422, 429, 503 |
 | `/juegos/{codigo}/fiabilidad` (Fase 9.3) | `hasta` ≥ 1 (opcional: solo objetivos hasta ese sorteo) | 3 | fiabilidad observada de la Fase 4: seguimiento, retrospectiva y evaluación de la receta, por separado | 401, 404, 422, 429, 503 |
+| `/juegos/{codigo}/modelos-guardados` (Fase 9.4) | `pagina`, `por_pagina`, `modelo`, `perfil` | 2 | versiones realmente registradas, paginadas y con integridad/compatibilidad | 401, 404, 422, 429, 503 |
+| `/juegos/{codigo}/modelos-guardados/{clave}` (Fase 9.4) | `clave` 64 hex | 2 | metadatos acreditados; ausencia/alteración/incompatibilidad explícitas, sin ejecutar el estimador | 401, 404, 409, 422, 429, 503 |
+| `/juegos/{codigo}/carteras-guardadas` (Fase 9.4) | `pagina`, `por_pagina`, `linea`, `desde`, `hasta` (objetivos) | 2 | carteras Producto 5, paginadas | 401, 404, 422, 429, 503 |
+| `/juegos/{codigo}/carteras-guardadas/{clave}` (Fase 9.4) | `clave` 64 hex | 2 | identidad, combinaciones y reproducción guardadas; sin atribuir otra receta | 401, 404, 409, 422, 429, 503 |
+| `/juegos/{codigo}/resultados` (Fase 9.4) | `procedencia`, `linea`, `tipo`, `desde`, `hasta`, `objetivo`, `pagina`, `por_pagina` | 5 | emisiones/resultados y agregados de Producto 6; pendientes sin aciertos inventados | 401, 404, 409, 422, 429, 503 |
 | `/juegos/{codigo}/simulaciones` | `limite` 1–50 (20) | 2 | simulaciones guardadas con su integridad | 401, 404, 422, 429, 503 |
 | `/simulaciones/{identificador}` | UUID de la fila | 2 | identidad, contenido y `contenido_sha256`, verificados | 401, 404, 409, 422, 429, 503 |
 
@@ -84,6 +89,22 @@ Los contratos (pydantic) están en `app/api/publica/esquemas.py` y en el OpenAPI
 - **Sin identificadores internos:** los juegos y los sorteos omiten los UUID internos y la fuente de importación.
 - **Predicciones:** se proyectan sin enlaces web internos, identificadores de ejecución ni configuración completa. Fase 9.3: la explicación guardada se proyecta sin su sello ni campos repetidos; la fiabilidad, sin el motivo de la base ni las líneas disponibles, con la semilla del bootstrap como texto y un texto fijo en los fallos de cálculo ([contrato](fase9_frontend.md#entrega-93-explicación-clasificación-de-candidatos-y-fiabilidad)).
 - **Simulaciones:** se publican sin los metadatos de ejecución (lote, entorno y origen). Un tercero puede recomputar la `clave` desde `parametros` y `contenido_sha256` desde `contenido`.
+
+## Cierre de validación 9.4: salvedad documental de HTTP 422
+
+La entrega 9.4 v2 está validada en Linux y Windows nativo con Brave y aprobada por auditoría; publicación manual, integración y CI pendientes. El [informe del operador](fase9_4_validacion_operador_2026-10-28.md) conserva la procedencia de las pruebas, los tres ZIP nativos y la aprobación visual posterior de las 88 capturas. Las 173 pruebas backend y la sonda 3/3 se retienen de la primera corrida; las 780 Vitest y cinco escenarios Brave corresponden a la continuación Windows, sin repetir baterías en este cierre.
+
+Los primeros dos bloqueos nativos fueron del cotejo OpenAPI. La comparación del JSON completo encontró exactamente cinco diferencias, todas en `get.responses.422.description` de estas rutas:
+
+- `/api/v1/juegos/{codigo}/modelos-guardados`.
+- `/api/v1/juegos/{codigo}/modelos-guardados/{clave}`.
+- `/api/v1/juegos/{codigo}/carteras-guardadas`.
+- `/api/v1/juegos/{codigo}/carteras-guardadas/{clave}`.
+- `/api/v1/juegos/{codigo}/resultados`.
+
+El versionado dice `Unprocessable Entity` y el generado en Windows dice `Unprocessable Content`. FastAPI obtiene la leyenda de `http.client.responses` cuando la ruta no la fija. Todo el resto del documento completo coincide, incluidos esquemas, restricciones, rutas, métodos, códigos y seguridad. La reproducción aislada Linux del auditor acreditó la procedencia runtime de la leyenda; no fue una ejecución nativa Windows.
+
+El comparador **externo** conserva ambos documentos y su diferencia; acepta exclusivamente esas cinco leyendas auditadas con el valor runtime correspondiente y rechaza cualquier cambio adicional. Registra `documentos_json_iguales=false` y `cinco_descripciones_422_auditadas_aceptadas=true`, sin excluir campos ni declarar igualdad completa de JSON. Se acepta una salvedad documental de validación, sin anular el control de deriva del contrato. No se cambian producto, contrato funcional, OpenAPI versionado ni tipos y no se crea una entrega v3. La [guía Windows](fase9_windows.md#entrega-94-validación-nativa-completada) y la [guía de frontend](fase9_frontend.md#entrega-94-modelos-carteras-y-resultados-guardados) conservan este mismo alcance.
 
 ## Errores
 

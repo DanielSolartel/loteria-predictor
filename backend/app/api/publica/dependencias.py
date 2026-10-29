@@ -78,3 +78,18 @@ def estado_de_la_base() -> str:
         return "no_disponible"
     finally:
         sesiones.close()
+
+
+def consultas_guardadas():
+    """Lectores de Fases 3, Producto 5 y Producto 6, sin lanzadores ni recuperación.
+
+    Construir estos proveedores no crea almacenes ni inicia procesos. Las
+    consultas nuevas no utilizan el ejecutor de los casos de uso existentes.
+    """
+    from app.application.use_cases.consultas_guardadas import ConsultasGuardadas
+    from app.core.config import get_settings
+    from app.infrastructure.storage.laboratorio_file_store import LaboratorioFileStore
+
+    carteras = dep.get_carteras()
+    return ConsultasGuardadas(LaboratorioFileStore(get_settings().directorio_laboratorio_modelos),
+                             carteras, dep.get_resultados(carteras))

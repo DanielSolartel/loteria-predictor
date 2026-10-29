@@ -1,0 +1,20 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/carteras-guardadas",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "pagina": 1,
+  "paginas": 1,
+  "por_pagina": 20,
+  "total": 0,
+  "elementos": [],
+  "lineas": [],
+  "linea": null,
+  "desde": null,
+  "hasta": null,
+  "incidencias_sin_objetivo": 0,
+  "nota": "Carteras guardadas de Producto 5, distintas de las predicciones de Fase 9.3. Se muestran combinaciones y parámetros guardados; no se generan ni reproducen. Desde/hasta filtran el objetivo, no la fecha de disponibilidad."
+ }
+}

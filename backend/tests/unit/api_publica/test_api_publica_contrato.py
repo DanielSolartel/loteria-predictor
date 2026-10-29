@@ -20,6 +20,11 @@ CONSULTAS = ["/api/v1/juegos", "/api/v1/juegos/{codigo}", "/api/v1/juegos/{codig
              "/api/v1/juegos/{codigo}/estadisticas/resumen", "/api/v1/juegos/{codigo}/estadisticas/panel",
              "/api/v1/juegos/{codigo}/estadisticas/{metrica}", "/api/v1/juegos/{codigo}/predicciones",
              "/api/v1/juegos/{codigo}/fiabilidad",  # Fase 9.3
+             "/api/v1/juegos/{codigo}/modelos-guardados",  # Fase 9.4: artefactos existentes, no catálogo
+             "/api/v1/juegos/{codigo}/modelos-guardados/{clave}",
+             "/api/v1/juegos/{codigo}/carteras-guardadas",
+             "/api/v1/juegos/{codigo}/carteras-guardadas/{clave}",
+             "/api/v1/juegos/{codigo}/resultados",
              "/api/v1/juegos/{codigo}/simulaciones", "/api/v1/simulaciones/{identificador}", "/api/v1/estado"]
 
 
@@ -28,21 +33,24 @@ def a(tmp_path):
     return fa.api(tmp_path)
 
 
-def _planas(rutas):
+def _planas(rutas, prefijo=""):
     """Rutas efectivas: FastAPI reciente envuelve cada `include_router` en un
     objeto perezoso con `original_router`; las versiones anteriores las aplanan."""
     for r in rutas:
         interno = getattr(r, "original_router", None)
         if interno is not None:
-            yield from _planas(interno.routes)
+            # El router incluido puede añadir su prefijo al materializarse.
+            # Las rutas originales por sí solas aún no son las rutas efectivas.
+            contexto = getattr(r, "include_context", None)
+            yield from _planas(interno.routes, prefijo + getattr(contexto, "prefix", ""))
         else:
-            yield r
+            yield prefijo + r.path, set(getattr(r, "methods", None) or {"MOUNT"})
 
 
 def _rutas(app) -> dict[str, set[str]]:
     rutas: dict[str, set[str]] = {}
-    for r in _planas(app.routes):
-        rutas.setdefault(r.path, set()).update(getattr(r, "methods", None) or {"MOUNT"})
+    for ruta, metodos in _planas(app.routes):
+        rutas.setdefault(ruta, set()).update(metodos)
     return rutas
 
 

@@ -1,0 +1,218 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO_REVANCHA/resultados",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO_REVANCHA",
+  "estado_de_uso": "experimental_no_acreditado",
+  "filtros": {
+   "procedencia": null,
+   "linea": null,
+   "tipo": "seguimiento",
+   "desde": null,
+   "hasta": null,
+   "objetivo": null
+  },
+  "base": {
+   "estado": "consultada",
+   "motivo": null,
+   "ultimo_sorteo": 2181,
+   "fecha": "2021-10-29",
+   "sorteos": 101
+  },
+  "procedencias": {
+   "operacion": {
+    "nombre": "Operación diaria (Productos 1-3)",
+    "elegida": true,
+    "estado": "sin_artefactos",
+    "lineas": 0,
+    "emisiones": 0,
+    "ilegibles": 0,
+    "error": null
+   },
+   "laboratorio": {
+    "nombre": "Laboratorio de modelos (Producto 4)",
+    "elegida": true,
+    "estado": "sin_artefactos",
+    "lineas": 0,
+    "emisiones": 0,
+    "ilegibles": 0,
+    "error": null
+   },
+   "carteras": {
+    "nombre": "Modelo de cartera (Producto 5, vector fuente)",
+    "elegida": true,
+    "estado": "con_lineas",
+    "lineas": 1,
+    "emisiones": 2,
+    "ilegibles": 0,
+    "error": null
+   }
+  },
+  "lineas": [
+   {
+    "clave": "carteras:logistica_regularizada-v1-reg1-reducido",
+    "procedencia": "carteras",
+    "linea": "logistica_regularizada-v1-reg1-reducido",
+    "nombre": "Regresion logistica regularizada v1 (reducido) · versión registrada 1 · vector fuente",
+    "modelo": "logistica_regularizada",
+    "version": "1",
+    "perfil": "reducido",
+    "registrado": null
+   }
+  ],
+  "seleccion": [
+   "carteras:logistica_regularizada-v1-reg1-reducido"
+  ],
+  "resumenes": {
+   "carteras:logistica_regularizada-v1-reg1-reducido": {
+    "objetivos": 2,
+    "incluidos": 1,
+    "pendientes": 1,
+    "excluidos": 0,
+    "sin_base": 0,
+    "excluidos_por_motivo": {},
+    "muestra_pequena": true,
+    "aciertos": null,
+    "perdidas": {
+     "log_loss": {
+      "modelo": 0.3591460265553448,
+      "uniforme": 0.35944514751279094,
+      "diferencia": -0.00029912095744616396,
+      "objetivos": 1,
+      "veredicto": "menor_perdida_que_la_uniforme_en_esta_muestra"
+     },
+     "brier": {
+      "modelo": 0.10276360887729513,
+      "uniforme": 0.10275824770146025,
+      "diferencia": 5.3611758348837135e-06,
+      "objetivos": 1,
+      "veredicto": "la_uniforme_fue_mejor"
+     }
+    },
+    "superbalota": {
+     "aciertos": 0,
+     "objetivos": 1,
+     "log_loss": {
+      "modelo": 2.674148649432029,
+      "uniforme": 2.772588722239781,
+      "diferencia": -0.09844007280775235,
+      "objetivos": null,
+      "veredicto": "menor_perdida_que_la_uniforme_en_esta_muestra"
+     },
+     "brier": {
+      "modelo": 0.9323721759816285,
+      "uniforme": 0.9375,
+      "diferencia": -0.00512782401837153,
+      "objetivos": null,
+      "veredicto": "menor_perdida_que_la_uniforme_en_esta_muestra"
+     }
+    }
+   }
+  },
+  "comparacion": {
+   "tipo": "seguimiento",
+   "lineas": [
+    "carteras:logistica_regularizada-v1-reg1-reducido"
+   ],
+   "totales_individuales": {
+    "carteras:logistica_regularizada-v1-reg1-reducido": 1
+   },
+   "objetivos_comunes": [],
+   "fuera_de_la_muestra_comun": [],
+   "por_linea": {},
+   "uniforme": null,
+   "clasificacion": [],
+   "estado": "sin_muestra_comun",
+   "motivo": "elige al menos dos lineas para una comparacion directa",
+   "signo": "Diferencia = pérdida del modelo − pérdida de la uniforme en los mismos objetivos. Negativa: menor pérdida en esta muestra; positiva: la uniforme fue mejor. Describe estos objetivos; no demuestra ventaja futura.",
+   "muestra_pequena": null
+  },
+  "historial": {
+   "filas": [
+    {
+     "juego": "BALOTO_REVANCHA",
+     "procedencia": "carteras",
+     "linea": "logistica_regularizada-v1-reg1-reducido",
+     "clave_linea": "carteras:logistica_regularizada-v1-reg1-reducido",
+     "objetivo": 2182,
+     "tipo": "seguimiento",
+     "identificador": "834980733c0e3e977c84bdb113751fb2886e09190f2283314c05d7efcd213aca",
+     "versiones": null,
+     "integridad": "legible",
+     "historico": "coincide",
+     "resultado_estado": "pendiente",
+     "estado": "pendiente",
+     "motivo": "emision_no_admitida; consulte los estados de integridad, histórico y resultado",
+     "fecha_sorteo": null,
+     "resultado": null,
+     "aciertos": null,
+     "de": null,
+     "metricas": null,
+     "superbalota": null
+    },
+    {
+     "juego": "BALOTO_REVANCHA",
+     "procedencia": "carteras",
+     "linea": "logistica_regularizada-v1-reg1-reducido",
+     "clave_linea": "carteras:logistica_regularizada-v1-reg1-reducido",
+     "objetivo": 2181,
+     "tipo": "seguimiento",
+     "identificador": "7c0a4b29f3f3a907407eea8e2db112f555efb48a0270b76c6cb052d86c444e74",
+     "versiones": null,
+     "integridad": "legible",
+     "historico": "coincide",
+     "resultado_estado": "observado",
+     "estado": "incluido",
+     "motivo": null,
+     "fecha_sorteo": "2021-10-29",
+     "resultado": {
+      "numeros": [
+       1,
+       3,
+       13,
+       20,
+       35
+      ],
+      "superbalota": 1,
+      "pares": []
+     },
+     "aciertos": null,
+     "de": null,
+     "metricas": {
+      "log_loss": 0.3591460265553448,
+      "log_loss_uniforme": 0.35944514751279094,
+      "brier": 0.10276360887729513,
+      "brier_uniforme": 0.10275824770146025,
+      "filas": 43.0
+     },
+     "superbalota": {
+      "acierto": false,
+      "log_loss": 2.674148649432029,
+      "log_loss_uniforme": 2.772588722239781,
+      "brier": 0.9323721759816285,
+      "brier_uniforme": 0.9375
+     }
+    }
+   ],
+   "total": 2,
+   "pagina": 1,
+   "paginas": 1,
+   "por_pagina": 20
+  },
+  "sin_resultados_de_seguimiento": false,
+  "politica": "Una emisión por procedencia, línea y objetivo: la primera según el orden sellado de su procedencia (nunca la fecha, el nombre del archivo ni la versión con más aciertos). Si la primera no es evaluable, el objetivo se excluye sin sustituirla por otra versión.",
+  "nota_seguimiento": "«El objetivo no estaba cargado al generar» describe la base local; no acredita que la emision precediera al sorteo real.",
+  "signo": "Diferencia = pérdida del modelo − pérdida de la uniforme en los mismos objetivos. Negativa: menor pérdida en esta muestra; positiva: la uniforme fue mejor. Describe estos objetivos; no demuestra ventaja futura.",
+  "unidades": {
+   "log_loss": "Log Loss media por objetivo (números: binaria por número candidato; ColorLoto: por balota); menor es mejor",
+   "brier": "Brier medio por objetivo (mismas filas que el Log Loss); menor es mejor",
+   "log_loss_multiconjunto": "Log Loss del multiconjunto de 6 pares de ColorLoto (aparte del Log Loss por balota)",
+   "diferencia": "pérdida del modelo − pérdida de la uniforme del mismo artefacto y objetivo (negativa = menor pérdida)",
+   "aciertos": "números (0-5) o pares con multiplicidad (0-6) de la sugerencia de la emisión; el vector fuente de Producto 5 no tiene sugerencia propia (ver carteras)",
+   "superbalota": "Log Loss y Brier multiclase de la superbalota, aparte; nunca se suma a los números",
+   "denominador": "objetivos incluidos de la línea (o de la muestra común en la comparación directa)"
+  },
+  "nota": "Lectura y agregaciones de Producto 6. Solo las emisiones incluidas entran en métricas; pendiente y sin base no son cero aciertos. Desde/hasta filtran sorteos objetivo y no acreditan disponibilidad anterior de la emisión. No se guardan informes."
+ }
+}
