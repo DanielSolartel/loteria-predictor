@@ -1,0 +1,223 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/resultados",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "COLORLOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "filtros": {
+   "procedencia": null,
+   "linea": null,
+   "tipo": "seguimiento",
+   "desde": null,
+   "hasta": null,
+   "objetivo": null
+  },
+  "base": {
+   "estado": "consultada",
+   "motivo": null,
+   "ultimo_sorteo": 91,
+   "fecha": "2025-05-03",
+   "sorteos": 91
+  },
+  "procedencias": {
+   "operacion": {
+    "nombre": "Operación diaria (Productos 1-3)",
+    "elegida": true,
+    "estado": "sin_artefactos",
+    "lineas": 0,
+    "emisiones": 0,
+    "ilegibles": 0,
+    "error": null
+   },
+   "laboratorio": {
+    "nombre": "Laboratorio de modelos (Producto 4)",
+    "elegida": true,
+    "estado": "sin_artefactos",
+    "lineas": 0,
+    "emisiones": 0,
+    "ilegibles": 0,
+    "error": null
+   },
+   "carteras": {
+    "nombre": "Modelo de cartera (Producto 5, vector fuente)",
+    "elegida": true,
+    "estado": "con_lineas",
+    "lineas": 1,
+    "emisiones": 2,
+    "ilegibles": 0,
+    "error": null
+   }
+  },
+  "lineas": [
+   {
+    "clave": "carteras:poisson_regularizado-v1-reg1-reducido",
+    "procedencia": "carteras",
+    "linea": "poisson_regularizado-v1-reg1-reducido",
+    "nombre": "Regresion de Poisson regularizada v1 (reducido) · versión registrada 1 · vector fuente",
+    "modelo": "poisson_regularizado",
+    "version": "1",
+    "perfil": "reducido",
+    "registrado": null
+   }
+  ],
+  "seleccion": [
+   "carteras:poisson_regularizado-v1-reg1-reducido"
+  ],
+  "resumenes": {
+   "carteras:poisson_regularizado-v1-reg1-reducido": {
+    "objetivos": 2,
+    "incluidos": 1,
+    "pendientes": 1,
+    "excluidos": 0,
+    "sin_base": 0,
+    "excluidos_por_motivo": {},
+    "muestra_pequena": true,
+    "aciertos": null,
+    "perdidas": {
+     "log_loss": {
+      "modelo": 3.7386050174282075,
+      "uniforme": 3.7376696182833684,
+      "diferencia": 0.0009353991448390886,
+      "objetivos": 1,
+      "veredicto": "la_uniforme_fue_mejor"
+     },
+     "brier": {
+      "modelo": 0.9762374067274902,
+      "uniforme": 0.9761904761904762,
+      "diferencia": 4.6930537013989415e-05,
+      "objetivos": 1,
+      "veredicto": "la_uniforme_fue_mejor"
+     },
+     "log_loss_multiconjunto": {
+      "modelo": 15.852378892559141,
+      "uniforme": 15.846766497690107,
+      "diferencia": 0.0056123948690345316,
+      "objetivos": 1,
+      "veredicto": "la_uniforme_fue_mejor"
+     }
+    },
+    "superbalota": null
+   }
+  },
+  "comparacion": {
+   "tipo": "seguimiento",
+   "lineas": [
+    "carteras:poisson_regularizado-v1-reg1-reducido"
+   ],
+   "totales_individuales": {
+    "carteras:poisson_regularizado-v1-reg1-reducido": 1
+   },
+   "objetivos_comunes": [],
+   "fuera_de_la_muestra_comun": [],
+   "por_linea": {},
+   "uniforme": null,
+   "clasificacion": [],
+   "estado": "sin_muestra_comun",
+   "motivo": "elige al menos dos lineas para una comparacion directa",
+   "signo": "Diferencia = pérdida del modelo − pérdida de la uniforme en los mismos objetivos. Negativa: menor pérdida en esta muestra; positiva: la uniforme fue mejor. Describe estos objetivos; no demuestra ventaja futura.",
+   "muestra_pequena": null
+  },
+  "historial": {
+   "filas": [
+    {
+     "juego": "COLORLOTO",
+     "procedencia": "carteras",
+     "linea": "poisson_regularizado-v1-reg1-reducido",
+     "clave_linea": "carteras:poisson_regularizado-v1-reg1-reducido",
+     "objetivo": 92,
+     "tipo": "seguimiento",
+     "identificador": "8b54bfffc873e2238e82b6755f20c03e6c219c7ced65710b647a8f15048a971a",
+     "versiones": null,
+     "integridad": "legible",
+     "historico": "coincide",
+     "resultado_estado": "pendiente",
+     "estado": "pendiente",
+     "motivo": "emision_no_admitida; consulte los estados de integridad, histórico y resultado",
+     "fecha_sorteo": null,
+     "resultado": null,
+     "aciertos": null,
+     "de": null,
+     "metricas": null,
+     "superbalota": null
+    },
+    {
+     "juego": "COLORLOTO",
+     "procedencia": "carteras",
+     "linea": "poisson_regularizado-v1-reg1-reducido",
+     "clave_linea": "carteras:poisson_regularizado-v1-reg1-reducido",
+     "objetivo": 91,
+     "tipo": "seguimiento",
+     "identificador": "b0678eb439bb12d9446c5743fbe7cff150cbf5a93b5ff44a64994daf19e94a20",
+     "versiones": null,
+     "integridad": "legible",
+     "historico": "coincide",
+     "resultado_estado": "observado",
+     "estado": "incluido",
+     "motivo": null,
+     "fecha_sorteo": "2025-05-03",
+     "resultado": {
+      "numeros": [],
+      "superbalota": null,
+      "pares": [
+       {
+        "numero": 2,
+        "color": "AZUL"
+       },
+       {
+        "numero": 3,
+        "color": "NEGRO"
+       },
+       {
+        "numero": 5,
+        "color": "AMARILLO"
+       },
+       {
+        "numero": 6,
+        "color": "AZUL"
+       },
+       {
+        "numero": 7,
+        "color": "AZUL"
+       },
+       {
+        "numero": 7,
+        "color": "VERDE"
+       }
+      ]
+     },
+     "aciertos": null,
+     "de": null,
+     "metricas": {
+      "log_loss": 3.7386050174282075,
+      "log_loss_uniforme": 3.7376696182833684,
+      "brier": 0.9762374067274902,
+      "brier_uniforme": 0.9761904761904762,
+      "log_loss_multiconjunto": 15.852378892559141,
+      "log_loss_multiconjunto_uniforme": 15.846766497690107,
+      "balotas": 6.0
+     },
+     "superbalota": null
+    }
+   ],
+   "total": 2,
+   "pagina": 1,
+   "paginas": 1,
+   "por_pagina": 20
+  },
+  "sin_resultados_de_seguimiento": false,
+  "politica": "Una emisión por procedencia, línea y objetivo: la primera según el orden sellado de su procedencia (nunca la fecha, el nombre del archivo ni la versión con más aciertos). Si la primera no es evaluable, el objetivo se excluye sin sustituirla por otra versión.",
+  "nota_seguimiento": "«El objetivo no estaba cargado al generar» describe la base local; no acredita que la emision precediera al sorteo real.",
+  "signo": "Diferencia = pérdida del modelo − pérdida de la uniforme en los mismos objetivos. Negativa: menor pérdida en esta muestra; positiva: la uniforme fue mejor. Describe estos objetivos; no demuestra ventaja futura.",
+  "unidades": {
+   "log_loss": "Log Loss media por objetivo (números: binaria por número candidato; ColorLoto: por balota); menor es mejor",
+   "brier": "Brier medio por objetivo (mismas filas que el Log Loss); menor es mejor",
+   "log_loss_multiconjunto": "Log Loss del multiconjunto de 6 pares de ColorLoto (aparte del Log Loss por balota)",
+   "diferencia": "pérdida del modelo − pérdida de la uniforme del mismo artefacto y objetivo (negativa = menor pérdida)",
+   "aciertos": "números (0-5) o pares con multiplicidad (0-6) de la sugerencia de la emisión; el vector fuente de Producto 5 no tiene sugerencia propia (ver carteras)",
+   "superbalota": "Log Loss y Brier multiclase de la superbalota, aparte; nunca se suma a los números",
+   "denominador": "objetivos incluidos de la línea (o de la muestra común en la comparación directa)"
+  },
+  "nota": "Lectura y agregaciones de Producto 6. Solo las emisiones incluidas entran en métricas; pendiente y sin base no son cero aciertos. Desde/hasta filtran sorteos objetivo y no acreditan disponibilidad anterior de la emisión. No se guardan informes."
+ }
+}

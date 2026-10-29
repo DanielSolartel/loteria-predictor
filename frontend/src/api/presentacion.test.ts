@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { muestra, nombresDeMuestras } from "../pruebas/servidor";
 import { type Decodificador, decodificar, EstructuraNoReconocida } from "./decodificar";
+import { decCarterasGuardadas, decFichaCarteraGuardada, decFichaModeloGuardado, decModelosGuardados, decResultadosGuardados } from "./guardados";
 import {
   decError,
   decEstado,
@@ -35,6 +36,11 @@ const POR_TIPO: Record<string, Decodificador<unknown>> = {
   fiabilidad: decFiabilidad,
   simulaciones: decSimulaciones,
   simulacion: decSimulacion,
+  modelos: decModelosGuardados,
+  modelo: decFichaModeloGuardado,
+  carteras: decCarterasGuardadas,
+  cartera: decFichaCarteraGuardada,
+  resultados: decResultadosGuardados,
 };
 
 describe("respuestas sinteticas de la API", () => {

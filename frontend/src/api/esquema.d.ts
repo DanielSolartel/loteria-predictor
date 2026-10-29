@@ -242,10 +242,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/juegos/{codigo}/modelos-guardados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Versiones registradas: metadatos sin cargar el estimador (coste 2) */
+        get: operations["modelos_api_v1_juegos__codigo__modelos_guardados_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/juegos/{codigo}/modelos-guardados/{clave}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ficha de una versión registrada, sin deserializar ni ejecutar (coste 2) */
+        get: operations["modelo_api_v1_juegos__codigo__modelos_guardados__clave__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/juegos/{codigo}/carteras-guardadas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Carteras guardadas de Producto 5 (coste 2) */
+        get: operations["carteras_api_v1_juegos__codigo__carteras_guardadas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/juegos/{codigo}/carteras-guardadas/{clave}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Combinaciones y reproducción guardadas, sin generar ni reproducir (coste 2) */
+        get: operations["cartera_api_v1_juegos__codigo__carteras_guardadas__clave__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/juegos/{codigo}/resultados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Emisiones y resultados de Producto 6: selección y agregados existentes (coste 5)
+         * @description Desde/hasta filtran sorteos objetivo, no la disponibilidad de una emisión. Pendientes y sin base no son cero aciertos. No se guardan informes ni se comparan modelos de nuevo.
+         */
+        get: operations["resultados_api_v1_juegos__codigo__resultados_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AciertosGuardados */
+        AciertosGuardados: {
+            /** Suma */
+            suma: number;
+            /** Promedio */
+            promedio: number;
+            /** De */
+            de: number;
+            /** Objetivos */
+            objetivos: number;
+            /** Distribucion */
+            distribucion: {
+                [key: string]: number;
+            };
+        };
         /** BaseDeFiabilidad */
         BaseDeFiabilidad: {
             /**
@@ -273,6 +376,19 @@ export interface components {
             /** Objetivo */
             objetivo?: number | null;
         };
+        /** BaseResultadosGuardados */
+        BaseResultadosGuardados: {
+            /** Estado */
+            estado: string;
+            /** Motivo */
+            motivo?: string | null;
+            /** Ultimo Sorteo */
+            ultimo_sorteo?: number | null;
+            /** Fecha */
+            fecha?: string | null;
+            /** Sorteos */
+            sorteos?: number | null;
+        };
         /** CarteraDeLaExplicacion */
         CarteraDeLaExplicacion: {
             /** Clave */
@@ -291,6 +407,92 @@ export interface components {
             /** Sha256 Fuente */
             sha256_fuente: string;
         };
+        /** CarteraGuardada */
+        CarteraGuardada: {
+            /** Clave */
+            clave: string;
+            /** Juego */
+            juego: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "disponible" | "alterado";
+            /** Motivo */
+            motivo?: string | null;
+            /** Linea */
+            linea?: string | null;
+            /** Objetivo */
+            objetivo?: number | null;
+            /** Corte */
+            corte?: number | null;
+            /** Modelo */
+            modelo?: string | null;
+            /** Nombre */
+            nombre?: string | null;
+            /** Version Receta */
+            version_receta?: string | null;
+            /** Perfil */
+            perfil?: string | null;
+            /** Version */
+            version?: number | null;
+            /** Versiones */
+            versiones?: number | null;
+            /** Cantidad */
+            cantidad?: number | null;
+            /** Generado En */
+            generado_en?: string | null;
+            registrado?: components["schemas"]["ReferenciaRegistrada"] | null;
+        };
+        /** CarterasGuardadas */
+        CarterasGuardadas: {
+            /** Juego */
+            juego: string;
+            /**
+             * Estado De Uso
+             * @default experimental_no_acreditado
+             * @constant
+             */
+            estado_de_uso: "experimental_no_acreditado";
+            /** Pagina */
+            pagina: number;
+            /** Paginas */
+            paginas: number;
+            /** Por Pagina */
+            por_pagina: number;
+            /** Total */
+            total: number;
+            /** Elementos */
+            elementos: components["schemas"]["CarteraGuardada"][];
+            /** Lineas */
+            lineas: string[];
+            /** Linea */
+            linea?: string | null;
+            /** Desde */
+            desde?: number | null;
+            /** Hasta */
+            hasta?: number | null;
+            /**
+             * Incidencias Sin Objetivo
+             * @default 0
+             */
+            incidencias_sin_objetivo: number;
+            /** Nota */
+            nota: string;
+        };
+        /** ClasificacionGuardada */
+        ClasificacionGuardada: {
+            /** Linea */
+            linea: string;
+            /** Log Loss */
+            log_loss: number;
+            /** Uniforme */
+            uniforme: number;
+            /** Diferencia */
+            diferencia: number;
+            /** Veredicto */
+            veredicto: string;
+        };
         /** ColumnaDeMetrica */
         ColumnaDeMetrica: {
             /** Clave */
@@ -306,6 +508,54 @@ export interface components {
             unidad: string;
         } & {
             [key: string]: unknown;
+        };
+        /** CombinacionGuardada */
+        CombinacionGuardada: {
+            /** Linea */
+            linea: number;
+            /** Origen */
+            origen: string;
+            /** Numeros */
+            numeros: number[];
+            /** Superbalota */
+            superbalota?: number | null;
+            /** Pares */
+            pares: components["schemas"]["ParGuardado"][];
+        };
+        /** ComparacionResultadosGuardados */
+        ComparacionResultadosGuardados: {
+            /** Tipo */
+            tipo: string;
+            /** Lineas */
+            lineas: string[];
+            /** Totales Individuales */
+            totales_individuales: {
+                [key: string]: number;
+            };
+            /** Objetivos Comunes */
+            objetivos_comunes: number[];
+            /** Fuera De La Muestra Comun */
+            fuera_de_la_muestra_comun: components["schemas"]["ExclusionComparacionGuardada"][];
+            /** Por Linea */
+            por_linea: {
+                [key: string]: components["schemas"]["ResumenResultadoGuardado"];
+            };
+            /** Uniforme */
+            uniforme: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            } | null;
+            /** Clasificacion */
+            clasificacion: components["schemas"]["ClasificacionGuardada"][];
+            /** Estado */
+            estado: string;
+            /** Motivo */
+            motivo: string | null;
+            /** Signo */
+            signo: string;
+            /** Muestra Pequena */
+            muestra_pequena?: boolean | null;
         };
         /** ComponenteDeFiabilidad */
         ComponenteDeFiabilidad: {
@@ -363,6 +613,50 @@ export interface components {
             selector: components["schemas"]["SelectorDeMetrica"] | null;
         } & {
             [key: string]: unknown;
+        };
+        /** EmisionGuardada */
+        EmisionGuardada: {
+            /** Juego */
+            juego: string;
+            /** Procedencia */
+            procedencia: string;
+            /** Linea */
+            linea: string;
+            /** Clave Linea */
+            clave_linea: string;
+            /** Objetivo */
+            objetivo: number;
+            /** Tipo */
+            tipo: string | null;
+            /** Identificador */
+            identificador: string | null;
+            /** Versiones */
+            versiones: number | null;
+            /** Integridad */
+            integridad: string;
+            /** Historico */
+            historico: string | null;
+            /** Resultado Estado */
+            resultado_estado: string | null;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "incluido" | "pendiente" | "excluido" | "sin_base";
+            /** Motivo */
+            motivo: string | null;
+            /** Fecha Sorteo */
+            fecha_sorteo: string | null;
+            resultado: components["schemas"]["ResultadoGuardado"] | null;
+            /** Aciertos */
+            aciertos: number | null;
+            /** De */
+            de: number | null;
+            /** Metricas */
+            metricas: {
+                [key: string]: number;
+            } | null;
+            superbalota: components["schemas"]["SuperbalotaResultadoGuardado"] | null;
         };
         /** EntrenamientoDelMetodo */
         EntrenamientoDelMetodo: {
@@ -495,6 +789,34 @@ export interface components {
                 [key: string]: string;
             } | null;
         };
+        /** EvaluacionGuardada */
+        EvaluacionGuardada: {
+            /** Estado */
+            estado?: string | null;
+            /** Veredicto */
+            veredicto?: string | null;
+            /** Corte */
+            corte?: number | null;
+            /** Objetivos */
+            objetivos?: number | null;
+            /** Muestra Pequena */
+            muestra_pequena?: boolean | null;
+            /** Log Loss */
+            log_loss?: number | null;
+            /** Log Loss Uniforme */
+            log_loss_uniforme?: number | null;
+            /** Nota */
+            nota: string;
+        };
+        /** ExclusionComparacionGuardada */
+        ExclusionComparacionGuardada: {
+            /** Objetivo */
+            objetivo: number;
+            /** Linea */
+            linea: string | null;
+            /** Motivo */
+            motivo: string;
+        };
         /** ExclusionDeFiabilidad */
         ExclusionDeFiabilidad: {
             /** Estado */
@@ -584,6 +906,59 @@ export interface components {
             lineas: components["schemas"]["LineaDeFiabilidad"][];
             receta: components["schemas"]["EvaluacionDeFiabilidad"];
         };
+        /** FichaCarteraGuardada */
+        FichaCarteraGuardada: {
+            /** Juego */
+            juego: string;
+            /**
+             * Estado De Uso
+             * @default experimental_no_acreditado
+             * @constant
+             */
+            estado_de_uso: "experimental_no_acreditado";
+            cartera: components["schemas"]["CarteraGuardada"];
+            /** Combinaciones */
+            combinaciones: components["schemas"]["CombinacionGuardada"][];
+            parametros: components["schemas"]["ParametrosCarteraGuardada"];
+            /** Sha256 Historico */
+            sha256_historico: string;
+            /** Clasificacion Temporal */
+            clasificacion_temporal?: string | null;
+            /** Nota Temporal */
+            nota_temporal: string;
+            /** Nota */
+            nota: string;
+        };
+        /** FichaModeloGuardado */
+        FichaModeloGuardado: {
+            /** Juego */
+            juego: string;
+            /**
+             * Estado De Uso
+             * @default experimental_no_acreditado
+             * @constant
+             */
+            estado_de_uso: "experimental_no_acreditado";
+            modelo: components["schemas"]["ModeloGuardado"];
+            periodo: components["schemas"]["PeriodoGuardado"];
+            /** Sha256 Historico */
+            sha256_historico: string;
+            /** Variables */
+            variables: string[];
+            /** Semilla */
+            semilla: number;
+            /** Hilos */
+            hilos: number;
+            /** Objetivo Estadistico */
+            objetivo_estadistico: string;
+            /** Contrato De Inferencia */
+            contrato_de_inferencia: string;
+            /** Experimento */
+            experimento: string;
+            evaluacion: components["schemas"]["EvaluacionGuardada"];
+            /** Nota */
+            nota: string;
+        };
         /** FilaDeRanking */
         FilaDeRanking: {
             /** Posicion */
@@ -619,6 +994,21 @@ export interface components {
              */
             multiplicidad_esperada?: number | null;
         };
+        /** FiltrosResultadosGuardados */
+        FiltrosResultadosGuardados: {
+            /** Procedencia */
+            procedencia: string | null;
+            /** Linea */
+            linea: string | null;
+            /** Tipo */
+            tipo: string;
+            /** Desde */
+            desde: number | null;
+            /** Hasta */
+            hasta: number | null;
+            /** Objetivo */
+            objetivo: number | null;
+        };
         /** FuenteDelMetodo */
         FuenteDelMetodo: {
             /** Cita */
@@ -641,6 +1031,19 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HistorialResultadosGuardados */
+        HistorialResultadosGuardados: {
+            /** Filas */
+            filas: components["schemas"]["EmisionGuardada"][];
+            /** Total */
+            total: number;
+            /** Pagina */
+            pagina: number;
+            /** Paginas */
+            paginas: number;
+            /** Por Pagina */
+            por_pagina: number;
         };
         /** ImportanciaDeVariable */
         ImportanciaDeVariable: {
@@ -820,6 +1223,24 @@ export interface components {
             /** Nombre */
             nombre: string;
         };
+        /** LineaResultadoGuardado */
+        LineaResultadoGuardado: {
+            /** Clave */
+            clave: string;
+            /** Procedencia */
+            procedencia: string;
+            /** Linea */
+            linea: string;
+            /** Nombre */
+            nombre: string;
+            /** Modelo */
+            modelo?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Perfil */
+            perfil?: string | null;
+            registrado?: components["schemas"]["ReferenciaRegistrada"] | null;
+        };
         /** MetodoDeFiabilidad */
         MetodoDeFiabilidad: {
             /** Version */
@@ -955,6 +1376,67 @@ export interface components {
             /** Version */
             version?: string | null;
         };
+        /** ModeloGuardado */
+        ModeloGuardado: {
+            /** Clave */
+            clave: string;
+            /** Juego */
+            juego: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "disponible" | "incompatible" | "alterado";
+            /** Motivo */
+            motivo?: string | null;
+            /** Modelo */
+            modelo?: string | null;
+            /** Nombre */
+            nombre?: string | null;
+            /** Familia */
+            familia?: string | null;
+            /** Perfil */
+            perfil?: string | null;
+            /** Version Receta */
+            version_receta?: string | null;
+            /** Numero */
+            numero?: number | null;
+            /** Corte */
+            corte?: number | null;
+            /** Sorteos */
+            sorteos?: number | null;
+            /** Entrenado En */
+            entrenado_en?: string | null;
+            /** Linea */
+            linea?: string | null;
+        };
+        /** ModelosGuardados */
+        ModelosGuardados: {
+            /** Juego */
+            juego: string;
+            /**
+             * Estado De Uso
+             * @default experimental_no_acreditado
+             * @constant
+             */
+            estado_de_uso: "experimental_no_acreditado";
+            /** Pagina */
+            pagina: number;
+            /** Paginas */
+            paginas: number;
+            /** Por Pagina */
+            por_pagina: number;
+            /** Total */
+            total: number;
+            /** Elementos */
+            elementos: components["schemas"]["ModeloGuardado"][];
+            /** Modelo */
+            modelo?: string | null;
+            /** Perfil */
+            perfil?: string | null;
+            /** Nota */
+            nota: string;
+        };
         /** MuestraDeFiabilidad */
         MuestraDeFiabilidad: {
             /**
@@ -1033,6 +1515,54 @@ export interface components {
             color_codigo: string;
             /** Color Nombre */
             color_nombre: string;
+        };
+        /** ParGuardado */
+        ParGuardado: {
+            /** Numero */
+            numero: number;
+            /** Color */
+            color: string;
+        };
+        /** ParametrosCarteraGuardada */
+        ParametrosCarteraGuardada: {
+            /** Cantidad */
+            cantidad: number;
+            /** Semilla */
+            semilla: number;
+            /** Diversidad */
+            diversidad: string;
+            /** Version */
+            version: string;
+            /** Algoritmo Rng */
+            algoritmo_rng: string;
+            /** Presupuesto De Intentos */
+            presupuesto_de_intentos: number;
+        };
+        /** PerdidaGuardada */
+        PerdidaGuardada: {
+            /** Modelo */
+            modelo: number;
+            /** Uniforme */
+            uniforme: number;
+            /** Diferencia */
+            diferencia: number;
+            /** Objetivos */
+            objetivos?: number | null;
+            /** Veredicto */
+            veredicto: string;
+        };
+        /** PeriodoGuardado */
+        PeriodoGuardado: {
+            /** Primer Sorteo */
+            primer_sorteo: number;
+            /** Ultimo Sorteo */
+            ultimo_sorteo: number;
+            /** Primera Fecha */
+            primera_fecha: string;
+            /** Ultima Fecha */
+            ultima_fecha: string;
+            /** Sorteos */
+            sorteos: number;
         };
         /** PesoDeComponente */
         PesoDeComponente: {
@@ -1163,6 +1693,23 @@ export interface components {
             /** Formato */
             formato: string;
         };
+        /** ProcedenciaGuardada */
+        ProcedenciaGuardada: {
+            /** Nombre */
+            nombre: string;
+            /** Elegida */
+            elegida: boolean;
+            /** Estado */
+            estado: string;
+            /** Lineas */
+            lineas: number;
+            /** Emisiones */
+            emisiones: number;
+            /** Ilegibles */
+            ilegibles: number;
+            /** Error */
+            error?: string | null;
+        };
         /**
          * Rankings
          * @description Clasificación de candidatos del vector fuente congelado (la de la explicación guardada o la
@@ -1179,6 +1726,13 @@ export interface components {
             superbalota?: components["schemas"]["SeccionDeRanking"] | null;
             pares?: components["schemas"]["SeccionDeRanking"] | null;
             colores?: components["schemas"]["SeccionDeRanking"] | null;
+        };
+        /** ReferenciaRegistrada */
+        ReferenciaRegistrada: {
+            /** Clave */
+            clave: string;
+            /** Numero */
+            numero: number;
         };
         /** RegistradoDelMetodo */
         RegistradoDelMetodo: {
@@ -1217,6 +1771,56 @@ export interface components {
             };
             metrica: components["schemas"]["ContenidoDeMetrica"];
         };
+        /** ResultadoGuardado */
+        ResultadoGuardado: {
+            /** Numeros */
+            numeros?: number[];
+            /** Superbalota */
+            superbalota?: number | null;
+            /** Pares */
+            pares?: components["schemas"]["ParGuardado"][];
+        };
+        /** ResultadosGuardados */
+        ResultadosGuardados: {
+            /** Juego */
+            juego: string;
+            /**
+             * Estado De Uso
+             * @default experimental_no_acreditado
+             * @constant
+             */
+            estado_de_uso: "experimental_no_acreditado";
+            filtros: components["schemas"]["FiltrosResultadosGuardados"];
+            base: components["schemas"]["BaseResultadosGuardados"];
+            /** Procedencias */
+            procedencias: {
+                [key: string]: components["schemas"]["ProcedenciaGuardada"];
+            };
+            /** Lineas */
+            lineas: components["schemas"]["LineaResultadoGuardado"][];
+            /** Seleccion */
+            seleccion: string[];
+            /** Resumenes */
+            resumenes: {
+                [key: string]: components["schemas"]["ResumenResultadoGuardado"];
+            };
+            comparacion: components["schemas"]["ComparacionResultadosGuardados"];
+            historial: components["schemas"]["HistorialResultadosGuardados"];
+            /** Sin Resultados De Seguimiento */
+            sin_resultados_de_seguimiento: boolean;
+            /** Politica */
+            politica: string;
+            /** Nota Seguimiento */
+            nota_seguimiento: string;
+            /** Signo */
+            signo: string;
+            /** Unidades */
+            unidades: {
+                [key: string]: string;
+            };
+            /** Nota */
+            nota: string;
+        };
         /**
          * Resumen
          * @description Salida del caso de uso de resumen por juego (Producto 1).
@@ -1239,6 +1843,31 @@ export interface components {
             maximo: number;
             /** Media Absoluta */
             media_absoluta: number;
+        };
+        /** ResumenResultadoGuardado */
+        ResumenResultadoGuardado: {
+            /** Objetivos */
+            objetivos: number;
+            /** Incluidos */
+            incluidos: number;
+            /** Pendientes */
+            pendientes: number;
+            /** Excluidos */
+            excluidos: number;
+            /** Sin Base */
+            sin_base: number;
+            /** Excluidos Por Motivo */
+            excluidos_por_motivo: {
+                [key: string]: number;
+            };
+            /** Muestra Pequena */
+            muestra_pequena: boolean;
+            aciertos: components["schemas"]["AciertosGuardados"] | null;
+            /** Perdidas */
+            perdidas: {
+                [key: string]: components["schemas"]["PerdidaGuardada"];
+            } | null;
+            superbalota: components["schemas"]["SuperbalotaAgregada"] | null;
         };
         /** Ruta */
         Ruta: {
@@ -1420,6 +2049,28 @@ export interface components {
             superbalota: number | null;
             /** Pares */
             pares: components["schemas"]["Par"][];
+        };
+        /** SuperbalotaAgregada */
+        SuperbalotaAgregada: {
+            /** Aciertos */
+            aciertos: number;
+            /** Objetivos */
+            objetivos: number;
+            log_loss: components["schemas"]["PerdidaGuardada"];
+            brier: components["schemas"]["PerdidaGuardada"];
+        };
+        /** SuperbalotaResultadoGuardado */
+        SuperbalotaResultadoGuardado: {
+            /** Acierto */
+            acierto: boolean;
+            /** Log Loss */
+            log_loss: number;
+            /** Log Loss Uniforme */
+            log_loss_uniforme: number;
+            /** Brier */
+            brier: number;
+            /** Brier Uniforme */
+            brier_uniforme: number;
         };
         /** TablaDeMetrica */
         TablaDeMetrica: {
@@ -2456,6 +3107,417 @@ export interface operations {
                 };
             };
             /** @description API sin claves configuradas o base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+        };
+    };
+    modelos_api_v1_juegos__codigo__modelos_guardados_get: {
+        parameters: {
+            query?: {
+                pagina?: number;
+                por_pagina?: number;
+                modelo?: string | null;
+                perfil?: ("predeterminado" | "reducido") | null;
+            };
+            header?: never;
+            path: {
+                /** @description BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO */
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelosGuardados"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+        };
+    };
+    modelo_api_v1_juegos__codigo__modelos_guardados__clave__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO */
+                codigo: string;
+                /** @description Clave SHA-256 del artefacto guardado */
+                clave: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FichaModeloGuardado"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+        };
+    };
+    carteras_api_v1_juegos__codigo__carteras_guardadas_get: {
+        parameters: {
+            query?: {
+                pagina?: number;
+                por_pagina?: number;
+                /** @description Identidad de línea emitida por el lector existente */
+                linea?: string | null;
+                desde?: number | null;
+                hasta?: number | null;
+            };
+            header?: never;
+            path: {
+                /** @description BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO */
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarterasGuardadas"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+        };
+    };
+    cartera_api_v1_juegos__codigo__carteras_guardadas__clave__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO */
+                codigo: string;
+                /** @description Clave SHA-256 del artefacto guardado */
+                clave: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FichaCarteraGuardada"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+        };
+    };
+    resultados_api_v1_juegos__codigo__resultados_get: {
+        parameters: {
+            query?: {
+                procedencia?: ("operacion" | "laboratorio" | "carteras") | null;
+                /** @description Identidad de línea emitida por el lector existente */
+                linea?: string | null;
+                tipo?: "seguimiento" | "retrospectiva";
+                desde?: number | null;
+                hasta?: number | null;
+                objetivo?: number | null;
+                pagina?: number;
+                por_pagina?: number;
+            };
+            header?: never;
+            path: {
+                /** @description BALOTO, BALOTO_REVANCHA, MILOTO o COLORLOTO */
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadosGuardados"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorRespuesta"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

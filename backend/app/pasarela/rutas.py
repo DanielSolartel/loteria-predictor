@@ -1,5 +1,6 @@
 """Lista cerrada de consultas `/api/v1` que la pasarela reenvia (Fase 9.1; la 9.2 anade
-`color` y `pagina` a la ruta de metrica y la 9.3 la ruta de fiabilidad con `hasta`,
+`color` y `pagina` a la ruta de metrica y la 9.3 la ruta de fiabilidad con `hasta`;
+la 9.4 añade las lecturas de modelos registrados, carteras y resultados,
 como el OpenAPI publico).
 
 Cada plantilla es una ruta GET del OpenAPI publico versionado
@@ -23,8 +24,15 @@ _SEGMENTO = {
     "numero_sorteo": r"[0-9]{1,10}",
     "metrica": r"[a-z0-9][a-z0-9-]{0,63}",
     "identificador": r"[0-9A-Za-z-]{1,64}",
+    "clave": r"[0-9a-f]{64}",
 }
 _VALOR = re.compile(r"[A-Za-z0-9_.:-]{1,80}")
+# Producto 5 admite nombres de línea mayores que 80 caracteres. La excepción
+# se limita a este parámetro en las dos consultas nuevas; el resto conserva
+# el límite previo y la consulta completa sigue acotada a 512 bytes.
+_LINEA_GUARDADA = re.compile(r"[A-Za-z0-9_.:-]{1,160}")
+_CON_LINEA_GUARDADA = frozenset({"/api/v1/juegos/{codigo}/carteras-guardadas",
+                                 "/api/v1/juegos/{codigo}/resultados"})
 MAXIMO_CONSULTA = 512
 EXCLUIDAS = frozenset({"/api/v1/docs", "/api/v1/openapi.json"})
 
@@ -56,6 +64,12 @@ RUTAS: tuple[RutaPublica, ...] = (
                 frozenset({"hasta_numero_sorteo", "anio", "mes", "dia_semana", "ventana", "color", "pagina"})),
     RutaPublica("/api/v1/juegos/{codigo}/predicciones", frozenset({"cartera", "historial"})),
     RutaPublica("/api/v1/juegos/{codigo}/fiabilidad", frozenset({"hasta"})),
+    RutaPublica("/api/v1/juegos/{codigo}/modelos-guardados", frozenset({"pagina", "por_pagina", "modelo", "perfil"})),
+    RutaPublica("/api/v1/juegos/{codigo}/modelos-guardados/{clave}", frozenset()),
+    RutaPublica("/api/v1/juegos/{codigo}/carteras-guardadas", frozenset({"pagina", "por_pagina", "linea", "desde", "hasta"})),
+    RutaPublica("/api/v1/juegos/{codigo}/carteras-guardadas/{clave}", frozenset()),
+    RutaPublica("/api/v1/juegos/{codigo}/resultados",
+                frozenset({"procedencia", "linea", "tipo", "desde", "hasta", "objetivo", "pagina", "por_pagina"})),
     RutaPublica("/api/v1/juegos/{codigo}/simulaciones", frozenset({"limite"})),
     RutaPublica("/api/v1/simulaciones/{identificador}", frozenset()),
 )
@@ -86,7 +100,8 @@ def consulta_reenviable(publica: RutaPublica, pares: list[tuple[str, str]], long
             raise ConsultaNoAdmitida("parametro_no_admitido", "Parámetro no admitido en esta consulta")
         if nombre in vistos:
             raise ConsultaNoAdmitida("parametro_repetido", "Un parámetro aparece más de una vez")
-        if not _VALOR.fullmatch(valor):
+        patron = (_LINEA_GUARDADA if nombre == "linea" and publica.plantilla in _CON_LINEA_GUARDADA else _VALOR)
+        if not patron.fullmatch(valor):
             raise ConsultaNoAdmitida("parametro_no_valido", "Valor de parámetro no admitido")
         vistos.add(nombre)
     return urlencode(pares)

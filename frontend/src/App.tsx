@@ -5,6 +5,7 @@ import { Estadisticas, Metrica } from "./pantallas/Estadisticas";
 import { Fiabilidad } from "./pantallas/Fiabilidad";
 import { Ficha } from "./pantallas/Ficha";
 import { Inicio } from "./pantallas/Inicio";
+import { CarterasGuardadas, DetalleCarteraGuardada, DetalleModeloGuardado, ModelosGuardados, ResultadosGuardados } from "./pantallas/Guardados";
 import { Prediccion } from "./pantallas/Prediccion";
 import { Servicio } from "./pantallas/Servicio";
 import { DetalleSimulacion, Simulaciones } from "./pantallas/Simulaciones";
@@ -33,6 +34,11 @@ export function App() {
         <Route path="/juegos/:codigo/estadisticas/:metrica" element={<Metrica />} />
         <Route path="/juegos/:codigo/prediccion" element={<Prediccion />} />
         <Route path="/juegos/:codigo/fiabilidad" element={<Fiabilidad />} />
+        <Route path="/juegos/:codigo/modelos" element={<ModelosGuardados />} />
+        <Route path="/juegos/:codigo/modelos/:identificador" element={<DetalleModeloGuardado />} />
+        <Route path="/juegos/:codigo/carteras" element={<CarterasGuardadas />} />
+        <Route path="/juegos/:codigo/carteras/:identificador" element={<DetalleCarteraGuardada />} />
+        <Route path="/juegos/:codigo/resultados" element={<ResultadosGuardados />} />
         <Route path="/juegos/:codigo/simulaciones" element={<Simulaciones />} />
         <Route path="/simulaciones/:identificador" element={<DetalleSimulacion />} />
         <Route path="/servicio" element={<Servicio />} />

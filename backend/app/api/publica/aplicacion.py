@@ -40,12 +40,12 @@ from app.core.config import get_settings
 DESCRIPCION = """
 API pública de **solo lectura** del Sistema Predictivo de Loterías (Baloto, Baloto Revancha,
 MiLoto y ColorLoto): juegos, sorteos, estadísticas descriptivas, predicciones guardadas y
-simulaciones guardadas.
+simulaciones guardadas, modelos registrados, carteras de Producto 5 y resultados observados de Producto 6.
 
 - **Autenticación:** cabecera `X-API-Key` con una clave emitida por el operador. Sin clave
   válida: 401. Sin claves configuradas en el servidor: 503.
 - **Límites:** cubeta de fichas **por proceso** (por clave y por IP). Al superarla: 429 con
-  `Retry-After`. Coste: 1 consultas ligeras, 2 listados, 3 predicciones, 5 estadísticas.
+  `Retry-After`. Coste: 1 consultas ligeras, 2 listados y fichas guardadas, 3 predicciones, 5 estadísticas y resultados.
 - **Errores:** `{"error": {"codigo", "mensaje", "solicitud"}}`; `solicitud` coincide con la
   cabecera `X-Request-ID`.
 

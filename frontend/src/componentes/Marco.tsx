@@ -84,6 +84,9 @@ const SECCIONES = [
   { ruta: "/estadisticas", titulo: "Estadísticas" },
   { ruta: "/prediccion", titulo: "Predicción guardada" },
   { ruta: "/fiabilidad", titulo: "Fiabilidad" },
+  { ruta: "/modelos", titulo: "Modelos registrados" },
+  { ruta: "/carteras", titulo: "Carteras guardadas" },
+  { ruta: "/resultados", titulo: "Resultados observados" },
   { ruta: "/simulaciones", titulo: "Simulaciones" },
 ] as const;
 

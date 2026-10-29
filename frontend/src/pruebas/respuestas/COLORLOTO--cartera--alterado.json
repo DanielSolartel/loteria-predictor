@@ -1,0 +1,12 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/carteras-guardadas/8b54bfffc873e2238e82b6755f20c03e6c219c7ced65710b647a8f15048a971a",
+ "estado": 409,
+ "cuerpo": {
+  "error": {
+   "codigo": "alterado",
+   "mensaje": "Artefacto guardado alterado o incompleto",
+   "solicitud": "a65c869c197c4553ba4f5d3f87188404"
+  }
+ }
+}

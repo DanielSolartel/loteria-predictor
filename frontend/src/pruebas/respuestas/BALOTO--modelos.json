@@ -1,0 +1,50 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/BALOTO/modelos-guardados",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "BALOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "pagina": 1,
+  "paginas": 1,
+  "por_pagina": 20,
+  "total": 2,
+  "elementos": [
+   {
+    "clave": "e7fcde88aa6878d4fd86ee68f557345147bd994b4ec0efa5c3e048b1e24b2e5f",
+    "juego": "BALOTO",
+    "estado": "disponible",
+    "motivo": null,
+    "modelo": "logistica_regularizada",
+    "nombre": "Regresion logistica regularizada",
+    "familia": "lineal",
+    "perfil": "reducido",
+    "version_receta": "1",
+    "numero": 2,
+    "corte": 2185,
+    "sorteos": 105,
+    "entrenado_en": "2026-10-27T10:00:00+00:00",
+    "linea": "logistica_regularizada-v1-reg2-reducido"
+   },
+   {
+    "clave": "9bfc535d8a82d0b79f84bc0d2ef8c9a2d70713948de687879746b5b34fd1c9f7",
+    "juego": "BALOTO",
+    "estado": "disponible",
+    "motivo": null,
+    "modelo": "logistica_regularizada",
+    "nombre": "Regresion logistica regularizada",
+    "familia": "lineal",
+    "perfil": "reducido",
+    "version_receta": "1",
+    "numero": 1,
+    "corte": 2184,
+    "sorteos": 104,
+    "entrenado_en": "2026-10-27T10:00:00+00:00",
+    "linea": "logistica_regularizada-v1-reg1-reducido"
+   }
+  ],
+  "modelo": null,
+  "perfil": null,
+  "nota": "Son versiones realmente registradas, no el catálogo de candidatos. La lectura comprueba manifiesto y huellas del estimador, sin deserializarlo ni comprobar su ejecución. Compatible no acredita ventaja predictiva."
+ }
+}

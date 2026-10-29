@@ -1,0 +1,65 @@
+{
+ "escenario": "fase9-sintetico/1",
+ "url": "/api/v1/juegos/COLORLOTO/carteras-guardadas",
+ "estado": 200,
+ "cuerpo": {
+  "juego": "COLORLOTO",
+  "estado_de_uso": "experimental_no_acreditado",
+  "pagina": 1,
+  "paginas": 1,
+  "por_pagina": 20,
+  "total": 2,
+  "elementos": [
+   {
+    "clave": "8b54bfffc873e2238e82b6755f20c03e6c219c7ced65710b647a8f15048a971a",
+    "juego": "COLORLOTO",
+    "estado": "disponible",
+    "motivo": null,
+    "linea": "poisson_regularizado-v1-reg1-n3-libre-s42-reducido",
+    "objetivo": 92,
+    "corte": 91,
+    "modelo": "poisson_regularizado",
+    "nombre": "Regresion de Poisson regularizada",
+    "version_receta": "1",
+    "perfil": "reducido",
+    "version": 1,
+    "versiones": 1,
+    "cantidad": 3,
+    "generado_en": "2026-10-07T01:00:03+00:00",
+    "registrado": {
+     "clave": "350680d51a5bab4c56b8eb49052f966b78cd0b672ff67f8feb14bb58b1fafcbe",
+     "numero": 1
+    }
+   },
+   {
+    "clave": "b0678eb439bb12d9446c5743fbe7cff150cbf5a93b5ff44a64994daf19e94a20",
+    "juego": "COLORLOTO",
+    "estado": "disponible",
+    "motivo": null,
+    "linea": "poisson_regularizado-v1-reg1-n3-libre-s42-reducido",
+    "objetivo": 91,
+    "corte": 90,
+    "modelo": "poisson_regularizado",
+    "nombre": "Regresion de Poisson regularizada",
+    "version_receta": "1",
+    "perfil": "reducido",
+    "version": 1,
+    "versiones": 1,
+    "cantidad": 3,
+    "generado_en": "2026-10-07T01:00:03+00:00",
+    "registrado": {
+     "clave": "350680d51a5bab4c56b8eb49052f966b78cd0b672ff67f8feb14bb58b1fafcbe",
+     "numero": 1
+    }
+   }
+  ],
+  "lineas": [
+   "poisson_regularizado-v1-reg1-n3-libre-s42-reducido"
+  ],
+  "linea": null,
+  "desde": null,
+  "hasta": null,
+  "incidencias_sin_objetivo": 0,
+  "nota": "Carteras guardadas de Producto 5, distintas de las predicciones de Fase 9.3. Se muestran combinaciones y parámetros guardados; no se generan ni reproducen. Desde/hasta filtran el objetivo, no la fecha de disponibilidad."
+ }
+}

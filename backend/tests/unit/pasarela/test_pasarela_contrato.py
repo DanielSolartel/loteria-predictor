@@ -65,12 +65,16 @@ def test_hasta_describe_objetivos_sin_acreditar_disponibilidad_temporal():
 
 def test_las_respuestas_sinteticas_del_frontend_siguen_los_contratos_publicos():
     from app.api.publica import esquemas as e
+    from app.api.publica import esquemas_guardados as g
 
     contratos = {"juegos": e.Juegos, "juego": e.JuegoDetalle, "sorteos": e.PaginaDeSorteos, "sorteo": e.Sorteo,
                  "indice": e.IndiceDeEstadisticas, "resumen": e.Resumen, "panel": e.Estadisticas,
                  "metrica": e.RespuestaDeMetrica, "predicciones": e.Predicciones, "fiabilidad": e.Fiabilidad,
                  "simulaciones": e.Simulaciones,
-                 "simulacion": e.Simulacion, "estado": e.EstadoDelServicio, "salud": e.Salud}
+                 "simulacion": e.Simulacion, "estado": e.EstadoDelServicio, "salud": e.Salud,
+                 "modelos": g.ModelosGuardados, "modelo": g.FichaModeloGuardado,
+                 "carteras": g.CarterasGuardadas, "cartera": g.FichaCarteraGuardada,
+                 "resultados": g.ResultadosGuardados}
     archivos = sorted(RESPUESTAS.glob("*.json"))
     assert len(archivos) >= 20
     for archivo in archivos:
