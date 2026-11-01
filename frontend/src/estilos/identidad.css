@@ -98,6 +98,12 @@ body {
   background-color: #d63384;
 }
 
+.grupo-superbalota {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 /* Tablas: el desplazamiento es interno a la region; la pagina no desborda. */
 .tabla-desplazable {
   max-height: 32rem;
@@ -144,4 +150,243 @@ body {
 
 .aviso-experimental {
   border-left: 4px solid #d63384;
+}
+
+/* Acciones locales de la consulta: la identidad/contexto también se imprime. */
+.exportacion-consulta {
+  border: 1px solid #d5d2e4;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: #fff;
+  min-width: 0;
+}
+
+.contexto-exportacion {
+  overflow-wrap: anywhere;
+}
+
+.acciones-exportacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.acciones-exportacion > *,
+.acciones-exportacion select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:where(a, button, input, select, summary):focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.topbar :where(a, button):focus-visible {
+  outline-color: #fff;
+}
+
+.pestanas .nav-link {
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.contenido :where(p, dt, dd, code) {
+  overflow-wrap: anywhere;
+}
+
+.solo-impresion {
+  display: none;
+}
+
+/* No se fija el tamaño: se respeta Carta vertical/horizontal o A4 del diálogo. */
+@page {
+  margin: 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10.5pt;
+  }
+
+  header,
+  nav,
+  .salto,
+  form,
+  button,
+  .pagination,
+  .acciones-exportacion,
+  .no-impresion {
+    display: none !important;
+  }
+
+  .solo-impresion {
+    display: block;
+  }
+
+  main.contenido,
+  footer.contenido {
+    width: auto;
+    max-width: none;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .row {
+    display: block;
+    margin: 0 !important;
+  }
+
+  .row > [class*="col-"] {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin-bottom: 0.5rem;
+  }
+
+  .card,
+  .stat-card,
+  .exportacion-consulta {
+    height: auto !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    break-inside: auto;
+  }
+
+  .tabla-desplazable,
+  .table-responsive {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    max-width: none;
+  }
+
+  table {
+    width: 100% !important;
+    table-layout: fixed;
+    font-size: 10pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  .tabla-desplazable thead th {
+    position: static;
+  }
+
+  th,
+  td {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    padding: 0.2rem !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  tr,
+  .par-color {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  summary,
+  dt,
+  .encabezado-juego {
+    break-after: avoid;
+  }
+
+  h1,
+  .h3 {
+    font-size: 17pt;
+  }
+
+  h2,
+  .h4 {
+    font-size: 14pt;
+  }
+
+  h3,
+  .h5,
+  .h6 {
+    font-size: 11pt;
+  }
+
+  .small,
+  small,
+  .text-muted {
+    color: #222 !important;
+    font-size: 10pt;
+  }
+
+  .text-nowrap {
+    white-space: normal !important;
+  }
+
+  .par-color {
+    white-space: nowrap !important;
+  }
+
+  /* F95-PDF-01: con table-layout fixed las columnas se reparten por igual. En la tabla de variables de
+     los candidatos extremos (muchas columnas) el par número/color, sin salto y con su margen exterior, no
+     cabía en su columna e invadía «Emitida». Dentro de una celda el par puede pasar a otra línea por su
+     espacio y, si es lo único en la celda, no suma su margen exterior: el nombre del color cabe entero sin
+     cambiar el ancho de ninguna columna. Sin efecto en pantalla. */
+  td .par-color {
+    white-space: normal !important;
+  }
+
+  td > .par-color:only-child {
+    margin-right: 0 !important;
+  }
+
+  .numero-bolita {
+    width: 1.7rem;
+    height: 1.7rem;
+    color: #000;
+    background: #fff;
+    border: 1px solid #333;
+    flex-shrink: 0;
+  }
+
+  .visually-hidden.etiqueta-superbalota {
+    position: static !important;
+    display: inline-block;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 0.25rem 0 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+  }
+
+  .color-swatch {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    border-color: #333;
+  }
+
+  details,
+  details > :not(summary) {
+    overflow: visible;
+  }
+
+  .alert {
+    color: #000 !important;
+    background: #fff !important;
+    border: 1px solid #777;
+  }
 }

@@ -8,7 +8,7 @@ export function Marco({ children }: { children: ReactNode }) {
   const [juegos] = useConsulta("juegos", obtenerJuegos);
   const [configuracion] = useConsulta("configuracion", obtenerConfiguracion);
   const consola = configuracion.fase === "lista" ? consolaLocal(configuracion.datos.consola_local) : null;
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const principal = useRef<HTMLElement>(null);
   const primera = useRef(true);
 
@@ -18,7 +18,38 @@ export function Marco({ children }: { children: ReactNode }) {
       return;
     }
     principal.current?.focus();
-  }, [pathname]);
+  }, [pathname, search]);
+
+  useEffect(() => {
+    // Sólo los detalles ya presentes en la consulta: imprimir no carga recursos.
+    // El estado se conserva también si el diálogo se cancela o se desmonta el marco.
+    let detalles: { elemento: HTMLDetailsElement; abierto: boolean }[] | null = null;
+    const preparar = () => {
+      if (detalles !== null) {
+        return;
+      }
+      detalles = Array.from(principal.current?.querySelectorAll("details") ?? [], (elemento) => ({
+        elemento,
+        abierto: elemento.open,
+      }));
+      for (const { elemento } of detalles) {
+        elemento.open = true;
+      }
+    };
+    const restaurar = () => {
+      for (const { elemento, abierto } of detalles ?? []) {
+        elemento.open = abierto;
+      }
+      detalles = null;
+    };
+    window.addEventListener("beforeprint", preparar);
+    window.addEventListener("afterprint", restaurar);
+    return () => {
+      window.removeEventListener("beforeprint", preparar);
+      window.removeEventListener("afterprint", restaurar);
+      restaurar();
+    };
+  }, []);
 
   return (
     <>
@@ -96,9 +127,10 @@ export function PestanasDeJuego({ codigo }: { codigo: string }) {
   const nombre = juegos.fase === "lista" ? (juegos.datos.find((j) => j.codigo === codigo)?.nombre ?? codigo) : codigo;
   const base = `/juegos/${encodeURIComponent(codigo)}`;
   return (
-    <nav aria-label={`Secciones de ${nombre}`} className="mb-3">
+    <div className="encabezado-juego mb-3">
       <p className="h4 mb-2">{nombre}</p>
-      <ul className="nav nav-pills pestanas flex-wrap">
+      <nav aria-label={`Secciones de ${nombre}`}>
+        <ul className="nav nav-pills pestanas flex-wrap">
         {SECCIONES.map((s) => (
           <li className="nav-item" key={s.ruta}>
             <NavLink className="nav-link py-1" to={`${base}${s.ruta}`} end={s.ruta === "" || s.ruta === "/prediccion"}>
@@ -106,7 +138,8 @@ export function PestanasDeJuego({ codigo }: { codigo: string }) {
             </NavLink>
           </li>
         ))}
-      </ul>
-    </nav>
+        </ul>
+      </nav>
+    </div>
   );
 }

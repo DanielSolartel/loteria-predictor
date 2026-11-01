@@ -11,6 +11,8 @@ import { consultar, rutaApi } from "../api/cliente";
 import { decFiabilidad, type Fiabilidad as FiabilidadDatos } from "../api/presentacion";
 import { ArbolDeDatos, AvisoExperimental, Huella } from "../componentes/comunes";
 import { Consulta } from "../componentes/Estados";
+import { ExportarConsulta } from "../componentes/ExportarConsulta";
+import { tablasFiabilidad, identidadFiabilidad } from "../exportacion/adaptadores";
 import { FiabilidadCompleta, LeyendaDeFiabilidad, VistaMetodoDeFiabilidad } from "../componentes/fiabilidad";
 import { FormularioDeCorte, useFiltros } from "../componentes/Filtros";
 import { PestanasDeJuego } from "../componentes/Marco";
@@ -78,6 +80,7 @@ export function Fiabilidad() {
       <Consulta estado={estado} reintentar={reintentar} que="la fiabilidad observada">
         {(f) => (
           <>
+            <ExportarConsulta juego={codigo} recurso="fiabilidad" identidad={identidadFiabilidad(f)} datos={f} tablas={tablasFiabilidad(f)} alcance="Fiabilidad general de la configuración actual; no acredita una cartera histórica" filtros={{ hasta: f.hasta }} notas={["Seguimiento, retrospectiva y evaluación de receta se mantienen separados.", "Un corte no acredita disponibilidad histórica de las emisiones."]} />
             <AvisoExperimental estadoDeUso={f.estado_de_uso}>{f.aviso}</AvisoExperimental>
             <details className="small mb-3">
               <summary>Contexto informado por la API</summary>

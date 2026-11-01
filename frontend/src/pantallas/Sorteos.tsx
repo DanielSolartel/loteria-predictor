@@ -5,9 +5,12 @@ import { consultar, rutaApi } from "../api/cliente";
 import { decPaginaDeSorteos, decSorteo, type Sorteo } from "../api/presentacion";
 import { Numeros, ParColor, TablaDesplazable } from "../componentes/comunes";
 import { Consulta } from "../componentes/Estados";
+import { ExportarConsulta } from "../componentes/ExportarConsulta";
+import { tablaSorteos } from "../exportacion/adaptadores";
 import { useFiltros } from "../componentes/Filtros";
 import { PestanasDeJuego } from "../componentes/Marco";
 import { useConsulta } from "../usos/consulta";
+import { useRutaDeListado, useRutaDeRetorno } from "../usos/retorno";
 
 const FILTROS = ["desde", "hasta", "numero_desde", "numero_hasta", "orden", "por_pagina", "pagina"] as const;
 type Filtro = (typeof FILTROS)[number];
@@ -138,6 +141,7 @@ export function Paginacion({ pagina, paginas, enlace }: { pagina: number; pagina
 
 export function Sorteos() {
   const { codigo = "" } = useParams();
+  const retorno = useRutaDeListado(`/juegos/${encodeURIComponent(codigo)}/sorteos`, FILTROS);
   const [valores, cambiar] = useFiltros(FILTROS);
   const [parametros] = useSearchParams();
   const url = rutaApi(["juegos", codigo, "sorteos"], valores);
@@ -154,8 +158,10 @@ export function Sorteos() {
       <h1 className="h3">Sorteos</h1>
       <FormularioDeSorteos key={parametros.toString()} valores={valores} aplicar={cambiar} />
       <Consulta estado={estado} reintentar={reintentar} que="los sorteos">
-        {(pagina) =>
-          pagina.sorteos.length === 0 ? (
+        {(pagina) => (
+          <>
+            <ExportarConsulta juego={codigo} recurso="sorteos" identidad={{ tipo: "sorteos", contexto: "Página actual; cada fila acredita su sorteo y fecha" }} datos={pagina} tablas={tablaSorteos(pagina.sorteos)} alcance="Página actual de sorteos; no todo el histórico" filtros={{ ...valores, pagina: pagina.pagina, por_pagina: pagina.por_pagina, orden: valores.orden ?? "fecha_desc" }} pagina={pagina} />
+            {pagina.sorteos.length === 0 ? (
             <div className="alert alert-info" data-estado="vacio">
               {filtrado ? "Ningún sorteo cumple los filtros." : "No hay sorteos cargados para este juego."} (total {pagina.total})
             </div>
@@ -180,7 +186,7 @@ export function Sorteos() {
                     {pagina.sorteos.map((s) => (
                       <tr key={s.numero_sorteo}>
                         <td className="text-end">
-                          <Link to={`/juegos/${encodeURIComponent(codigo)}/sorteos/${s.numero_sorteo}`}>{s.numero_sorteo}</Link>
+                          <Link state={{ retornoListado: retorno }} to={`/juegos/${encodeURIComponent(codigo)}/sorteos/${s.numero_sorteo}`}>{s.numero_sorteo}</Link>
                         </td>
                         <td className="text-nowrap">{s.fecha}</td>
                         <td>{s.dia_semana}</td>
@@ -196,8 +202,9 @@ export function Sorteos() {
                 <Paginacion pagina={pagina.pagina} paginas={pagina.paginas} enlace={enlace} />
               </div>
             </>
-          )
-        }
+          )}
+          </>
+        )}
       </Consulta>
     </>
   );
@@ -205,6 +212,7 @@ export function Sorteos() {
 
 export function DetalleSorteo() {
   const { codigo = "", numero = "" } = useParams();
+  const retorno = useRutaDeRetorno(`/juegos/${encodeURIComponent(codigo)}/sorteos`, FILTROS);
   const url = rutaApi(["juegos", codigo, "sorteos", numero]);
   const [estado, reintentar] = useConsulta(url, (s) => consultar(url, decSorteo, s));
   return (
@@ -213,6 +221,8 @@ export function DetalleSorteo() {
       <h1 className="h3">Sorteo {numero}</h1>
       <Consulta estado={estado} reintentar={reintentar} que="el sorteo">
         {(s) => (
+          <>
+          <ExportarConsulta juego={codigo} recurso="sorteo" identidad={{ numero_sorteo: s.numero_sorteo, fecha: s.fecha }} datos={s} tablas={tablaSorteos([s])} alcance="Un sorteo cargado, con sus balotas en el orden recibido" />
           <div className="card stat-card p-3">
             <dl className="row mb-0">
               <dt className="col-sm-3">Número</dt>
@@ -233,10 +243,11 @@ export function DetalleSorteo() {
               ) : null}
             </dl>
           </div>
+          </>
         )}
       </Consulta>
       <p className="small mt-3">
-        <Link to={`/juegos/${encodeURIComponent(codigo)}/sorteos`}>Volver a los sorteos</Link>
+        <Link to={retorno}>Volver a los sorteos</Link>
       </p>
     </>
   );

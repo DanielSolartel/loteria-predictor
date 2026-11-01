@@ -29,11 +29,13 @@ import {
 } from "../api/presentacion";
 import { ArbolDeDatos, AvisoExperimental, Huella, TablaDesplazable, VerResultado } from "../componentes/comunes";
 import { Consulta } from "../componentes/Estados";
+import { ExportarConsulta } from "../componentes/ExportarConsulta";
+import { tablasPrediccion, tablasFiabilidad, identidadPrediccion } from "../exportacion/adaptadores";
 import { LeyendaDeFiabilidad, ResumenDeFiabilidad } from "../componentes/fiabilidad";
 import { Clasificacion, VistaExplicacion } from "../componentes/prediccion";
 import { useFiltros } from "../componentes/Filtros";
 import { PestanasDeJuego } from "../componentes/Marco";
-import { useConsulta } from "../usos/consulta";
+import { useConsulta, type EstadoDeConsulta } from "../usos/consulta";
 
 const NO_INFORMADO = <span className="text-muted">no informado</span>;
 const legible = (texto: string) => texto.replaceAll("_", " ");
@@ -317,9 +319,7 @@ function correspondeALaCartera(f: FiabilidadDatos, p: PrediccionDatos, codigo: s
     f.lineas.every((l) => l.linea === cartera || l.linea === laboratorio);
 }
 
-function ConsultaFiabilidadDeLaCartera({ codigo, corte, p }: { codigo: string; corte: number; p: PrediccionDatos }) {
-  const url = rutaApi(["juegos", codigo, "fiabilidad"], { hasta: String(corte) });
-  const [estado, reintentar] = useConsulta(url, (s) => consultar(url, decFiabilidad, s));
+function ConsultaFiabilidadDeLaCartera({ codigo, corte, p, estado, reintentar }: { codigo: string; corte: number; p: PrediccionDatos; estado: EstadoDeConsulta<FiabilidadDatos>; reintentar: () => void }) {
   return (
     <Consulta estado={estado} reintentar={reintentar} que="la fiabilidad con objetivos hasta el corte">
       {(f) => correspondeALaCartera(f, p, codigo, corte) ? (
@@ -347,8 +347,7 @@ function ConsultaFiabilidadDeLaCartera({ codigo, corte, p }: { codigo: string; c
 }
 
 /** Consulta explicita, sin cambiar la identidad de la cartera seleccionada. */
-function FiabilidadAlCorte({ codigo, corte, p }: { codigo: string; corte: number; p: PrediccionDatos }) {
-  const [solicitada, solicitar] = useState(false);
+function FiabilidadAlCorte({ codigo, corte, p, solicitada, solicitar, estado, reintentar }: { codigo: string; corte: number; p: PrediccionDatos; solicitada: boolean; solicitar: () => void; estado: EstadoDeConsulta<FiabilidadDatos>; reintentar: () => void }) {
   return (
     <section className="card stat-card p-3 mb-3" aria-labelledby="titulo-fiabilidad-corte" data-fiabilidad-corte={corte}>
       <h3 className="h5 mb-1" id="titulo-fiabilidad-corte">
@@ -360,9 +359,9 @@ function FiabilidadAlCorte({ codigo, corte, p }: { codigo: string; corte: number
         <Link to={`/juegos/${encodeURIComponent(codigo)}/fiabilidad`}>Fiabilidad general de la configuración actual</Link>.
       </p>
       {solicitada ? (
-        <ConsultaFiabilidadDeLaCartera codigo={codigo} corte={corte} p={p} />
+        <ConsultaFiabilidadDeLaCartera codigo={codigo} corte={corte} p={p} estado={estado} reintentar={reintentar} />
       ) : (
-        <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => solicitar(true)}>
+        <button type="button" className="btn btn-outline-primary btn-sm" onClick={solicitar}>
           Consultar fiabilidad
         </button>
       )}
@@ -370,18 +369,18 @@ function FiabilidadAlCorte({ codigo, corte, p }: { codigo: string; corte: number
   );
 }
 
-export function Prediccion() {
-  const { codigo = "" } = useParams();
-  const [{ cartera }] = useFiltros(["cartera"] as const);
-  const url = rutaApi(["juegos", codigo, "predicciones"], { cartera });
-  const [estado, reintentar] = useConsulta(url, (s) => consultar(url, decPredicciones, s));
-  return (
-    <>
-      <PestanasDeJuego codigo={codigo} />
-      <h1 className="h3">Predicción guardada</h1>
-      <Consulta estado={estado} reintentar={reintentar} que="la predicción guardada">
-        {(d) => (
-          <>
+/** El componente se desmonta al cambiar la consulta; nunca copia datos por efecto. */
+function ContenidoPrediccion({ d, codigo }: { d: Predicciones; codigo: string }) {
+  const [solicitada, solicitar] = useState(false);
+  const p = d.prediccion;
+  const corte = p?.corte ?? null;
+  const urlFiabilidad = solicitada && corte !== null ? rutaApi(["juegos", codigo, "fiabilidad"], { hasta: String(corte) }) : null;
+  const [fiabilidad, reintentarFiabilidad] = useConsulta(urlFiabilidad, (s) => consultar(urlFiabilidad!, decFiabilidad, s));
+  const acreditada = fiabilidad.fase === "lista" && p !== null && corte !== null && correspondeALaCartera(fiabilidad.datos, p, codigo, corte) ? fiabilidad.datos : null;
+  const estadoFiabilidad = !solicitada ? "no_consultada" : fiabilidad.fase === "lista" ? acreditada ? "acreditada" : "no_acreditada" : fiabilidad.fase;
+  return <>
+    <ExportarConsulta juego={codigo} recurso="prediccion" identidad={identidadPrediccion(d)} datos={{ ...d, fiabilidad: acreditada, estado_fiabilidad: estadoFiabilidad }} tablas={[...tablasPrediccion(d), ...(acreditada ? tablasFiabilidad(acreditada) : [])]} alcance="Predicción e historial ya cargados; fiabilidad sólo si se consultó explícitamente y acredita esta cartera" filtros={{ cartera: p?.clave ?? null }} notas={[`Fiabilidad: ${estadoFiabilidad}. Exportar e imprimir no la consultan.`, "El corte de objetivos no acredita disponibilidad histórica de las emisiones."]} />
+
             <AvisoExperimental estadoDeUso={d.estado_de_uso}>{d.aviso}</AvisoExperimental>
             <details className="small mb-3">
               <summary>Contexto informado por la API</summary>
@@ -401,7 +400,7 @@ export function Prediccion() {
                 )}
                 <VistaExplicacion p={d.prediccion} />
                 {d.prediccion.corte !== null ? (
-                  <FiabilidadAlCorte key={`${codigo}-${d.prediccion.clave}-${d.prediccion.corte}`} codigo={codigo} corte={d.prediccion.corte} p={d.prediccion} />
+                  <FiabilidadAlCorte key={`${codigo}-${d.prediccion.clave}-${d.prediccion.corte}`} codigo={codigo} corte={d.prediccion.corte} p={d.prediccion} solicitada={solicitada} solicitar={() => solicitar(true)} estado={fiabilidad} reintentar={reintentarFiabilidad} />
                 ) : (
                   <p className="small text-muted">Sin corte informado: no se consulta la fiabilidad al corte.</p>
                 )}
@@ -414,8 +413,20 @@ export function Prediccion() {
             )}
             <h2 className="h5">Historial</h2>
             <Historial datos={d} seleccionada={d.prediccion?.clave ?? null} codigo={codigo} />
-          </>
-        )}
+  </>;
+}
+
+export function Prediccion() {
+  const { codigo = "" } = useParams();
+  const [{ cartera }] = useFiltros(["cartera"] as const);
+  const url = rutaApi(["juegos", codigo, "predicciones"], { cartera });
+  const [estado, reintentar] = useConsulta(url, (s) => consultar(url, decPredicciones, s));
+  return (
+    <>
+      <PestanasDeJuego codigo={codigo} />
+      <h1 className="h3">Predicción guardada</h1>
+      <Consulta estado={estado} reintentar={reintentar} que="la predicción guardada">
+        {(d) => <ContenidoPrediccion key={url} codigo={codigo} d={d} />}
       </Consulta>
     </>
   );

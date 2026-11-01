@@ -29,12 +29,12 @@ export function Numeros({ numeros, superbalota }: { numeros: readonly number[]; 
         </span>
       ))}
       {superbalota !== null && superbalota !== undefined ? (
-        <>
-          <span className="visually-hidden">superbalota</span>
+        <span className="grupo-superbalota">
+          <span className="visually-hidden etiqueta-superbalota">superbalota</span>
           <span className="numero-bolita superbalota-bolita" title="superbalota">
             {superbalota}
           </span>
-        </>
+        </span>
       ) : null}
     </span>
   );
@@ -65,7 +65,7 @@ export function Color({ color }: { color: string }) {
 
 export function ParColor({ numero, color, nombre }: { numero: number; color: string; nombre?: string }) {
   return (
-    <span className="me-2 text-nowrap d-inline-block">
+    <span className="me-2 text-nowrap d-inline-block par-color">
       <Muestra color={color} nombre={nombre ?? color} />
       {numero} <span className="small text-muted">{(nombre ?? color).toLowerCase()}</span>
     </span>

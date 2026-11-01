@@ -4,7 +4,7 @@
  * Solo se reenvian a la API los nombres que admite cada ruta; la validacion
  * semantica es de la API (422).
  */
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 /** Valores presentes en la URL para los nombres indicados (los demas se ignoran). */
@@ -27,11 +27,16 @@ export function useFiltros<N extends string>(nombres: readonly N[]): [Record<N, 
 /** Corte opcional `hasta_numero_sorteo` del resumen, el panel y las metricas. */
 export function FormularioDeCorte({ valor, aplicar }: { valor: string | null; aplicar: (v: string | null) => void }) {
   const [texto, setTexto] = useState(valor ?? "");
+  useEffect(() => {
+    setTexto(valor ?? "");
+  }, [valor]);
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     aplicar(texto.trim() === "" ? null : texto.trim());
   };
   return (
+    <>
+    <p className="solo-impresion resumen-filtros">Corte de la muestra: {valor ?? "histórico completo"}.</p>
     <form className="row g-2 align-items-end mb-3" onSubmit={enviar} aria-label="Corte de la muestra">
       <div className="col-auto">
         <label className="form-label small mb-0" htmlFor="corte">
@@ -58,5 +63,6 @@ export function FormularioDeCorte({ valor, aplicar }: { valor: string | null; ap
         ) : null}
       </div>
     </form>
+    </>
   );
 }

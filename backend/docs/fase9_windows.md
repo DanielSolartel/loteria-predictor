@@ -1,6 +1,8 @@
-# Fase 9 en Windows — 9.1–9.3 integradas; 9.4 v2 validada
+# Fase 9 en Windows — 9.1–9.4 integradas; validación de 9.5 completada
 
-**Estado de 9.4 v2:** validada en Linux y Windows nativo con Brave y aprobada por auditoría. Publicación manual, integración y CI pendientes. [Validación del operador](fase9_4_validacion_operador_2026-10-28.md). El producto continúa siendo v2; las revisiones del supervisor externo no son otra entrega. No repetir baterías, recrear el entorno o reaplicar el parche completo por este cierre documental.
+**Estado de 9.5:** validación nativa en Windows 11 con Brave y auditoría completadas el 1 de noviembre de 2026; la publicación manual, la integración y el CI siguen pendientes. [Resumen](#entrega-95-validación-nativa-completada); [validación del operador](fase9_5_validacion_operador_2026-11-01.md). Fase 9 global abierta.
+
+**Estado de 9.4 v2:** validada en Linux y Windows nativo con Brave y aprobada por auditoría; integrada en PR #104 (merge `9fde216c5667bd7a1ddb8553a73857f5cfb07e61`); CI bloqueado por facturación, con sus cinco jobs sin ejecutar. [Validación del operador](fase9_4_validacion_operador_2026-10-28.md). El producto continúa siendo v2; las revisiones del supervisor externo no son otra entrega. No repetir baterías, recrear el entorno o reaplicar el parche completo por este cierre documental.
 
 **Estado de la 9.3:** v2 validada en Linux y Windows nativo con Brave y aprobada por la auditoría; integrada en PR #102 (merge `4f4dd639581168b08c95816660f80fc4f735b1ac`), con los cinco trabajos aprobados: Node 22, Node 24, Chromium/Linux, Python/Linux y Python/Windows (workflows `40589232731` y `40589232763`). Son antecedentes de la 9.3, no resultados de la 9.4. [Validación del operador](fase9_3_validacion_operador_2026-10-27.md). El [protocolo dirigido](#entrega-93-protocolo-dirigido) se conserva como referencia: no recrear worktree/entorno ni repetir baterías o aplicar de nuevo el parche completo por este cierre.
 
@@ -9,11 +11,37 @@
 **Estado de la 9.1:** entrega 9.1 v2 validada en Windows 11 nativo por Daniel y auditada el 25 de octubre de 2026. Python 3.14.6, Node 24.15.0, npm 11.12.1 y Brave instalado (motor 156.0.8078.48), con datos sintéticos. Los seis escenarios se consolidan desde dos corridas; no es una nueva batería completa. Publicación manual y checks del PR pendientes; Fase 9 global abierta. *Actualización posterior:* la 9.1 se integró en PR #100 (merge `9966a4b`). [Detalle de la evidencia](fase9_validacion_operador_2026-10-25.md); [diseño](fase9_frontend.md).
 
 
+## Entrega 9.5: validación nativa completada
+
+Daniel ejecutó en Windows 11 (Python 3.14.6, Node 24.15.0, npm 11.12.1, Brave instalado con motor 156.0.8078.74 y ejecutable `040bddd110b2f39a5855431e88935f137d909fd6a2a55479c52364a475362f8a`) y Codex auditó. Los resultados no se suman entre sí ni con Linux:
+
+| Ejecución nativa | Fuente | Resultado |
+|---|---|---|
+| Frontend | v1 | 864 Vitest, tipos, TypeScript, build y canario correctos; retenidos |
+| Recorrido normal | v1 | 177 visitas, 193 descargas, 12 PDF; 68/92 comprobaciones: 24 fallos de restauración tras `window.print()` sin `afterprint`, conservados |
+| F95-NAT-01, focal | v1 + ensayo | 56 visitas; 227 criterios: 167 aprobados, 0 fallidos, 60 no evaluables |
+| F95-PDF-01 | fuente final | 36/36 criterios, 12/12 PDF (63 páginas), supervisor con código 0 |
+| Cinco escenarios | fuente final | 21 visitas; 64 criterios: 45 aprobados, 19 no evaluables; 50 descargas; 0 fallos |
+
+El recorrido normal completo no se repitió sobre la fuente final `d68cdc1983e3015f4da4871285647615bc9b9e5b`. Los no evaluables (`ok: null`, `skipped` en JUnit) no son aprobaciones. La conservación acreditada es la de la copia de revisión: 1043 archivos, HEAD, índice y SPA compilada. Evidencias, huellas, alcance efectivo de cada escenario y límites en la [validación del operador](fase9_5_validacion_operador_2026-11-01.md).
+
+## Entrega 9.5: validación nativa pendiente
+
+*Actualización (1 de noviembre de 2026):* este protocolo ya se ejecutó y la validación está [completada](#entrega-95-validación-nativa-completada). Se conserva como referencia histórica; no repetir baterías por el cierre documental.
+
+La entrega de exportación JSON/CSV, impresión y revisión de navegación, móvil y accesibilidad parte de `9fde216c5667bd7a1ddb8553a73857f5cfb07e61` (PR #104), árbol `f9457d74310aa199f7a569ec0362c7a9acc4653e`, 1028 archivos públicos. [Formatos, matriz y procedimiento](fase9_5_exportacion_impresion.md). La evidencia nueva Linux no acredita Windows nativo; auditoría, publicación y CI de 9.5 siguen pendientes y la Fase 9 global permanece abierta.
+
+Conservar worktrees y entornos anteriores, incluido el operativo de Fase 6. Aplicar el paquete 9.5 únicamente en una copia nueva de la base exacta, después de verificar manifiesto, inventarios y parche. El auditor debe utilizar Windows PowerShell 5.1 normal, Python 3.14.6 x64, Node 24.15.0/npm 11.12.1 y Brave instalado con perfil aislado. Las rutas con espacios se pasan como argumentos de archivo, sin código Python largo mediante `-c`. No usar otro navegador como sustituto silencioso de Brave.
+
+Separar preparación/aplicación y pruebas frontend de los recorridos reales sintéticos y la revisión PDF/visual. Conservar JUnit, stdout/stderr, órdenes, versiones, códigos, duraciones, descargas y matrices de páginas; devolver evidencia y detenerse entre las etapas indicadas en la guía. No repetir baterías históricas completas ni lanzar la selección completa Python/Windows por este cambio de SPA. No consultar Programador, SQL, almacenes o servicios operativos. El arranque soportado de API/pasarela y la consola HTMX se conserva sin cambios.
+
+Los resultados auditados de 9.4 que siguen son antecedentes. Sus workflows `40834824739` (Python) y `40834824733` (frontend) figuran como `failure`, pero sus cinco jobs no arrancaron: el aviso indica pagos recientes fallidos **o** necesidad de elevar el límite, sin determinar cuál aplica. No son resultados de pruebas ni CI verde. No cambiar facturación, workflows o protecciones, ni disparar o reintentar Actions.
+
 ## Entrega 9.4: validación nativa completada
 
 **Corrección v2, F94-ROB-01:** las carteras con metadatos necesarios incompletos quedan como alteradas dentro del listado y su ficha devuelve 409, conservando las sanas. El nombre opcional ausente se publica como `null`. La sonda original, sin modificar, pasó de 1/3 (código 1) sobre v1 a 3/3 (código 0) en Linux v2; la ejecución nativa posterior confirmó 3/3. Su leyenda fija «Linux» se conserva: la atribución Windows procede de los metadatos del supervisor nativo.
 
-La base exacta es `4f4dd639581168b08c95816660f80fc4f735b1ac` (PR #102; árbol `3aa63d583a9c4df7a139b7eafe5a161fadcbe441`, 976 archivos). La fuente v2 aprobada tiene árbol `8f5be63c3a8f5205356d40504cc426f3eacf06f5` y 1027 archivos públicos. Los cinco trabajos del PR #102 pertenecen a 9.3/base. Este cierre es incremental sobre v2 exacta; publicación manual, integración y CI de 9.4 siguen pendientes, sin lanzar Actions ni cambiar facturación.
+La base exacta es `4f4dd639581168b08c95816660f80fc4f735b1ac` (PR #102; árbol `3aa63d583a9c4df7a139b7eafe5a161fadcbe441`, 976 archivos). La fuente v2 aprobada tiene árbol `8f5be63c3a8f5205356d40504cc426f3eacf06f5` y 1027 archivos públicos. Los cinco trabajos del PR #102 pertenecen a 9.3/base. El cierre documental se aplicó sobre v2 exacta antes de la integración en PR #104. CI de 9.4 bloqueado por facturación, con los cinco jobs sin ejecutar, sin lanzar Actions ni cambiar facturación.
 
 **Ejecuciones nativas de Daniel, 28 de octubre de 2026, aprobadas por el auditor.** Windows 11/Python 3.14.6 x64; Node 24.15.0 y npm 11.12.1. La primera corrida `d5a768db` aprobó 173 pruebas API/pasarela y la sonda 3/3, retenidas sin repetir, y contención 2/2 (124 esperado en el ensayo de plazo). Tras la reanudación diagnóstica `f758ca05`, la continuación `1463b159` ejecutó 780 Vitest nuevos en Windows y completó tipos, TypeScript, compilación y canario, con código 0 y pip check correcto. Son tres corridas relacionadas, sin sumar baterías solapadas ni atribuir las 780 a una repetición Linux v2. [Tres ZIP, tamaños, huellas y procedencia](fase9_4_validacion_operador_2026-10-28.md).
 
@@ -67,7 +95,7 @@ Los pasos siguientes conservan la preparación y las órdenes de referencia de l
    ```
 
    Cada orden crea sus propios almacenes sintéticos temporales, mantiene la clave en el proceso servidor y comprueba huellas antes/después. El supervisor inicia y termina solo sus procesos de ensayo; no consulta la base operativa ni ejecuta la tarea de Fase 6. El argumento del navegador cambia únicamente el ejecutable de este recorrido, sin cambiar la configuración del producto ni el navegador global. Un error conserva registros y devuelve una salida no cero; no continuar con otra etapa sin revisar la evidencia.
-7. **Devolver evidencia y detenerse.** JUnit, logs, resultado e inventario del recorrido y capturas de Brave, más estado/índice del nuevo worktree y controles públicos de conservación. No publicar ni activar operaciones reales. La auditoría posterior aprobó la validación nativa y las 88 capturas de 9.4; los resultados de 9.3 conservan su atribución histórica. Publicación manual, integración y CI siguen pendientes.
+7. **Devolver evidencia y detenerse.** JUnit, logs, resultado e inventario del recorrido y capturas de Brave, más estado/índice del nuevo worktree y controles públicos de conservación. No publicar ni activar operaciones reales. La auditoría posterior aprobó la validación nativa y las 88 capturas de 9.4; los resultados de 9.3 conservan su atribución histórica. La integración posterior de 9.4 en PR #104 conserva esos antecedentes; el CI quedó bloqueado por facturación sin ejecutar pruebas.
 
 La recuperación matinal de Fase 6 con resultados pendientes sigue sin acreditarse: el registro 09:24:45 no prueba el disparo de las 09:00. Esta validación no necesita ni autoriza otra observación operativa. Mantener `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 

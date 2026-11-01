@@ -10,6 +10,8 @@ import { consultar, rutaApi } from "../api/cliente";
 import { formatear } from "../api/formatos";
 import { decIndice, decPanel, decRespuestaDeMetrica, type Metrica as MetricaDatos, type Selector } from "../api/presentacion";
 import { Consulta } from "../componentes/Estados";
+import { ExportarConsulta } from "../componentes/ExportarConsulta";
+import { tablaPanel, tablasMetrica, identidadMuestra } from "../exportacion/adaptadores";
 import { Indicadores, NotaDeGrafica, TablaMetrica, VistaMuestra } from "../componentes/estadisticas";
 import { FormularioDeCorte, useFiltros } from "../componentes/Filtros";
 import { PestanasDeJuego } from "../componentes/Marco";
@@ -42,6 +44,7 @@ export function Estadisticas() {
             <Consulta estado={panel} reintentar={reintentarPanel} que="el panel">
               {(p) => (
                 <>
+                  <ExportarConsulta juego={codigo} recurso="estadisticas" identidad={identidadMuestra(p.muestra)} datos={{ indice: i, panel: p }} tablas={tablaPanel(p)} alcance="Indicadores del panel cargado; no descarga páginas de métricas" filtros={{ hasta_numero_sorteo: p.muestra.corte.hasta_numero_sorteo }} />
                   <VistaMuestra muestra={p.muestra} />
                   <p className="small" data-metricas-con-pagina={i.metricas.length}>
                     {i.metricas.length} métricas con página propia según el índice de la API (
@@ -225,6 +228,7 @@ export function Metrica() {
                 })
               }
             />
+            <ExportarConsulta juego={codigo} recurso="metrica" identidad={{ ...identidadMuestra(muestra), metrica: m.slug }} datos={{ muestra, metrica: m }} tablas={tablasMetrica(m)} alcance={m.tablas.some((t) => t.paginacion) ? "Tablas cargadas: sólo la página actual de las tablas paginadas" : "Tablas y dimensiones cargadas de esta métrica"} filtros={{ ...valores, hasta_numero_sorteo: muestra.corte.hasta_numero_sorteo, ...(m.selector ? { [m.selector.parametro]: m.selector.valor } : {}) }} pagina={(() => { const p = m.tablas.find((t) => t.paginacion)?.paginacion; return p ? { pagina: p.pagina, por_pagina: p.por_pagina, total: p.total_filas } : undefined; })()} />
             <VistaMuestra muestra={muestra} />
             <VistaMetrica m={m} enlace={enlace} />
           </>

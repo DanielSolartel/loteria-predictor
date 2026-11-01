@@ -83,7 +83,7 @@ describe("ficha y resumen", () => {
   it("ColorLoto muestra los pares numero-color con el nombre del color", async () => {
     instalarServidor();
     renderizar("/juegos/COLORLOTO");
-    expect(await screen.findByText("Frecuencia de colores")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Frecuencia de colores" })).toBeTruthy();
     const ultimo = screen.getByText("Último resultado analizado:").parentElement as HTMLElement;
     expect(ultimo.textContent).toMatch(/2 blanco/);
   });

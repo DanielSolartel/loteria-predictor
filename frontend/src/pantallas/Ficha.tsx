@@ -12,6 +12,8 @@ import {
 } from "../api/presentacion";
 import { ArbolDeDatos, Color, Numeros, Pares, TablaDesplazable } from "../componentes/comunes";
 import { Consulta } from "../componentes/Estados";
+import { ExportarConsulta } from "../componentes/ExportarConsulta";
+import { tablasResumen, identidadMuestra } from "../exportacion/adaptadores";
 import { Tarjeta, VistaMuestra } from "../componentes/estadisticas";
 import { FormularioDeCorte, useFiltros } from "../componentes/Filtros";
 import { PestanasDeJuego } from "../componentes/Marco";
@@ -317,7 +319,10 @@ export function Ficha() {
       <h2 className="h4">Resumen</h2>
       <FormularioDeCorte key={corte ?? ""} valor={corte} aplicar={(v) => cambiar({ hasta_numero_sorteo: v })} />
       <Consulta estado={resumen} reintentar={reintentarResumen} que="el resumen">
-        {(r) => <VistaResumen r={r} corte={corte} />}
+        {(r) => <>
+          {juego.fase === "lista" ? <ExportarConsulta juego={codigo} recurso="resumen" identidad={identidadMuestra(r)} datos={{ ficha: juego.datos, resumen: r }} tablas={tablasResumen(r)} alcance="Resumen y tablas cargados hasta el corte indicado" filtros={{ hasta_numero_sorteo: r.corte.hasta_numero_sorteo }} /> : null}
+          <VistaResumen r={r} corte={corte} />
+        </>}
       </Consulta>
       <p className="small mt-3">
         <Link to={`/juegos/${encodeURIComponent(codigo)}/estadisticas${corte ? `?hasta_numero_sorteo=${encodeURIComponent(corte)}` : ""}`}>
