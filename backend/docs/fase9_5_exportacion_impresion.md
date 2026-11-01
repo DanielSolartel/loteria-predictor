@@ -1,6 +1,6 @@
 # Fase 9.5 — Exportación e impresión de la consulta cargada
 
-La SPA permite descargar JSON/CSV e imprimir por acción explícita, usando únicamente los datos públicos ya decodificados de la consulta visible. Descargar o imprimir añade **cero solicitudes de red y cero fichas**: no consulta fiabilidad, recopila páginas, ejecuta modelos ni guarda informes. La validación nativa en Windows con Brave y la auditoría están completadas ([validación del operador](fase9_5_validacion_operador_2026-11-01.md)); la publicación manual, la integración y el CI de 9.5 siguen pendientes, y la Fase 9 global sigue abierta.
+La SPA permite descargar JSON/CSV e imprimir por acción explícita, usando únicamente los datos públicos ya decodificados de la consulta visible. Descargar o imprimir añade **cero solicitudes de red y cero fichas**: no consulta fiabilidad, recopila páginas, ejecuta modelos ni guarda informes. La validación nativa en Windows con Brave y la auditoría están completadas ([validación del operador](fase9_5_validacion_operador_2026-11-01.md)); la 9.5 está integrada en PR #105 (merge `bad7c8d5bb913d3d780dd4dfa3b6cdcd9f2dad3e`), con los cinco trabajos aprobados (workflows `41327381044` y `41327381002`), y la Fase 9 quedó cerrada ([cierre global](fase9_cierre_global_2026-11-01.md)).
 
 Diseño y alcance general: [frontend](fase9_frontend.md#entrega-95-exportación-impresión-y-revisión-final). Validación nativa: [Windows](fase9_windows.md#entrega-95-validación-nativa-completada); protocolo ejecutado y conservado como referencia: [Windows](fase9_windows.md#entrega-95-validación-nativa-pendiente). Las descargas son representaciones de consulta, sin autenticidad canónica, sello temporal, nueva inferencia ni ventaja predictiva acreditada.
 
@@ -119,7 +119,9 @@ El 1 de noviembre de 2026, Codex aprobó la validación nativa en Windows 11 con
 - la revalidación impresa de F95-PDF-01;
 - la última tanda de cinco escenarios: 21 visitas y 64 criterios (45 aprobados y 19 no evaluables), con 50 descargas y 0 fallos.
 
-El recorrido normal completo no se repitió sobre la fuente final y los no evaluables no son aprobaciones. Evidencias con nombre, bytes y SHA-256, alcance efectivo de cada escenario y límites: [validación del operador](fase9_5_validacion_operador_2026-11-01.md).
+El recorrido normal completo no se repitió sobre la fuente final y los no evaluables no son aprobaciones.
+
+**Integración (1 de noviembre de 2026):** PR #105, merge `bad7c8d5bb913d3d780dd4dfa3b6cdcd9f2dad3e` (árbol `e7092e157457530e6952cd5830f1484ad56aa34b`, 1044 archivos), con Node 22, Node 24, Chromium/Linux, Python/Linux y Python/Windows aprobados (workflows `41327381044` y `41327381002`). Son checks de GitHub Actions, separados de las ejecuciones nativas. Evidencias con nombre, bytes y SHA-256, alcance efectivo de cada escenario y límites: [validación del operador](fase9_5_validacion_operador_2026-11-01.md).
 
 ## Procedimiento nativo pendiente
 
@@ -208,4 +210,4 @@ El supervisor declara la plataforma que realmente ejecuta, conserva las respuest
 
 Administración y operación permanecen en HTMX. Fase 6 no cambia ni añade observación: las novedades automáticas de los cuatro juegos conservan su atribución, y **09:24:45 no acredita disparo a las 09:00 ni recuperación matinal con resultados pendientes**. Continúan `experimental_no_acreditado`, **AE-39 NO-GO** y **`AUTORIZA_EVALUACION = False`**.
 
-La entrega no cierra la Fase 9: la validación nativa con Brave y la auditoría de 9.5 están completadas, y siguen pendientes la publicación manual, la integración y el CI. No se inicia Fase 10/11, no se despliega y no se hacen commit, push, PR, merge o Actions. Daniel publicará manualmente después de la revisión de Codex del cierre documental.
+La 9.5 está validada en Windows con Brave, auditada e integrada en PR #105 con sus cinco trabajos aprobados; con ella se completó el plan de cinco partes y la Fase 9 quedó cerrada en su alcance de consulta ([cierre global](fase9_cierre_global_2026-11-01.md)). No se inicia Fase 10/11, no se despliega y no se hacen commit, push, PR, merge o Actions. Daniel publicó la 9.5 en el PR #105 tras la revisión de Codex del cierre documental.

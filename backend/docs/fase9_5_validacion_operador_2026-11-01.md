@@ -1,6 +1,8 @@
 # Fase 9.5 — validación del operador y auditoría (1 de noviembre de 2026)
 
-**Estado:** validación nativa y auditoría completadas; publicación manual, integración y CI pendientes. La Fase 9 global sigue abierta. Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
+**Estado:** validación nativa y auditoría completadas; publicación manual, integración y CI pendientes. La Fase 9 global sigue abierta.
+
+*Actualización posterior (1 de noviembre de 2026):* la 9.5 se integró en PR #105 (merge `bad7c8d5bb913d3d780dd4dfa3b6cdcd9f2dad3e`), con los cinco trabajos aprobados (workflows `41327381044` y `41327381002`), y la Fase 9 quedó cerrada en su alcance de consulta ([cierre global](fase9_cierre_global_2026-11-01.md)). El estado anterior se conserva como se emitió. Se mantienen `experimental_no_acreditado`, AE-39 **NO-GO** y `AUTORIZA_EVALUACION = False`.
 
 Este informe consolida la evidencia de 9.5 por alcance y procedencia:
 - Las baterías y recorridos se solapan: no se suman como casos únicos.
@@ -152,3 +154,12 @@ Las evidencias se conservan fuera del repositorio con estos nombres y huellas. S
 - **Publicación:** revisión de Codex y aplicación del cierre documental en Windows; después, publicación manual por Daniel.
 - **Integración y CI de 9.5:** pendientes.
 - **Fase 9 global:** sigue abierta. No se inicia Fase 10/11.
+
+## Actualización posterior: integración (1 de noviembre de 2026)
+
+Daniel publicó la 9.5 tras la revisión de Codex del cierre documental:
+- **PR #105:** merge `bad7c8d5bb913d3d780dd4dfa3b6cdcd9f2dad3e`, árbol `e7092e157457530e6952cd5830f1484ad56aa34b`, 1044 archivos. La cabeza `b3f78dd9725790d6a5a506ca5a98b0a8125e3d60` tiene el mismo árbol.
+- **CI:** cinco trabajos aprobados (Node 22, Node 24, Chromium/Linux, Python/Linux y Python/Windows; workflows `41327381044` y `41327381002`). Son checks de GitHub Actions, separados de las ejecuciones nativas y de Linux de este informe.
+- **Rama:** la rama remota `feature/fase9-5-exportacion-impresion` se retiró.
+
+Los pendientes anteriores de publicación, integración y CI de 9.5 quedan resueltos. Las atribuciones de este informe no cambian: los no evaluables siguen siendo no evaluables y el recorrido normal completo no se repitió sobre la fuente final. La Fase 9 quedó cerrada ([cierre global](fase9_cierre_global_2026-11-01.md)).
