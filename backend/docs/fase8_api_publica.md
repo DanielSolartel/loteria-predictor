@@ -106,6 +106,18 @@ El versionado dice `Unprocessable Entity` y el generado en Windows dice `Unproce
 
 El comparador **externo** conserva ambos documentos y su diferencia; acepta exclusivamente esas cinco leyendas auditadas con el valor runtime correspondiente y rechaza cualquier cambio adicional. Registra `documentos_json_iguales=false` y `cinco_descripciones_422_auditadas_aceptadas=true`, sin excluir campos ni declarar igualdad completa de JSON. Se acepta una salvedad documental de validación, sin anular el control de deriva del contrato. No se cambian producto, contrato funcional, OpenAPI versionado ni tipos y no se crea una entrega v3. La [guía Windows](fase9_windows.md#entrega-94-validación-nativa-completada) y la [guía de frontend](fase9_frontend.md#entrega-94-modelos-carteras-y-resultados-guardados) conservan este mismo alcance.
 
+**Actualización posterior (issue #103, 2026-11-01):**
+
+- **Causa:** la investigación demuestra que la leyenda depende de la versión de CPython y no del sistema operativo. Python 3.13 y posteriores dan «Unprocessable Content», y Linux con 3.14.6 reproduce byte a byte el documento Windows.
+- **Comparador:** se añade un comparador reproducible en el repositorio, con controles negativos.
+- **Qué no cambia:** el texto anterior, la salvedad y el OpenAPI versionado.
+- **Validación y auditoría completadas (2026-11-01):**
+  - **Windows nativo (Daniel):** con Python 3.14.6, 101 pruebas aprobadas y la sonda original 5/5. El comparador da `solo_excepcion_422_auditada`, con el generado `c03e5c52…`, y el exportador estricto mantiene su código 1 esperado.
+  - **Auditoría (Codex):** lo aprobó. La contrastación Linux del auditor con 3.12.14 dio un texto idéntico al versionado.
+  - **Vía A:** queda validada. Se conservan la API, el OpenAPI versionado y los tipos, se adopta el comparador acotado y `--comprobar` sigue siendo estricto. La alternativa B no se aplica.
+- **Pendientes:** la publicación manual, la integración, el CI y el cierre manual del issue en GitHub.
+- **Detalle:** el [informe del issue #103](issue103_openapi_422.md) recoge el procedimiento, los resultados por entorno y la auditoría.
+
 ## Errores
 
 Formato único: `{"error": {"codigo", "mensaje", "solicitud"[, "detalles"]}}`. `solicitud` coincide con la cabecera `X-Request-ID`.
