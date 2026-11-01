@@ -3,15 +3,18 @@
  * detalle verificado (GET /simulaciones/{id}): parametros, integridad, huella y
  * contenido. Una simulacion alterada llega como 409 y no se muestra su contenido.
  */
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 import { consultar, rutaApi } from "../api/cliente";
 import { fechaHora, formatear } from "../api/formatos";
 import { decSimulacion, decSimulaciones, type EstadisticaSimulada, type ValorExacto } from "../api/presentacion";
 import { ArbolDeDatos, AvisoExperimental, Huella, TablaDesplazable } from "../componentes/comunes";
 import { Consulta } from "../componentes/Estados";
+import { ExportarConsulta } from "../componentes/ExportarConsulta";
+import { tablaSimulaciones, tablaSimulacion, identidadSimulacion } from "../exportacion/adaptadores";
 import { useFiltros } from "../componentes/Filtros";
 import { PestanasDeJuego } from "../componentes/Marco";
 import { useConsulta } from "../usos/consulta";
+import { useRutaDeListado, rutaDeRetorno } from "../usos/retorno";
 
 const AVISO =
   "Comparación exploratoria con el mecanismo uniforme del juego: no es confirmatoria, no genera combinaciones ni recomendaciones.";
@@ -29,6 +32,7 @@ const LIMITES = ["10", "20", "50"];
 
 export function Simulaciones() {
   const { codigo = "" } = useParams();
+  const retorno = useRutaDeListado(`/juegos/${encodeURIComponent(codigo)}/simulaciones`, ["limite"]);
   const [{ limite }, cambiar] = useFiltros(["limite"] as const);
   const url = rutaApi(["juegos", codigo, "simulaciones"], { limite });
   const [estado, reintentar] = useConsulta(url, (s) => consultar(url, decSimulaciones, s));
@@ -51,6 +55,7 @@ export function Simulaciones() {
       <Consulta estado={estado} reintentar={reintentar} que="las simulaciones">
         {(d) => (
           <>
+            <ExportarConsulta juego={codigo} recurso="simulaciones" identidad={{ contexto: "Lista cargada; cada simulación acredita su identidad, corte y estado" }} datos={d} tablas={tablaSimulaciones(d)} alcance="Sólo la lista de simulaciones cargada hasta el límite indicado" filtros={{ limite: d.limite }} />
             <AvisoExperimental estadoDeUso={d.estado_de_uso}>{AVISO}</AvisoExperimental>
             {d.simulaciones.length === 0 ? (
               <div className="alert alert-info" data-estado="vacio">
@@ -95,7 +100,7 @@ export function Simulaciones() {
                               : "ninguna lo supera"}
                         </td>
                         <td>
-                          <Link to={`/simulaciones/${encodeURIComponent(s.id)}`}>ver</Link>
+                          <Link state={{ retornoListado: retorno }} to={`/simulaciones/${encodeURIComponent(s.id)}`}>ver</Link>
                         </td>
                       </tr>
                     ))}
@@ -180,6 +185,7 @@ function TablaDeEstadisticas({ estadisticas }: { estadisticas: EstadisticaSimula
 
 export function DetalleSimulacion() {
   const { identificador = "" } = useParams();
+  const { state: origen } = useLocation();
   const url = rutaApi(["simulaciones", identificador]);
   const [estado, reintentar] = useConsulta(url, (s) => consultar(url, decSimulacion, s));
   return (
@@ -189,6 +195,7 @@ export function DetalleSimulacion() {
         {(s) => (
           <>
             <PestanasDeJuego codigo={s.juego} />
+            <ExportarConsulta juego={s.juego} recurso="simulacion" identidad={identidadSimulacion(s)} datos={s} tablas={tablaSimulacion(s)} alcance="Estadísticas y parámetros de esta simulación guardada; no es una nueva simulación" />
             <AvisoExperimental estadoDeUso={s.estado_de_uso}>{s.contenido.nota}</AvisoExperimental>
             <div className="card stat-card p-3 mb-3">
               <dl className="row small mb-0">
@@ -233,7 +240,7 @@ export function DetalleSimulacion() {
               <ArbolDeDatos datos={s.contenido.completo} />
             </details>
             <p className="small">
-              <Link to={`/juegos/${encodeURIComponent(s.juego)}/simulaciones`}>Volver a las simulaciones</Link>
+              <Link to={rutaDeRetorno(origen, `/juegos/${encodeURIComponent(s.juego)}/simulaciones`, ["limite"])}>Volver a las simulaciones</Link>
             </p>
           </>
         )}

@@ -12,9 +12,12 @@ import {
 } from "../api/guardados";
 import { ArbolDeDatos, AvisoExperimental, Huella, Numeros, ParColor, TablaDesplazable } from "../componentes/comunes";
 import { Consulta } from "../componentes/Estados";
+import { ExportarConsulta } from "../componentes/ExportarConsulta";
+import { tablaModelos, tablaCarteras, tablasCartera, tablasResultados, identidadModelo, identidadCartera } from "../exportacion/adaptadores";
 import { useFiltros } from "../componentes/Filtros";
 import { PestanasDeJuego } from "../componentes/Marco";
 import { useConsulta } from "../usos/consulta";
+import { useRutaDeListado, useRutaDeRetorno } from "../usos/retorno";
 import { Paginacion } from "./Sorteos";
 import "./guardados.css";
 
@@ -94,6 +97,7 @@ function filtrosCoincidentes<T>(dec: Decodificador<T>, esperados: Record<string,
 
 export function ModelosGuardados() {
   const { codigo = "" } = useParams();
+  const retorno = useRutaDeListado(`/juegos/${encodeURIComponent(codigo)}/modelos`, FILTROS_MODELOS);
   const [f, cambiar] = useFiltros(FILTROS_MODELOS); const [q] = useSearchParams(); const enlace = usePagina();
   const url = rutaApi(["juegos", codigo, "modelos-guardados"], f);
   const dec = filtrosCoincidentes(delContexto(decModelosGuardados, codigo), { modelo: f.modelo, perfil: f.perfil }, (d) => ({ modelo: d.modelo, perfil: d.perfil }));
@@ -104,6 +108,7 @@ export function ModelosGuardados() {
       { nombre: "modelo", etiqueta: "Identificador de modelo" }, { nombre: "perfil", etiqueta: "Perfil" }, POR_PAGINA,
     ]} />
     <Consulta estado={estado} reintentar={reintentar} que="los modelos registrados">{(d) => <>
+      <ExportarConsulta juego={codigo} recurso="modelos" identidad={{ modelo: d.modelo ?? null, perfil: d.perfil ?? null, contexto: "Página actual; cada fila acredita su versión y entrenamiento" }} datos={d} tablas={tablaModelos(d.elementos)} alcance="Página actual de metadatos registrados; no contiene estimadores" filtros={{ modelo: d.modelo ?? null, perfil: d.perfil ?? null, pagina: d.pagina, por_pagina: d.por_pagina }} pagina={d} />
       <AvisoExperimental estadoDeUso={d.estado_de_uso}>{NOTA}</AvisoExperimental><p className="small">{d.nota}</p>
       {!d.elementos.length ? <Vacio>No hay versiones registradas que cumplan estos filtros.</Vacio> : <>
         <p className="small" aria-live="polite">{d.total} versiones · página {d.pagina} de {d.paginas}</p>
@@ -112,7 +117,7 @@ export function ModelosGuardados() {
         </tr></thead><tbody>{d.elementos.map((m, i) => <tr key={m.clave || `ilegible-${i}`} data-clave={m.clave} data-integridad={m.estado}>
           <td>{metadatos(m)}</td><td>{m.familia ?? "—"}</td><td>{m.numero ?? "—"}<div><Huella valor={m.clave} /></div></td>
           <td>corte {m.corte ?? "—"} · {m.sorteos ?? "—"} sorteos<div className="small">{fechaHora(m.entrenado_en)}</div></td>
-          <td><Estado valor={m.estado} motivo={m.motivo} /></td><td>{claveConsultable(m.clave) ? <Link to={`/juegos/${codigo}/modelos/${m.clave}`}>{m.numero === null ? "Ver estado del modelo" : `Ver modelo v${m.numero}`}</Link> : "Ficha no disponible: identidad no acreditada"}</td>
+          <td><Estado valor={m.estado} motivo={m.motivo} /></td><td>{claveConsultable(m.clave) ? <Link state={{ retornoListado: retorno }} to={`/juegos/${codigo}/modelos/${m.clave}`}>{m.numero === null ? "Ver estado del modelo" : `Ver modelo v${m.numero}`}</Link> : "Ficha no disponible: identidad no acreditada"}</td>
         </tr>)}</tbody></table></TablaDesplazable><Paginacion pagina={d.pagina} paginas={d.paginas} enlace={enlace} />
       </>}
     </>}</Consulta>
@@ -121,11 +126,13 @@ export function ModelosGuardados() {
 
 export function DetalleModeloGuardado() {
   const { codigo = "", identificador = "" } = useParams();
+  const retorno = useRutaDeRetorno(`/juegos/${encodeURIComponent(codigo)}/modelos`, FILTROS_MODELOS);
   const url = rutaApi(["juegos", codigo, "modelos-guardados", identificador]);
   const dec = delContexto(decFichaModeloGuardado, codigo, { clave: identificador, leer: (d) => d.modelo });
   const [estado, reintentar] = useConsulta(url, (s) => consultar(url, dec, s));
   return <section><Cabecera codigo={codigo} titulo="Modelo registrado" />
     <Consulta estado={estado} reintentar={reintentar} que="el modelo registrado">{(d) => <div data-modelo={d.modelo.clave}>
+      <ExportarConsulta juego={codigo} recurso="modelo" identidad={identidadModelo(d.modelo)} datos={d} tablas={tablaModelos([d.modelo])} alcance="Metadatos públicos de esta versión registrada; no contiene estimadores" />
       <AvisoExperimental estadoDeUso={d.estado_de_uso}>{NOTA}</AvisoExperimental>
       <div className="card stat-card p-3 mb-3"><h2 className="h5">{d.modelo.nombre ?? d.modelo.modelo} · versión registrada {d.modelo.numero ?? "—"}</h2>
         <Estado valor={d.modelo.estado} motivo={d.modelo.motivo} /><dl className="row small mt-2 mb-0">
@@ -147,12 +154,13 @@ export function DetalleModeloGuardado() {
       </dl>
       <details className="mb-3"><summary>Variables y contrato de inferencia guardados</summary><p>{d.variables.join(", ")}</p><p>{d.contrato_de_inferencia}</p></details>
       <p className="small">{d.nota}</p>
-    </div>}</Consulta><p><Link to={`/juegos/${codigo}/modelos`}>Volver a los modelos registrados</Link></p>
+    </div>}</Consulta><p><Link to={retorno}>Volver a los modelos registrados</Link></p>
   </section>;
 }
 
 export function CarterasGuardadas() {
-  const { codigo = "" } = useParams(); const [f, cambiar] = useFiltros(FILTROS_CARTERAS);
+  const { codigo = "" } = useParams();
+  const retorno = useRutaDeListado(`/juegos/${encodeURIComponent(codigo)}/carteras`, FILTROS_CARTERAS); const [f, cambiar] = useFiltros(FILTROS_CARTERAS);
   const [q] = useSearchParams(); const enlace = usePagina();
   const url = rutaApi(["juegos", codigo, "carteras-guardadas"], f);
   const dec = filtrosCoincidentes(delContexto(decCarterasGuardadas, codigo), { linea: f.linea, desde: f.desde, hasta: f.hasta }, (d) => ({ linea: d.linea, desde: d.desde, hasta: d.hasta }), ["desde", "hasta"]);
@@ -163,6 +171,7 @@ export function CarterasGuardadas() {
       { nombre: "linea", etiqueta: "Línea de cartera" }, { nombre: "desde", etiqueta: "Objetivo desde", tipo: "number" }, { nombre: "hasta", etiqueta: "Objetivo hasta", tipo: "number" }, POR_PAGINA,
     ]} />
     <Consulta estado={estado} reintentar={reintentar} que="las carteras guardadas">{(d) => <>
+      <ExportarConsulta juego={codigo} recurso="carteras" identidad={{ linea: d.linea ?? null, contexto: "Página actual; cada fila conserva su corte, objetivo y estado" }} datos={d} tablas={tablaCarteras(d.elementos)} alcance="Página actual de carteras guardadas" filtros={{ linea: d.linea ?? null, desde: d.desde ?? null, hasta: d.hasta ?? null, pagina: d.pagina, por_pagina: d.por_pagina }} pagina={d} />
       <AvisoExperimental estadoDeUso={d.estado_de_uso}>{NOTA}</AvisoExperimental><p className="small">{d.nota}</p>
       {d.incidencias_sin_objetivo > 0 ? <p className="alert alert-warning small">{d.incidencias_sin_objetivo} artefactos ilegibles sin objetivo acreditado; no se les atribuye un objetivo.</p> : null}
       {!d.elementos.length ? <Vacio>No hay carteras guardadas que cumplan estos filtros.</Vacio> : <>
@@ -173,7 +182,7 @@ export function CarterasGuardadas() {
           <td>{c.objetivo ?? "—"} / {c.corte ?? "—"}</td><td>{metadatos(c)}{c.registrado ? <div className="small">modelo registrado v{c.registrado.numero}</div> : null}</td>
           <td><Huella valor={c.linea ?? null} /><div className="small">versión {c.version ?? "—"} de {c.versiones ?? "—"}</div></td>
           <td>{c.cantidad ?? "—"}</td><td><Estado valor={c.estado} motivo={c.motivo} /></td>
-          <td>{claveConsultable(c.clave) ? <Link to={`/juegos/${codigo}/carteras/${c.clave}`}>{c.objetivo === null ? "Ver estado de la cartera" : `Ver cartera del objetivo ${c.objetivo}`}</Link> : "Ficha no disponible: identidad no acreditada"}</td>
+          <td>{claveConsultable(c.clave) ? <Link state={{ retornoListado: retorno }} to={`/juegos/${codigo}/carteras/${c.clave}`}>{c.objetivo === null ? "Ver estado de la cartera" : `Ver cartera del objetivo ${c.objetivo}`}</Link> : "Ficha no disponible: identidad no acreditada"}</td>
         </tr>)}</tbody></table></TablaDesplazable><Paginacion pagina={d.pagina} paginas={d.paginas} enlace={enlace} />
       </>}
     </>}</Consulta>
@@ -182,11 +191,13 @@ export function CarterasGuardadas() {
 
 export function DetalleCarteraGuardada() {
   const { codigo = "", identificador = "" } = useParams();
+  const retorno = useRutaDeRetorno(`/juegos/${encodeURIComponent(codigo)}/carteras`, FILTROS_CARTERAS);
   const url = rutaApi(["juegos", codigo, "carteras-guardadas", identificador]);
   const dec = delContexto(decFichaCarteraGuardada, codigo, { clave: identificador, leer: (d) => d.cartera });
   const [estado, reintentar] = useConsulta(url, (s) => consultar(url, dec, s));
   return <section><Cabecera codigo={codigo} titulo="Cartera guardada" />
     <Consulta estado={estado} reintentar={reintentar} que="la cartera guardada">{(d) => <div data-cartera={d.cartera.clave}>
+      <ExportarConsulta juego={codigo} recurso="cartera" identidad={identidadCartera(d.cartera)} datos={d} tablas={tablasCartera(d)} alcance="Identidad y combinaciones guardadas de esta cartera; sin generar ni reproducir" />
       <AvisoExperimental estadoDeUso={d.estado_de_uso}>{NOTA}</AvisoExperimental>
       <div className="card stat-card p-3 mb-3"><h2 className="h5">{d.cartera.nombre ?? d.cartera.modelo} · objetivo {d.cartera.objetivo ?? "—"}</h2>
         <dl className="row small mb-0">
@@ -207,7 +218,7 @@ export function DetalleCarteraGuardada() {
       {codigo === "COLORLOTO" ? <p className="small">Cada combinación contiene pares número-color; pueden repetirse números y pares. El color también se indica por su nombre.</p> : null}
       <h2 className="h5 mt-3">Parámetros de reproducción guardados</h2><ArbolDeDatos datos={d.parametros} />
       <p className="small mt-2">Se muestran los parámetros conservados; abrir esta ficha no ejecuta una reproducción ni una nueva inferencia. {d.nota}</p>
-    </div>}</Consulta><p><Link to={`/juegos/${codigo}/carteras`}>Volver a las carteras guardadas</Link></p>
+    </div>}</Consulta><p><Link to={retorno}>Volver a las carteras guardadas</Link></p>
   </section>;
 }
 
@@ -245,6 +256,7 @@ export function ResultadosGuardados() {
     ]} />
     <p className="small">Los filtros se aplican a objetivos; no prueban cuándo estaba disponible una emisión. El objetivo exacto tiene prioridad sobre el intervalo. Sin línea explícita, el lector elige una por procedencia y muestra la selección.</p>
     <Consulta estado={estado} reintentar={reintentar} que="los resultados observados">{(d) => <>
+      <ExportarConsulta juego={codigo} recurso="resultados" identidad={{ tipo: d.filtros.tipo, linea: d.filtros.linea, objetivo: d.filtros.objetivo, corte_observacion: d.base.ultimo_sorteo ?? null, fecha_observacion: d.base.fecha ?? null, contexto: "Historial de la página; agregados y comparación conservan sus propios objetivos" }} datos={d} tablas={tablasResultados(d)} alcance="Historial: página actual. Agregados: todos los objetivos del filtro y selección que informa la API" filtros={{ ...d.filtros, pagina: d.historial.pagina, por_pagina: d.historial.por_pagina }} pagina={d.historial} notas={[d.signo, d.nota_seguimiento, ...Object.values(d.unidades)]} />
       <AvisoExperimental estadoDeUso={d.estado_de_uso}>{NOTA}</AvisoExperimental>
       <p className="small">{d.politica} {d.nota_seguimiento}</p>
       <details className="small mb-3"><summary>Unidades y denominadores de las métricas</summary><ArbolDeDatos datos={d.unidades} /></details>
