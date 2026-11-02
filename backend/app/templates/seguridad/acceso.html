@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Acceso · Consola local{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 28rem;">
+    <h1 class="h4 mb-3"><i class="bi bi-shield-lock me-2"></i>Acceso a la consola local</h1>
+    <p class="small text-muted">La consola solo atiende en este equipo. La consulta remota usa otras credenciales y no da acceso aquí.</p>
+    {% if mensaje %}<div class="alert alert-warning" role="alert" data-acceso-mensaje>{{ mensaje }}</div>{% endif %}
+    <form method="post" action="/acceso" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_acceso }}">
+        <input type="hidden" name="siguiente" value="{{ siguiente }}">
+        <div class="mb-3">
+            <label class="form-label" for="usuario">Usuario</label>
+            <input class="form-control" id="usuario" name="usuario" required maxlength="32" autocomplete="username" autofocus>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="contrasena">Contraseña</label>
+            <input class="form-control" id="contrasena" name="contrasena" type="password" required maxlength="1024" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary">Entrar</button>
+    </form>
+    <p class="small text-muted mt-3">Las cuentas se crean y recuperan solo con <code>python -m scripts.consola_cuentas</code> en este equipo.</p>
+</div>
+{% endblock %}

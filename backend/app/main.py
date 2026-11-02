@@ -12,7 +12,7 @@ específicas caso por caso para mostrar errores de formulario).
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -27,6 +27,7 @@ from app.api.rest.routers import producto as rest_producto
 from app.api.rest.routers import resultados as rest_resultados
 from app.api.rest.routers import simulaciones as rest_simulaciones
 from app.api.rest.routers import sorteos as rest_sorteos
+from app.api.web.routers import acceso as web_acceso
 from app.api.web.routers import carteras as web_carteras
 from app.api.web.routers import automatizacion as web_automatizacion
 from app.api.web.routers import colores as web_colores
@@ -55,12 +56,20 @@ from app.application.exceptions import (
     SorteoInvalidoError,
     SorteoNoEncontradoError,
 )
+from app.seguridad_consola.consola import ErrorConsola, LimiteLocal, autorizar_consola, manejar_error_consola
 
-app = FastAPI(title="Sistema Predictivo de Loterías", version="0.1.0")
+# Fase 10 (E10.1): consola solo local, con sesión, rol y CSRF en todas sus rutas (fallo cerrado). La
+# documentación interactiva no se publica. `autorizar_consola` es la primera dependencia de cada ruta y
+# `LimiteLocal` la capa ASGI más externa (cliente loopback, Host local, sin cabeceras de reenvío).
+app = FastAPI(title="Sistema Predictivo de Loterías", version="0.1.0", docs_url=None, redoc_url=None,
+              openapi_url=None, dependencies=[Depends(autorizar_consola)])
+app.add_exception_handler(ErrorConsola, manejar_error_consola)
+app.add_middleware(LimiteLocal)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Adaptador web (HTML + HTMX)
+app.include_router(web_acceso.router)
 app.include_router(web_dashboard.router)
 app.include_router(web_juegos.router)
 app.include_router(web_sorteos.router)

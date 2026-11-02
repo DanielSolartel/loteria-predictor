@@ -35,5 +35,11 @@ fi
 echo "==> Aplicando migraciones..."
 alembic upgrade head
 
+if ! python -m scripts.consola_cuentas comprobar > /dev/null 2>&1; then
+    echo "==> AVISO: la consola no tiene cuentas; responderá 503 hasta crear una (solo en este equipo):"
+    echo "    python -m scripts.consola_cuentas crear --usuario daniel --rol administrador"
+fi
+
+# E10.1: solo loopback y sin confiar en cabeceras X-Forwarded-* (la consola rechaza conexiones remotas o por VPN).
 echo "==> Iniciando servidor en http://localhost:8000 ..."
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-proxy-headers --reload

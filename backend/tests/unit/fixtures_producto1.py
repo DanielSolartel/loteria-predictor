@@ -103,9 +103,9 @@ class _SesionFalsa:
 
 
 def cliente(juegos_repo, resultados, colores, almacen, *, conectada: bool = True, reloj=None, configuracion=None,
-            client=("testclient", 50000), configuraciones=None):
+            client=("127.0.0.1", 50000), configuraciones=None):
     """TestClient de la aplicacion real con las dependencias sustituidas."""
-    from fastapi.testclient import TestClient
+    from tests import consola_sesion
 
     from app.api import dependencies as dep
     from app.application.use_cases.consultar_resumen_juego import ConsultarResumenJuego
@@ -133,4 +133,4 @@ def cliente(juegos_repo, resultados, colores, almacen, *, conectada: bool = True
         dep.get_verificar_pronostico: lambda: VerificarPronosticoExperimental(juegos_repo, resultados, almacen),
         dep.get_comparar_resultados: lambda: CompararConResultadosObservados(almacen, juegos_repo, resultados),
     }
-    return TestClient(app, base_url="http://localhost:8000", client=client)
+    return consola_sesion.cliente_de_consola(app, client=client)  # E10.1: sesión legítima explícita

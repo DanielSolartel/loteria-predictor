@@ -79,6 +79,12 @@ class Settings(BaseSettings):
     api_publica_cors_origenes: str = ""
     api_publica_documentacion: bool = True
 
+    # Fase 10 (E10.1): consola local. Almacén privado de cuentas y sesiones (SQLite propio, fuera de Git y de
+    # los datos publicables; no se crea al arrancar: lo crea `python -m scripts.consola_cuentas crear`).
+    # Relativo a `backend/`. `consola_cookie_segura` solo con HTTPS real (cookies `Secure` y prefijo `__Host-`).
+    consola_seguridad_directorio: str = "privado/consola"
+    consola_cookie_segura: bool = False
+
 
 @lru_cache
 def get_settings() -> Settings:

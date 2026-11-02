@@ -61,7 +61,7 @@ def entorno(tmp_path, tamanos: dict | None = None) -> Entorno:
 def cliente(e: Entorno, *, client=LOCAL, lanzador=lanzar_ya, conectada: bool = True, laboratorio=None,
             carteras=None):
     """TestClient de la aplicacion real con laboratorio y carteras sinteticos."""
-    from fastapi.testclient import TestClient
+    from tests import consola_sesion
 
     from app.api import dependencies as dep
     from app.infrastructure.db.session import get_db
@@ -76,7 +76,7 @@ def cliente(e: Entorno, *, client=LOCAL, lanzador=lanzar_ya, conectada: bool = T
         dep.get_carteras: lambda: servicio,
         dep.get_lanzador_de_carteras: lambda: lanzador,
     }
-    return TestClient(app, base_url="http://localhost:8000", client=client)
+    return consola_sesion.cliente_de_consola(app, client=client)  # E10.1: sesión legítima explícita
 
 
 def token(c) -> str:

@@ -21,13 +21,20 @@
     <p class="small text-muted">Pausar conserva los modelos, las predicciones y el historial. Reanudar no instala ni habilita la tarea de Windows.
         La comprobación puntual ejecuta un ciclo con sus límites actuales; no activa una programación.</p>
     <div class="auto-acciones">
+        {# E10.1: la interfaz solo muestra lo que el rol permite; el servidor decide siempre la autorización. Sin
+           contexto de consola (router montado fuera de app.main, sin su capa de seguridad) se conserva la vista base. #}
+        {% set consola = request.scope.get("consola") if request.scope is defined else none %}
+        {% set nivel = {'lector': 0, 'operador': 1, 'administrador': 2}.get(consola.rol, -1) if consola else 2 %}
         {% for accion, etiqueta in [('pausar', 'Pausar seguimiento'), ('reanudar', 'Reanudar seguimiento'), ('comprobar', 'Comprobar ahora'), ('recuperar', 'Recuperar interrupciones')] %}
+        {% if nivel >= (1 if accion == 'comprobar' else 2) %}
         <form method="post" action="/automatizacion/{{ accion }}">
             <input type="hidden" name="token_local" value="{{ token_local }}">
             <input type="hidden" name="juego" value="todos">
             <button class="btn btn-sm {{ 'btn-primary' if accion == 'comprobar' else 'btn-outline-primary' }}">{{ etiqueta }}</button>
         </form>
+        {% endif %}
         {% endfor %}
+        {% if nivel < 2 %}<span class="small text-muted" data-acciones-restringidas>Pausar, reanudar y recuperar requieren el rol administrador.</span>{% endif %}
         <a class="btn btn-sm btn-outline-secondary" href="/automatizacion">Actualizar estado</a>
     </div>
     <p class="small text-muted mb-0 mt-2">La instalación y activación de la tarea se realizan de forma explícita en el equipo.
@@ -105,8 +112,11 @@
     {% if ejecucion_id %}<p class="small mt-2"><a href="/automatizacion/ejecuciones/{{ ejecucion_id }}">Ver ejecución y pasos</a></p>{% endif %}
     {{ pasos(juego.get('pasos', []), estados) }}
     <div class="auto-acciones auto-acciones-juego mt-3">
+        {% set consola = request.scope.get("consola") if request.scope is defined else none %}
+        {% if not consola or consola.rol in ('operador', 'administrador') %}
         <form method="post" action="/automatizacion/comprobar"><input type="hidden" name="token_local" value="{{ token_local }}">
             <input type="hidden" name="juego" value="{{ codigo }}"><button class="btn btn-sm btn-outline-primary">Comprobar {{ nombres.get(codigo, codigo) }}</button></form>
+        {% endif %}
         <a class="btn btn-sm btn-outline-secondary" href="/predicciones/{{ {'BALOTO':'baloto','BALOTO_REVANCHA':'baloto-revancha','MILOTO':'miloto','COLORLOTO':'colorloto'}.get(codigo, '') }}">Predicciones guardadas</a>
     </div>
 </article>

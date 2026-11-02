@@ -9,7 +9,7 @@ from html import unescape
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
+from tests import consola_sesion
 from sqlalchemy.exc import OperationalError
 
 from app.api import dependencies as dep
@@ -98,7 +98,7 @@ def test_la_grafica_tiene_una_barra_por_valor_de_su_tabla(cliente):
 def test_panel_de_los_cuatro_juegos_y_sus_enlaces(cliente, tmp_path):
     from app.main import app
 
-    tolerante = TestClient(app, base_url="http://localhost:8000", raise_server_exceptions=False)
+    tolerante = consola_sesion.cliente_de_consola(app, raise_server_exceptions=False)  # E10.1: sesión explícita
     for slug, codigo in JUEGOS.items():
         r = cliente.get(f"/estadisticas/{slug}/panel?hasta_numero_sorteo=2150")
         assert r.status_code == 200

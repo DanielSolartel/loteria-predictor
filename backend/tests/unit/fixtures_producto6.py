@@ -71,7 +71,7 @@ def entorno(tmp_path: Path) -> Entorno:
 
 def cliente(e: Entorno, *, client=LOCAL, conectada: bool = True, centro: CentroDeResultados | None = None):
     """TestClient de la aplicacion real con el centro de resultados sintetico."""
-    from fastapi.testclient import TestClient
+    from tests import consola_sesion
 
     from app.api import dependencies as dep
     from app.infrastructure.db.session import get_db
@@ -79,7 +79,7 @@ def cliente(e: Entorno, *, client=LOCAL, conectada: bool = True, centro: CentroD
 
     servicio = centro or e.centro()
     app.dependency_overrides = {get_db: lambda: fx._SesionFalsa(conectada), dep.get_resultados: lambda: servicio}
-    return TestClient(app, base_url="http://localhost:8000", client=client)
+    return consola_sesion.cliente_de_consola(app, client=client)  # E10.1: sesión legítima explícita
 
 
 limpiar = f4.limpiar
