@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, Path, Query, Request
 from app.api.publica import dependencias as d
 from app.api.publica import esquemas as e
 from app.api.publica.errores import ErrorPublico
+from app.api.publica.recursos import costosa
 from app.api.publica.seguridad import acceso
 from app.application.estadisticas.descriptivas import VENTANAS
 from app.application.use_cases import metricas_anteriores
@@ -169,6 +170,7 @@ def indice_de_estadisticas(codigo: str = CodigoJuego, _: str = Depends(acceso(LI
 
 @router.get("/juegos/{codigo}/estadisticas/resumen", response_model=e.Resumen, tags=["estadisticas"],
             responses=_errores(404, 409, 422, 503), summary="Resumen del juego hasta un corte opcional")
+@costosa
 def resumen(codigo: str = CodigoJuego, hasta_numero_sorteo: int | None = Query(None, ge=1),
             _: str = Depends(acceso(ESTADISTICAS)), consultar: ConsultarResumenJuego = Depends(d.consultar_resumen)):
     return consultar.ejecutar(_juego(codigo), hoy=date.today(), hasta_numero_sorteo=hasta_numero_sorteo)
@@ -176,6 +178,7 @@ def resumen(codigo: str = CodigoJuego, hasta_numero_sorteo: int | None = Query(N
 
 @router.get("/juegos/{codigo}/estadisticas/panel", response_model=e.Estadisticas, tags=["estadisticas"],
             responses=_errores(404, 409, 422, 503), summary="Panel descriptivo unificado (Fase 5)")
+@costosa
 def panel(codigo: str = CodigoJuego, hasta_numero_sorteo: int | None = Query(None, ge=1),
           _: str = Depends(acceso(ESTADISTICAS)),
           consultar: ConsultarEstadisticasDescriptivas = Depends(d.consultar_estadisticas)):
@@ -185,6 +188,7 @@ def panel(codigo: str = CodigoJuego, hasta_numero_sorteo: int | None = Query(Non
 @router.get("/juegos/{codigo}/estadisticas/{metrica}", response_model=e.RespuestaDeMetrica, tags=["estadisticas"],
             responses=_errores(404, 409, 422, 503),
             summary="Una métrica descriptiva: de la Fase 5 o anterior (receta de la consola)")
+@costosa
 def metrica(codigo: str = CodigoJuego, metrica: str = Path(examples=["frecuencia-colores"]),
             hasta_numero_sorteo: int | None = Query(None, ge=1), anio: int | None = Query(None, ge=1, le=9999),
             mes: int | None = Query(None, ge=1, le=12),

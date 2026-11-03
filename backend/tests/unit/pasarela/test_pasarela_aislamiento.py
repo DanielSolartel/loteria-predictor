@@ -11,7 +11,11 @@ PAQUETE = Path(__file__).resolve().parents[3] / "app" / "pasarela"
 # `socket` (v2, F9-LIM-01): el cliente aplica el plazo total en cada operacion de su propio socket.
 PERMITIDOS = {"__future__", "anyio", "dataclasses", "http", "ipaddress", "json", "logging", "pathlib", "pydantic",
               "pydantic_settings", "re", "socket", "starlette", "time", "urllib", "uuid", "app"}
-PROPIOS = {"app.pasarela", "app.pasarela.rutas", "app.pasarela.cliente", "app.pasarela.configuracion"}
+# Fase 10 (E10.2): el perfil privado (`privada.py`) solo anade biblioteca estandar (comparacion en tiempo
+# constante, cerrojo y cubetas de fichas); sigue sin casos de uso, base de datos ni la API.
+PERMITIDOS |= {"collections", "hmac", "math", "threading"}
+PROPIOS = {"app.pasarela", "app.pasarela.rutas", "app.pasarela.cliente", "app.pasarela.configuracion",
+           "app.pasarela.privada"}
 
 
 def _importados(archivo: Path) -> set[str]:
@@ -27,7 +31,8 @@ def _importados(archivo: Path) -> set[str]:
 
 def test_solo_importa_biblioteca_estandar_starlette_anyio_pydantic_y_si_misma():
     archivos = sorted(PAQUETE.glob("*.py"))
-    assert {a.name for a in archivos} == {"__init__.py", "aplicacion.py", "cliente.py", "configuracion.py", "rutas.py"}
+    assert {a.name for a in archivos} == {"__init__.py", "aplicacion.py", "cliente.py", "configuracion.py", "privada.py",
+                                          "rutas.py"}
     for archivo in archivos:
         for modulo in _importados(archivo):
             assert modulo.split(".")[0] in PERMITIDOS, (archivo.name, modulo)

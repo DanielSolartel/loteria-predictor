@@ -1,0 +1,140 @@
+# Fase 10 (E10.2/E10.3): DEMOSTRACION LOCAL del perfil privado con datos SINTETICOS. No es la configuracion
+# operativa: no toca `docker-compose.yml` (PostgreSQL de Fase 6), no usa sus credenciales, puertos, volumenes ni
+# redes, y no se publica en ningun registro. Lo arranca y lo detiene `demostracion.py` (proyecto con nombre
+# unico, `-p e102demo<hex>`), que prepara antes los secretos, la PKI de prueba y la publicacion sintetica.
+#
+#   navegador --TLS+certificado--> proxy (127.0.0.1:18443) --interna--> pasarela --servicio--> api --datos--> postgres
+#
+# - Solo el proxy publica un puerto, y solo en 127.0.0.1. `interna`, `servicio` y `datos` son internas.
+# - API y pasarela: usuario 10001, raiz de solo lectura, sin capacidades, sin nuevos privilegios, limites de
+#   memoria/CPU/procesos y un unico trabajador. La publicacion se monta de solo lectura.
+# - Secretos: ARCHIVOS montados en ejecucion desde E102_SECRETOS (nunca en la imagen ni en el entorno).
+name: e102demo
+
+x-endurecido: &endurecido
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  pids_limit: 128
+  tmpfs: ["/tmp:size=16m,mode=1777"]
+  restart: "no"
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    environment:
+      POSTGRES_USER: superprueba
+      POSTGRES_DB: loteria_prueba
+      POSTGRES_PASSWORD_FILE: /run/secretos/pg_super
+    volumes:
+      - ${E102_SECRETOS:?}/pg_super:/run/secretos/pg_super:ro
+      - pgdatos:/var/lib/postgresql/data
+    networks:
+      datos: {ipv4_address: "${E102_RED_DATOS:?}.30"}
+    mem_limit: 512m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "superprueba", "-d", "loteria_prueba"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *endurecido
+    image: ${E102_IMAGEN_API:?}
+    user: "10001:10001"
+    environment:
+      DATABASE_URL_ARCHIVO: /run/secretos/api_database_url
+      API_PUBLICA_CLAVES_ARCHIVO: /run/secretos/api_claves
+      API_PUBLICA_HOSTS: "${E102_RED_SERVICIO}.20:8010,127.0.0.1:8010"
+      API_PUBLICA_CLIENTES: "${E102_RED_SERVICIO}.10,127.0.0.1"
+      API_PUBLICA_FICHAS_POR_MINUTO: "1200"
+      API_PUBLICA_FICHAS_POR_MINUTO_IP: "2400"
+      API_PUBLICA_DOCUMENTACION: "false"
+      API_PUBLICA_CONCURRENCIA_COSTOSAS: "2"
+      API_PUBLICA_ESPERA_COSTOSAS: "0.5"
+      BASE_TIEMPO_MAXIMO_CONSULTA_MS: "1500"
+      BASE_TIEMPO_MAXIMO_INACTIVA_MS: "5000"
+      BASE_POOL_TAMANO: "4"
+      BASE_POOL_DESBORDE: "2"
+      BASE_POOL_ESPERA_S: "2"
+      DIRECTORIO_LABORATORIO_MODELOS: /srv/pub/laboratorio
+      DIRECTORIO_CARTERAS_MODELOS: /srv/pub/carteras
+      DIRECTORIO_PREDICCIONES_MODELOS: /srv/pub/predicciones
+      DIRECTORIO_PRONOSTICOS_EXPERIMENTALES: /srv/pub/pronosticos
+      # Estado operativo: NO se publica; rutas inexistentes en una raiz de solo lectura (nada debe crearlas).
+      DIRECTORIO_RESULTADOS_MODELOS: /srv/sin-publicar/resultados
+      DIRECTORIO_SIMULACIONES: /srv/sin-publicar/simulaciones
+      DIRECTORIO_OPERACION: /srv/sin-publicar/operacion
+      DIRECTORIO_AUTOMATIZACION: /srv/sin-publicar/automatizacion
+    volumes:
+      - ${E102_PUBLICACION:?}:/srv/pub:ro
+      - ${E102_SECRETOS}/api_database_url:/run/secretos/api_database_url:ro
+      - ${E102_SECRETOS}/api_claves:/run/secretos/api_claves:ro
+    networks:
+      servicio: {ipv4_address: "${E102_RED_SERVICIO:?}.20"}
+      datos: {ipv4_address: "${E102_RED_DATOS}.20"}
+    depends_on:
+      postgres: {condition: service_healthy}
+    mem_limit: 768m
+    cpus: 1.0
+
+  pasarela:
+    <<: *endurecido
+    image: ${E102_IMAGEN_PASARELA:?}
+    user: "10001:10001"
+    environment:
+      PASARELA_PERFIL: privado
+      PASARELA_PROXIES_FIABLES: "${E102_RED_INTERNA:?}.10"
+      PASARELA_SECRETO_PROXY_ARCHIVO: /run/secretos/pasarela_ingreso
+      PASARELA_CLAVE_API_ARCHIVO: /run/secretos/pasarela_clave_api
+      PASARELA_API_URL: "http://${E102_RED_SERVICIO}.20:8010"
+      PASARELA_HOSTS: "consulta.e102.prueba:18443"
+      PASARELA_ORIGENES: "https://consulta.e102.prueba:18443"
+      PASARELA_FICHAS_PERSONA_POR_MINUTO: "${E102_FICHAS_PERSONA:-30}"
+      PASARELA_FICHAS_AGREGADAS_POR_MINUTO: "${E102_FICHAS_AGREGADAS:-50}"
+      PASARELA_MAX_PERSONAS: "16"
+    volumes:
+      - ${E102_SECRETOS}/pasarela_ingreso:/run/secretos/pasarela_ingreso:ro
+      - ${E102_SECRETOS}/pasarela_clave_api:/run/secretos/pasarela_clave_api:ro
+    networks:
+      interna: {ipv4_address: "${E102_RED_INTERNA}.20"}
+      servicio: {ipv4_address: "${E102_RED_SERVICIO}.10"}
+    mem_limit: 256m
+    cpus: 0.5
+
+  proxy:
+    <<: *endurecido
+    image: docker.io/library/nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
+    user: "101:101"
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    tmpfs: ["/tmp:size=16m,mode=1777", "/var/cache/nginx:size=16m,uid=101,gid=101"]
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${E102_PKI_PROXY:?}:/etc/nginx/tls:ro
+      - ${E102_SECRETOS}/proxy_ingreso.conf:/etc/nginx/secretos/ingreso.conf:ro
+      - ${E102_PROXY_GENERADO:?}/pasarela.conf:/etc/nginx/generado/pasarela.conf:ro
+    ports:
+      - "127.0.0.1:18443:18443"
+    networks:
+      frontal: {}
+      interna: {ipv4_address: "${E102_RED_INTERNA}.10"}
+    mem_limit: 128m
+    cpus: 0.5
+
+networks:
+  frontal: {}
+  interna:
+    internal: true
+    ipam: {config: [{subnet: "${E102_RED_INTERNA}.0/24"}]}
+  servicio:
+    internal: true
+    ipam: {config: [{subnet: "${E102_RED_SERVICIO}.0/24"}]}
+  datos:
+    internal: true
+    ipam: {config: [{subnet: "${E102_RED_DATOS}.0/24"}]}
+
+volumes:
+  pgdatos:
+    external: true
+    name: ${E102_VOLUMEN_PG:?}

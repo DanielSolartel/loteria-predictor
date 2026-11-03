@@ -1,0 +1,9 @@
+# Fase 10 (E10.3): excepciones CONCRETAS de gitleaks (huella exacta: commit, archivo, regla y linea), PENDIENTES
+# de aceptacion por Daniel. Las dos son literales sinteticos de pruebas existentes, no credenciales:
+# - test_regresiones_v2.py:489: secreto "sintetico..." de un caso de E10.1;
+# - test_fase4_recuperacion.py:29: nombre de un temporal dentro de un mensaje de error de Windows.
+# Cualquier otro hallazgo (o estos mismos en otra linea o commit) hace fallar el control.
+6efaacacdc787fd0b5a8dc847a3b39c9aef925d0:backend/tests/unit/seguridad_consola/test_regresiones_v2.py:generic-api-key:489
+c73e29cc3476c8ade377d205d6eaf38c374ac19b:backend/tests/unit/test_fase4_recuperacion.py:generic-api-key:29
+backend/tests/unit/seguridad_consola/test_regresiones_v2.py:generic-api-key:489
+backend/tests/unit/test_fase4_recuperacion.py:generic-api-key:29

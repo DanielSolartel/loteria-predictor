@@ -1,0 +1,27 @@
+{
+ "nota": "Fase 10 (E10.3, v2). Una excepcion solo se ACTIVA con estado \"aceptada\", aceptada_por y fecha_aceptacion, para un aviso, un paquete y un artefacto concretos y antes de caducar. Ninguna de las de este archivo esta aceptada: nadie ha aceptado ningun riesgo. Las dos de tinypool quedaron sin objeto en v2 porque vitest 4.1.12 ya no depende de tinypool (npm audit: 0 criticos); se conservan solo como registro y no se activan.",
+ "excepciones": [
+  {
+   "id": "GHSA-5gmw-xhrv-c9v3",
+   "paquete": "tinypool",
+   "artefacto": "frontend-npm",
+   "severidad": "critical",
+   "motivo": "v1: dependencia de desarrollo (vitest 3.2.7 -> tinypool 1.1.1). v2: resuelto actualizando vitest a 4.1.12, que no incluye tinypool.",
+   "caduca": "2026-12-31",
+   "estado": "retirada_por_actualizacion",
+   "aceptada_por": null,
+   "fecha_aceptacion": null
+  },
+  {
+   "id": "GHSA-85c8-ppgw-ccpr",
+   "paquete": "tinypool",
+   "artefacto": "frontend-npm",
+   "severidad": "critical",
+   "motivo": "Igual que GHSA-5gmw-xhrv-c9v3: resuelto en v2 con vitest 4.1.12.",
+   "caduca": "2026-12-31",
+   "estado": "retirada_por_actualizacion",
+   "aceptada_por": null,
+   "fecha_aceptacion": null
+  }
+ ]
+}

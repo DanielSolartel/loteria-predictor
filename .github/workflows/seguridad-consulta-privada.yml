@@ -1,0 +1,252 @@
+# Fase 10 (E10.2/E10.3): seguridad y reproducibilidad de la consulta privada. Workflow NUEVO; los cinco jobs
+# existentes (Validacion Python 3.14 y Validacion frontend) no cambian.
+#
+# - Acciones fijadas por SHA (el que GitHub resolvio para cada etiqueta en las ejecuciones 41559392449 y
+#   41559392408, verdes en el PR #108). Herramientas en contenedor fijadas por DIGEST.
+# - Sin secretos del repositorio, sin registro de imagenes, sin publicar ni desplegar: las imagenes se
+#   construyen y se escanean en el runner y se descartan. Las credenciales son sinteticas y se generan aqui.
+# - Ningun paso usa continue-on-error. Un escaner o una descarga que falla hace fallar su job: no es limpio.
+name: Seguridad consulta privada
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SYFT: docker.io/anchore/syft:v1.55.0@sha256:4cc92b64ca74ffca4c94d4c8fcc01f217731375300be14d0b6eeb2e82eaa110a
+  GRYPE: docker.io/anchore/grype:v0.121.0@sha256:621d56d1d68106b787022c81546f7e0a36202a25d1239f0c20195fab8c16f7ea
+  GITLEAKS: docker.io/zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  lock-linux:
+    name: Lock Python - instalacion estricta (Linux)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.14"
+      - name: Instalacion estricta desde requirements.lock (hashes, solo ruedas, sin dependencias implicitas)
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary :all: -r requirements.lock
+      - name: Comprobacion de dependencias
+        run: python -m pip check
+      - name: Conjunto instalado
+        run: python -m pip freeze --all --exclude pip | tee ../instalado-linux.txt
+      - name: Pruebas del perfil privado, la pasarela y la API publica
+        run: >-
+          python -m pytest -p no:cacheprovider -rsw tests/unit/api_publica tests/unit/pasarela
+          tests/unit/test_ci_umbral_vulnerabilidades.py tests/unit/test_bloqueo_dependencias.py
+          tests/unit/test_comprobar_contenido_imagen.py tests/unit/test_servidor_mtls_e102.py tests/unit/test_ensayo_brave_e102.py
+          --junitxml=../resultados-lock-linux.xml
+      - name: SBOM del entorno instalado desde requirements.lock (syft lee los dist-info, no el lock)
+        run: |
+          sitio=$(python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+          mkdir ../sbom
+          docker run --rm -v "$sitio:/sp:ro" -v "$PWD/../sbom:/o" "$SYFT" dir:/sp --select-catalogers python \
+            -o cyclonedx-json=/o/python-lock-linux.cdx.json -q
+      - name: SBOM del lock de Python
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom-python-lock-linux
+          path: |
+            sbom/
+            instalado-linux.txt
+            resultados-lock-linux.xml
+          if-no-files-found: error
+
+  lock-windows:
+    name: Lock Python - instalacion estricta (Windows)
+    runs-on: windows-2025
+    defaults:
+      run:
+        working-directory: backend
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.14"
+      - name: Instalacion estricta desde requirements.lock (hashes, solo ruedas, sin dependencias implicitas)
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary :all: -r requirements.lock
+      - name: Comprobacion de dependencias
+        run: python -m pip check
+      - name: Conjunto instalado
+        run: python -m pip freeze --all --exclude pip
+      - name: Pruebas del perfil privado (seleccion)
+        run: |
+          python -m pytest -p no:cacheprovider -rsw tests/unit/api_publica/test_api_publica_privada.py tests/unit/pasarela/test_pasarela_privada.py tests/unit/pasarela/test_pasarela_aislamiento.py tests/unit/test_ci_umbral_vulnerabilidades.py tests/unit/test_bloqueo_dependencias.py tests/unit/test_comprobar_contenido_imagen.py tests/unit/test_servidor_mtls_e102.py tests/unit/test_ensayo_brave_e102.py --junitxml=../resultados-lock-windows.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  auditoria:
+    name: Auditoria de dependencias y secretos
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: pip-audit fijado por hashes
+        run: |
+          python -m venv /tmp/auditoria
+          /tmp/auditoria/bin/python -m pip install --require-hashes --no-deps --only-binary :all: -r backend/requirements-auditoria.lock
+      - name: Avisos de las dependencias de Python (cualquier aviso conocido falla)
+        working-directory: backend
+        run: |
+          for lock in requirements.lock requirements-servicio.lock requirements-auditoria.lock; do
+            /tmp/auditoria/bin/pip-audit -r "$lock" --require-hashes --disable-pip --strict --vulnerability-service pypi --progress-spinner off
+          done
+          printf 'colorama==0.4.6\ntzdata==2026.5\n' > /tmp/solo-windows.txt  # marcadores win32: se auditan aparte
+          /tmp/auditoria/bin/pip-audit -r /tmp/solo-windows.txt --disable-pip --no-deps --strict --vulnerability-service pypi --progress-spinner off
+      - name: Avisos del frontend (npm audit + umbral con excepciones concretas)
+        run: |
+          (cd frontend && npm audit --package-lock-only --json > ../npm-audit.json) || true  # el umbral decide
+          python backend/scripts/ci_umbral_vulnerabilidades.py npm-audit.json --formato npm --artefacto frontend-npm --resumen "$GITHUB_STEP_SUMMARY"
+      - name: Secretos en el arbol y en el historial (gitleaks; excepciones exactas en .gitleaksignore)
+        run: |
+          docker run --rm --network none -w /repo -v "$PWD:/repo:ro" "$GITLEAKS" git . --no-banner --redact --exit-code 1
+          docker run --rm --network none -w /repo -v "$PWD:/repo:ro" "$GITLEAKS" dir . --no-banner --redact --exit-code 1
+
+  imagenes:
+    name: Imagenes - construccion, SBOM y escaneo (sin publicar)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Construccion de las dos imagenes (varias etapas, bases por digest)
+        run: |
+          for objetivo in api pasarela; do
+            docker build -f despliegue/imagenes/Dockerfile --target "$objetivo" -t "loteria-e102-$objetivo:ci" .
+            docker image inspect -f "{{.Id}} {{.Config.User}}" "loteria-e102-$objetivo:ci" | tee -a imagenes.txt
+          done
+      - name: Contenido de las imagenes (usuario sin privilegios y sin datos ni secretos)
+        # El mismo comando que la verificacion local: distingue el paquete de codigo app/infrastructure/storage de
+        # carpetas y archivos de datos o secretos (SQLite, .env, claves, publicacion); ver el script.
+        run: |
+          for objetivo in api pasarela; do
+            test "$(docker image inspect -f '{{.Config.User}}' loteria-e102-$objetivo:ci)" = "10001:10001"
+            docker run --rm -i --network none --entrypoint python "loteria-e102-$objetivo:ci" -B - \
+              < despliegue/imagenes/comprobar_contenido_imagen.py
+          done
+      - name: SBOM por artefacto (CycloneDX)
+        run: |
+          mkdir sbom
+          for objetivo in api pasarela; do
+            docker save "loteria-e102-$objetivo:ci" -o "imagen-$objetivo.tar"
+            docker run --rm -v "$PWD:/w" "$SYFT" "docker-archive:/w/imagen-$objetivo.tar" -o "cyclonedx-json=/w/sbom/imagen-$objetivo.cdx.json" -q
+          done
+          # package-lock.json completo (tambien las dependencias de desarrollo, que syft omite por defecto)
+          docker run --rm -e SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES=true -v "$PWD:/w" "$SYFT" dir:/w/frontend \
+            --select-catalogers javascript -o cyclonedx-json=/w/sbom/frontend-lock.cdx.json -q
+      - name: Vulnerabilidades de las imagenes (grype; alto o critico sin excepcion concreta falla)
+        run: |
+          for objetivo in api pasarela; do
+            docker run --rm -v "$PWD:/w" "$GRYPE" "sbom:/w/sbom/imagen-$objetivo.cdx.json" -o json --file "/w/grype-$objetivo.json"
+            python3 backend/scripts/ci_umbral_vulnerabilidades.py "grype-$objetivo.json" --formato grype --artefacto "imagen-$objetivo" --resumen "$GITHUB_STEP_SUMMARY"
+          done
+      - name: SBOM e informes
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom-e102
+          path: |
+            sbom/
+            grype-*.json
+            imagenes.txt
+          if-no-files-found: error
+
+  postgres:
+    name: PostgreSQL de pruebas - Fase 8 y perfil privado
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: docker.io/library/postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+        env:
+          POSTGRES_DB: loteria_prueba
+          POSTGRES_PASSWORD: solo-ci-desechable
+        ports: ["127.0.0.1:5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d loteria_prueba" --health-interval 5s --health-timeout 3s --health-retries 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.14"
+      - name: Dependencias desde el lock
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary :all: -r requirements.lock && python -m pip check
+      - name: Roles propietario y lector (contrasenas generadas aqui, enmascaradas)
+        env:
+          PGPASSWORD: solo-ci-desechable
+        run: |
+          prop=$(openssl rand -hex 24); lector=$(openssl rand -hex 24)
+          echo "::add-mask::$prop"; echo "::add-mask::$lector"
+          { printf "\\set clave_propietario '%s'\n\\set clave_lector '%s'\n\\set base loteria_prueba\n" "$prop" "$lector"
+            cat ../despliegue/consulta-privada/postgres/roles.sql; } | psql -q -h 127.0.0.1 -U postgres -d postgres -f -
+          echo "DATABASE_URL=postgresql+psycopg://consulta_propietario:$prop@127.0.0.1:5432/loteria_prueba" >> "$GITHUB_ENV"
+          echo "E102_URL_LECTOR=postgresql+psycopg://consulta_lector:$lector@127.0.0.1:5432/loteria_prueba" >> "$GITHUB_ENV"
+      - name: Migraciones con el rol propietario
+        run: python -m alembic upgrade head
+      - name: Fase 8 (API publica sobre PostgreSQL)
+        run: python tests/postgres_fase8.py
+      - name: Perfil privado (rol lector, solo lectura, tiempos maximos, pool y sesion de escritura)
+        run: python tests/postgres_e102.py
+
+  demostracion:
+    name: Demostracion de extremo a extremo (proxy mTLS, pasarela, API, PostgreSQL)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Dependencias de Python desde el lock
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary :all: -r backend/requirements.lock
+      - name: Playwright y Chromium del lock del frontend
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund --ignore-scripts && npx playwright install --with-deps chromium
+      - name: Demostracion (datos y credenciales sinteticos; limpia solo su proyecto)
+        env:
+          NODE_PATH: ${{ github.workspace }}/frontend/node_modules
+        run: python despliegue/consulta-privada/demostracion.py --salida demostracion-e102 --python-preparacion "$(command -v python)"
+      - name: Resultados (sin la carpeta de trabajo con PKI y secretos)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: demostracion-e102
+          path: |
+            demostracion-e102/demostracion.json
+            demostracion-e102/matriz-19x4.json
+            demostracion-e102/navegador/
+          if-no-files-found: warn

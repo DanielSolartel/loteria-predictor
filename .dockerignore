@@ -1,0 +1,29 @@
+# Fase 10 (E10.3): contexto minimo de `despliegue/imagenes/Dockerfile`. Todo queda fuera salvo lo que se
+# deja pasar de forma explicita; nunca entran .git, .env, *.privado.env, SQLite, storage/, privado/, perfiles,
+# node_modules, dist ni datos reales.
+*
+!backend/requirements-servicio.lock
+!backend/app/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/tsconfig.json
+!frontend/vite.config.ts
+!frontend/public/
+!frontend/src/
+**/__pycache__/
+**/*.py[cod]
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+**/.env
+**/*.env
+**/*.privado.*
+backend/privado/
+backend/storage/
+backend/app/**/privado/
+**/node_modules/
+**/dist/
+**/*.test.ts
+**/*.test.tsx
+frontend/src/pruebas/

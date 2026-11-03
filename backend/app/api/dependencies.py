@@ -82,12 +82,19 @@ from app.infrastructure.storage.resultados_file_store import ResultadosFileStore
 # proceso: los conectores mantienen su propia sesión HTTP (con
 # keep-alive) y su caché interna (p.ej. MiLotoConnector), así que no
 # tiene sentido reconstruirlos en cada request.
-_html_storage = HtmlFileStorage()
-_connector_registry = ConnectorRegistry(html_storage=_html_storage)
+# Fase 10 (E10.2, DAT-07): se construyen la PRIMERA vez que se piden, no al importar
+# este modulo. `HtmlFileStorage` crea `storage/html`; la API publica importa estas
+# dependencias y, con la generacion montada de solo lectura, no debe crear nada.
+_connector_registry: ConnectorRegistry | None = None
+_cerrojo_conectores = threading.Lock()
 
 
 def get_connector_registry() -> ConnectorRegistry:
-    return _connector_registry
+    global _connector_registry
+    with _cerrojo_conectores:
+        if _connector_registry is None:
+            _connector_registry = ConnectorRegistry(html_storage=HtmlFileStorage())
+        return _connector_registry
 
 
 def get_sincronizacion_repository(db: Session = Depends(get_db)) -> SincronizacionRepositorySQLAlchemy:
@@ -374,7 +381,7 @@ def abrir_dependencias_de_operacion(codigo_juego: str, modo: str):
             caso = SincronizarSorteos(
                 juego_repository=juegos, sorteo_repository=SorteoRepositorySQLAlchemy(session),
                 sincronizacion_repository=SincronizacionRepositorySQLAlchemy(session), color_repository=colores,
-                game_factory=GameFactory(color_repository=colores), obtener_conector=_connector_registry.obtener,
+                game_factory=GameFactory(color_repository=colores), obtener_conector=get_connector_registry().obtener,
                 unit_of_work=SqlAlchemyUnitOfWork(session),
                 estadistica_repository=EstadisticaRepositorySQLAlchemy(session))
             sincronizar = caso.ejecutar

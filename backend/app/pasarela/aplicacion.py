@@ -27,6 +27,14 @@ inesperado se convierte aqui en un 500 sanitizado y no llega a Uvicorn.
 Fuera de `/api/v1` solo se sirven archivos de `dist/` con extension conocida;
 una ruta de la SPA (sin extension) recibe `index.html`; una ruta de API
 desconocida, un recurso inexistente o un archivo fuera de `dist/`, nunca.
+
+Perfil PRIVADO (Fase 10, E10.2; `PASARELA_PERFIL=privado`): el paso 2 cambia.
+En lugar del cliente loopback se exige el ingreso del proxy autenticado
+(`privada.identidad_verificada`: IP exacta del socket, secreto del proxy en
+tiempo constante e identidad de la persona); despues, `Host` en la lista
+exacta. Cada consulta a `/api/v1` descuenta su coste de la cuota de la
+persona y de la agregada ANTES de reenviarse (429 con `Retry-After`). El
+arranque soportado es el mismo modulo con `--workers 1` (ver `privada.py`).
 """
 from __future__ import annotations
 
@@ -43,7 +51,7 @@ import anyio
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from app.pasarela import rutas
+from app.pasarela import privada, rutas
 from app.pasarela.cliente import ClienteDeLaApi, FalloDeDestino, RespuestaDeLaApi
 from app.pasarela.configuracion import AjustesPasarela, ConfiguracionPasarela, desde_ajustes
 
@@ -86,6 +94,9 @@ class Pasarela:
     def __init__(self, configuracion: ConfiguracionPasarela, cliente: ClienteDeLaApi | None = None):
         self.configuracion = configuracion
         self.cliente = cliente or ClienteDeLaApi(configuracion.destino)
+        perfil = configuracion.privado
+        self.cuotas = (privada.CuotasDeConsulta(perfil.fichas_persona, perfil.fichas_agregadas, perfil.max_personas)
+                       if perfil is not None else None)
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "lifespan":
@@ -98,6 +109,7 @@ class Pasarela:
             return
         request = Request(scope, receive)
         solicitud, inicio, plantilla = uuid.uuid4().hex, time.perf_counter(), "rechazo"
+        request.state.identidad = None
         try:
             respuesta, plantilla = await self._responder(request, solicitud)
         except Exception as exc:  # no BaseException: cancelaciones y salidas del proceso siguen su curso
@@ -107,8 +119,13 @@ class Pasarela:
         for nombre, valor in SEGURIDAD.items():
             respuesta.headers[nombre] = valor
         metodo = request.method if request.method in _METODOS else "OTRO"
-        registro.info("pasarela %s %s %s %.1fms solicitud=%s", metodo, plantilla, respuesta.status_code,
-                      (time.perf_counter() - inicio) * 1000, solicitud)
+        if self.configuracion.privado is None:
+            registro.info("pasarela %s %s %s %.1fms solicitud=%s", metodo, plantilla, respuesta.status_code,
+                          (time.perf_counter() - inicio) * 1000, solicitud)
+        else:  # la identidad acreditada por el proxy (nunca la clave, el secreto ni la consulta)
+            registro.info("pasarela %s %s %s %.1fms identidad=%s solicitud=%s", metodo, plantilla,
+                          respuesta.status_code, (time.perf_counter() - inicio) * 1000,
+                          request.state.identidad or "-", solicitud)
         await respuesta(scope, receive, send)
 
     # ------------------------------------------------------------------
@@ -118,7 +135,14 @@ class Pasarela:
             return error(405, "metodo_no_permitido", "La pasarela solo admite GET", solicitud,
                          {"Allow": "GET"}), "rechazo"
         cliente = request.client.host if request.client else ""
-        if not _loopback(cliente):
+        if conf.privado is not None:
+            try:
+                request.state.identidad = privada.identidad_verificada(
+                    cliente, request.scope.get("headers", ()), conf.privado.proxies,
+                    conf.privado.secreto.get_secret_value())
+            except privada.IngresoNoFiable as fallo:
+                return error(403, fallo.codigo, fallo.mensaje, solicitud), "rechazo"
+        elif not _loopback(cliente):
             return error(403, "cliente_no_local", "Solo se admiten clientes de este equipo", solicitud), "rechazo"
         if request.headers.get("host", "") not in conf.hosts or len(request.headers.getlist("host")) != 1:
             return error(403, "host_no_permitido", "Host no admitido", solicitud), "rechazo"
@@ -160,13 +184,28 @@ class Pasarela:
         if not self.configuracion.abierta:
             return error(503, "pasarela_no_configurada", "La pasarela no tiene una clave de API válida",
                          solicitud), publica.plantilla
+        if self.cuotas is not None:
+            decision = self.cuotas.consumir(request.state.identidad, privada.COSTES[publica.plantilla])
+            limites = {"X-RateLimit-Limit": str(decision.capacidad), "X-RateLimit-Remaining": str(decision.restantes)}
+            if not decision.permitida:
+                codigo, mensaje = {
+                    "persona": ("limite_excedido", "Límite de consultas de su identidad excedido"),
+                    "agregado": ("limite_agregado_excedido", "Límite conjunto de consultas excedido"),
+                    "capacidad": ("limite_identidades_excedido",
+                                  "Demasiadas identidades con consultas recientes; reintente más tarde"),
+                }[decision.alcance]
+                return error(429, codigo, f"{mensaje}; reintente en {decision.reintentar_en} s", solicitud,
+                             {**limites, "Retry-After": str(decision.reintentar_en)}), publica.plantilla
         try:
             r = await self.cliente.get(ruta + (f"?{consulta}" if consulta else ""),
                                        self.configuracion.clave.get_secret_value())
         except FalloDeDestino as fallo:
             cabeceras = {"Retry-After": "1"} if fallo.codigo == "pasarela_ocupada" else None
             return error(fallo.estado, fallo.codigo, _MENSAJES[fallo.codigo], solicitud, cabeceras), publica.plantilla
-        return _desde_la_api(r, solicitud), publica.plantilla
+        respuesta = _desde_la_api(r, solicitud)
+        if self.cuotas is not None:  # la persona ve su propia cuota, no la de la clave compartida de la pasarela
+            respuesta.headers.update(limites)
+        return respuesta, publica.plantilla
 
     async def _estatico(self, ruta: str, solicitud: str) -> tuple[Response, str]:
         dist = self.configuracion.dist
