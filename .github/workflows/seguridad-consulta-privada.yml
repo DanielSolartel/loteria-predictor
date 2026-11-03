@@ -140,6 +140,16 @@ jobs:
             docker build -f despliegue/imagenes/Dockerfile --target "$objetivo" -t "loteria-e102-$objetivo:ci" .
             docker image inspect -f "{{.Id}} {{.Config.User}}" "loteria-e102-$objetivo:ci" | tee -a imagenes.txt
           done
+      - name: Identificacion de las imagenes (id, usuario, SO, arquitectura, Python y base)
+        # Diagnostico que acompana a los informes: siempre se publica junto a SBOM y grype.
+        run: |
+          grep -o 'PYTHON_IMAGEN=[^ ]*' despliegue/imagenes/Dockerfile | head -1 | tee -a imagenes.txt
+          for objetivo in api pasarela; do
+            imagen="loteria-e102-$objetivo:ci"
+            docker image inspect -f "imagen-$objetivo id={{.Id}} usuario={{.Config.User}} so={{.Os}} arquitectura={{.Architecture}}" "$imagen" | tee -a imagenes.txt
+            docker run --rm --network none --entrypoint sh "$imagen" -c '. /etc/os-release; echo "so-version=$PRETTY_NAME"; python -c "import sys; print(\"python=\" + sys.version.split()[0])"' \
+              | sed "s/^/imagen-$objetivo /" | tee -a imagenes.txt
+          done
       - name: Contenido de las imagenes (usuario sin privilegios y sin datos ni secretos)
         # El mismo comando que la verificacion local: distingue el paquete de codigo app/infrastructure/storage de
         # carpetas y archivos de datos o secretos (SQLite, .env, claves, publicacion); ver el script.
@@ -150,30 +160,46 @@ jobs:
               < despliegue/imagenes/comprobar_contenido_imagen.py
           done
       - name: SBOM por artefacto (CycloneDX)
+        # Ambas imagenes se intentan aunque una falle; el paso termina en fallo si falta alguna.
         run: |
           mkdir sbom
+          fallos=0
           for objetivo in api pasarela; do
-            docker save "loteria-e102-$objetivo:ci" -o "imagen-$objetivo.tar"
-            docker run --rm -v "$PWD:/w" "$SYFT" "docker-archive:/w/imagen-$objetivo.tar" -o "cyclonedx-json=/w/sbom/imagen-$objetivo.cdx.json" -q
+            if ! { docker save "loteria-e102-$objetivo:ci" -o "imagen-$objetivo.tar" &&
+                   docker run --rm -v "$PWD:/w" "$SYFT" "docker-archive:/w/imagen-$objetivo.tar" -o "cyclonedx-json=/w/sbom/imagen-$objetivo.cdx.json" -q; }; then
+              echo "::error::SBOM no generado para imagen-$objetivo"; fallos=1
+            fi
           done
           # package-lock.json completo (tambien las dependencias de desarrollo, que syft omite por defecto)
           docker run --rm -e SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES=true -v "$PWD:/w" "$SYFT" dir:/w/frontend \
-            --select-catalogers javascript -o cyclonedx-json=/w/sbom/frontend-lock.cdx.json -q
-      - name: Vulnerabilidades de las imagenes (grype; alto o critico sin excepcion concreta falla)
+            --select-catalogers javascript -o cyclonedx-json=/w/sbom/frontend-lock.cdx.json -q || fallos=1
+          exit "$fallos"
+      - name: Vulnerabilidades de las imagenes (grype; ambas siempre; alto o critico sin excepcion concreta falla)
+        # PR #109 (CI109-03): se escanean y evaluan las DOS imagenes aunque la primera falle; el paso termina en
+        # fallo si falta un informe valido o queda un alto/critico sin excepcion aceptada. Sin continue-on-error.
+        if: ${{ !cancelled() }}
         run: |
+          fallos=0
           for objetivo in api pasarela; do
-            docker run --rm -v "$PWD:/w" "$GRYPE" "sbom:/w/sbom/imagen-$objetivo.cdx.json" -o json --file "/w/grype-$objetivo.json"
-            python3 backend/scripts/ci_umbral_vulnerabilidades.py "grype-$objetivo.json" --formato grype --artefacto "imagen-$objetivo" --resumen "$GITHUB_STEP_SUMMARY"
+            if ! docker run --rm -v "$PWD:/w" "$GRYPE" "sbom:/w/sbom/imagen-$objetivo.cdx.json" -o json --file "/w/grype-$objetivo.json"; then
+              echo "::error::grype no genero el informe de imagen-$objetivo"; fallos=1; continue
+            fi
+            python3 backend/scripts/ci_umbral_vulnerabilidades.py "grype-$objetivo.json" --formato grype --artefacto "imagen-$objetivo" --resumen "$GITHUB_STEP_SUMMARY" || fallos=1
           done
-      - name: SBOM e informes
+          exit "$fallos"
+      - name: SBOM, informes de grype e identificacion de las imagenes (tambien si el umbral falla)
+        if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom-e102
           path: |
-            sbom/
-            grype-*.json
             imagenes.txt
-          if-no-files-found: error
+            sbom/imagen-api.cdx.json
+            sbom/imagen-pasarela.cdx.json
+            sbom/frontend-lock.cdx.json
+            grype-api.json
+            grype-pasarela.json
+          if-no-files-found: warn
 
   postgres:
     name: PostgreSQL de pruebas - Fase 8 y perfil privado

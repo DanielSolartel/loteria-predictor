@@ -14,6 +14,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -229,6 +230,32 @@ def test_ae78_script_de_solo_lectura_sin_red_ni_deserializacion_ejecutable():
     assert texto.count("open(") == 2 and '"rb"' in texto and '"xb"' in texto
 
 
+SHA_CHECKOUT = "11d5960a326750d5838078e36cf38b85af677262"  # actions/checkout v4
+SHA_SETUP_PYTHON = "a26af69be951a213d495a4c3e4e4022e16d87065"  # actions/setup-python v5
+
+
+def _usos_por_job(flujo: str) -> dict[str, list[str]]:
+    """`uses:` efectivos por job (sin comentarios); los jobs son las claves con dos espacios bajo `jobs:`."""
+    usos: dict[str, list[str]] = {}
+    job = None
+    en_jobs = False
+    for linea in flujo.splitlines():
+        sin_comentario = linea.split("#", 1)[0].rstrip()
+        if not sin_comentario.strip():
+            continue
+        if re.fullmatch(r"jobs:", sin_comentario):
+            en_jobs = True
+            continue
+        if en_jobs and re.fullmatch(r"  [A-Za-z0-9_-]+:", sin_comentario):
+            job = sin_comentario.strip()[:-1]
+            usos[job] = []
+            continue
+        m = re.fullmatch(r"\s*(?:-\s+)?uses:\s*(\S+)", sin_comentario)
+        if m and job:
+            usos[job].append(m.group(1))
+    return usos
+
+
 def test_ae78_seleccion_windows_y_nombre_duradero_del_job():
     rutas = [l for l in (BACKEND / "tests" / "seleccion_windows.txt").read_text(encoding="utf-8").splitlines() if l]
     assert "tests/unit/ml/test_expediente_portable.py" in rutas
@@ -239,4 +266,12 @@ def test_ae78_seleccion_windows_y_nombre_duradero_del_job():
     assert "seleccion AE-52 a AE-76" not in flujo
     assert "name: Linux - suite completa" in flujo
     assert "--modo exigir" in flujo and "--modo permitir_omision" in flujo
-    assert "actions/checkout@v4" in flujo and "actions/setup-python@v5" in flujo
+    # E10.3 fija las acciones por SHA de 40 caracteres (el comentario `# vN` solo documenta la etiqueta).
+    # Se comprueban los `uses:` EFECTIVOS de cada job, no la mera presencia de un texto.
+    usos = _usos_por_job(flujo)
+    assert set(usos) == {"linux", "windows"}, usos
+    for job, acciones in usos.items():
+        assert acciones[:2] == [f"actions/checkout@{SHA_CHECKOUT}", f"actions/setup-python@{SHA_SETUP_PYTHON}"], (job, acciones)
+        for accion in acciones:
+            nombre, _, ref = accion.partition("@")
+            assert nombre.startswith("./") or re.fullmatch(r"[0-9a-f]{40}", ref), (job, accion)

@@ -15,6 +15,14 @@ Uso (desde la raiz del repositorio; Docker, OpenSSL y Node con Playwright dispon
     python despliegue/consulta-privada/demostracion.py --salida <carpeta nueva> \
         --python-preparacion <python con requirements.lock> [--ca-extra <pem>] [--conservar]
 Salida: <salida>/demostracion.json y registros saneados. Codigo 0 solo si todas las comprobaciones pasan.
+
+Robustez del arnes (PR #109, CI109-02): la salida puede ser relativa o absoluta (tambien con espacios); se
+normaliza a una ruta absoluta antes de derivar cualquier otra, de modo que los bind mounts y la configuracion de
+Compose reciben siempre origenes absolutos. Un fallo en cualquier fase (entorno, PKI, imagenes, publicacion,
+arranque) se registra con su motivo original y no impide la limpieza; cada paso de limpieza esta aislado (un
+error no impide los demas) y solo actua sobre recursos con la etiqueta y el nombre del proyecto. El informe
+JSON se escribe siempre, saneado (sin secretos ni la ruta de trabajo), con `todas_correctas: false` y codigo
+distinto de cero ante cualquier fallo, residuo o limpieza incompleta.
 """
 from __future__ import annotations
 
@@ -68,6 +76,8 @@ def puerto_libre(puerto: int) -> bool:
 
 class Demostracion:
     def __init__(self, salida: Path, python_prep: str, ca_extra: str | None, conservar: bool):
+        # Absoluta ANTES de derivar nada: Docker trata un origen relativo de `-v` como nombre de volumen.
+        salida = Path(salida).expanduser().absolute()
         self.salida, self.python_prep, self.ca_extra, self.conservar = salida, python_prep, ca_extra, conservar
         self.id = secrets.token_hex(3)
         self.proyecto = f"e102demo{self.id}"
@@ -84,6 +94,10 @@ class Demostracion:
         segundo = random.randint(200, 250)
         self.redes = {n: f"10.{segundo}.{i}" for i, n in enumerate(("interna", "servicio", "datos"), start=11)}
         self.imagenes: dict[str, dict] = {}
+        self.publicacion: Path | None = None  # existe solo tras preparar_publicacion
+        self.fase = "inicio"
+        self.error_inicial: dict | None = None
+        self.errores_limpieza: list[dict] = []
 
     # ------------------------------------------------------------------ utilidades
     def anotar(self, ident: str, descripcion: str, ok: bool, inicio: float, **detalles):
@@ -114,13 +128,26 @@ class Demostracion:
             self.valores_secretos.append(valor.strip())
 
     def entorno_compose(self) -> dict:
+        """Valido en cualquier estado: antes de publicar o de construir se usan valores inertes (rutas absolutas
+        inexistentes bajo la carpeta de trabajo e imagenes sin etiqueta real), suficientes para `compose down`."""
         base = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "DOCKER_HOST", "DOCKER_CONFIG")}
-        return {**base, "E102_SECRETOS": str(self.secretos), "E102_PUBLICACION": str(self.publicacion),
+        publicacion = self.publicacion if self.publicacion is not None else self.trabajo / "sin-publicacion"
+        imagen = {o: (self.imagenes.get(o) or {}).get("etiqueta") or f"{self.proyecto}-{o}-sin-construir:ninguna"
+                  for o in ("api", "pasarela")}
+        return {**base, "E102_SECRETOS": str(self.secretos), "E102_PUBLICACION": str(publicacion),
                 "E102_PKI_PROXY": str(self.pki_proxy), "E102_PROXY_GENERADO": str(self.generado),
                 "E102_RED_INTERNA": self.redes["interna"], "E102_RED_SERVICIO": self.redes["servicio"],
-                "E102_RED_DATOS": self.redes["datos"], "E102_IMAGEN_API": self.imagenes["api"]["etiqueta"],
-                "E102_IMAGEN_PASARELA": self.imagenes["pasarela"]["etiqueta"], "E102_VOLUMEN_PG": self.volumen,
+                "E102_RED_DATOS": self.redes["datos"], "E102_IMAGEN_API": imagen["api"],
+                "E102_IMAGEN_PASARELA": imagen["pasarela"], "E102_VOLUMEN_PG": self.volumen,
                 "E102_FICHAS_PERSONA": "30", "E102_FICHAS_AGREGADAS": "50"}
+
+    def sanear(self, texto: str) -> str:
+        """Diagnosticos sin secretos sinteticos ni rutas de trabajo/salida (PKI, secretos, publicacion)."""
+        for valor in sorted(set(self.valores_secretos), key=len, reverse=True):
+            texto = texto.replace(valor, "[secreto]")
+        for ruta, etiqueta in ((self.trabajo, "[trabajo]"), (self.salida, "[salida]")):
+            texto = texto.replace(str(ruta), etiqueta)
+        return texto
 
     def compose(self, *args, check=True, timeout=300):
         return ejecutar(["docker", "compose", "-p", self.proyecto, "-f", DEMO / "compose.yml", *args], check=check,
@@ -190,7 +217,7 @@ class Demostracion:
         solapadas = [str(p) for p in propias if any(p.overlaps(e) for e in existentes)]
         libre = puerto_libre(PUERTO)
         if solapadas or not libre:
-            raise SystemExit(f"entorno no apto: subredes solapadas {solapadas} o puerto {PUERTO} ocupado")
+            raise RuntimeError(f"entorno no apto: subredes solapadas {solapadas} o puerto {PUERTO} ocupado")
         self.anotar("E00", "entorno propio: proyecto, subredes y puerto libres", True, inicio, proyecto=self.proyecto,
                     subredes=[str(p) for p in propias], puerto=f"127.0.0.1:{PUERTO}",
                     docker=ejecutar(["docker", "version", "--format", "{{.Server.Version}}"]).stdout.decode().strip(),
@@ -897,40 +924,94 @@ class Demostracion:
                     motivo=next((l for l in texto.splitlines() if "perfil privado" in l), "")[:300])
 
     # ------------------------------------------------------------------ limpieza
+    def _paso_limpieza(self, nombre: str, funcion):
+        """Un paso aislado: su error se anota y NO impide los siguientes intentos sobre recursos propios."""
+        try:
+            return funcion()
+        except Exception as error:
+            self.errores_limpieza.append({"paso": nombre,
+                                          "error": self.sanear(f"{type(error).__name__}: {str(error)[:300]}")})
+            return None
+
+    def _listar(self, *args) -> list[str]:
+        return ejecutar(["docker", *args]).stdout.decode().split()
+
     def limpiar(self):
         inicio = time.monotonic()
         if self.conservar:
             self.anotar("Z00", "recursos conservados a peticion (--conservar)", True, inicio, proyecto=self.proyecto)
             return
         for servicio in ("proxy", "pasarela", "api", "postgres"):  # registros finales antes de borrar
-            r = ejecutar(["docker", "logs", self.contenedor(servicio)], check=False)
-            if r.returncode == 0:
-                (self.registros / f"final-{servicio}.log").write_bytes(r.stdout + r.stderr)
-        self.compose("down", "--remove-orphans", "--timeout", "10", check=False)
-        for tipo, lista in (("container", ["ps", "-aq"]), ("volume", ["volume", "ls", "-q"])):
-            ids = ejecutar(["docker", *lista, "--filter", f"label={ETIQUETA}={self.proyecto}"]).stdout.decode().split()
+            def registro(servicio=servicio):
+                r = ejecutar(["docker", "logs", self.contenedor(servicio)], check=False)
+                if r.returncode == 0 and self.registros.is_dir():
+                    texto = (r.stdout + r.stderr).decode(errors="replace")
+                    (self.registros / f"final-{servicio}.log").write_text(self.sanear(texto), encoding="utf-8")
+            self._paso_limpieza(f"registro final de {servicio}", registro)
+        self._paso_limpieza("compose down", lambda: self.compose("down", "--remove-orphans", "--timeout", "10",
+                                                                 check=False))
+        etiqueta = f"label={ETIQUETA}={self.proyecto}"
+
+        def contenedores():
+            ids = self._listar("ps", "-aq", "--filter", etiqueta)
             if ids:
-                ejecutar(["docker", tipo, "rm", "-f", *ids] if tipo == "container" else ["docker", "volume", "rm", *ids],
-                         check=False)
-        restos = {
-            "contenedores": ejecutar(["docker", "ps", "-aq", "--filter", f"name={self.proyecto}"]).stdout.decode().split(),
-            "redes": ejecutar(["docker", "network", "ls", "-q", "--filter", f"name={self.proyecto}"]).stdout.decode().split(),
-            "volumenes": ejecutar(["docker", "volume", "ls", "-q", "--filter", f"name={self.proyecto}"]).stdout.decode().split()}
+                ejecutar(["docker", "rm", "-f", *ids], check=False)
+
+        def volumenes():  # etiqueta del proyecto Y nombre con su prefijo: nunca un volumen ajeno
+            nombres = [n for n in self._listar("volume", "ls", "-q", "--filter", etiqueta) if n.startswith(self.proyecto)]
+            if nombres:
+                ejecutar(["docker", "volume", "rm", *nombres], check=False)
+
+        self._paso_limpieza("contenedores del proyecto", contenedores)
+        self._paso_limpieza("volumenes del proyecto", volumenes)
+        restos: dict[str, list[str]] = {}
+        for clave, args in (("contenedores", ("ps", "-aq", "--filter", f"name={self.proyecto}")),
+                            ("redes", ("network", "ls", "-q", "--filter", f"name={self.proyecto}")),
+                            ("volumenes", ("volume", "ls", "-q", "--filter", f"name={self.proyecto}"))):
+            listado = self._paso_limpieza(f"verificacion de {clave}", lambda args=args: self._listar(*args))
+            restos[clave] = listado if listado is not None else ["no verificado"]
         self.anotar("Z01", "limpieza solo de los recursos del proyecto (contenedores, redes, volumen)",
-                    not any(restos.values()), inicio, restos=restos,
-                    imagenes_conservadas=[i["etiqueta"] for i in self.imagenes.values()])
+                    not any(restos.values()) and not self.errores_limpieza, inicio, restos=restos,
+                    errores_limpieza=self.errores_limpieza,
+                    imagenes_conservadas=[i.get("etiqueta") for i in self.imagenes.values()])
+
+    def escribir_informe(self) -> int:
+        """Siempre un JSON valido y saneado; exito solo sin fallo inicial, sin errores de limpieza y con todas las
+        comprobaciones correctas."""
+        correcto = (bool(self.resultados) and all(r["ok"] for r in self.resultados) and self.error_inicial is None
+                    and not self.errores_limpieza)
+        resumen = {"proyecto": self.proyecto, "plataforma": sys.platform, "python": sys.version.split()[0],
+                   "segundos": round(time.monotonic() - self.inicio, 1), "imagenes": self.imagenes,
+                   "comprobaciones": len(self.resultados), "correctas": sum(r["ok"] for r in self.resultados),
+                   "todas_correctas": correcto, "error_inicial": self.error_inicial,
+                   "errores_limpieza": self.errores_limpieza, "resultados": self.resultados,
+                   "atribucion": "Linux aislado (Claude), Docker propio; no acredita Windows ni el CI remoto"}
+        texto = self.sanear(json.dumps(resumen, ensure_ascii=False, indent=1))
+        try:
+            temporal = self.salida / "demostracion.json.tmp"
+            temporal.write_text(texto, encoding="utf-8")
+            os.replace(temporal, self.salida / "demostracion.json")
+        except OSError as error:  # sin archivo: el informe va a la salida estandar y el codigo es de fallo
+            print(f"no se pudo escribir demostracion.json: {type(error).__name__}", flush=True)
+            print(texto, flush=True)
+            return 1
+        print(f"comprobaciones {resumen['correctas']}/{resumen['comprobaciones']} correctas"
+              + ("" if correcto else " - FALLO"), flush=True)
+        return 0 if correcto else 1
 
     def ejecutar(self) -> int:
         self.salida.mkdir(parents=True, exist_ok=False)
-        self.trabajo.mkdir(mode=0o700)
-        self.registros.mkdir()
+        interrumpido = None
+        inicio = time.monotonic()
         try:
-            self.comprobar_entorno()
-            self.preparar_pki()
-            self.preparar_secretos()
-            self.construir_imagenes()
-            self.preparar_publicacion()
-            self.levantar()
+            self.trabajo.mkdir(mode=0o700)
+            self.registros.mkdir()
+            for fase in ("comprobar_entorno", "preparar_pki", "preparar_secretos", "construir_imagenes",
+                         "preparar_publicacion", "levantar"):
+                self.fase = fase
+                inicio = time.monotonic()
+                getattr(self, fase)()
+            self.fase = "comprobaciones"
             for paso in (self.tls_e_identidad, self.identidad_falsa, self.cuotas, self.acceso_directo, self.matriz,
                          self.solo_lectura, self.recursos, self.claves, self.revocacion, self.navegador,
                          self.api_alterada, self.almacen_vaciado_o_mal_apuntado, self.ausencia_de_almacen,
@@ -939,19 +1020,24 @@ class Demostracion:
                 try:
                     paso()
                 except Exception as error:  # una comprobacion rota se anota como fallida y se sigue
-                    self.anotar(f"X-{paso.__name__}", f"excepcion en {paso.__name__}", False, inicio,
-                                error=f"{type(error).__name__}: {str(error)[:300]}")
-        finally:
+                    self.anotar(f"X-{getattr(paso, '__name__', 'paso')}", "excepcion en una comprobacion", False,
+                                inicio, error=self.sanear(f"{type(error).__name__}: {str(error)[:300]}"))
+        except BaseException as error:  # fallo de una fase: se conserva el motivo ORIGINAL y se limpia igualmente
+            if isinstance(error, KeyboardInterrupt):
+                interrumpido = error
+            self.error_inicial = {"fase": self.fase, "tipo": type(error).__name__,
+                                  "mensaje": self.sanear(str(error)[:600])}
+            self.anotar(f"X-{self.fase}", f"fallo en la fase {self.fase}: se interrumpe la demostracion y se limpia",
+                        False, inicio, error=f"{self.error_inicial['tipo']}: {self.error_inicial['mensaje']}")
+        try:
             self.limpiar()
-        resumen = {"proyecto": self.proyecto, "plataforma": sys.platform, "python": sys.version.split()[0],
-                   "segundos": round(time.monotonic() - self.inicio, 1), "imagenes": self.imagenes,
-                   "comprobaciones": len(self.resultados), "correctas": sum(r["ok"] for r in self.resultados),
-                   "todas_correctas": all(r["ok"] for r in self.resultados), "resultados": self.resultados,
-                   "atribucion": "Linux aislado (Claude), Docker propio; no acredita Windows ni el CI remoto"}
-        (self.salida / "demostracion.json").write_text(json.dumps(resumen, ensure_ascii=False, indent=1),
-                                                       encoding="utf-8")
-        print(f"comprobaciones {resumen['correctas']}/{resumen['comprobaciones']} correctas", flush=True)
-        return 0 if resumen["todas_correctas"] else 1
+        except BaseException as error:  # defensa: incluso un fallo inesperado de la limpieza queda en el informe
+            self.errores_limpieza.append({"paso": "limpieza",
+                                          "error": self.sanear(f"{type(error).__name__}: {str(error)[:300]}")})
+        codigo = self.escribir_informe()
+        if interrumpido is not None:
+            raise interrumpido
+        return codigo
 
 
 def main(argv=None) -> int:
@@ -961,7 +1047,11 @@ def main(argv=None) -> int:
     p.add_argument("--ca-extra", default=None, help="CA adicional SOLO para construir (proxy con inspeccion TLS)")
     p.add_argument("--conservar", action="store_true")
     a = p.parse_args(argv)
-    return Demostracion(Path(a.salida), a.python_preparacion, a.ca_extra, a.conservar).ejecutar()
+    demo = Demostracion(Path(a.salida), a.python_preparacion, a.ca_extra, a.conservar)
+    if demo.salida.exists():
+        print(f"la salida ya existe; use una carpeta nueva: {a.salida}", file=sys.stderr, flush=True)
+        return 2
+    return demo.ejecutar()
 
 
 if __name__ == "__main__":

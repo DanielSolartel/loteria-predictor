@@ -1,8 +1,9 @@
 # Fase 10 — E10.3: lock de Python, imágenes y CI de seguridad
 
 Estado (2026-11-03): **implementado; validado en Linux aislado y con instalación estricta y selección de
-pruebas en Windows nativo**. **Pendiente:** publicación e integración, primera ejecución del workflow en el
-CI remoto (incluido su job de Windows y el escaneo real de imágenes con Grype), importador E10.4 y producción. Consulta privada (E10.2):
+pruebas en Windows nativo**. **Pendiente:** publicación e integración de esta corrección y su nueva validación remota,
+remediación de los hallazgos de imágenes, importador E10.4 y producción. En el primer CI del PR #109 ya
+pasaron los jobs de lock de Linux/Windows, auditoría y PostgreSQL; el check de imágenes permanece abierto. Consulta privada (E10.2):
 [fase10_consulta_privada.md](fase10_consulta_privada.md).
 
 ## 1. Lock de Python
@@ -30,7 +31,8 @@ CI remoto (incluido su job de Windows y el escaneo real de imágenes con Grype),
   nativo, Python 3.14.6 x64: instalación estricta en un venv nuevo, **58 paquetes aplicables** (59 en la unión
   universal; `pip` queda fuera del lock), versiones exactas y `pip check` sin requisitos rotos. Las 206 pruebas
   seleccionadas pasan, sin omisiones. Se conservó el entorno anterior. Informe: [fase10_e102_e103_validacion_operador_2026-11-03.md](fase10_e102_e103_validacion_operador_2026-11-03.md).
-  El job remoto `lock-windows` sigue pendiente; la validación local no se le atribuye.
+  El primer job remoto `lock-windows` del PR #109 también pasó (run `41623345120`). Ese resultado
+  corresponde al commit `8dad5919`; la nueva corrección aún debe validarse en CI.
 - **Frontend (v2):** `frontend/package-lock.json` sí cambia por la actualización revisada de Vitest
   3.2.7 a 4.1.12 que resuelve los críticos de tinypool (sección 3). `npm ci` conserva su uso; no hay excepciones
   críticas aceptadas.
@@ -78,9 +80,9 @@ publicar imágenes, sin `continue-on-error`.
 | `lock-linux` | Instalación estricta del lock, `pip check`, pruebas de API/pasarela/umbral, SBOM del entorno | Un hash o una prueba |
 | `lock-windows` | Igual en `windows-2025` (selección del perfil privado) | Ídem |
 | `auditoria` | `pip-audit` (los tres locks + pins solo Windows), `npm audit` + umbral, gitleaks (historial y árbol) | Cualquier aviso Python; alto/crítico npm sin excepción vigente; un secreto no exceptuado; un informe ausente o no válido |
-| `imagenes` | Construye `api` y `pasarela`, comprueba usuario y contenido, SBOM CycloneDX (2 imágenes + npm), grype + umbral | Alto/crítico sin excepción; fallo de descarga de la base de grype |
+| `imagenes` | Construye `api` y `pasarela`, registra su identificación (id, usuario, SO, arquitectura, Python, base), comprueba usuario y contenido, SBOM CycloneDX (2 imágenes + npm), grype + umbral de **las dos** imágenes, y publica siempre SBOM, informes e identificación | Alto/crítico sin excepción en cualquiera de las dos; un SBOM o informe ausente o no válido; fallo de descarga de la base de grype |
 | `postgres` | Servicio PostgreSQL 16 por digest: roles, migraciones, `tests/postgres_fase8.py` y `tests/postgres_e102.py` | Cualquier comprobación |
-| `demostracion` | La demostración completa de extremo a extremo | Cualquiera de las 32 comprobaciones |
+| `demostracion` | La demostración completa de extremo a extremo | Cualquiera de las 32 comprobaciones; un fallo de fase o de limpieza (el informe se escribe igualmente) |
 
 - **Críticos de tinypool resueltos por actualización (v2, F1023-SEC-01):** `vitest` 3.2.7 → **4.1.12** (solo
   desarrollo). Todos los cambios del lock quedan dentro del subárbol de vitest y tinypool desaparece; `npm audit`
@@ -103,8 +105,49 @@ publicar imágenes, sin `continue-on-error`.
   (`.sqlite3` incluido), PFX/P12, `.git`, carpetas de datos, claves privadas PEM y archivos ilegibles. Control
   negativo con datos y secretos plantados: falla.
 - Gitleaks: dos huellas exactas en `.gitleaksignore` (literales sintéticos de pruebas existentes).
-- **Grype pendiente:** no se pudo ejecutar aquí; la política de red de este entorno deniega `grype.anchore.io`
-  (descarga de su base). Sin informe no hay escaneo limpio: el job `imagenes` fallaría.
+- **Grype en el primer CI del PR #109 (CI109-03): ejecutó y falló por hallazgos altos.** En GitHub Actions,
+  grype 0.121.0 descargó su base y analizó `imagen-api`. Resultado: 182 hallazgos (60 high, 64 medium, 12 low y
+  46 negligible), con 60 pares ID/paquete altos (18 IDs, 22 paquetes del sistema base Debian 13). Ninguno tenía
+  excepción, y el umbral falló correctamente. El bucle se detuvo ahí y `imagen-pasarela` quedó sin evaluar; la
+  subida de informes se omitió.
+  - **Job corregido:** se escanean y evalúan siempre las dos imágenes y se acumulan los fallos. El paso termina en
+    fallo si falta un informe válido o queda un alto/crítico. SBOM, informes de grype e identificación de las
+    imágenes se publican con `if: always()` y una lista explícita de archivos (sin imágenes tar ni carpetas de
+    trabajo). No hay `continue-on-error` y el umbral no se rebaja.
+  - **Estado de esos 60 pares (diagnóstico, no el umbral).** Se contrastaron con los datos de Debian incluidos en
+    la base de Trivy, instantánea del 2026-11-03T07:14Z. Se descargó de `mirror.gcr.io/aquasec/trivy-db:2` y se
+    usó sin red sobre las dos imágenes construidas con la base Trixie fijada. Resultado:
+    - los 60 pares están presentes en `api` y en `pasarela`;
+    - en esa instantánea, **ninguno tiene versión corregida en Debian 13.7**: 59 `affected` y 1 `fix_deferred`;
+    - `python:3.14-slim` y `3.14-slim-trixie` apuntan al mismo índice que la base fijada
+      (`sha256:930e1abb…`, Docker Hub, 2026-11-03).
+  - **Alternativas evaluadas el 2026-11-03.** Ninguna elimina los hallazgos altos/críticos en ese diagnóstico;
+    Bookworm reduce su número total respecto a Trixie, pero introduce dos críticos. No se afirma nada fuera
+    de esas bases e instantánea ni se presenta el diagnóstico como un resultado de Grype.
+    - **`python:3.14.10-slim-bookworm`** (Debian 12.15). Su índice es `sha256:516b51cb…` (amd64
+      `sha256:47d41ea4…`), el mismo que `3.14-slim-bookworm`.
+      - Construye `api` y `pasarela` con los locks vigentes: hashes, solo ruedas y `pip check` correctos.
+      - Imports y librerías compartidas iguales que Trixie; usuario 10001, contenido sin hallazgos y
+        demostración completa **32/32**.
+      - Pero en la misma instantánea de Trivy su capa del SO tiene 38 altos/críticos, ninguno con versión
+        corregida, entre ellos **2 críticos**: `CVE-2025-7458` en `libsqlite3-0` (`affected`) y
+        `CVE-2023-45853` en `zlib1g` (`will_not_fix`). Trixie tiene 45 altos y ningún crítico.
+      - **No se adopta**: no mejora el resultado y añade críticos. Su escaneo con grype no se ha podido
+        ejecutar.
+    - **Alpine** no es viable con el lock actual: `lightgbm`, `scikit-learn` y `xgboost-cpu` no publican ruedas
+      musl para cp314, y la imagen instala solo ruedas.
+    - **Quitar paquetes prescindibles** dejaría igualmente, en Trixie, los de glibc, gcc y zlib (13 pares).
+  - El hallazgo **sigue abierto** y el job seguirá en rojo hasta que Debian publique correcciones para estas
+    versiones o se decida otra base. No se acepta ningún riesgo ni se atribuye decisión alguna a Daniel.
+  - **Observaciones del mismo diagnóstico, comunes a Trixie y Bookworm.**
+    - **Librerías vendorizadas por `pip`.** `pip` 26.2.2 incluye copias propias de `msgpack` 1.1.2,
+      `urllib3` 2.7.0 y `setuptools` 70.3.0, tanto en la base como en el venv. Trivy les asigna 5 altos con
+      versión corregida. No son dependencias del servicio (el lock fija `urllib3` 2.8.0), y syft, y por tanto
+      grype en CI, no las catalogan.
+    - **`lightgbm` no carga** en ninguna de las dos bases porque falta `libgomp.so.1`. Ninguno de los módulos
+      que sirven la API o la pasarela lo importa. Es preexistente y no se cambia aquí.
+  - **Grype en el entorno de Claude:** sigue sin poder descargar su base (`grype.anchore.io`, 403). Esto no
+    afecta a GitHub Actions, donde sí funcionó.
 - `tests/postgres_fase8.py`: A2 esperaba 500; desde la Fase 9 la API responde el 409 `historico_no_valido` que
   declara su OpenAPI (la base 375fc8ca también). Se alinea la expectativa al contrato vigente.
 

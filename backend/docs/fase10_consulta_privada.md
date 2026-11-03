@@ -253,12 +253,25 @@ lógica en [`ensayo_brave_mtls_e102_nucleo.ps1`](../../despliegue/consulta-priva
 
 ## 9. Pendientes y límites (no se declaran cumplidos)
 
-- **CI remoto:** el workflow nuevo no se ha ejecutado (sin push). En particular el escaneo de imágenes (grype)
-  no pudo ejecutarse aquí: la política de red de este entorno deniega `grype.anchore.io` (sin informe no hay
-  escaneo limpio).
+- **CI remoto (PR #109):** el primer CI dio cuatro checks en rojo. La entrega conjunta corrige los fallos
+  funcionales y el procesamiento de diagnósticos; la remediación de imágenes sigue abierta:
+  - el test de acciones fijadas por SHA;
+  - la demostración, que fallaba con la salida relativa y en su limpieza (ver abajo);
+  - el job de imágenes.
+
+  Grype sí ejecutó en GitHub Actions y encontró 60 pares altos del sistema base Debian 13.7. Ninguno tenía
+  versión corregida en los datos de Debian consultados el 2026-11-03. Bookworm tampoco elimina los altos/
+  críticos del diagnóstico, y su resultado de Grype es desconocido. Ese hallazgo sigue abierto:
+  ver [imágenes y CI](fase10_imagenes_y_ci.md).
+- **Arnés de la demostración (PR #109, CI109-02).**
+  - `--salida` puede ser relativa o absoluta; se normaliza antes de derivar rutas, y los bind mounts reciben
+    orígenes absolutos.
+  - Un fallo en cualquier fase conserva su motivo original y no impide la limpieza.
+  - Cada paso de limpieza está aislado y solo toca recursos con la etiqueta y el prefijo del proyecto.
+  - El informe se escribe siempre, saneado, y termina en fallo ante cualquier error o residuo.
 - **Windows nativo completado:** instalación estricta del lock en un venv nuevo, `pip check`, 206 pruebas y
-  ensayo focal de Brave aprobados y auditados. El job remoto `lock-windows` sigue pendiente de su primera
-  ejecución; el resultado local no lo sustituye.
+  ensayo focal de Brave aprobados y auditados. El primer job remoto `lock-windows` del PR #109 pasó
+  sobre `8dad5919` (run `41623345120`); la nueva corrección debe volver a pasar sus checks remotos.
 - **Importador E10.4:** dependencia explícita; no existe imagen ni etapa de importador.
 - **Producción:** proveedor, presupuesto, infraestructura, registro de imágenes, custodia de secretos reales,
   respaldos, activación, CA real y su custodia, VPN real (D2) y caducidad de certificados quedan sin decidir.
