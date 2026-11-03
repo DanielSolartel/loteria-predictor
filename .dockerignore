@@ -4,6 +4,7 @@
 *
 !backend/requirements-servicio.lock
 !backend/app/
+!despliegue/imagenes/raiz_minima.py
 !frontend/package.json
 !frontend/package-lock.json
 !frontend/index.html

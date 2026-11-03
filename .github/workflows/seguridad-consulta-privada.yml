@@ -122,10 +122,31 @@ jobs:
         run: |
           (cd frontend && npm audit --package-lock-only --json > ../npm-audit.json) || true  # el umbral decide
           python backend/scripts/ci_umbral_vulnerabilidades.py npm-audit.json --formato npm --artefacto frontend-npm --resumen "$GITHUB_STEP_SUMMARY"
-      - name: Secretos en el arbol y en el historial (gitleaks; excepciones exactas en .gitleaksignore)
+      - name: Secretos en el historial y en el arbol (gitleaks; ambos siempre; excepciones exactas en .gitleaksignore)
+        # PR #109: los dos escaneos se ejecutan aunque el primero falle; cada uno deja un informe JSON REDACTADO
+        # (sin el valor detectado) en una carpeta FUERA del arbol escaneado. Repositorio de solo lectura, escaner
+        # sin red; el paso termina en fallo ante cualquier hallazgo o error. Sin continue-on-error.
+        if: ${{ !cancelled() }}
         run: |
-          docker run --rm --network none -w /repo -v "$PWD:/repo:ro" "$GITLEAKS" git . --no-banner --redact --exit-code 1
-          docker run --rm --network none -w /repo -v "$PWD:/repo:ro" "$GITLEAKS" dir . --no-banner --redact --exit-code 1
+          informes="$RUNNER_TEMP/gitleaks"
+          mkdir -p "$informes"
+          fallos=0
+          for modo in git dir; do
+            if ! docker run --rm --network none -w /repo -v "$PWD:/repo:ro" -v "$informes:/informes" "$GITLEAKS" \
+                "$modo" . --no-banner --redact --exit-code 1 --report-format json --report-path "/informes/gitleaks-$modo.json"; then
+              echo "::error::gitleaks ($modo): hallazgos o error; ver el informe redactado gitleaks-$modo.json"; fallos=1
+            fi
+          done
+          exit "$fallos"
+      - name: Informes redactados de gitleaks (tambien si fallan)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitleaks-redactado
+          path: |
+            ${{ runner.temp }}/gitleaks/gitleaks-git.json
+            ${{ runner.temp }}/gitleaks/gitleaks-dir.json
+          if-no-files-found: warn
 
   imagenes:
     name: Imagenes - construccion, SBOM y escaneo (sin publicar)
@@ -147,7 +168,8 @@ jobs:
           for objetivo in api pasarela; do
             imagen="loteria-e102-$objetivo:ci"
             docker image inspect -f "imagen-$objetivo id={{.Id}} usuario={{.Config.User}} so={{.Os}} arquitectura={{.Architecture}}" "$imagen" | tee -a imagenes.txt
-            docker run --rm --network none --entrypoint sh "$imagen" -c '. /etc/os-release; echo "so-version=$PRETTY_NAME"; python -c "import sys; print(\"python=\" + sys.version.split()[0])"' \
+            # La imagen minima no lleva shell: los datos se leen con su propio Python.
+            docker run --rm --network none --entrypoint python "$imagen" -c 'import sys; d = dict(l.rstrip("\n").split("=", 1) for l in open("/etc/os-release") if "=" in l); print("so-version=" + d["PRETTY_NAME"].strip(chr(34))); print("python=" + sys.version.split()[0])' \
               | sed "s/^/imagen-$objetivo /" | tee -a imagenes.txt
           done
       - name: Contenido de las imagenes (usuario sin privilegios y sin datos ni secretos)
@@ -159,6 +181,16 @@ jobs:
             docker run --rm -i --network none --entrypoint python "loteria-e102-$objetivo:ci" -B - \
               < despliegue/imagenes/comprobar_contenido_imagen.py
           done
+      - name: Ejecucion de las imagenes minimas (modulos, bibliotecas y componentes retirados)
+        # PR #109 (CI109-03): la raiz minima debe bastar al servicio. El mismo comando que la verificacion local;
+        # se comprueban las dos imagenes aunque una falle y el paso termina en fallo ante cualquier ausencia.
+        run: |
+          fallos=0
+          for objetivo in api pasarela; do
+            docker run --rm -i --network none --read-only --tmpfs /tmp --entrypoint python "loteria-e102-$objetivo:ci" -B - "$objetivo" \
+              < despliegue/imagenes/comprobar_ejecucion_imagen.py || fallos=1
+          done
+          exit "$fallos"
       - name: SBOM por artefacto (CycloneDX)
         # Ambas imagenes se intentan aunque una falle; el paso termina en fallo si falta alguna.
         run: |

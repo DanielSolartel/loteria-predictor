@@ -11,6 +11,10 @@
 # - Ningun secreto en la imagen: claves, URL de la base y secreto del proxy son ARCHIVOS montados al ejecutar.
 # - CA adicional OPCIONAL del entorno de construccion (proxy con inspeccion TLS): `--secret id=ca_extra,src=<pem>`.
 #   Se monta solo durante el RUN (BuildKit) y no queda en ninguna capa; la verificacion TLS nunca se desactiva.
+# - Ejecucion MINIMA (PR #109, CI109-03): la imagen final parte de `scratch` con una raiz armada por
+#   `raiz_minima.py` a partir de la MISMA base: solo los paquetes Debian que el servicio carga (con su ficha dpkg
+#   real en /var/lib/dpkg/status.d, visible para SBOM y escaneres) y Python sin sqlite3, curses/readline, dbm,
+#   el acelerador C de uuid ni tkinter. Sin shell ni utilidades del sistema: solo se ejecuta `python`.
 # - `base-dependencias` es la base de construccion COMPARTIBLE. El importador de la generacion (E10.4) la
 #   reutilizara; aqui no existe ni se simula ninguna etapa de importador.
 ARG PYTHON_IMAGEN=docker.io/library/python:3.14-slim@sha256:930e1abba7c4e8f96ed93e8012c35d174d7732752731bbd5e8e757d7ec6f3966
@@ -41,11 +45,20 @@ COPY frontend/src ./src
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-FROM ${PYTHON_IMAGEN} AS ejecucion
-RUN groupadd --system --gid 10001 consulta \
- && useradd --system --uid 10001 --gid consulta --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin consulta
-COPY --from=base-dependencias /opt/venv /opt/venv
-ENV PATH=/opt/venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+FROM base-dependencias AS venv-ejecucion
+# El entorno de ejecucion no lleva pip: ya se instalo con hashes y se comprobo (`pip check`) en la etapa anterior.
+RUN /opt/venv/bin/python -m pip uninstall --yes pip
+
+# ---------------------------------------------------------------------------
+FROM ${PYTHON_IMAGEN} AS raiz-ejecucion
+COPY despliegue/imagenes/raiz_minima.py /tmp/raiz_minima.py
+RUN python -B /tmp/raiz_minima.py /raiz
+
+# ---------------------------------------------------------------------------
+FROM scratch AS ejecucion
+COPY --from=raiz-ejecucion /raiz/ /
+COPY --from=venv-ejecucion /opt/venv /opt/venv
+ENV PATH=/opt/venv/bin:/usr/local/bin PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONUTF8=1 LANG=C.UTF-8
 WORKDIR /srv/backend
 COPY backend/app/__init__.py ./app/__init__.py
 

@@ -533,10 +533,16 @@ class Demostracion:
         inicio = time.monotonic()
         pruebas = {}
         for servicio in ("api", "pasarela"):
-            r = self.docker_exec(servicio, "sh", "-c",
-                                 "id -u; for d in /srv/pub /srv/backend /srv/sin-publicar /opt/venv /tmp; do "
-                                 "touch $d/e102-escritura 2>&1 && echo \"$d escribible\" && rm -f $d/e102-escritura; "
-                                 "done; ls -d /srv/sin-publicar 2>&1 | head -1")
+            # Con el Python de la imagen: la imagen minima (PR #109) no lleva shell ni utilidades. Misma salida y
+            # mismas aserciones que antes: uid, escritura por carpeta y ausencia de /srv/sin-publicar.
+            r = self.docker_exec(servicio, "python", "-B", "-c",
+                                 "import os\nprint(os.getuid())\n"
+                                 "for d in ('/srv/pub','/srv/backend','/srv/sin-publicar','/opt/venv','/tmp'):\n"
+                                 "    f=d+'/e102-escritura'\n"
+                                 "    try:\n        open(f,'x').close(); print(d+' escribible'); os.remove(f)\n"
+                                 "    except OSError as e: print(f'{f}: {e.strerror}')\n"
+                                 "try: os.stat('/srv/sin-publicar'); print('/srv/sin-publicar')\n"
+                                 "except OSError as e: print(f'/srv/sin-publicar: {e.strerror}')\n")
             pruebas[servicio] = r.stdout.decode().strip().splitlines()
         api, pas = pruebas["api"], pruebas["pasarela"]
         ok = (api[0] == "10001" and pas[0] == "10001" and "/tmp escribible" in api and "/tmp escribible" in pas

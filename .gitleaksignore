@@ -5,5 +5,11 @@
 # Cualquier otro hallazgo (o estos mismos en otra linea o commit) hace fallar el control.
 6efaacacdc787fd0b5a8dc847a3b39c9aef925d0:backend/tests/unit/seguridad_consola/test_regresiones_v2.py:generic-api-key:489
 c73e29cc3476c8ade377d205d6eaf38c374ac19b:backend/tests/unit/test_fase4_recuperacion.py:generic-api-key:29
+# PR #109: copia HISTORICA de un literal sintetico de la prueba de saneado de la demostracion
+# (test_demostracion_e102_arnes.py:218, solo en el commit 3a68d7fe). No es una credencial: formado por "secreto",
+# la palabra "sintetico" y la secuencia hexadecimal 0-f; solo se usa para comprobar que el informe lo sustituye.
+# Desde la correccion la prueba genera el valor en cada ejecucion, por lo que el arbol ya no lo contiene; esta
+# huella EXACTA (commit, archivo, regla y linea) solo cubre esa copia del historial publicado, que no se reescribe.
+3a68d7fe9d2b3219a2cdea3658267853a26473b2:backend/tests/unit/test_demostracion_e102_arnes.py:generic-api-key:218
 backend/tests/unit/seguridad_consola/test_regresiones_v2.py:generic-api-key:489
 backend/tests/unit/test_fase4_recuperacion.py:generic-api-key:29

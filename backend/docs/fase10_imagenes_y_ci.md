@@ -79,8 +79,8 @@ publicar imágenes, sin `continue-on-error`.
 |---|---|---|
 | `lock-linux` | Instalación estricta del lock, `pip check`, pruebas de API/pasarela/umbral, SBOM del entorno | Un hash o una prueba |
 | `lock-windows` | Igual en `windows-2025` (selección del perfil privado) | Ídem |
-| `auditoria` | `pip-audit` (los tres locks + pins solo Windows), `npm audit` + umbral, gitleaks (historial y árbol) | Cualquier aviso Python; alto/crítico npm sin excepción vigente; un secreto no exceptuado; un informe ausente o no válido |
-| `imagenes` | Construye `api` y `pasarela`, registra su identificación (id, usuario, SO, arquitectura, Python, base), comprueba usuario y contenido, SBOM CycloneDX (2 imágenes + npm), grype + umbral de **las dos** imágenes, y publica siempre SBOM, informes e identificación | Alto/crítico sin excepción en cualquiera de las dos; un SBOM o informe ausente o no válido; fallo de descarga de la base de grype |
+| `auditoria` | `pip-audit` (los tres locks + pins solo Windows), `npm audit` + umbral, gitleaks (historial y árbol, **ambos siempre**, con informes JSON redactados fuera del árbol y publicados aunque fallen) | Cualquier aviso Python; alto/crítico npm sin excepción vigente; un secreto no exceptuado; un informe ausente o no válido |
+| `imagenes` | Construye `api` y `pasarela` (ejecución mínima), registra su identificación (id, usuario, SO, arquitectura, Python, base), comprueba usuario, contenido y que la raíz mínima basta al servicio, SBOM CycloneDX (2 imágenes + npm), grype + umbral de **las dos** imágenes, y publica siempre SBOM, informes e identificación | Alto/crítico sin excepción en cualquiera de las dos; un SBOM o informe ausente o no válido; fallo de descarga de la base de grype |
 | `postgres` | Servicio PostgreSQL 16 por digest: roles, migraciones, `tests/postgres_fase8.py` y `tests/postgres_e102.py` | Cualquier comprobación |
 | `demostracion` | La demostración completa de extremo a extremo | Cualquiera de las 32 comprobaciones; un fallo de fase o de limpieza (el informe se escribe igualmente) |
 
@@ -136,18 +136,47 @@ publicar imágenes, sin `continue-on-error`.
         ejecutar.
     - **Alpine** no es viable con el lock actual: `lightgbm`, `scikit-learn` y `xgboost-cpu` no publican ruedas
       musl para cp314, y la imagen instala solo ruedas.
-    - **Quitar paquetes prescindibles** dejaría igualmente, en Trixie, los de glibc, gcc y zlib (13 pares).
-  - El hallazgo **sigue abierto** y el job seguirá en rojo hasta que Debian publique correcciones para estas
-    versiones o se decida otra base. No se acepta ningún riesgo ni se atribuye decisión alguna a Daniel.
-  - **Observaciones del mismo diagnóstico, comunes a Trixie y Bookworm.**
-    - **Librerías vendorizadas por `pip`.** `pip` 26.2.2 incluye copias propias de `msgpack` 1.1.2,
-      `urllib3` 2.7.0 y `setuptools` 70.3.0, tanto en la base como en el venv. Trivy les asigna 5 altos con
-      versión corregida. No son dependencias del servicio (el lock fija `urllib3` 2.8.0), y syft, y por tanto
-      grype en CI, no las catalogan.
-    - **`lightgbm` no carga** en ninguna de las dos bases porque falta `libgomp.so.1`. Ninguno de los módulos
-      que sirven la API o la pasarela lo importa. Es preexistente y no se cambia aquí.
-  - **Grype en el entorno de Claude:** sigue sin poder descargar su base (`grype.anchore.io`, 403). Esto no
-    afecta a GitHub Actions, donde sí funcionó.
+- **Segundo CI del PR #109: informes reales de grype de las DOS imágenes.** Run `41644445657`, grype 0.121.0, base
+  construida el 2026-11-03T06:20:47Z. Cada imagen tiene los mismos 60 pares altos: 18 CVE de 8 paquetes fuente
+  (glibc, gcc-14, zlib, sqlite3, util-linux, ncurses, perl, acl), 59 `wont-fix` y 1 `not-fixed` (zlib), sin
+  versión corregida.
+- **Remediación: imagen de ejecución mínima (misma base, sin cambio de distribución).**
+  - La etapa `raiz-ejecucion` (`despliegue/imagenes/raiz_minima.py`) arma la raíz con **solo los 12 paquetes**
+    que el servicio carga de verdad, cada uno con su ficha dpkg real en `/var/lib/dpkg/status.d/` (visible para
+    SBOM y escáneres). Son `libc6`, `libgcc-s1`, `libstdc++6`, `zlib1g`, `libssl3t64`, `libzstd1`, `libffi8`,
+    `libbz2-1.0`, `liblzma5`, `tzdata`, `netbase` y `base-files`.
+  - Python va sin `sqlite3`, `curses`/`readline`, `dbm`, `_uuid` ni `tkinter`, y el entorno de ejecución sin
+    `pip`. La imagen final parte de `scratch`: sin shell ni utilidades.
+  - En la construcción se comprueba que cada ELF de Python resuelve sus bibliotecas dentro de la raíz.
+- **Verificado sobre las imágenes finales.**
+  - Locks con hashes y `pip check` en la etapa de construcción.
+  - 48 distribuciones importadas y los módulos retirados ausentes (`comprobar_ejecucion_imagen.py`, también en
+    CI). Cada una de las 313 extensiones se juzga por separado con el código de salida y toda la salida del
+    cargador de la imagen (CI109-MIN-01): 305 resuelven sus dependencias; 7 son objetos sin dependencias
+    (`statically linked`, confirmado en el propio ELF: ET_DYN x86-64 sin DT_NEEDED), y la única tolerancia,
+    exacta y registrada, es `lightgbm/lib/lib_lightgbm.so` sin `libgomp.so.1`. Cualquier otro código, ELF
+    inválido, diagnóstico o biblioteca ausente hace fallar el paso.
+  - Usuario 10001, contenido sin hallazgos y arranque con fallo cerrado sin configuración.
+  - Demostración completa **32/32**. Su T11 hace las mismas comprobaciones con Python porque ya no hay shell.
+- **Resultado sobre los 18 CVE.** Por paquete y versión del SBOM final, proyectado sobre los informes reales:
+  - **12 CVE retirados** con sus paquetes; quedan **8 pares por imagen (6 CVE)**: 3 de glibc en `libc6`, 2 de
+    gcc-14 en `libgcc-s1`/`libstdc++6` y 1 de zlib en `zlib1g`, todos necesarios para el servicio;
+  - Trivy (diagnóstico) ya no ve altos ni críticos.
+  - La cifra real la dará grype en el CI: aquí sigue bloqueado.
+  - El umbral **seguirá en rojo** con ese residual. La propuesta para decidir sobre él (opciones, mitigaciones,
+    plazo y criterios) se entrega fuera de las excepciones activas, en estado pendiente: nada aceptado ni
+    atribuido a Daniel.
+- **`lightgbm` no carga** (ni en Trixie, ni en Bookworm, ni en la imagen mínima) porque falta `libgomp.so.1`.
+  Ninguno de los módulos que sirven la API o la pasarela lo importa. Es preexistente y no se cambia aquí; la
+  comprobación de ejecución lo informa como única tolerancia explícita.
+- **Grype en el entorno de Claude:** sigue sin poder descargar su base (`grype.anchore.io`, 403). Esto no
+  afecta a GitHub Actions, donde sí funcionó.
+- **Gitleaks en el segundo CI:** un `generic-api-key` en un literal sintético de una prueba nueva
+  (`test_demostracion_e102_arnes.py:218`, commit `3a68d7fe`).
+  - La prueba ahora genera el valor en cada ejecución.
+  - La copia histórica queda cubierta solo por su huella exacta en `.gitleaksignore`; el historial no se
+    reescribe.
+  - Los dos escaneos se ejecutan siempre y publican sus informes redactados.
 - `tests/postgres_fase8.py`: A2 esperaba 500; desde la Fase 9 la API responde el 409 `historico_no_valido` que
   declara su OpenAPI (la base 375fc8ca también). Se alinea la expectativa al contrato vigente.
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import secrets
 import subprocess
 from pathlib import Path
 
@@ -215,7 +216,9 @@ def test_una_comprobacion_fallida_o_un_residuo_dan_fallo(tmp_path, monkeypatch):
 def test_informe_saneado_sin_secretos_ni_rutas_de_trabajo(tmp_path, monkeypatch):
     m, d, docker = _demo(tmp_path, monkeypatch, "saneado")
     d.m_ejecutar = docker
-    secreto = "s3cr3t0-sintetico-0123456789abcdef"
+    # Valor SINTETICO generado en cada ejecucion: no se versiona ningun literal con forma de credencial
+    # (gitleaks marco el literal anterior, del commit 3a68d7fe; ver .gitleaksignore).
+    secreto = "sintetico-" + secrets.token_hex(16)
     d.valores_secretos.append(secreto)
     _simular(d, falla="preparar_publicacion", mensaje=f"fallo con {secreto} en {d.secretos / 'pg_super'}")
     d.ejecutar()
