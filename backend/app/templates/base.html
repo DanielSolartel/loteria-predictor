@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema Predictivo de Loterías{% endblock %}</title>
+    {% set consola = request.scope.get("consola") if request.scope is defined else none %}
+    {% if consola and consola.csrf %}<meta name="csrf-token" content="{{ consola.csrf }}">{% endif %}
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js"></script>
+    <script src="/static/js/consola_csrf.js" defer></script>
     {% block extra_head %}{% endblock %}
 </head>
 <body{% block clase_body %}{% endblock %}>
@@ -20,6 +23,15 @@
                 <i class="bi bi-database-fill me-1"></i>{{ estado_db|default("Desconectado") }}
             </span>
             <a class="btn btn-sm btn-outline-light d-md-none" href="/automatizacion">Automatización</a>
+            {% if consola and consola.usuario %}
+            <span class="navbar-text text-white small ms-auto me-2" data-consola-usuario="{{ consola.usuario }}">
+                <i class="bi bi-person-badge me-1"></i>{{ consola.usuario }} · {{ consola.rol }}
+            </span>
+            <form method="post" action="/salir" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ consola.csrf }}">
+                <button class="btn btn-sm btn-outline-light">Salir</button>
+            </form>
+            {% endif %}
         </div>
     </nav>
 

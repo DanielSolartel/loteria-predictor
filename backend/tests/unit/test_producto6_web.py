@@ -147,7 +147,9 @@ def test_ningun_get_escribe(entorno):
                                      {"cabeceras": {"origin": "http://otro.example"}}])
 def test_post_protegidos(entorno, cambios):
     c = f6.cliente(entorno, client=cambios.get("client", f6.LOCAL))
-    token = cambios.get("token") or c.get("/resultados/miloto").text.split('name="token_local" value="')[1][:43]
+    # E10.1: la consola ya no sirve páginas a un cliente remoto; el token se lee desde un cliente local.
+    local = f6.cliente(entorno) if "client" in cambios else c
+    token = cambios.get("token") or local.get("/resultados/miloto").text.split('name="token_local" value="')[1][:43]
     linea = entorno.e5.almacen.lineas("MILOTO")[0]
     antes = f6.foto(entorno.directorio)
     cabeceras = cambios.get("cabeceras", {})

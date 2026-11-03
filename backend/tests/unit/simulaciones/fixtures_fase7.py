@@ -174,7 +174,7 @@ def lanzar_ya(funcion, inicio):
 
 def cliente(e: Entorno, servicio=None, *, client=LOCAL, lanzador=lanzar_ya, conectada: bool = True):
     """TestClient de la aplicacion real con el caso de uso sintetico."""
-    from fastapi.testclient import TestClient
+    from tests import consola_sesion
 
     from app.api import dependencies as dep
     from app.infrastructure.db.session import get_db
@@ -183,7 +183,7 @@ def cliente(e: Entorno, servicio=None, *, client=LOCAL, lanzador=lanzar_ya, cone
     s = servicio or e.servicio()
     app.dependency_overrides = {get_db: lambda: fx._SesionFalsa(conectada), dep.get_simulaciones: lambda: s,
                                 dep.get_lanzador_de_simulaciones: lambda: lanzador}
-    return TestClient(app, base_url="http://localhost:8000", client=client)
+    return consola_sesion.cliente_de_consola(app, client=client)  # E10.1: sesión legítima explícita
 
 
 def limpiar():

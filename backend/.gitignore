@@ -20,3 +20,5 @@ storage/predicciones/*
 storage/automatizacion/
 pasarela.privado.env
 *.privado.env
+# Fase 10 (E10.1): almacén privado de cuentas y sesiones de la consola (nunca en Git)
+privado/

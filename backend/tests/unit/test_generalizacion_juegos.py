@@ -9387,9 +9387,9 @@ class TestColorLotoDistribucionConteoColorCorteVacioHTTPReal:
     def _client():
         httpx = pytest.importorskip("httpx")
         pytest.importorskip("fastapi.testclient")
-        from fastapi.testclient import TestClient
+        from tests import consola_sesion
         from app.main import app
-        return TestClient(app)
+        return consola_sesion.cliente_de_consola(app)  # E10.1: sesión legítima explícita (Host local)
 
     _URL = "/estadisticas/colorloto/distribucion-conteo-color"
 
@@ -9528,9 +9528,9 @@ class TestMantenimientoCorteVacioGlobalHTTPReal:
     def _client():
         pytest.importorskip("httpx")
         pytest.importorskip("fastapi.testclient")
-        from fastapi.testclient import TestClient
+        from tests import consola_sesion
         from app.main import app
-        return TestClient(app)
+        return consola_sesion.cliente_de_consola(app)  # E10.1: sesión legítima explícita (Host local)
 
     _RUTAS_MUESTRA = [
         "/estadisticas/baloto/frecuencia-numeros",
@@ -9909,9 +9909,9 @@ class TestColorLotoComparacionFrecuenciaNumerosPorVentanaHTTPReal:
     def _client():
         pytest.importorskip("httpx")
         pytest.importorskip("fastapi.testclient")
-        from fastapi.testclient import TestClient
+        from tests import consola_sesion
         from app.main import app
-        return TestClient(app)
+        return consola_sesion.cliente_de_consola(app)  # E10.1: sesión legítima explícita (Host local)
 
     _URL = "/estadisticas/colorloto/comparacion-frecuencia-numeros-por-ventana"
 
@@ -10332,9 +10332,9 @@ class TestColorLotoComparacionFrecuenciaColoresPorVentanaHTTPReal:
     def _client():
         pytest.importorskip("httpx")
         pytest.importorskip("fastapi.testclient")
-        from fastapi.testclient import TestClient
+        from tests import consola_sesion
         from app.main import app
-        return TestClient(app)
+        return consola_sesion.cliente_de_consola(app)  # E10.1: sesión legítima explícita (Host local)
 
     _URL = "/estadisticas/colorloto/comparacion-frecuencia-colores-por-ventana"
 
@@ -10665,9 +10665,9 @@ class TestColorLotoComparacionFrecuenciaParesNumeroColorPorVentanaHTTPReal:
     def _client():
         pytest.importorskip("httpx")
         pytest.importorskip("fastapi.testclient")
-        from fastapi.testclient import TestClient
+        from tests import consola_sesion
         from app.main import app
-        return TestClient(app)
+        return consola_sesion.cliente_de_consola(app)  # E10.1: sesión legítima explícita (Host local)
 
     _URL = "/estadisticas/colorloto/comparacion-frecuencia-pares-numero-color-por-ventana"
 

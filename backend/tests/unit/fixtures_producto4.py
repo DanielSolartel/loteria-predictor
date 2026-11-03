@@ -96,7 +96,7 @@ def lanzar_ya(funcion, inicio):
 
 def cliente(e: Entorno, *, client=LOCAL, lanzador=lanzar_ya, conectada: bool = True, reloj=None):
     """TestClient de la aplicacion real con el laboratorio sintetico."""
-    from fastapi.testclient import TestClient
+    from tests import consola_sesion
 
     from app.api import dependencies as dep
     from app.infrastructure.db.session import get_db
@@ -108,7 +108,7 @@ def cliente(e: Entorno, *, client=LOCAL, lanzador=lanzar_ya, conectada: bool = T
         dep.get_laboratorio: lambda: laboratorio,
         dep.get_lanzador_de_laboratorio: lambda: lanzador,
     }
-    return TestClient(app, base_url="http://localhost:8000", client=client)
+    return consola_sesion.cliente_de_consola(app, client=client)  # E10.1: sesión legítima explícita
 
 
 def limpiar():
