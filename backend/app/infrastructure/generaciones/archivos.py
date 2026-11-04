@@ -348,6 +348,63 @@ def intento_de(ruta: Path, padre: Path) -> str:
     return valor
 
 
+def promover_propia(ruta: Path, padre: Path, destino: Path, intento: str) -> None:
+    """Traslada una preparacion sellada sin necesitar privilegios para eludir sus permisos.
+
+    Linux necesita escritura sobre la propia carpeta al cambiar su padre (actualiza `..`). Se concede
+    solo al usuario propietario, sobre el descriptor acreditado, durante el rename. El contenido sigue
+    en solo lectura. Se restaura 0555 aun si falla el traslado y la marca se conserva hasta completarlo.
+    Un fallo posterior al rename intenta devolver la MISMA carpeta a preparacion antes de propagarlo.
+    """
+    padre_fd, fd, _, estado = _abrir_propia(ruta, padre, intento)
+    destino_fd, movida = None, False
+    try:
+        if stat.S_IMODE(estado.st_mode) != 0o555:
+            raise NoPropia(f"{ruta.name}: la preparacion no esta sellada en modo 0555")
+        if destino.name in ("", ".", ".."):
+            raise NoPropia("nombre de destino no valido")
+        destino_fd = _abrir_padre(destino.parent)
+        try:
+            os.stat(destino.name, dir_fd=destino_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            raise FileExistsError(str(destino))
+        try:
+            os.fchmod(fd, 0o755)
+            actual = os.stat(ruta.name, dir_fd=padre_fd, follow_symlinks=False)
+            if _identidad(actual) != _identidad(estado):
+                raise NoPropia(f"{ruta.name}: sustituida antes del traslado")
+            os.rename(ruta.name, destino.name, src_dir_fd=padre_fd, dst_dir_fd=destino_fd)
+            movida = True
+            actual = os.stat(destino.name, dir_fd=destino_fd, follow_symlinks=False)
+            if _identidad(actual) != _identidad(estado):
+                raise NoPropia(f"{destino.name}: sustituida durante el traslado")
+            os.fchmod(fd, 0o555)
+            os.unlink(_nombre_marca(ruta.name), dir_fd=padre_fd)
+        except BaseException:
+            if movida:
+                actual = os.stat(destino.name, dir_fd=destino_fd, follow_symlinks=False)
+                if _identidad(actual) != _identidad(estado):
+                    raise NoPropia(f"{destino.name}: no se revierte una carpeta sustituida") from None
+                try:
+                    os.stat(ruta.name, dir_fd=padre_fd, follow_symlinks=False)
+                except FileNotFoundError:
+                    os.fchmod(fd, 0o755)
+                    os.rename(destino.name, ruta.name, src_dir_fd=destino_fd, dst_dir_fd=padre_fd)
+                else:
+                    raise NoPropia(f"{ruta.name}: no se sobrescribe una preparacion sustituida") from None
+            raise
+        finally:
+            if stat.S_IMODE(os.fstat(fd).st_mode) != 0o555:
+                os.fchmod(fd, 0o555)
+    finally:
+        if destino_fd is not None:
+            os.close(destino_fd)
+        os.close(fd)
+        os.close(padre_fd)
+
+
 def borrar_propia(ruta: Path, padre: Path, intento: str | None = None) -> None:
     """Borra `ruta` solo si es propia (y, si se da, del mismo `intento`), recorriendo los descriptores
     acreditados. Si no, `NoPropia` sin tocar nada ajeno."""

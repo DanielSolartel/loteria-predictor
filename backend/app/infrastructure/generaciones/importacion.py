@@ -440,8 +440,7 @@ def importar(paquete: Path, clave_publica: Path, destino: Destino, *,
             admin.execute(sql.SQL("COMMENT ON DATABASE {} IS {}").format(sql.Identifier(aceptada),
                                                                      sql.Literal(comentario(gid, sha))))
             fase("base_aceptada")
-            ar.soltar_marca(prep_dir)
-            os.rename(prep_dir, final_dir)
+            ar.promover_propia(prep_dir, raiz / "preparacion", final_dir, intento)
             prep_dir = None
             creadas = {}
             _registro_de_intento(raiz, gid).unlink()
