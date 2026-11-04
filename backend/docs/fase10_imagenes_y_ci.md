@@ -1,9 +1,13 @@
 # Fase 10 — E10.3: lock de Python, imágenes y CI de seguridad
 
-Estado (2026-11-03): **implementado; validado en Linux aislado y con instalación estricta y selección de
-pruebas en Windows nativo**. **Pendiente:** publicación e integración de esta corrección y su nueva validación remota,
-remediación de los hallazgos de imágenes, importador E10.4 y producción. En el primer CI del PR #109 ya
-pasaron los jobs de lock de Linux/Windows, auditoría y PostgreSQL; el check de imágenes permanece abierto. Consulta privada (E10.2):
+Estado (2026-11-04): **integrado en `main`** (PR #109, merge `4aa24b85`; 11 checks del head `f219e499`
+aprobados: Python `41758396786`, frontend `41758396837`, seguridad `41758396770`). **Grype real:** 8 avisos
+High por imagen aceptados temporalmente (16 entradas exactas, caducidad 2026-11-17) y **0 graves abiertos**;
+siguen siendo avisos no corregidos y la aceptación no se amplía ni se renueva. E10.4 añade el trabajo
+`generaciones` (sección 3). Pendiente: producción y la revisión de los avisos antes de su caducidad.
+
+Estado anterior (2026-11-03, histórico): implementado y validado en Linux aislado y en Windows nativo; en el
+primer CI del PR #109 el check de imágenes estaba abierto. Consulta privada (E10.2):
 [fase10_consulta_privada.md](fase10_consulta_privada.md).
 
 ## 1. Lock de Python
@@ -49,7 +53,10 @@ pasaron los jobs de lock de Linux/Windows, auditoría y PostgreSQL; el check de 
   inspección TLS) puede pasarse como secreto de BuildKit (`--secret id=ca_extra,...`): no queda en ninguna capa
   y la verificación TLS no se desactiva.
 - **Importador = E10.4:** la etapa `base-dependencias` es la base compartible que reutilizará; aquí no existe
-  ningún importador, ni vacío ni simulado (fila «pendiente» en la matriz).
+  ningún importador, ni vacío ni simulado (fila «pendiente» en la matriz). **2026-11-04:** el importador existe
+  como CLI (`scripts.generaciones importar`, [generaciones](fase10_generaciones.md)), que se ejecuta con el
+  código y Alembic del mismo commit. **No** se añade una imagen de importador: sería un artefacto nuevo con su
+  propio escaneo Grype, y las 16 excepciones no se amplían a otros artefactos. Su imagen queda para E10.5.
 - Demostración local con límites y solo lectura: `despliegue/consulta-privada/compose.yml` (no toca
   `docker-compose.yml`).
 
@@ -183,6 +190,17 @@ publicar imágenes, sin `continue-on-error`.
 - `tests/postgres_fase8.py`: A2 esperaba 500; desde la Fase 9 la API responde el 409 `historico_no_valido` que
   declara su OpenAPI (la base 375fc8ca también). Se alinea la expectativa al contrato vigente.
 
+- **Trabajo `generaciones` (E10.4, 2026-11-04).** PostgreSQL 16 de servicio por digest; roles de consulta,
+  captura e importación con contraseñas generadas y enmascaradas, y URL en archivos 0600. Ejecuta los
+  escenarios C1–C10 sobre PostgreSQL real (`tests/unit/generaciones`) y la demostración
+  `despliegue/generaciones/demostracion_e104.py`. Publica siempre el JUnit y `demostracion.json` (sin URL ni
+  claves) y no tiene `continue-on-error`. No cambia los demás trabajos ni sus umbrales. Detalle:
+  [generaciones](fase10_generaciones.md).
+- **Imagen de la API y generación (E10.4 v2, E104-GEN-02).** La imagen `--target api` no cambia: el perfil
+  ligado recalcula al arrancar la huella de su propio `app/` (la imagen no lleva `alembic/`) y contrasta la
+  revisión exigida con `alembic_version` de la base conectada. Comprobado con la imagen real y su orden por
+  defecto: mismo código arranca; otro `app/` u otra revisión, código 3.
+
 ### Aceptación temporal B (3 de noviembre de 2026)
 
 El usuario responsable del proyecto confirmó expresamente «confirmo B» en esta conversación, tras revisar las
@@ -205,10 +223,13 @@ ni demuestra inalcanzabilidad en todo el código nativo.
 - Sin renovación automática. Revisar ante corrección disponible, cambio de versión o exposición, o evidencia
   nueva de explotación. Los informes completos de ambas imágenes siguen generándose y publicándose.
 - El resumen identifica las versiones y los avisos aceptados temporalmente; no los etiqueta como corregidos.
-- La nueva CI sobre este registro aún está pendiente. Los ensayos del umbral con los informes reales son
-  validación local del comparador, no otra ejecución de Grype ni del workflow.
+- La nueva CI sobre este registro aún está pendiente (2026-11-03). **Resultado 2026-11-04:** el CI del head
+  `f219e499` pasó con Grype real: 8 High por imagen aceptados temporalmente y 0 graves abiertos. Los ensayos
+  del umbral con los informes reales de entonces eran validación local del comparador.
 - Un futuro despliegue conserva las decisiones de acceso privado por VPN y mTLS, invitados de solo lectura y
   administración local; su autorización sigue siendo independiente. Fase 6 y E10.4 no cambian.
+- **Esta aceptación es solo de vulnerabilidades (opción B del PR #109).** No autoriza el protocolo B de captura
+  de la enmienda 01, que pausaría Fase 6: D10 y D11 siguen pendientes.
 
 ## 4. Propuesta de protección de `main` (sin aplicar)
 

@@ -1,8 +1,14 @@
 # Fase 10 — E10.2: consulta privada (API y pasarela para invitados de solo lectura)
 
-Estado (2026-11-03): **implementado y demostrado en Linux aislado; validación nativa de Windows y ensayo
-focal de Brave v4 completados y auditados**. Pendientes: publicación e integración, CI remoto, escaneo real
-de imágenes con Grype, importador E10.4 y producción (ver al final). La Fase 10 **no** está cerrada. Se conservan D2/D3/D4/D12, F10-DAT-02 para E10.4, `experimental_no_acreditado`, AE-39 NO-GO y
+Estado (2026-11-04): **integrado en `main`** con el PR #109 (merge `4aa24b85`). Los 11 checks del head
+`f219e499` terminaron correctamente (Python `41758396786`, frontend `41758396837` y seguridad `41758396770`).
+Grype real sobre ambas imágenes: **8 avisos High por imagen aceptados temporalmente** (caducan el 2026-11-17,
+sin renovación automática) y **0 graves abiertos**; no son avisos corregidos. E10.4 añade el **perfil ligado a
+una generación** (`GENERACION_DIRECTORIO`, ver [generaciones](fase10_generaciones.md)). Pendientes: activación
+con drenaje (E10.5, D11) y producción. La Fase 10 **no** está cerrada.
+
+Estado anterior (2026-11-03, histórico): implementado y demostrado en Linux aislado; validación nativa de
+Windows y ensayo focal de Brave v4 completados y auditados; publicación, CI remoto, Grype e importador pendientes. Se conservan D2/D3/D4/D12, F10-DAT-02 para E10.4, `experimental_no_acreditado`, AE-39 NO-GO y
 `AUTORIZA_EVALUACION = False`. E10.1 está integrado (PR #108).
 
 Imágenes, lock y CI de seguridad (E10.3): [fase10_imagenes_y_ci.md](fase10_imagenes_y_ci.md).
@@ -253,6 +259,12 @@ lógica en [`ensayo_brave_mtls_e102_nucleo.ps1`](../../despliegue/consulta-priva
 
 ## 9. Pendientes y límites (no se declaran cumplidos)
 
+- **Actualización 2026-11-04.** PR #109 integrado con los 11 checks aprobados; los puntos de abajo sobre el
+  CI remoto son el registro histórico de cómo se llegó ahí. El importador de E10.4 ya existe
+  ([generaciones](fase10_generaciones.md)): el proceso de la API puede quedar ligado a una sola generación
+  aceptada; el compose de esta demostración sigue sirviendo la publicación sintética de E10.2 sin generación.
+  Pendiente: que E10.5 arranque el par API/pasarela de cada generación con su configuración inmutable (D11).
+
 - **CI remoto (PR #109):** el primer CI dio cuatro checks en rojo. La entrega conjunta corrige los fallos
   funcionales y el procesamiento de diagnósticos; la remediación de imágenes sigue abierta:
   - el test de acciones fijadas por SHA;
@@ -272,7 +284,8 @@ lógica en [`ensayo_brave_mtls_e102_nucleo.ps1`](../../despliegue/consulta-priva
 - **Windows nativo completado:** instalación estricta del lock en un venv nuevo, `pip check`, 206 pruebas y
   ensayo focal de Brave aprobados y auditados. El primer job remoto `lock-windows` del PR #109 pasó
   sobre `8dad5919` (run `41623345120`); la nueva corrección debe volver a pasar sus checks remotos.
-- **Importador E10.4:** dependencia explícita; no existe imagen ni etapa de importador.
+- **Importador E10.4 (histórico 2026-11-03: «no existe»):** implementado el 2026-11-04 como CLI
+  (`scripts.generaciones importar`) sobre la misma base de código; ver [generaciones](fase10_generaciones.md).
 - **Producción:** proveedor, presupuesto, infraestructura, registro de imágenes, custodia de secretos reales,
   respaldos, activación, CA real y su custodia, VPN real (D2) y caducidad de certificados quedan sin decidir.
 - Las cuotas y el semáforo son por proceso; un límite global entre réplicas exige otra decisión (D11).

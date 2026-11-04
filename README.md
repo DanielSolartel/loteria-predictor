@@ -5330,14 +5330,23 @@ loteria-predictor/
 
 Ver [ROADMAP.md](./ROADMAP.md) para el detalle de cada fase (objetivo, dependencias, entregables, criterios de finalización).
 
-**Fase 10 (en curso, no cerrada):** E10.1 (seguridad de la consola local) integrado en el PR #108. E10.2
-(consulta privada: proxy con certificado de cliente por persona, pasarela y API en perfil privado, cuotas,
-claves, tiempos máximos y generación de solo lectura) y E10.3 (lock de Python con hashes, imágenes y CI de
-seguridad) implementados y demostrados en aislamiento con datos sintéticos. La instalación estricta,
-206 pruebas y el ensayo focal de Brave están aprobados y auditados en Windows nativo. Pendientes: publicación
-e integración, CI remoto, Grype real, E10.4 y producción. Guías: [consulta privada](backend/docs/fase10_consulta_privada.md),
-[imágenes y CI](backend/docs/fase10_imagenes_y_ci.md) e
-[informe nativo](backend/docs/fase10_e102_e103_validacion_operador_2026-11-03.md).
+**Fase 10 (en curso, no cerrada; 2026-11-04):**
+
+- **E10.1** (seguridad de la consola local): integrado en el PR #108.
+- **E10.2** (consulta privada: proxy con certificado de cliente por persona, pasarela y API en perfil privado,
+  cuotas, claves y tiempos máximos) y **E10.3** (lock con hashes, imágenes y CI de seguridad): **integrados** en
+  el PR #109 (`main` `4aa24b85`), con los 11 checks aprobados.
+- **Grype real:** 8 avisos High por imagen **aceptados temporalmente** (caducan el 2026-11-17) y 0 graves
+  abiertos; no son avisos corregidos.
+- **E10.4** (generaciones, captura coherente, importación, validación y respaldos): implementado y demostrado
+  en Linux con PostgreSQL y datos sintéticos; escenarios C1–C10 como pruebas de comportamiento. El uso con datos
+  reales está **bloqueado** hasta D10 y F10-DAT-02 sigue abierto. La recuperación operativa en Windows (R-W) está
+  pendiente.
+- **Pendientes:** E10.5–E10.7 y producción.
+
+Guías: [consulta privada](backend/docs/fase10_consulta_privada.md), [imágenes y CI](backend/docs/fase10_imagenes_y_ci.md),
+[generaciones](backend/docs/fase10_generaciones.md) e
+[informe nativo](backend/docs/fase10_e102_e103_validacion_operador_2026-11-03.md) (este último, histórico).
 
 ---
 
