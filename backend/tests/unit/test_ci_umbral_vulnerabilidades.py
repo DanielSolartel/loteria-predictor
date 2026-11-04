@@ -2,7 +2,8 @@
 
 - Informes REALES de `npm audit --json` (fixtures `tests/fixtures/e103`: el lock con vitest 3.2.7 de v1 y el de
   v2 con vitest 4.1.12) y variantes sinteticas derivadas de ellos.
-- La aceptacion de una excepcion es solo MODELADA en archivos temporales: ninguna se acepta de verdad.
+- Las aceptaciones sinteticas son MODELADAS en archivos temporales. El registro real de la opcion B, autorizado
+  por el usuario hasta 2026-11-17, se contrasta aparte y no se amplia desde las pruebas.
 """
 from __future__ import annotations
 
@@ -80,10 +81,23 @@ def test_aceptacion_modelada_cubre_solo_sus_avisos(tmp_path):
     assert _correr(tmp_path, NPM_V1, [_aceptada(a) for a in TINYPOOL], hoy="2027-01-01") == 1
 
 
-def test_excepciones_versionadas_no_estan_aceptadas():
+def test_excepciones_versionadas_respetan_la_aceptacion_B_exacta_y_las_retiradas():
     datos = json.loads(u.EXCEPCIONES.read_text(encoding="utf-8"))["excepciones"]
-    assert datos and not any(e.get("estado") == "aceptada" for e in datos)
-    assert all(e.get("aceptada_por") is None and e.get("fecha_aceptacion") is None for e in datos)
+    retiradas = [e for e in datos if e["estado"] == "retirada_por_actualizacion"]
+    assert len(retiradas) == 2 and {e["id"] for e in retiradas} == set(TINYPOOL)
+    assert all(e["aceptada_por"] is None and e["fecha_aceptacion"] is None for e in retiradas)
+    pares = {(i, "libc6", "2.41-12+deb13u4") for i in
+             ("CVE-2026-19499", "CVE-2026-5435", "CVE-2026-84243")}
+    pares |= {(i, p, "14.2.0-19") for i in ("CVE-2026-102010", "CVE-2026-95619")
+              for p in ("libgcc-s1", "libstdc++6")}
+    pares.add(("CVE-2026-85091", "zlib1g", "1:1.3.dfsg+really1.3.1-1+b1"))
+    aceptadas = [e for e in datos if e["estado"] == "aceptada"]
+    assert len(datos) == 18 and len(aceptadas) == 16
+    assert {(e["artefacto"], e["id"], e["paquete"], e["version"]) for e in aceptadas} == {
+        (a, i, p, v) for a in ("imagen-api", "imagen-pasarela") for i, p, v in pares}
+    assert all(e["formato"] == "grype" and e["severidad"] == "high" and e["aceptada_por"].strip()
+               and e["fecha_aceptacion"] == "2026-11-03" and e["caduca"] == "2026-11-17"
+               and "No autoriza despliegue" in e["alcance"] for e in aceptadas)
     assert all({"id", "paquete", "artefacto", "caduca", "motivo", "estado"} <= set(e) for e in datos)
 
 
@@ -150,3 +164,100 @@ def test_grype_mal_formado_falla(tmp_path, cambiar):
     d = _grype(("CVE-1", "libx", "Medium"))
     cambiar(d)
     assert _correr(tmp_path, d, formato="grype", artefacto="imagen-api") == 1
+
+
+# --- opcion B: excepciones Grype por version y severidad exactas --------------------------------------
+def _grype_aceptada(**cambio):
+    return {"id": "CVE-SINT-B", "paquete": "libejemplo", "version": "1.0", "formato": "grype",
+            "artefacto": "imagen-api", "severidad": "high", "estado": "aceptada",
+            "aceptada_por": "MODELO_DE_PRUEBA", "fecha_aceptacion": "2026-11-03", "caduca": "2026-11-17", **cambio}
+
+
+def _grype_b(version="1.0", severidad="High"):
+    d = _grype(("CVE-SINT-B", "libejemplo", severidad))
+    d["matches"][0]["artifact"]["version"] = version
+    return d
+
+
+@pytest.mark.parametrize("hoy", ["2026-11-03", "2026-11-17"])
+def test_grype_aceptacion_versionada_vigente_cubre_solo_su_version(tmp_path, hoy):
+    assert _correr(tmp_path, _grype_b(), [_grype_aceptada()], formato="grype", artefacto="imagen-api", hoy=hoy) == 0
+
+
+@pytest.mark.parametrize("cambio", [
+    {"version": None}, {"version": ""}, {"version": True}, {"version": 1}, {"version": ["1.0"]},
+    {"version": "*"}, {"version": "1.*"}, {"version": ">=1.0"}, {"version": "1.0,2.0"},
+    {"version": "1.0|2.0"}, {"version": "1.?0"}, {"version": "[1.0]"}, {"version": " 1.0"},
+    {"version": "1.0\n"}, {"version": "1.0  "}, {"version": "2.0"}, {"severidad": None},
+    {"severidad": "High"}, {"severidad": "critical"}, {"formato": "npm"},
+    {"estado": "pendiente"}, {"aceptada_por": " "}, {"fecha_aceptacion": "2026-11-04"},
+    {"caduca": "2026-11-02"}, {"artefacto": "imagen-pasarela"}, {"id": "CVE-OTRO"},
+    {"paquete": "otra"}, {"id": "CVE-*"},
+])
+def test_grype_no_cubre_version_ni_alcance_distinto(tmp_path, cambio):
+    assert _correr(tmp_path, _grype_b(), [_grype_aceptada(**cambio)],
+                   formato="grype", artefacto="imagen-api") == 1
+
+
+@pytest.mark.parametrize("campo", ["version", "severidad"])
+def test_grype_aceptacion_legacy_incompleta_no_se_activa(tmp_path, campo):
+    e = _grype_aceptada()
+    e.pop(campo)
+    assert _correr(tmp_path, _grype_b(), [e], formato="grype", artefacto="imagen-api") == 1
+
+
+@pytest.mark.parametrize("hoy", ["2026-11-02", "2026-11-18"])
+def test_grype_fuera_del_intervalo_aceptado_falla(tmp_path, hoy):
+    assert _correr(tmp_path, _grype_b(), [_grype_aceptada()],
+                   formato="grype", artefacto="imagen-api", hoy=hoy) == 1
+
+
+def test_grype_otra_version_en_el_informe_no_hereda_cobertura(tmp_path):
+    assert _correr(tmp_path, _grype_b("2.0"), [_grype_aceptada()],
+                   formato="grype", artefacto="imagen-api") == 1
+
+
+def test_grype_version_adicional_no_se_pierde_al_deduplicar(tmp_path, capsys):
+    d = _grype_b()
+    otra = copy.deepcopy(d["matches"][0])
+    otra["artifact"]["version"] = "2.0"
+    d["matches"].append(otra)
+    assert _correr(tmp_path, d, [_grype_aceptada()], formato="grype", artefacto="imagen-api") == 1
+    texto = capsys.readouterr().out
+    assert "abierto: CVE-SINT-B libejemplo high versiones=1.0,2.0" in texto
+    assert _correr(tmp_path, d, [_grype_aceptada(), _grype_aceptada(version="2.0")],
+                   formato="grype", artefacto="imagen-api") == 0
+
+
+def test_grype_subida_a_critical_requiere_aceptacion_distinta(tmp_path):
+    assert _correr(tmp_path, _grype_b(severidad="Critical"), [_grype_aceptada()],
+                   formato="grype", artefacto="imagen-api") == 1
+    assert _correr(tmp_path, _grype_b(severidad="Critical"), [_grype_aceptada(severidad="critical")],
+                   formato="grype", artefacto="imagen-api") == 0
+
+
+def test_grype_otro_aviso_en_el_mismo_paquete_sigue_abierto(tmp_path):
+    d = _grype_b()
+    otro = copy.deepcopy(d["matches"][0])
+    otro["vulnerability"]["id"] = "CVE-SINT-NUEVO"
+    d["matches"].append(otro)
+    assert _correr(tmp_path, d, [_grype_aceptada()], formato="grype", artefacto="imagen-api") == 1
+
+
+def test_grype_informe_invalido_no_lo_cubre_una_aceptacion(tmp_path):
+    d = _grype_b()
+    d["matches"][0]["artifact"].pop("version")
+    assert _correr(tmp_path, d, [_grype_aceptada()], formato="grype", artefacto="imagen-api") == 1
+
+
+def test_grype_aceptacion_de_api_no_cubre_pasarela(tmp_path):
+    assert _correr(tmp_path, _grype_b(), [_grype_aceptada()],
+                   formato="grype", artefacto="imagen-pasarela") == 1
+
+
+def test_grype_resumen_expone_version_y_aceptacion_sin_declarar_remediacion(tmp_path, capsys):
+    assert _correr(tmp_path, _grype_b(), [_grype_aceptada()],
+                   formato="grype", artefacto="imagen-api") == 0
+    texto = capsys.readouterr().out
+    assert "excepcion aceptada: CVE-SINT-B libejemplo high versiones=1.0" in texto
+    assert "siguen presentes y no se consideran corregidos" in texto

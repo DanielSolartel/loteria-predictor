@@ -91,9 +91,10 @@ publicar imágenes, sin `continue-on-error`.
   `typecheck`, `tipos:comprobar`, `build` y el canario siguen verdes. El lock se regeneró con npm 11.21.0 (npm
   10.9.4 falla con un error interno de arborist al actualizar vitest); `npm ci` con npm 10 lo instala sin cambios.
 - **Excepciones:** solo activa una con `estado: "aceptada"`, `aceptada_por` no vacío, `fecha_aceptacion` no
-  futura, sin caducar, del artefacto correcto e `id`/`paquete` concretos (sin comodines). Las dos de tinypool
-  quedan `retirada_por_actualizacion`, sin aceptante: **nadie ha aceptado ningún riesgo** y no se atribuye
-  ninguna decisión a Daniel. Un crítico sin excepción aceptada mantiene el umbral en rojo.
+  futura, sin caducar, del artefacto correcto e `id`/`paquete` concretos (sin comodines). En Grype exige además
+  versión exacta y severidad aceptada; si hay varias versiones del mismo aviso/paquete, todas deben estar
+  cubiertas. Un alto/crítico nuevo o sin cobertura mantiene el umbral en rojo. Las dos entradas de tinypool
+  siguen `retirada_por_actualizacion`, sin aceptante. La aceptación temporal B de imágenes se documenta abajo.
 - **Informes válidos o fallo (F1023-ROB-01):** el umbral exige `auditReportVersion` 2 y sin `error`; contadores
   completos que coincidan con los paquetes; `via` heredados que nombren paquetes existentes, con la gravedad
   efectiva calculada como el máximo de los avisos propios y heredados (igual que npm); y en grype, descriptor,
@@ -158,14 +159,16 @@ publicar imágenes, sin `continue-on-error`.
     inválido, diagnóstico o biblioteca ausente hace fallar el paso.
   - Usuario 10001, contenido sin hallazgos y arranque con fallo cerrado sin configuración.
   - Demostración completa **32/32**. Su T11 hace las mismas comprobaciones con Python porque ya no hay shell.
-- **Resultado sobre los 18 CVE.** Por paquete y versión del SBOM final, proyectado sobre los informes reales:
-  - **12 CVE retirados** con sus paquetes; quedan **8 pares por imagen (6 CVE)**: 3 de glibc en `libc6`, 2 de
-    gcc-14 en `libgcc-s1`/`libstdc++6` y 1 de zlib en `zlib1g`, todos necesarios para el servicio;
-  - Trivy (diagnóstico) ya no ve altos ni críticos.
-  - La cifra real la dará grype en el CI: aquí sigue bloqueado.
-  - El umbral **seguirá en rojo** con ese residual. La propuesta para decidir sobre él (opciones, mitigaciones,
-    plazo y criterios) se entrega fuera de las excepciones activas, en estado pendiente: nada aceptado ni
-    atribuido a Daniel.
+- **Tercer CI del PR #109: reducción confirmada por Grype real.** Run `41741191802`, commit `93e62d1a`, árbol
+  `95bc1ef8`, Grype 0.121.0 y DB válida construida el 2026-11-03T06:20:47Z. En cada imagen hay 37 coincidencias:
+  **8 High, 0 Critical**, 18 Medium, 4 Low y 7 Negligible. Los ocho pares corresponden a **6 CVE únicos** en
+  cuatro paquetes binarios: `libc6`, `libgcc-s1`, `libstdc++6` y `zlib1g` (7 `wont-fix`, 1 `not-fixed`).
+  - La reducción **60 → 8 pares por imagen y 18 → 6 CVE** ya está comprobada por CI; doce CVE se retiraron con
+    sus paquetes. Trivy sigue siendo un diagnóstico complementario.
+  - El job falló correctamente: aún no había excepciones aceptadas. Construcción, contenido, comprobador y
+    demostración pasan; los diez checks restantes están verdes.
+  - Después de revisar ese resultado, el usuario confirmó expresamente la **opción B**. Su alcance y límites
+    figuran en la aceptación temporal siguiente; no se consideran corregidos los avisos que cubre.
 - **`lightgbm` no carga** (ni en Trixie, ni en Bookworm, ni en la imagen mínima) porque falta `libgomp.so.1`.
   Ninguno de los módulos que sirven la API o la pasarela lo importa. Es preexistente y no se cambia aquí; la
   comprobación de ejecución lo informa como única tolerancia explícita.
@@ -179,6 +182,33 @@ publicar imágenes, sin `continue-on-error`.
   - Los dos escaneos se ejecutan siempre y publican sus informes redactados.
 - `tests/postgres_fase8.py`: A2 esperaba 500; desde la Fase 9 la API responde el 409 `historico_no_valido` que
   declara su OpenAPI (la base 375fc8ca también). Se alinea la expectativa al contrato vigente.
+
+### Aceptación temporal B (3 de noviembre de 2026)
+
+El usuario responsable del proyecto confirmó expresamente «confirmo B» en esta conversación, tras revisar las
+opciones, el residual y sus límites. Se registran **16 entradas exactas**, ocho por imagen, en
+`despliegue/seguridad/excepciones-vulnerabilidades.json`. Solo autorizan **CI e integración del PR #109**;
+no autorizan despliegue, publicación de imágenes ni exposición a Internet. La aceptación no resuelve los CVE
+ni demuestra inalcanzabilidad en todo el código nativo.
+
+| CVE | Paquete(s) | Versión exacta | Pares por imagen |
+|---|---|---|---:|
+| CVE-2026-19499, CVE-2026-5435, CVE-2026-84243 | libc6 | 2.41-12+deb13u4 | 3 |
+| CVE-2026-102010, CVE-2026-95619 | libgcc-s1 y libstdc++6 | 14.2.0-19 | 4 |
+| CVE-2026-85091 | zlib1g | 1:1.3.dfsg+really1.3.1-1+b1 | 1 |
+
+- Aceptación: **2026-11-03**. Caduca: **2026-11-17 inclusive**, según la fecha UTC que evalúa el CI.
+- Solo formato Grype, artefacto `imagen-api` o `imagen-pasarela`, id, paquete, versión y severidad `high`
+  exactos. No se interpretan rangos ni comodines. Cada versión observada necesita cobertura propia; una
+  versión adicional, un CVE nuevo o una subida a `critical` hacen fallar el umbral si no tienen otra aceptación
+  expresa y vigente.
+- Sin renovación automática. Revisar ante corrección disponible, cambio de versión o exposición, o evidencia
+  nueva de explotación. Los informes completos de ambas imágenes siguen generándose y publicándose.
+- El resumen identifica las versiones y los avisos aceptados temporalmente; no los etiqueta como corregidos.
+- La nueva CI sobre este registro aún está pendiente. Los ensayos del umbral con los informes reales son
+  validación local del comparador, no otra ejecución de Grype ni del workflow.
+- Un futuro despliegue conserva las decisiones de acceso privado por VPN y mTLS, invitados de solo lectura y
+  administración local; su autorización sigue siendo independiente. Fase 6 y E10.4 no cambian.
 
 ## 4. Propuesta de protección de `main` (sin aplicar)
 

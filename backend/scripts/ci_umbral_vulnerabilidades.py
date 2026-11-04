@@ -19,6 +19,10 @@ Excepcion (v2, F1023-SEC-01): solo se activa con `estado` exactamente `aceptada`
 ese artefacto (`artefacto`) sin haber caducado (`caduca`, inclusive). Pendientes, rechazadas, retiradas, sin
 estado o con estado desconocido NO se activan. No se rebaja ninguna severidad ni se excluyen paquetes enteros.
 
+PR #109, opcion B: para grype tambien son obligatorias la version EXACTA de `artifact.version` y la severidad
+aceptada (`high` o `critical`). Si aparecen dos versiones del mismo aviso/paquete, ambas deben estar cubiertas;
+no se descarta una por deduplicar. No se interpretan rangos ni comodines. Las excepciones no corrigen avisos.
+
 Uso: python scripts/ci_umbral_vulnerabilidades.py --formato npm|grype --artefacto <nombre> <informe.json>
      [--excepciones <json>] [--hoy AAAA-MM-DD] [--resumen <archivo>]
 """
@@ -119,10 +123,18 @@ def hallazgos_grype(datos) -> list[tuple[str, str, str]]:
     return sorted(filas)
 
 
-def activa(excepcion: dict, artefacto: str, hoy: dt.date) -> bool:
+def _version_exacta(valor) -> bool:
+    return (isinstance(valor, str) and bool(valor) and valor == valor.strip()
+            and not any(c.isspace() or c in "*?[]<>=|," for c in valor))
+
+
+def activa(excepcion: dict, artefacto: str, hoy: dt.date, *, formato: str | None = None) -> bool:
     """Solo una aceptacion explicita, concreta y vigente activa la excepcion."""
     try:
         return (excepcion.get("estado") == "aceptada" and excepcion.get("artefacto") == artefacto
+                and (formato is None or excepcion.get("formato", formato) == formato)
+                and (formato != "grype" or (_version_exacta(excepcion.get("version"))
+                                           and excepcion.get("severidad") in GRAVES))
                 and isinstance(excepcion.get("aceptada_por"), str) and excepcion["aceptada_por"].strip() != ""
                 and dt.date.fromisoformat(excepcion["fecha_aceptacion"]) <= hoy
                 and dt.date.fromisoformat(excepcion["caduca"]) >= hoy
@@ -136,14 +148,31 @@ def evaluar(formato: str, artefacto: str, datos, excepciones: list[dict], hoy: d
     filas = hallazgos_npm(datos) if formato == "npm" else hallazgos_grype(datos)
     if not isinstance(excepciones, list) or not all(isinstance(e, dict) for e in excepciones):
         raise InformeNoValido("excepciones mal formadas")
-    vigentes = {(e["id"], e["paquete"]) for e in excepciones if activa(e, artefacto, hoy)}
+    aceptadas = [e for e in excepciones if activa(e, artefacto, hoy, formato=formato)]
+    versiones = {}
+    if formato == "grype":
+        for m in datos["matches"]:  # hallazgos_grype ya ha validado cada coincidencia
+            f = (m["vulnerability"]["id"], m["artifact"]["name"], m["vulnerability"]["severity"].lower())
+            versiones.setdefault(f, set()).add(m["artifact"]["version"])
+        vigentes = {(e["id"], e["paquete"], e["severidad"], e["version"]) for e in aceptadas}
+
+        def cubierta(f):
+            return all((*f, version) in vigentes for version in versiones[f])
+    else:
+        vigentes = {(e["id"], e["paquete"]) for e in aceptadas}
+
+        def cubierta(f):
+            return (f[0], f[1]) in vigentes
     graves = [f for f in filas if f[2] in GRAVES]
-    cubiertos = [f for f in graves if (f[0], f[1]) in vigentes]
-    abiertos = [f for f in graves if (f[0], f[1]) not in vigentes]
-    no_activas = sum(1 for e in excepciones if e.get("artefacto") == artefacto and not activa(e, artefacto, hoy))
+    cubiertos = [f for f in graves if cubierta(f)]
+    abiertos = [f for f in graves if not cubierta(f)]
+    no_activas = sum(1 for e in excepciones if e.get("artefacto") == artefacto
+                     and not activa(e, artefacto, hoy, formato=formato))
     return {"formato": formato, "artefacto": artefacto, "hallazgos": len(filas),
             "por_severidad": {s: sum(f[2] == s for f in filas) for s in sorted({f[2] for f in filas})},
             "graves_cubiertos": cubiertos, "graves_abiertos": abiertos, "excepciones_no_activas": no_activas,
+            "versiones_por_hallazgo": [{"id": f[0], "paquete": f[1], "severidad": f[2],
+                                        "versiones": sorted(versiones[f])} for f in filas] if versiones else [],
             "correcto": not abiertos}
 
 
@@ -170,8 +199,14 @@ def main(argv=None) -> int:
              f"{resultado['hallazgos']} hallazgos {resultado['por_severidad']}; graves con excepcion aceptada "
              f"vigente {len(resultado['graves_cubiertos'])}; graves abiertos {len(resultado['graves_abiertos'])}; "
              f"excepciones no activas {resultado['excepciones_no_activas']}")
-    detalle = [f"  abierto: {i} {pkg} {sev}" for i, pkg, sev in resultado["graves_abiertos"]]
-    detalle += [f"  excepcion aceptada: {i} {pkg} {sev}" for i, pkg, sev in resultado["graves_cubiertos"]]
+    versiones = {(f["id"], f["paquete"], f["severidad"]): " versiones=" + ",".join(f["versiones"])
+                 for f in resultado["versiones_por_hallazgo"]}
+    detalle = [f"  abierto: {i} {pkg} {sev}" + versiones.get((i, pkg, sev), "")
+               for i, pkg, sev in resultado["graves_abiertos"]]
+    detalle += [f"  excepcion aceptada: {i} {pkg} {sev}" + versiones.get((i, pkg, sev), "")
+                for i, pkg, sev in resultado["graves_cubiertos"]]
+    if resultado["graves_cubiertos"]:
+        detalle.append("  Avisos aceptados temporalmente; siguen presentes y no se consideran corregidos.")
     print("\n".join([linea, *detalle]))
     if a.resumen:
         with open(a.resumen, "a", encoding="utf-8") as f:
