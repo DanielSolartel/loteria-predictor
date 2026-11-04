@@ -1,0 +1,2 @@
+# Fase 10 (E10.3): dependencias de las pruebas HTTP (TestClient), la misma version que instala el CI.
+httpx==0.28.1

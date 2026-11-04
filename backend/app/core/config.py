@@ -78,6 +78,24 @@ class Settings(BaseSettings):
     # Origenes explicitos (coma); vacio = CORS deshabilitado. `*` no se admite.
     api_publica_cors_origenes: str = ""
     api_publica_documentacion: bool = True
+    # Fase 10 (E10.2): frontera de la API en el perfil privado (`app.api.publica.privada:app`). Vacios = sin
+    # comprobacion (modo local, como antes). `api_publica_hosts`: valores exactos de `Host` (`host:puerto`, coma);
+    # `api_publica_clientes`: IP exactas del socket admitidas (la pasarela; sin redes ni comodines).
+    api_publica_hosts: str = ""
+    api_publica_clientes: str = ""
+    # Consultas de coste 5 a la vez (0 = sin limite, como antes) y espera maxima de un hueco en segundos;
+    # sin hueco a tiempo: 503 `consultas_ocupadas` con `Retry-After`.
+    api_publica_concurrencia_costosas: int = 0
+    api_publica_espera_costosas: float = 0.5
+
+    # Fase 10 (E10.2): limites de las conexiones a PostgreSQL de ESTE proceso. 0 = el valor de siempre (sin
+    # opciones de conexion; la sesion de escritura de la consola, la CLI y Fase 6 no cambia). El rol lector
+    # del perfil privado tiene ademas sus propios limites en la base (`docs/fase10_consulta_privada.md`).
+    base_tiempo_maximo_consulta_ms: int = 0
+    base_tiempo_maximo_inactiva_ms: int = 0
+    base_pool_tamano: int = 0
+    base_pool_desborde: int = 0
+    base_pool_espera_s: float = 0.0
 
     # Fase 10 (E10.1): consola local. Almacén privado de cuentas y sesiones (SQLite propio, fuera de Git y de
     # los datos publicables; no se crea al arrancar: lo crea `python -m scripts.consola_cuentas crear`).

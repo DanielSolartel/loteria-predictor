@@ -9,8 +9,11 @@ Arranque soportado (desde `backend/`), el mismo de `docs/fase8_api_publica.md`:
   completa con su consulta (p. ej. una clave enviada por error en `?api_key=`).
   El registro propio `app.api.publica` sigue activo y no la incluye.
 - `--no-proxy-headers`: sin ella, Uvicorn reescribe la IP del cliente con
-  `X-Forwarded-For` y una sola conexion local eludiria el limite por IP. Hasta
-  que la Fase 10 defina proxies fiables, se usa siempre la IP del socket.
+  `X-Forwarded-For` y una sola conexion local eludiria el limite por IP. Se usa
+  siempre la IP del socket, tambien en el perfil privado de la Fase 10
+  (`app.api.publica.privada:app`, `docs/fase10_consulta_privada.md`): alli el
+  unico cliente admitido es la pasarela (IP exactas) y la identidad de cada
+  persona la decide la pasarela, nunca una cabecera que llegue a la API.
 
 Solo monta las rutas GET de `rutas.py` bajo `/api/v1`, la
 documentacion (`/api/v1/docs`, `/api/v1/openapi.json`, desactivable) y la
@@ -34,6 +37,7 @@ from app.api.publica.configuracion import ConfiguracionPublica, desde_settings, 
 from app.api.publica.errores import registrar_manejadores, registro
 from app.api.publica.limites import LimitadorDeCuota
 from app.api.publica.monitoreo import MiddlewarePublico, Monitor
+from app.api.publica.recursos import FronteraPrivada, LimiteDeCostosas
 from app.api.publica.seguridad import ENCABEZADO
 from app.core.config import get_settings
 
@@ -78,6 +82,7 @@ def crear_app(configuracion: ConfiguracionPublica | None = None) -> FastAPI:
                                                      max(1, len(configuracion.claves)))
     app.state.limitador_por_ip = LimitadorDeCuota(configuracion.fichas_por_minuto_ip, configuracion.max_clientes_ip)
     app.state.monitor = Monitor()
+    app.state.costosas = LimiteDeCostosas(configuracion.concurrencia_costosas, configuracion.espera_costosas)
     registrar_manejadores(app)
     app.include_router(rutas.publico)
     app.include_router(rutas.router)
@@ -87,6 +92,8 @@ def crear_app(configuracion: ConfiguracionPublica | None = None) -> FastAPI:
                            allow_headers=[ENCABEZADO], allow_credentials=False,
                            expose_headers=["Retry-After", "X-Request-ID", "X-RateLimit-Limit",
                                            "X-RateLimit-Remaining"])
+    if configuracion.hosts or configuracion.clientes:  # perfil privado (E10.2): la capa mas externa
+        app.add_middleware(FronteraPrivada, hosts=configuracion.hosts, clientes=configuracion.clientes)
     return app
 
 

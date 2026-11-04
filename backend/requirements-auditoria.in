@@ -1,0 +1,2 @@
+# Fase 10 (E10.3): herramienta de auditoria de dependencias del CI (no se instala en las imagenes).
+pip-audit==2.10.1

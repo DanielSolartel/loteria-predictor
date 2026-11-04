@@ -8,6 +8,7 @@ from app.api.publica import dependencias as d
 from app.api.publica import esquemas_guardados as e
 from app.api.publica.esquemas import ErrorRespuesta
 from app.api.publica.errores import ErrorPublico
+from app.api.publica.recursos import costosa
 from app.api.publica.seguridad import acceso
 from app.application.use_cases.consultas_guardadas import ConsultaGuardadaError, ConsultasGuardadas
 from app.application.use_cases.carteras import CarterasError
@@ -74,6 +75,7 @@ def cartera(codigo: str = _CODIGO, clave: str = _CLAVE, _: str = Depends(acceso(
             responses=_ERRORES, summary="Emisiones y resultados de Producto 6: selección y agregados existentes (coste 5)",
             description="Desde/hasta filtran sorteos objetivo, no la disponibilidad de una emisión. "
                         "Pendientes y sin base no son cero aciertos. No se guardan informes ni se comparan modelos de nuevo.")
+@costosa
 def resultados(codigo: str = _CODIGO,
                procedencia: Literal["operacion", "laboratorio", "carteras"] | None = None,
                linea: str | None = Query(None, pattern=_FILTRO, max_length=160,

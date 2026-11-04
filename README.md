@@ -5330,6 +5330,15 @@ loteria-predictor/
 
 Ver [ROADMAP.md](./ROADMAP.md) para el detalle de cada fase (objetivo, dependencias, entregables, criterios de finalización).
 
+**Fase 10 (en curso, no cerrada):** E10.1 (seguridad de la consola local) integrado en el PR #108. E10.2
+(consulta privada: proxy con certificado de cliente por persona, pasarela y API en perfil privado, cuotas,
+claves, tiempos máximos y generación de solo lectura) y E10.3 (lock de Python con hashes, imágenes y CI de
+seguridad) implementados y demostrados en aislamiento con datos sintéticos. La instalación estricta,
+206 pruebas y el ensayo focal de Brave están aprobados y auditados en Windows nativo. Pendientes: publicación
+e integración, CI remoto, Grype real, E10.4 y producción. Guías: [consulta privada](backend/docs/fase10_consulta_privada.md),
+[imágenes y CI](backend/docs/fase10_imagenes_y_ci.md) e
+[informe nativo](backend/docs/fase10_e102_e103_validacion_operador_2026-11-03.md).
+
 ---
 
 ## Licencia

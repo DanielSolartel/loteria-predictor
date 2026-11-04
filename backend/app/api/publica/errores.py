@@ -27,6 +27,7 @@ from app.application.exceptions import (
 )
 
 registro = logging.getLogger("app.api.publica")
+SQLSTATE_CONSULTA_CANCELADA = "57014"  # query_canceled: `statement_timeout` o cancelacion explicita
 
 _POR_ESTADO = {400: ("solicitud_no_valida", "Solicitud no válida"),
                401: ("no_autenticado", "Clave de API ausente o no válida"),
@@ -104,6 +105,13 @@ def registrar_manejadores(app: FastAPI) -> None:
 
     @app.exception_handler(SQLAlchemyError)
     async def _base(request: Request, exc: SQLAlchemyError):
+        if getattr(getattr(exc, "orig", None), "sqlstate", None) == SQLSTATE_CONSULTA_CANCELADA:
+            # Fase 10 (E10.2): `statement_timeout` del rol lector. La sesion de lectura termina con ROLLBACK y
+            # la conexion vuelve sana al pool; solo se informa la clase del fallo.
+            registro.warning("api_publica consulta_cancelada solicitud=%s", getattr(request.state, "solicitud", None))
+            return respuesta_de_error(request, 503, "consulta_cancelada",
+                                      "La consulta superó el tiempo máximo; reintente más tarde",
+                                      headers={"Retry-After": "5"})
         registro.warning("api_publica base_no_disponible=%s solicitud=%s", type(exc).__name__,
                          getattr(request.state, "solicitud", None))
         return respuesta_de_error(request, 503, "base_no_disponible", "Base de datos no disponible")

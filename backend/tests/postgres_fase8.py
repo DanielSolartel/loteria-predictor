@@ -10,7 +10,7 @@ Comprueba con el cableado PREDETERMINADO (sin sustituir dependencias):
  A. todas las consultas responden 200 (juegos, sorteos, estadisticas,
     predicciones con almacenes vacios, simulaciones y estado con base disponible);
     A2: un historico inconsistente (ColorLoto sintetico frente a la paleta sembrada)
-    responde 500 `error_interno` sin el motivo interno;
+    responde 409 `historico_no_valido` (contrato vigente) sin el motivo interno;
  B. la sesion de la API publica es de solo lectura (PostgreSQL rechaza escribir);
  C. ninguna consulta cambia filas (todas las tablas) ni crea archivos;
  D. 24 solicitudes HTTP simultaneas con cuota 10 -> exactamente 10 x 200 y 14 x 429;
@@ -117,11 +117,13 @@ def main() -> int:
                                                  and detalle["integridad"] == "verificada" and estado["base"] == "disponible")
     resultados["A_codigos"] = codigos
     # A2. Los sorteos sinteticos de ColorLoto son anteriores a la vigencia de la paleta que siembran las
-    # migraciones: el caso de uso los rechaza como historico inconsistente. La API responde 500 generico,
-    # igual que la aplicacion local, sin el motivo interno.
+    # migraciones: el caso de uso los rechaza como historico inconsistente. Desde la Fase 9 la API responde
+    # el 409 `historico_no_valido` que declara su OpenAPI (antes, 500 generico), sin el motivo interno.
+    # Fase 10 (E10.3): esta verificacion pasa a ejecutarse en el CI; la expectativa de 500 estaba desfasada
+    # (la base 375fc8ca tambien responde 409).
     inconsistente = c.get("/api/v1/juegos/COLORLOTO/estadisticas/panel", headers=h)
-    ok["A2_historico_inconsistente_sin_detalles"] = (inconsistente.status_code == 500
-                                                     and inconsistente.json()["error"]["codigo"] == "error_interno"
+    ok["A2_historico_inconsistente_sin_detalles"] = (inconsistente.status_code == 409
+                                                     and inconsistente.json()["error"]["codigo"] == "historico_no_valido"
                                                      and "paleta" not in inconsistente.text
                                                      and "numero_sorteo" not in inconsistente.text)
 
