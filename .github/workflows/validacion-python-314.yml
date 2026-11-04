@@ -19,6 +19,17 @@ jobs:
   linux:
     name: Linux - suite completa
     runs-on: ubuntu-24.04
+    # E10.4: las 40 pruebas PostgreSQL deben ejecutarse tambien en la suite completa.
+    # El comprobador de omisiones sigue estricto. Puerto efimero para no alterar otros fixtures.
+    services:
+      postgres_e104:
+        image: docker.io/library/postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: solo-ci-desechable
+        ports: ["127.0.0.1::5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres" --health-interval 5s --health-timeout 3s --health-retries 20
     defaults:
       run:
         working-directory: backend
@@ -39,6 +50,8 @@ jobs:
       - name: OpenSSL del runner
         run: openssl version
       - name: Suite completa
+        env:
+          E104_PG_SUPERUSUARIO_URL: postgresql://postgres:solo-ci-desechable@127.0.0.1:${{ job.services.postgres_e104.ports[5432] }}/postgres
         run: python -m pytest -p no:cacheprovider -rsw --junitxml=../resultados-linux.xml
       - name: Contrastes con openssl ts -verify (deben pasar los siete)
         run: python scripts/ci_contrastes_openssl.py ../resultados-linux.xml --modo exigir --resumen "$GITHUB_STEP_SUMMARY"

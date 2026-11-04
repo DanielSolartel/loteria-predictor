@@ -4553,15 +4553,18 @@ Matriz, decisiones y limitaciones: [fase8_api_publica.md](backend/docs/fase8_api
 
 **Criterios de finalización:** sistema corriendo en producción con monitoreo, backups verificados, y una auditoría de seguridad aprobada.
 
-**Estado (2026-11-03; la fase sigue abierta):**
+**Estado (2026-11-04; la fase sigue abierta):**
 
 | Etapa | Estado | Referencia |
 |---|---|---|
 | E10.1 Seguridad de la consola local | Integrada en el PR #108 (merge `375fc8ca`, cinco checks aprobados) | [fase10_e101_seguridad_consola.md](backend/docs/fase10_e101_seguridad_consola.md) |
-| E10.2 Consulta privada (SEC-04..08, SEC-10, DAT-07) | Implementada; demostración de extremo a extremo en Linux aislado con datos sintéticos y tres procedencias verificadas. Windows nativo: 206 pruebas y ensayo focal de Brave aprobados y auditados. Pendiente: publicación, integración, CI remoto y producción | [fase10_consulta_privada.md](backend/docs/fase10_consulta_privada.md) |
-| E10.3 Lock, imágenes y CI de seguridad | Implementada; imágenes, SBOM y auditorías validados en Linux. Lock instalado con hashes en Windows nativo (58 paquetes), pip check y 206 pruebas aprobadas. Críticos de tinypool resueltos con Vitest 4.1.12, sin excepciones aceptadas. Pendiente: publicación, integración, CI remoto y Grype real (sin informe limpio) | [fase10_imagenes_y_ci.md](backend/docs/fase10_imagenes_y_ci.md) |
-| E10.4 Importador de la generación | No iniciada (F10-DAT-02 abierto); la imagen base compartible ya existe | — |
-| E10.5–E10.7 | No iniciadas; proveedor, presupuesto, infraestructura, registro, secretos reales, respaldos y activación sin decidir | — |
+| E10.2 Consulta privada (SEC-04..08, SEC-10, DAT-07) | **Integrada** en el PR #109 (`main` `4aa24b85`; 11 checks del head `f219e499` aprobados). Windows nativo: 206 pruebas y ensayo focal de Brave aprobados y auditados (2026-11-03). Pendiente: producción | [fase10_consulta_privada.md](backend/docs/fase10_consulta_privada.md) |
+| E10.3 Lock, imágenes y CI de seguridad | **Integrada** en el PR #109. Grype real: 8 avisos High por imagen **aceptados temporalmente** (16 entradas exactas, caducidad 2026-11-17) y 0 graves abiertos; no son avisos corregidos | [fase10_imagenes_y_ci.md](backend/docs/fase10_imagenes_y_ci.md) |
+| E10.4 Generaciones, importación, validación y respaldos | **Implementada y demostrada en Linux** con PostgreSQL y datos sintéticos: captura `observacion-doble-e104/1`, generación sellada (Ed25519), importador con rechazo seguro, perfil privado ligado a una generación, respaldo cifrado, restauración R-L y retención; C1–C10 como pruebas de comportamiento y trabajo de CI `generaciones`. v2 (auditoría de Codex de la v1): propiedad y exclusión de bases entre raíces, vínculo del código de la API comprobado en la imagen real, limpieza sin seguir enlaces, plazo total impuesto, restauración con estado y DAT-06 sin vetar ausencias legítimas (§14 de la guía). **Uso real bloqueado** hasta D10; F10-DAT-02 abierto para producción; R-W y captura en Windows pendientes de ensayo nativo autorizado | [fase10_generaciones.md](backend/docs/fase10_generaciones.md) |
+| E10.5–E10.7 | No iniciadas; proveedor, presupuesto, infraestructura, registro, secretos reales, RPO/RTO, custodia de respaldos y activación (D11) sin decidir | — |
+
+Estado anterior (2026-11-03, histórico): E10.2 y E10.3 implementadas y pendientes de integración, CI remoto y
+Grype real; E10.4 no iniciada.
 
 ---
 
