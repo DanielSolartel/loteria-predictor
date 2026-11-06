@@ -231,6 +231,36 @@ ni demuestra inalcanzabilidad en todo el código nativo.
 - **Esta aceptación es solo de vulnerabilidades (opción B del PR #109).** No autoriza el protocolo B de captura
   de la enmienda 01, que pausaría Fase 6: D10 y D11 siguen pendientes.
 
+### PR #111: TLS de prueba y ampliación B (6 de noviembre de 2026)
+
+El run `42253840876` falló en dos pruebas de `operacion_consulta/test_sonda_tls.py`: los certificados
+sintéticos carecían de Authority Key Identifier, exigido por la validación estricta de Python 3.14.
+La PKI efímera de prueba incorpora SKI, AKI y Key Usage; el servidor de prueba también valida con
+`VERIFY_X509_STRICT`. Se mantienen las comprobaciones de nombre, cadena y certificado cliente. No cambia
+el TLS del producto. En Python 3.14.9 local se reprodujeron los dos fallos originales y, con la corrección,
+pasaron las 136 pruebas de operación, incluidos los intercambios mTLS reales en loopback. El runner que
+originó el fallo usaba Python 3.14.10; la suite remota corregida queda pendiente.
+
+El run de imágenes `42253840794`, job `128015614560`, informó de un alto nuevo por imagen:
+`CVE-2026-76844` en `zlib1g` **`1:1.3.dfsg+really1.3.1-1+b1`**, estado Grype `not-fixed`.
+El [registro de Debian](https://security-tracker.debian.org/tracker/CVE-2026-76844) sigue considerando
+vulnerable Trixie; la versión corregida publicada pertenece a forky/sid. Se conservan las bases fijadas.
+
+Tras revisar el aviso y el alcance, el usuario confirmó expresamente «confirmo» a la ampliación B:
+
+- Se añaden **solo dos entradas**: el CVE, paquete, versión y severidad `high` exactos anteriores para
+  `imagen-api` y `imagen-pasarela`. Las 16 aceptaciones anteriores y las dos retiradas se conservan.
+- Fecha de esta ampliación: **2026-11-06**. Caducidad: **2026-11-17 inclusive, UTC**, sin renovación
+  automática. Total: 18 aceptaciones temporales, nueve por imagen.
+- Solo **CI e integración del PR #111**. No autoriza despliegue, publicación de imágenes ni exposición
+  a Internet. El aviso permanece presente; la aceptación no es una corrección.
+- Un CVE, paquete, versión, artefacto o severidad diferente sigue sin cobertura. Se conserva el comprobador
+  del umbral y la generación y publicación de informes completos.
+
+El comparador real acepta los dos informes conservados de ese run con este registro y bloquea de nuevo
+al caducar las aceptaciones. Esto verifica la política sobre los informes existentes; la construcción y
+el escaneo de las imágenes en la nueva CI quedan pendientes.
+
 ## 4. Propuesta de protección de `main` (sin aplicar)
 
 No se cambia ninguna configuración de GitHub ni se configura CD. Propuesta para que Daniel la decida:

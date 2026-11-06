@@ -1,5 +1,5 @@
 {
-  "nota": "PR #109, opcion B confirmada expresamente por el usuario el 2026-11-03. Hay 16 excepciones temporales para imagen-api/imagen-pasarela: solo esos CVE, paquetes, versiones y severidad high, hasta 2026-11-17 inclusive segun fecha UTC del CI. Son avisos presentes aceptados temporalmente, no corregidos. Solo CI e integracion; sin autorizacion de despliegue ni publicacion. Las dos entradas de tinypool siguen retiradas por actualizacion, sin aceptante.",
+  "nota": "PR #109: 16 excepciones de la opcion B confirmada el 2026-11-03, conservadas. PR #111: ampliacion expresa confirmada el 2026-11-06, solo CVE-2026-76844 en zlib1g 1:1.3.dfsg+really1.3.1-1+b1, severidad high, una entrada para imagen-api y otra para imagen-pasarela. Total: 18 aceptaciones temporales hasta 2026-11-17 inclusive segun fecha UTC del CI, sin renovacion automatica. Los avisos siguen presentes; no estan corregidos. Solo CI e integracion; sin autorizacion de despliegue, publicacion de imagenes ni exposicion a Internet. Las dos entradas de tinypool siguen retiradas por actualizacion, sin aceptante.",
   "excepciones": [
     {
       "id": "GHSA-5gmw-xhrv-c9v3",
@@ -390,6 +390,52 @@
         "url": "https://security-tracker.debian.org/tracker/CVE-2026-95619"
       },
       "revision": "Sin renovacion automatica. Revisar ante correccion disponible, cambio de version, exposicion o evidencia de explotacion; caducidad inclusiva por fecha UTC del CI."
+    },
+    {
+      "id": "CVE-2026-76844",
+      "paquete": "zlib1g",
+      "version": "1:1.3.dfsg+really1.3.1-1+b1",
+      "artefacto": "imagen-api",
+      "formato": "grype",
+      "severidad": "high",
+      "estado": "aceptada",
+      "aceptada_por": "Usuario responsable del proyecto (confirmacion expresa de la ampliacion B en ChatGPT)",
+      "fecha_aceptacion": "2026-11-06",
+      "caduca": "2026-11-17",
+      "motivo": "Aviso alto adicional de zlib identificado por Grype real en el run 42253840794. Trixie sigue vulnerable; no se declara remediado ni inalcanzable. Mismo cambio corrector que CVE-2026-85091, pero identificador y rango afectados diferentes.",
+      "alcance": "Solo CI e integracion del PR #111. No autoriza despliegue, publicacion de imagenes ni exposicion a Internet.",
+      "evidencia": {
+        "head": "0653b79ad51ce57be25ae6e3b8223e60510b51a0",
+        "run_id": 42253840794,
+        "informe_sha256": "08e12e55ad75fd12258e94fe9a37a1d1fe565cf84061223c350ce294490b7275",
+        "estado_fix_grype": "not-fixed",
+        "url": "https://security-tracker.debian.org/tracker/CVE-2026-76844"
+      },
+      "revision": "Sin renovacion automatica; conservar la caducidad del 2026-11-17 inclusive, evaluada en UTC. Revisar al publicarse correccion para Trixie o cambiar version, severidad o exposicion.",
+      "referencia_aceptacion": "Confirmacion expresa del usuario: confirmo, en respuesta a la propuesta de ampliar B exclusivamente a CVE-2026-76844 en zlib1g 1:1.3.dfsg+really1.3.1-1+b1 para imagen-api e imagen-pasarela hasta 2026-11-17, solo CI e integracion del PR #111. Fecha local 2026-11-06 (America/Bogota)."
+    },
+    {
+      "id": "CVE-2026-76844",
+      "paquete": "zlib1g",
+      "version": "1:1.3.dfsg+really1.3.1-1+b1",
+      "artefacto": "imagen-pasarela",
+      "formato": "grype",
+      "severidad": "high",
+      "estado": "aceptada",
+      "aceptada_por": "Usuario responsable del proyecto (confirmacion expresa de la ampliacion B en ChatGPT)",
+      "fecha_aceptacion": "2026-11-06",
+      "caduca": "2026-11-17",
+      "motivo": "Aviso alto adicional de zlib identificado por Grype real en el run 42253840794. Trixie sigue vulnerable; no se declara remediado ni inalcanzable. Mismo cambio corrector que CVE-2026-85091, pero identificador y rango afectados diferentes.",
+      "alcance": "Solo CI e integracion del PR #111. No autoriza despliegue, publicacion de imagenes ni exposicion a Internet.",
+      "evidencia": {
+        "head": "0653b79ad51ce57be25ae6e3b8223e60510b51a0",
+        "run_id": 42253840794,
+        "informe_sha256": "aab958714a521c63d1e18aef4ff6ded28cf4e7c45c7e4554644853e951f35204",
+        "estado_fix_grype": "not-fixed",
+        "url": "https://security-tracker.debian.org/tracker/CVE-2026-76844"
+      },
+      "revision": "Sin renovacion automatica; conservar la caducidad del 2026-11-17 inclusive, evaluada en UTC. Revisar al publicarse correccion para Trixie o cambiar version, severidad o exposicion.",
+      "referencia_aceptacion": "Confirmacion expresa del usuario: confirmo, en respuesta a la propuesta de ampliar B exclusivamente a CVE-2026-76844 en zlib1g 1:1.3.dfsg+really1.3.1-1+b1 para imagen-api e imagen-pasarela hasta 2026-11-17, solo CI e integracion del PR #111. Fecha local 2026-11-06 (America/Bogota)."
     }
   ]
 }

@@ -22,10 +22,17 @@ def emitir(raiz, nombre, ca=None, *, servidor=None):
     llave = ec.generate_private_key(ec.SECP256R1())
     sujeto = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, nombre)])
     ahora = datetime.now(timezone.utc)
+    identificador = x509.SubjectKeyIdentifier.from_public_key(llave.public_key())
+    emisor = ca[1].extensions.get_extension_for_class(x509.SubjectKeyIdentifier).value if ca else identificador
     b = (x509.CertificateBuilder().subject_name(sujeto).issuer_name(ca[1].subject if ca else sujeto)
          .public_key(llave.public_key()).serial_number(x509.random_serial_number())
          .not_valid_before(ahora - timedelta(minutes=1)).not_valid_after(ahora + timedelta(hours=1))
-         .add_extension(x509.BasicConstraints(ca=ca is None, path_length=0 if ca is None else None), critical=True))
+         .add_extension(x509.BasicConstraints(ca=ca is None, path_length=0 if ca is None else None), critical=True)
+         .add_extension(identificador, critical=False)
+         .add_extension(x509.AuthorityKeyIdentifier.from_issuer_subject_key_identifier(emisor), critical=False)
+         .add_extension(x509.KeyUsage(digital_signature=True, content_commitment=False, key_encipherment=False,
+                                     data_encipherment=False, key_agreement=False, key_cert_sign=ca is None,
+                                     crl_sign=ca is None, encipher_only=None, decipher_only=None), critical=True))
     if servidor:
         b = b.add_extension(x509.SubjectAlternativeName([x509.DNSName(servidor)]), critical=False)
     if ca:
@@ -69,6 +76,7 @@ def servidor_tls(tmp_path, plan):
     contexto.load_cert_chain(str(carpeta / "servidor.crt"), str(carpeta / "servidor.key"))
     contexto.load_verify_locations(str(carpeta / "ca-servidor.crt"))
     contexto.verify_mode = ssl.CERT_REQUIRED
+    contexto.verify_flags |= ssl.VERIFY_X509_STRICT
     servidor.socket = contexto.wrap_socket(servidor.socket, server_side=True)
     hilo = threading.Thread(target=servidor.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)
     hilo.start()
@@ -87,8 +95,9 @@ def test_sonda_real_mtls_preserva_sni_y_host(almacen, servidor_tls):
 
 def test_sonda_no_desactiva_validacion_del_nombre(almacen, servidor_tls):
     plan, _ = servidor_tls
-    with pytest.raises(ssl.SSLCertVerificationError):
+    with pytest.raises(ssl.SSLCertVerificationError) as error:
         Docker(almacen, "a" * 32)._tls(replace(plan, host="otro.ensayo.invalid"), time.monotonic() + 5)
+    assert error.value.verify_code == 62  # X509_V_ERR_HOSTNAME_MISMATCH; la cadena es valida.
 
 
 def test_sonda_no_acepta_cliente_de_otra_ca(almacen, servidor_tls):
