@@ -206,6 +206,32 @@ class ArchivosYProtocolo(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t, self.assertRaises(ensayo.Detenido):
             ensayo.extraer(self.zip_de([("backend/app/codigo.py", b"cambio")]), Path(t), cambios=True)
 
+    def test_fuentes_erroneas_se_rechazan_antes_de_efectos(self):
+        with patch.object(ensayo, "ejecutar_docker") as docker, patch.object(ensayo.tempfile, "mkdtemp") as crear:
+            with self.assertRaisesRegex(ensayo.Detenido, "fuentes_no_corresponden"):
+                ensayo.realizar(b"archivo ajeno", b"", confirmar=True)
+            docker.assert_not_called()
+            crear.assert_not_called()
+
+    def test_fuentes_se_extraen_sin_git_y_conservan_bytes_originales(self):
+        xml = '\ufeff<?xml version="1.0" encoding="UTF-16"?>\r\n'.encode('utf-16-le')
+        b = self.zip_de([("backend/tests/fixture.xml", xml), ("backend/app/__init__.py", b"")])
+        with patch.object(ensayo, "SHA256_FUENTE_BASE", hashlib.sha256(b).hexdigest()):
+            ensayo.verificar_fuentes(b)
+            with tempfile.TemporaryDirectory() as t:
+                destino = Path(t) / "carpeta sin Git con espacios"
+                ensayo.extraer(b, destino)
+                self.assertEqual((destino / "backend/tests/fixture.xml").read_bytes(), xml)
+
+    def test_un_byte_cambiado_invalida_las_fuentes_completas(self):
+        b = self.zip_de([("backend/app/__init__.py", b"")])
+        with patch.object(ensayo, "SHA256_FUENTE_BASE", hashlib.sha256(b).hexdigest()):
+            ensayo.verificar_fuentes(b)
+            cambiado = bytearray(b)
+            cambiado[-1] ^= 1
+            with self.assertRaises(ensayo.Detenido):
+                ensayo.verificar_fuentes(bytes(cambiado))
+
     def test_zip_rechaza_enlaces_y_duplicados(self):
         with tempfile.TemporaryDirectory() as t:
             b = io.BytesIO()

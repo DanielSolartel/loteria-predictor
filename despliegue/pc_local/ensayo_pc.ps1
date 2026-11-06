@@ -1,16 +1,14 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)][string]$Repositorio,
     [Parameter(Mandatory=$true)][string]$DirectorioSalida,
     [Parameter(Mandatory=$true)][switch]$AutorizarEnsayoSintetico
 )
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 if (-not $AutorizarEnsayoSintetico) { throw 'Falta la autorizacion del ensayo sintetico local.' }
-if (-not (Test-Path -LiteralPath $Repositorio -PathType Container)) { throw 'No existe el repositorio indicado.' }
 if (-not (Test-Path -LiteralPath $DirectorioSalida -PathType Container)) { throw 'No existe la carpeta de salida.' }
 
-$esperados = @('ensayo_pc.ps1', 'ensayo.py', 'cambios.zip', 'LEEME.md', 'VALIDACION.md')
+$esperados = @('ensayo_pc.ps1', 'ensayo.py', 'fuentes.zip', 'ORIGEN_FUENTES.json', 'cambios.zip', 'LEEME.md', 'VALIDACION.md')
 $vistos = @{}
 foreach ($linea in [IO.File]::ReadAllLines((Join-Path $PSScriptRoot 'SHA256SUMS'))) {
     if ($linea -notmatch '^([0-9a-f]{64})  ([A-Za-z0-9_.-]+)$') { throw 'Manifiesto no valido.' }
@@ -32,20 +30,13 @@ $ocupados = @(Get-NetTCPConnection -State Listen -ErrorAction Stop |
     Where-Object { $_.LocalPort -in @(18443, 9125) })
 if ($ocupados.Count -ne 0) { throw '18443 o 9125 esta ocupado en Windows. No se inicia el ensayo.' }
 
-$arbolBase = 'd2aee8ac47bfb9e19f75f76b9d9163bd1f18fb0c'
-$tipo = @(& git -C $Repositorio cat-file -t $arbolBase)
-if ($LASTEXITCODE -ne 0 -or $tipo.Count -ne 1 -or $tipo[0] -ne 'tree') {
-    throw 'La base integrada no esta disponible. Este bloque no descarga ni cambia Git.'
-}
-$temporal = Join-Path ([IO.Path]::GetTempPath()) ('e107-fuente-' + [Guid]::NewGuid().ToString('N') + '.zip')
 $codificacionAnterior = $OutputEncoding
 $paquetes = New-Object 'System.Collections.Generic.List[string]'
 try {
-    # Solo archivos versionados de este commit, nunca el arbol de trabajo, .env o datos privados.
-    & git -C $Repositorio archive --format=zip --output=$temporal $arbolBase backend despliegue
-    if ($LASTEXITCODE -ne 0) { throw 'No se pudo copiar la base. No se inicia el ensayo.' }
-    if ((Get-Item -LiteralPath $temporal).Length -gt 67108864) { throw 'La copia de fuentes excede el limite.' }
-    $fuente64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($temporal))
+    # Fuentes completas incluidas en el paquete. No se lee el proyecto del usuario.
+    $fuentes = Join-Path $PSScriptRoot 'fuentes.zip'
+    if ((Get-Item -LiteralPath $fuentes).Length -gt 67108864) { throw 'La copia de fuentes excede el limite.' }
+    $fuente64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($fuentes))
     $cambios64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $PSScriptRoot 'cambios.zip')))
     $ejecutor64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $PSScriptRoot 'ensayo.py')))
     $codigo = "import base64`nexec(compile(base64.b64decode('" + $ejecutor64 +
@@ -61,7 +52,6 @@ try {
     $codigoWsl = $LASTEXITCODE
 } finally {
     $OutputEncoding = $codificacionAnterior
-    if (Test-Path -LiteralPath $temporal -PathType Leaf) { Remove-Item -LiteralPath $temporal -Force }
 }
 if ($paquetes.Count -ne 1) { throw 'Ubuntu no entrego la evidencia. Comparte la salida y no repitas el bloque.' }
 $dato = $paquetes[0] | ConvertFrom-Json

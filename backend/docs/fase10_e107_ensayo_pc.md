@@ -1,4 +1,4 @@
-# E10.7: ensayo local en el PC, con datos sinteticos
+# E10.7 v2: ensayo local en el PC, con fuentes incluidas
 
 Base: PR #111, commit `4aaca446c5ea79975683220da0037e2569fbe28e`.
 Destino elegido: PC Windows del usuario, Ubuntu/WSL y Docker Desktop.
@@ -20,10 +20,18 @@ El permiso del perfil se crea exclusivamente al ejecutar el lanzador con
 `-AutorizarEnsayoSintetico`. Este archivo es un registro local de la decision;
 no es una firma de identidad del usuario ni una aprobacion para datos reales.
 
-El lanzador lee el commit integrado mediante `git archive` y trabaja con una
-copia en una carpeta nueva de Ubuntu. No incorpora el arbol de trabajo, archivos
-sin versionar, la base real, SQLite privado, `.env` locales ni el Programador.
-Los cambios E10.7 se aplican a esa copia; nunca modifican `backend/app`.
+El paquete incluye `fuentes.zip` con los 961 archivos versionados de `backend/`
+y `despliegue/` de la base integrada. Cada blob se contrasto con su SHA-1 de Git
+y se reconstruyeron ambos subarboles: sus huellas coinciden con las del commit.
+El inventario `ORIGEN_FUENTES.json` registra tambien SHA-256 y tamano de cada
+archivo. Se conservan los bytes originales, incluido un XML UTF-16.
+
+El lanzador verifica los archivos incluidos y el ejecutor vuelve a comprobar
+el SHA-256 fijo de las fuentes antes de crear recursos. Trabaja con una copia en
+una carpeta nueva de Ubuntu. Git y una carpeta local del proyecto no son
+requisitos; no lee el proyecto del usuario, la base real, SQLite privado, `.env`
+locales ni el Programador. Los cambios E10.7 se aplican a esa copia; nunca
+modifican `backend/app`. Puede ejecutarse desde cualquier carpeta de PowerShell.
 
 El ensayo ejecuta:
 
@@ -50,20 +58,19 @@ servicio persistente. Fase 6 permanece fuera del alcance del ejecutor.
 
 ## Ejecucion
 
-El ZIP de entrega contiene `ensayo_pc.ps1`, `ensayo.py`, `cambios.zip`,
-`LEEME.md`, `VALIDACION.md` y `SHA256SUMS`. Verificar la huella del ZIP entregado
-antes de extraerlo. Desde PowerShell 5.1, ejecutar el lanzador extraido:
+El ZIP de entrega v2 contiene `ensayo_pc.ps1`, `ensayo.py`, `fuentes.zip`,
+`ORIGEN_FUENTES.json`, `cambios.zip`, `LEEME.md`, `VALIDACION.md` y `SHA256SUMS`.
+Verificar la huella del ZIP entregado antes de extraerlo. Desde PowerShell 5.1,
+ejecutar el lanzador extraido:
 
 ```powershell
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File '<carpeta extraida>\ensayo_pc.ps1' `
-  -Repositorio 'C:\GitHub\loteria-predictor' `
   -DirectorioSalida '<carpeta existente para la evidencia>' `
   -AutorizarEnsayoSintetico
 ```
 
-El cambio de politica solo afecta ese proceso. El repositorio debe contener la
-base integrada; no se cambia de rama, descarga ni modifica Git. No se requiere
-un checkout limpio porque se archiva el commit, no los archivos actuales.
+El cambio de politica solo afecta ese proceso. El lanzador no invoca Git,
+descarga fuentes, cambia de rama ni necesita una carpeta de trabajo especifica.
 
 El preparador puede tardar varios minutos. El lanzador muestra las etapas y
 entrega un ZIP nuevo `e107-ensayo-pc-evidencia-<id>.zip`. Compartir ese ZIP y el
@@ -91,7 +98,7 @@ python -B -m despliegue.operacion_consulta.demostracion
 ```
 
 La primera orden prueba el perfil, permiso, persistencia, aislamiento de archivos,
-protocolo stdin, evidencia y mTLS real sobre loopback, incluida validacion X.509
-estricta. La segunda conserva las ocho comprobaciones de la demostracion
+integridad de fuentes incluidas, protocolo stdin, evidencia y mTLS real sobre
+loopback, incluida validacion X.509 estricta. La segunda conserva las ocho comprobaciones de la demostracion
 E10.5/E10.6, con servicios sustitutos y HTTP real. Ninguna equivale al ensayo
 Docker/PostgreSQL/nginx ni a PowerShell 5.1.

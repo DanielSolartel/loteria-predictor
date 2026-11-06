@@ -1,7 +1,8 @@
 """Ensayo E10.7 de una sola ejecucion en Ubuntu/WSL, con recursos nuevos.
 
-El lanzador de PowerShell entrega dos ZIP por stdin: un git archive de la base
-integrada y los cambios revisados. No lee el arbol de trabajo ni datos del PC.
+El lanzador de PowerShell entrega dos ZIP por stdin: las fuentes verificadas de
+la base integrada y los cambios revisados. No requiere Git ni una carpeta de
+proyecto en el PC; no lee el arbol de trabajo ni datos operativos del usuario.
 No instala, construye, descarga imagenes, cambia Git ni habilita servicios.
 """
 from __future__ import annotations
@@ -32,6 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
 BASE = "4aaca446c5ea79975683220da0037e2569fbe28e"
+SHA256_FUENTE_BASE = "9ccaf8f9a9bd573d67d20e4454d9c535d71ed1dbbbb4e34d6794cd63e6d9011e"
 IMAGENES = {
     "api": "sha256:8894aa842c444e8e638d96899b0a4e97df908088843daa5e33c8d38bdf2e8adc",
     "pasarela": "sha256:aca6a94ef3e1a4fa0ef75589610afa10603d778864cbf846c1804a79a3121238",
@@ -45,6 +47,11 @@ LIMITE_ZIP = 64 * 1024 * 1024
 
 class Detenido(ValueError):
     pass
+
+
+def verificar_fuentes(datos: bytes) -> None:
+    if len(datos) > LIMITE_ZIP or hashlib.sha256(datos).hexdigest() != SHA256_FUENTE_BASE:
+        raise Detenido("fuentes_no_corresponden_a_la_base_integrada")
 
 
 def extraer(datos: bytes, destino: Path, *, cambios: bool = False) -> None:
@@ -134,7 +141,8 @@ class Ensayo:
         self.auxiliares = 0
         self.pg = "e107" + self.id + "-postgres"
         self.plan = self.control = self.runtime = None
-        self.informe = {"version": "e107-ensayo-pc/1", "base_codigo": BASE, "codigo": 1,
+        self.informe = {"version": "e107-ensayo-pc/2", "base_codigo": BASE, "codigo": 1,
+            "fuentes_sha256": SHA256_FUENTE_BASE,
             "estado": "iniciado", "destino_elegido": "pc_del_usuario", "datos": "sinteticos",
             "produccion_autorizada": False, "fase6_intervenida": False,
             "imagenes_descargadas_o_construidas": False, "instalaciones": False,
@@ -356,6 +364,7 @@ class Ensayo:
 def realizar(fuente: bytes, cambios: bytes, *, confirmar: bool) -> dict:
     if confirmar is not True:
         raise Detenido("falta_autorizacion_local_explicita")
+    verificar_fuentes(fuente)
     if os.name != "posix" or sys.version_info[:2] != (3, 14) or os.getuid() == 0:
         raise Detenido("requiere_ubuntu_python314_usuario_sin_privilegios")
     if not all(puerto_libre(p) for p in (18443, 9125)):
@@ -409,7 +418,7 @@ def main():
                      base64.b64decode(CAMBIOS_BASE64, validate=True),
                      confirmar=args.autorizar_ensayo_sintetico)
     except BaseException as error:
-        r = {"version": "e107-ensayo-pc/1", "base_codigo": BASE, "codigo": 1,
+        r = {"version": "e107-ensayo-pc/2", "base_codigo": BASE, "codigo": 1,
              "estado": "precondicion_rechazada", "produccion_autorizada": False,
              "motivo": str(error) if isinstance(error, Detenido) else "entrada_no_valida"}
     b = paquete_evidencia(r)
