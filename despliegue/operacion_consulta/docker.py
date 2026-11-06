@@ -45,13 +45,18 @@ print(json.dumps(app.state.generacion))
 
 class Docker:
     def __init__(self, almacen: Almacen, propietario: str, *, ejecutar=None, reloj=time.monotonic,
-                 dormir=time.sleep, sonda_tls=None, sonda_cierre=None):
+                 dormir=time.sleep, sonda_tls=None, sonda_cierre=None, verificador=None):
         self.a, self.propietario = almacen, propietario
         self.ejecutar = ejecutar or self._ejecutar
         self.reloj, self.dormir = reloj, dormir
         self.sonda_tls = sonda_tls or self._tls
         self.sonda_cierre = sonda_cierre or self._cierre
         self.ultimo_estado = None
+        self.verificador = verificador
+
+    def _permiso_local(self, p: Plan):
+        from .local import comprobar
+        comprobar(self.a, p)
 
     def _ejecutar(self, argumentos: list[str], plazo: float) -> bytes:
         restante = min(45, plazo - self.reloj())
@@ -147,6 +152,7 @@ class Docker:
                 pass
 
     def materializar(self, p: Plan):
+        self._permiso_local(p)
         fd = self._carpeta(p, crear=True)
         try:
             for nombre, contenido in self._esperados(p).items():
@@ -183,6 +189,7 @@ class Docker:
                              *argumentos], plazo)
 
     def contenedores(self, p: Plan, plazo: float) -> dict[str, dict]:
+        self._permiso_local(p)
         proyecto = p.proyecto(self.propietario)
         salida = self.ejecutar(["ps", "-aq", "--filter", "label=com.docker.compose.project=" + proyecto], plazo)
         ids = salida.decode("ascii").split()
@@ -254,7 +261,10 @@ class Docker:
             raise Rechazo("montaje_no_valido")
 
     def preparar(self, p: Plan, plazo: float):
-        from app.infrastructure.generaciones.importacion import verificar_publicada
+        self._permiso_local(p)
+        verificar_publicada = self.verificador
+        if verificar_publicada is None:
+            from app.infrastructure.generaciones.importacion import verificar_publicada
         for s in ("api", "pasarela", "proxy"):
             for origen in montajes(p, str(self.carpeta(p)), s).values():
                 if origen != str(self.carpeta(p)):
