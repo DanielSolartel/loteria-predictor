@@ -5330,7 +5330,7 @@ loteria-predictor/
 
 Ver [ROADMAP.md](./ROADMAP.md) para el detalle de cada fase (objetivo, dependencias, entregables, criterios de finalización).
 
-**Fase 10 (en curso, no cerrada; 2026-11-04):**
+**Fase 10 (en curso, no cerrada; 2026-11-05):**
 
 - **E10.1** (seguridad de la consola local): integrado en el PR #108.
 - **E10.2** (consulta privada: proxy con certificado de cliente por persona, pasarela y API en perfil privado,
@@ -5338,15 +5338,26 @@ Ver [ROADMAP.md](./ROADMAP.md) para el detalle de cada fase (objetivo, dependenc
   el PR #109 (`main` `4aa24b85`), con los 11 checks aprobados.
 - **Grype real:** 8 avisos High por imagen **aceptados temporalmente** (caducan el 2026-11-17) y 0 graves
   abiertos; no son avisos corregidos.
-- **E10.4** (generaciones, captura coherente, importación, validación y respaldos): implementado y demostrado
+- **E10.4** (generaciones, captura coherente, importación, validación y respaldos): integrado en PR #110
+  (merge `e154a136`, doce checks aprobados), implementado y demostrado
   en Linux con PostgreSQL y datos sintéticos; escenarios C1–C10 como pruebas de comportamiento. El uso con datos
   reales está **bloqueado** hasta D10 y F10-DAT-02 sigue abierto. La recuperación operativa en Windows (R-W) está
   pendiente.
-- **Pendientes:** E10.5–E10.7 y producción.
+- **E10.5/E10.6:** candidato local de ensayo: planes por digest, activación con drenaje/reversión,
+  recuperación por diario, infraestructura Compose generada y exportador interno con señales de vigencia
+  separadas. **Ensayo nativo aislado aprobado el 2026-11-05: 15/15 casos**, con PostgreSQL, nginx,
+  API/pasarela y mTLS reales en Ubuntu/WSL sobre Windows. Dos generaciones sintéticas, drenajes de 25 s,
+  reversión y recuperación tras SIGKILL; 1177 fuentes conservadas y ocho contenedores detenidos al final.
+  Las 136 pruebas locales y la demostración HTTP 8/8 anteriores conservan su atribución y no se suman.
+  Integración y CI de esta entrega pendientes; no se ejecuta Actions con la cuota agotada.
+- **E10.7:** informe de preparación implementado; auditoría del destino, R-L/R-W y decisiones de producción
+  siguen pendientes. No hay despliegue ni nueva ejecución de Actions.
 
 Guías: [consulta privada](backend/docs/fase10_consulta_privada.md), [imágenes y CI](backend/docs/fase10_imagenes_y_ci.md),
-[generaciones](backend/docs/fase10_generaciones.md) e
+[generaciones](backend/docs/fase10_generaciones.md),
+[operación y observabilidad](backend/docs/fase10_operacion_y_observabilidad.md) e
 [informe nativo](backend/docs/fase10_e102_e103_validacion_operador_2026-11-03.md) (este último, histórico).
+Acta vigente de E10.5/E10.6: [validación aislada del operador, 2026-11-05](backend/docs/fase10_e105_e106_validacion_operador_2026-11-05.md).
 
 ---
 

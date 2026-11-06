@@ -92,12 +92,19 @@ def test_excepciones_versionadas_respetan_la_aceptacion_B_exacta_y_las_retiradas
               for p in ("libgcc-s1", "libstdc++6")}
     pares.add(("CVE-2026-85091", "zlib1g", "1:1.3.dfsg+really1.3.1-1+b1"))
     aceptadas = [e for e in datos if e["estado"] == "aceptada"]
-    assert len(datos) == 18 and len(aceptadas) == 16
-    assert {(e["artefacto"], e["id"], e["paquete"], e["version"]) for e in aceptadas} == {
+    originales = [e for e in aceptadas if e["id"] != "CVE-2026-76844"]
+    ampliacion = [e for e in aceptadas if e["id"] == "CVE-2026-76844"]
+    assert len(datos) == 20 and len(aceptadas) == 18 and len(originales) == 16 and len(ampliacion) == 2
+    assert {(e["artefacto"], e["id"], e["paquete"], e["version"]) for e in originales} == {
         (a, i, p, v) for a in ("imagen-api", "imagen-pasarela") for i, p, v in pares}
     assert all(e["formato"] == "grype" and e["severidad"] == "high" and e["aceptada_por"].strip()
-               and e["fecha_aceptacion"] == "2026-11-03" and e["caduca"] == "2026-11-17"
+               and e["caduca"] == "2026-11-17"
                and "No autoriza despliegue" in e["alcance"] for e in aceptadas)
+    assert all(e["fecha_aceptacion"] == "2026-11-03" for e in originales)
+    assert {(e["artefacto"], e["paquete"], e["version"]) for e in ampliacion} == {
+        (a, "zlib1g", "1:1.3.dfsg+really1.3.1-1+b1") for a in ("imagen-api", "imagen-pasarela")}
+    assert all(e["fecha_aceptacion"] == "2026-11-06" and "PR #111" in e["alcance"]
+               and e["evidencia"]["run_id"] == 42253840794 for e in ampliacion)
     assert all({"id", "paquete", "artefacto", "caduca", "motivo", "estado"} <= set(e) for e in datos)
 
 
