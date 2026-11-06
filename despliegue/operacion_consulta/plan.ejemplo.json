@@ -1,0 +1,23 @@
+{
+  "formato": "operacion-consulta/1",
+  "modo": "ensayo",
+  "generacion": "00000000000000000000000000000001",
+  "manifiesto_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "huella_app": "0000000000000000000000000000000000000000000000000000000000000000",
+  "imagen_api": "registry.invalid/loteria/api@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "imagen_pasarela": "registry.invalid/loteria/pasarela@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "imagen_proxy": "docker.io/library/nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de",
+  "host": "consulta.ensayo.invalid",
+  "puerto": 18443,
+  "red_interna": "172.28.12.0/24",
+  "red_servicio": "172.28.13.0/24",
+  "red_datos": "e105ensayodatosreemplazar",
+  "ip_datos_api": "172.29.0.21",
+  "directorio_generacion": "/ruta/ensayo/generaciones/00000000000000000000000000000001",
+  "clave_publica": "/ruta/ensayo/firma.pub",
+  "secretos": "/ruta/ensayo/secretos",
+  "pki_proxy": "/ruta/ensayo/pki-proxy",
+  "pki_sonda": "/ruta/ensayo/pki-sonda",
+  "drenaje_s": 30,
+  "presupuesto_corte_s": 120
+}
