@@ -32,9 +32,9 @@ $ocupados = @(Get-NetTCPConnection -State Listen -ErrorAction Stop |
     Where-Object { $_.LocalPort -in @(18443, 9125) })
 if ($ocupados.Count -ne 0) { throw '18443 o 9125 esta ocupado en Windows. No se inicia el ensayo.' }
 
-$base = '4aaca446c5ea79975683220da0037e2569fbe28e'
-$tipo = @(& git -C $Repositorio cat-file -t $base)
-if ($LASTEXITCODE -ne 0 -or $tipo.Count -ne 1 -or $tipo[0] -ne 'commit') {
+$arbolBase = 'd2aee8ac47bfb9e19f75f76b9d9163bd1f18fb0c'
+$tipo = @(& git -C $Repositorio cat-file -t $arbolBase)
+if ($LASTEXITCODE -ne 0 -or $tipo.Count -ne 1 -or $tipo[0] -ne 'tree') {
     throw 'La base integrada no esta disponible. Este bloque no descarga ni cambia Git.'
 }
 $temporal = Join-Path ([IO.Path]::GetTempPath()) ('e107-fuente-' + [Guid]::NewGuid().ToString('N') + '.zip')
@@ -42,7 +42,7 @@ $codificacionAnterior = $OutputEncoding
 $paquetes = New-Object 'System.Collections.Generic.List[string]'
 try {
     # Solo archivos versionados de este commit, nunca el arbol de trabajo, .env o datos privados.
-    & git -C $Repositorio archive --format=zip --output=$temporal $base backend despliegue
+    & git -C $Repositorio archive --format=zip --output=$temporal $arbolBase backend despliegue
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo copiar la base. No se inicia el ensayo.' }
     if ((Get-Item -LiteralPath $temporal).Length -gt 67108864) { throw 'La copia de fuentes excede el limite.' }
     $fuente64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($temporal))
