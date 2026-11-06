@@ -83,7 +83,8 @@ def extraer(datos: bytes, destino: Path, *, cambios: bool = False) -> None:
                 p.chmod(0o644)
 
 
-def ejecutar_docker(args: list[str], *, entrada: bytes | None = None, timeout: float = 60) -> bytes:
+def ejecutar_docker(args: list[str], *, entrada: bytes | None = None, timeout: float = 60,
+                    permitir_error: bool = False) -> bytes:
     proceso = None
     try:
         proceso = subprocess.Popen(["docker", "--host", "unix:///var/run/docker.sock", *args],
@@ -98,7 +99,7 @@ def ejecutar_docker(args: list[str], *, entrada: bytes | None = None, timeout: f
                 pass
             proceso.communicate(timeout=5)
         raise Detenido("comando_local_no_completo") from None
-    if proceso.returncode or len(salida) > 1048576:
+    if (proceso.returncode and not permitir_error) or len(salida) > 1048576:
         raise Detenido("comando_local_rechazado")
     return salida
 
@@ -141,7 +142,7 @@ class Ensayo:
         self.auxiliares = 0
         self.pg = "e107" + self.id + "-postgres"
         self.plan = self.control = self.runtime = None
-        self.informe = {"version": "e107-ensayo-pc/2", "base_codigo": BASE, "codigo": 1,
+        self.informe = {"version": "e107-ensayo-pc/3", "base_codigo": BASE, "codigo": 1,
             "fuentes_sha256": SHA256_FUENTE_BASE,
             "estado": "iniciado", "destino_elegido": "pc_del_usuario", "datos": "sinteticos",
             "produccion_autorizada": False, "fase6_intervenida": False,
@@ -190,12 +191,24 @@ class Ensayo:
         cid = ejecutar_docker(orden).decode("ascii").strip()
         if not re.fullmatch(r"[a-f0-9]{64}", cid):
             raise Detenido("id_auxiliar_no_valido")
-        salida = ejecutar_docker(["start", "--attach", cid], timeout=timeout)
+        salida = ejecutar_docker(["start", "--attach", cid], timeout=timeout, permitir_error=True)
         filas = [l.split(b":", 1)[1] for l in salida.splitlines() if l.startswith(b"E107_PREPARACION:")]
         if len(filas) != 1:
             raise Detenido("informe_auxiliar_ausente")
         d = json.loads(filas[0])
         if not isinstance(d, dict) or d.get("codigo") != 0:
+            if isinstance(d, dict):
+                fallo = {"modo": modo}
+                for campo in ("fase_preparacion", "paso_fallido", "tipo_error"):
+                    valor = d.get(campo)
+                    if isinstance(valor, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,80}", valor):
+                        fallo[campo] = valor
+                self.informe["fallo_auxiliar"] = fallo
+                for p in d.get("comprobaciones", []) if isinstance(d.get("comprobaciones"), list) else []:
+                    if (isinstance(p, dict) and isinstance(p.get("id"), str)
+                            and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", p["id"])
+                            and type(p.get("ok")) is bool):
+                        self.informe["comprobaciones"].append({"id": p["id"], "ok": p["ok"]})
             raise Detenido("preparacion_sintetica_rechazada")
         return d
 
@@ -253,6 +266,9 @@ class Ensayo:
             "-U", "postgres", "-d", "postgres"], entrada=sql.encode(), timeout=60)
 
     def activar(self, d: dict):
+        self.informe["generacion"] = d["generacion"]
+        self.informe["restauracion"] = d["restauracion"]
+        self.informe["comprobaciones"].extend(d["comprobaciones"])
         from despliegue.operacion_consulta.ciclo import Motor
         from despliegue.operacion_consulta.docker import Docker
         from despliegue.operacion_consulta.estado import Almacen
@@ -290,9 +306,6 @@ class Ensayo:
             return self.runtime
         resultado = Motor(self.control, crear).activar(self.plan)
         self.anotar("activacion_local_mtls", resultado.get("codigo") == 0)
-        self.informe["generacion"] = self.plan.generacion
-        self.informe["restauracion"] = d["restauracion"]
-        self.informe["comprobaciones"].extend(d["comprobaciones"])
 
     def sondear(self):
         from despliegue.operacion_consulta import observabilidad as ob
@@ -418,7 +431,7 @@ def main():
                      base64.b64decode(CAMBIOS_BASE64, validate=True),
                      confirmar=args.autorizar_ensayo_sintetico)
     except BaseException as error:
-        r = {"version": "e107-ensayo-pc/2", "base_codigo": BASE, "codigo": 1,
+        r = {"version": "e107-ensayo-pc/3", "base_codigo": BASE, "codigo": 1,
              "estado": "precondicion_rechazada", "produccion_autorizada": False,
              "motivo": str(error) if isinstance(error, Detenido) else "entrada_no_valida"}
     b = paquete_evidencia(r)

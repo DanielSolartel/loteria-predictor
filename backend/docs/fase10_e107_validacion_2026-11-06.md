@@ -1,64 +1,72 @@
-# Validacion E10.7 v2 — 6 de noviembre de 2026
+# Validacion E10.7 v3 — 6 de noviembre de 2026
 
-Base del producto: `4aaca446c5ea79975683220da0037e2569fbe28e` (PR #111).
-La revision del PC recibida en `e107-revision-pc-evidencia-3440caf0865d4870b4d062cceb50f9ef.zip`
-tiene codigo 0 y estado `revision_completada`. Su resultado se leyo directamente;
-el SHA-256 de `resultado.json` coincide con el manifiesto de esa evidencia.
+Base integrada: `4aaca446c5ea79975683220da0037e2569fbe28e` (PR #111).
+La correccion conserva los archivos de `backend/app`, Alembic, locks e imagenes.
 
-## Comprobaciones ejecutadas aqui
+## Resultado nativo confirmado
 
-Entorno de esta entrega: Linux, Python 3.12.14. No es el PC Windows del usuario.
+El ensayo v3 en el PC del operador termino con codigo 0 y **27/27 controles
+aprobados**, incluidos importacion D07, comparacion de consultas R08,
+activacion local mTLS, rechazo sin certificado y metricas de loopback. La
+restauracion quedo completa en una base nueva. Los servicios se detuvieron y
+los recursos se conservaron.
 
-- 30 pruebas `unittest` aprobadas, con subcasos adicionales de entradas invalidas.
-  Incluyen permiso propio, persistencia y rechazo antes de efectos; planes
-  anteriores; montajes y loopback; extraccion de fuentes y rechazo de cambios a
-  `backend/app`; evidencia con CRC/SHA-256; protocolo real por stdin; rechazo de
-  detencion de un recurso ajeno; mTLS real sobre loopback con certificado valido,
-  nombre incorrecto y ausencia de certificado; validacion X.509 estricta.
-  Las tres regresiones v2 comprueban el rechazo de fuentes incorrectas antes
-  de crear recursos, la conservacion de bytes UTF-16 al extraer en una carpeta
-  sin Git con espacios, y el rechazo al cambiar un byte del archivo de fuentes.
-- 8 comprobaciones de la demostracion E10.5/E10.6 aprobadas. Usa HTTP real y
-  servicios sustitutos: activacion, 503, lectores coherentes, reversion, diario,
-  recuperacion, retencion de datos sinteticos y vencimiento de metricas.
-- Sintaxis Python de los modulos nuevos y modificados verificada.
-- Los 961 archivos de las fuentes incluidas coinciden byte a byte con sus blobs
-  del commit base. Los dos subarboles reconstruidos coinciden exactamente:
-  `backend=ae33c618ca11b562d13a71a4f95bbfa7e4c9ab46` y
-  `despliegue=95195eb1ecc90f5bfb9b1a150a2f12942a7db22a`.
-  El ZIP de fuentes tiene SHA-256
-  `9ccaf8f9a9bd573d67d20e4454d9c535d71ed1dbbbb4e34d6794cd63e6d9011e`.
-- El protocolo Python real por stdin se ejecuto desde una carpeta vacia con
-  espacios y sin Git en PATH, usando el ZIP completo. Verifico las fuentes y
-  devolvio el rechazo esperado del entorno Python 3.12, con evidencia integra y
-  sin efectos en esa carpeta. Esta prueba no ejecuta PowerShell ni Docker.
+Se verificaron CRC, SHA-256 del ZIP recibido y SHA-256 interno del JSON. El
+informe con identificadores, huellas y alcance esta en
+[fase10_e107_validacion_nativa_2026-11-06.md](fase10_e107_validacion_nativa_2026-11-06.md).
 
-El lanzador v2 no recibe `Repositorio`, no invoca Git y no necesita leer el
-proyecto local. Las fuentes se entregan completas y verificadas en el paquete.
+El diagnostico del intento v2 situo el primer fallo en D07. La validacion
+interna utilizaba TestClient, cuya dependencia httpx pertenece al lock de
+pruebas y no al lock de servicio de la imagen auxiliar. La v3 usa Uvicorn/h11
+en loopback, dentro del mismo proceso que audita las aperturas de archivos.
+La ejecucion nativa confirma que D07 y R08 aprobaron con esa correccion.
 
-Ordenes:
+## Comprobaciones locales ejecutadas
 
-```bash
-python3 -B -m unittest discover -s backend/tests/unit/operacion_consulta -p test_perfil_local.py -q
-python3 -B -m despliegue.operacion_consulta.demostracion
-```
+Entorno local: Linux/Python 3.12.14; los resultados nativos anteriores proceden
+del PC y se registran por separado.
 
-## Ejecuciones pendientes
+- 30 pruebas del perfil y paquete: permiso propio, persistencia, entradas
+  invalidas, extraccion confinada, integridad de fuentes, protocolo stdin,
+  evidencia y mTLS real, incluida validacion X.509 estricta.
+- 10 pruebas del diagnostico: comandos de lectura, identidad del ensayo,
+  salida filtrada, OOM, logs truncados y montajes de Docker Desktop.
+- 10 regresiones de las consultas HTTP y el preparador: HTTP real sin
+  TestClient/httpx/httpcore, autenticacion, query string, rechazo de rutas
+  externas, manejo de estados/no-JSON, cierre del servidor ante errores,
+  auditoria de archivos desde el hilo HTTP y rechazo de escrituras. Incluyen
+  el corte inmediato en el primer fallo y la conservacion de controles previos
+  en la evidencia si una fase posterior falla.
+- 8 comprobaciones de la demostracion E10.5/E10.6, con HTTP real y servicios
+  sustitutos: activacion, mantenimiento, lectores coherentes, reversion,
+  recuperacion, conservacion de generaciones y vencimiento de metricas.
 
-No se dispone aqui de Docker, PostgreSQL, Python 3.14 ni Windows PowerShell 5.1.
-No se ha ejecutado el ensayo nativo de este paquete. La suite anterior de 136
-pruebas pytest no se reejecuto en este entorno, donde pytest no esta disponible.
+Total local: **50 pruebas unittest y 8 comprobaciones de demostracion**.
+Las pruebas HTTP locales cargaron Uvicorn 0.54.0, h11 0.16.0 y Click 8.5.0
+(versiones de los locks) desde sus fuentes oficiales, cuyos 73 blobs se
+verificaron. Esas fuentes temporales no se incluyen en el repositorio ni en
+el paquete nativo; el PC reutiliza las librerias de su imagen existente.
 
-El ejecutor entregado debe realizar en el PC los productores reales con datos
-sinteticos, la captura/importacion, respaldo cifrado y restauracion E10.4 en una
-base y carpeta nuevas, seguida de activacion local, mTLS, rechazo sin cliente y
-metricas. Hasta recibir ese ZIP no se afirma que ese recorrido haya aprobado.
+## Integridad de la entrega
 
-El ejecutor verifica las imagenes existentes y se detiene si falta alguna; no
-instala dependencias, construye imagenes ni las descarga. Sus recursos se
-conservan y sus servicios se detienen al terminar. Un error de detencion produce
-codigo distinto de cero y `estado=detencion_pendiente`.
+Las fuentes incluidas contienen los 961 archivos versionados de backend/ y
+despliegue/ de la base integrada, con sus bytes originales. Se contrastaron
+los blobs de Git y los subarboles reconstruidos:
 
-Se mantienen pendientes los datos reales D10, activacion real D11, drenaje y
-reversion nativos, recuperacion R-W, custodia externa y acceso de Brave. La
-autorizacion de produccion permanece en false. La evidencia no contiene claves.
+- backend: `ae33c618ca11b562d13a71a4f95bbfa7e4c9ab46`.
+- despliegue: `95195eb1ecc90f5bfb9b1a150a2f12942a7db22a`.
+- SHA-256 de fuentes.zip: `9ccaf8f9a9bd573d67d20e4454d9c535d71ed1dbbbb4e34d6794cd63e6d9011e`.
+
+El lanzador no requiere Git ni la carpeta de proyecto del operador. Se probo
+el protocolo Python por stdin con los ZIP completos, desde una carpeta vacia
+y sin Git en PATH, verificando su evidencia y rechazo previo a recursos en el
+entorno local Python 3.12. El recorrido real Docker/PostgreSQL/nginx/mTLS se
+acredita con la evidencia nativa recibida.
+
+## Limites
+
+La suite anterior de 136 pruebas pytest no se reejecuto en el entorno local,
+donde pytest no esta disponible. El estado del CI corresponde al commit del
+PR y se consulta por separado. Permanecen pendientes datos reales D10,
+activacion real D11, drenaje y reversion nativos, R-W, custodia externa y
+Brave/confianza de CA. `produccion_autorizada` permanece en `false`.

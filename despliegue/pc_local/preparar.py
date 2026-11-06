@@ -10,6 +10,7 @@ import importlib.util
 import ipaddress
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -74,11 +75,21 @@ def _modulo(ruta: Path):
     return modulo
 
 
-def ejecutar(modo: str, raiz: Path, fuente: Path) -> dict:
+class PasoNoSuperado(RuntimeError):
+    def __init__(self, paso: str):
+        self.paso = paso if re.fullmatch(r"D[0-9]{2}[a-z]?|R[0-9]{2}|N-respaldo-(?:alterado|truncado)", paso) else "sin_identificador"
+        super().__init__("verificacion_sintetica_no_superada")
+
+
+def ejecutar(modo: str, raiz: Path, fuente: Path, *, control: dict | None = None) -> dict:
+    control = control if control is not None else {"fase": "inicio", "pasos": []}
+    if modo not in {"comprobar", "migrar", "generar", "verificar"}:
+        raise ValueError("modo_de_preparacion")
+    control["fase"] = modo
     sys.path.insert(0, str(fuente / "backend"))
     sys.path.insert(0, str(fuente))
     if modo == "comprobar":
-        import cryptography, fastapi, psycopg, sqlalchemy, uvicorn  # noqa: F401
+        import cryptography, fastapi, h11, psycopg, sqlalchemy, uvicorn  # noqa: F401
         from app.infrastructure.generaciones.codigo import huella_app
         return {"codigo": 0, "huella_app": huella_app(fuente / "backend/app")[0]}
     if modo == "verificar":
@@ -92,6 +103,7 @@ def ejecutar(modo: str, raiz: Path, fuente: Path) -> dict:
         "DATABASE_URL", "DIRECTORIO_", "API_PUBLICA_", "GENERACION_"))}
     limpio["PYTHONDONTWRITEBYTECODE"] = "1"
     if modo == "migrar":
+        control["fase"] = "migrar"
         limpio["DATABASE_URL"] = urls["propietario"]
         r = subprocess.run([sys.executable, "-B", "-m", "alembic", "upgrade", "head"],
             cwd=fuente / "backend", env=limpio, capture_output=True, timeout=120)
@@ -106,10 +118,22 @@ def ejecutar(modo: str, raiz: Path, fuente: Path) -> dict:
     modulo = _modulo(fuente / "despliegue/generaciones/demostracion_e104.py")
     salida = raiz / "generaciones"
     salida.mkdir(mode=0o700)
-    demo = modulo.Demo(salida, urls, sys.executable)
+    class DemoLocal(modulo.Demo):
+        def anotar(self, ident, descripcion, ok, **detalle):
+            control["pasos"].append({"id": ident, "ok": bool(ok)})
+            correcto = super().anotar(ident, descripcion, ok, **detalle)
+            if not correcto:
+                raise PasoNoSuperado(ident)
+            return correcto
+
+    demo = DemoLocal(salida, urls, sys.executable)
+    control["fase"] = "fuente"
     demo.preparar()
+    control["fase"] = "captura_importacion"
     demo.g1()
+    control["fase"] = "api_ligada"
     demo.api_ligada()
+    control["fase"] = "respaldo_restauracion"
     demo.respaldo()
     if not demo.filas or not all(f["ok"] for f in demo.filas):
         raise ValueError("recorrido_sintetico_rechazado")
@@ -124,15 +148,22 @@ def ejecutar(modo: str, raiz: Path, fuente: Path) -> dict:
              "huella_app": m["codigo"]["huella_app"],
              "restauracion": {"estado": restauracion["estado"], "base_nueva": True},
              "comprobaciones": [{"id": f["id"], "ok": f["ok"]} for f in demo.filas]}
-    (raiz / "preparacion.json").write_text(json.dumps(datos))
+    control["fase"] = "pki"
     crear_pki(raiz / "pki")
+    (raiz / "preparacion.json").write_text(json.dumps(datos))
+    control["fase"] = "completada"
     return datos
 
 
 if __name__ == "__main__":
+    control = {"fase": "inicio", "pasos": []}
     try:
-        resultado = ejecutar(sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]))
-    except BaseException:
-        resultado = {"codigo": 1, "resultado": "preparacion_sintetica_rechazada"}
+        resultado = ejecutar(sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]), control=control)
+    except BaseException as error:
+        resultado = {"codigo": 1, "resultado": "preparacion_sintetica_rechazada",
+                     "tipo_error": type(error).__name__, "comprobaciones": control["pasos"]}
+        if isinstance(error, PasoNoSuperado):
+            resultado["paso_fallido"] = error.paso
+    resultado["fase_preparacion"] = control["fase"]
     print("E107_PREPARACION:" + json.dumps(resultado, ensure_ascii=True), flush=True)
     raise SystemExit(resultado["codigo"])

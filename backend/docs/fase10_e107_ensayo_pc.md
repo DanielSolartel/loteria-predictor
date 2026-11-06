@@ -1,4 +1,4 @@
-# E10.7 v2: ensayo local en el PC, con fuentes incluidas
+# E10.7 v3: ensayo local en el PC, con fuentes incluidas
 
 Base: PR #111, commit `4aaca446c5ea79975683220da0037e2569fbe28e`.
 Destino elegido: PC Windows del usuario, Ubuntu/WSL y Docker Desktop.
@@ -6,6 +6,18 @@ Destino elegido: PC Windows del usuario, Ubuntu/WSL y Docker Desktop.
 La revision del 6 de noviembre de 2026 termino con codigo 0, Docker y Compose
 disponibles, 18443/9125 libres y sin avisos. Esa evidencia solo acredita la
 revision de lectura. No acredita activacion, respaldo restaurable ni produccion.
+
+La v3 corrige el cliente de las consultas internas de importacion y R-L:
+`scripts.generaciones consultas` utilizaba `TestClient`, cuya dependencia
+`httpx` esta en el lock de pruebas, fuera del lock de servicio de la imagen
+reutilizada. Ahora consulta por HTTP en un socket reservado de loopback con
+Uvicorn y h11, ya incluidos en esa imagen. La aplicacion se sirve en otro hilo
+del mismo proceso para mantener el registro DAT-01 de lecturas y escrituras.
+No se cambian `backend/app`, Alembic, locks ni imagenes.
+
+El preparador interrumpe el recorrido al primer control fallido. La evidencia
+conserva fase, identificador del paso, clase de error y controles ya ejecutados,
+sin mensajes libres de excepciones ni contrasenas.
 
 ## Alcance de esta entrega
 
@@ -58,7 +70,7 @@ servicio persistente. Fase 6 permanece fuera del alcance del ejecutor.
 
 ## Ejecucion
 
-El ZIP de entrega v2 contiene `ensayo_pc.ps1`, `ensayo.py`, `fuentes.zip`,
+El ZIP de entrega v3 contiene `ensayo_pc.ps1`, `ensayo.py`, `fuentes.zip`,
 `ORIGEN_FUENTES.json`, `cambios.zip`, `LEEME.md`, `VALIDACION.md` y `SHA256SUMS`.
 Verificar la huella del ZIP entregado antes de extraerlo. Desde PowerShell 5.1,
 ejecutar el lanzador extraido:
@@ -87,13 +99,17 @@ entre generaciones, recuperacion operativa R-W, custodia externa de respaldos,
 acceso de Brave con confianza en una CA, disponibilidad del PC ni monitor externo.
 Las excepciones B del CI y su vencimiento del 17 de noviembre no se modifican.
 
-No se ha ejecutado este paquete en el PC al redactar la entrega. Su ejecucion
-nativa queda pendiente de recibir la evidencia. El PR se prepara en borrador.
+El ensayo nativo de la v3 se completo el 6 de noviembre de 2026 con 27/27
+controles aprobados, incluidos D07, R08, activacion mTLS y metricas. Los servicios
+quedaron detenidos y los recursos se conservaron. El informe con las huellas de
+la evidencia esta en
+[fase10_e107_validacion_nativa_2026-11-06.md](fase10_e107_validacion_nativa_2026-11-06.md).
+El PR permanece en borrador y `produccion_autorizada` sigue en `false`.
 
 ## Verificacion reproducible
 
 ```bash
-python -B -m unittest discover -s backend/tests/unit/operacion_consulta -p test_perfil_local.py -v
+python -B -m unittest discover -s backend/tests/unit/operacion_consulta -p 'test_*local.py' -v
 python -B -m despliegue.operacion_consulta.demostracion
 ```
 
