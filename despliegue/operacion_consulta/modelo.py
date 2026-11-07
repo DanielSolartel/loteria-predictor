@@ -81,6 +81,9 @@ class Plan:
     def de(cls, valor: object) -> "Plan":
         if not isinstance(valor, dict):
             raise Rechazo("plan_no_es_objeto")
+        if cls is Plan and valor.get("formato") == "operacion-consulta-local/1":
+            from .local import PlanLocal
+            return PlanLocal.de(valor)
         try:
             p = cls(**valor)
         except TypeError as error:

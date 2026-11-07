@@ -1,4 +1,7 @@
-"""Fase 10 (E10.4): generaciones, importacion, validacion y respaldos (CLI local; sin red propia).
+"""Fase 10 (E10.4): generaciones, importacion, validacion y respaldos (CLI local).
+
+Las consultas internas usan HTTP exclusivamente en loopback, dentro del mismo
+proceso que registra las aperturas de archivos. No requieren TestClient/httpx.
 
 Desde `backend/`. Las URL de base se leen de ARCHIVOS (`--url-*-archivo`), nunca de argumentos; las claves
 privadas, de archivos 0600. Ninguna orden pausa Fase 6, toma sus cerrojos ni cambia su tarea programada.
@@ -158,22 +161,14 @@ def _consultas(a) -> int:
         lecturas[clave_l] = lecturas.get(clave_l, 0) + 1
 
     sys.addaudithook(auditar)
-    from fastapi.testclient import TestClient
+    from scripts._http_generaciones import ClienteLocal
 
     from app.api.publica.aplicacion import app
     from app.infrastructure.generaciones import consultas
 
-    cliente = TestClient(app)
-
-    def get(ruta):
-        r = cliente.get(ruta, headers={"X-API-Key": clave})
-        try:
-            return r.status_code, r.json()
-        except ValueError:
-            return r.status_code, None
-
     esperado = json.loads(Path(a.esperado).read_text(encoding="utf-8")) if a.esperado else None
-    resultado = consultas.recorrer(get, esperado)
+    with ClienteLocal(app) as cliente:
+        resultado = consultas.recorrer(lambda ruta: cliente.get(ruta, clave), esperado)
     fuera = [f"{k}: {ejemplos.get(k)}" for k in sorted(lecturas) if k.startswith("fuera:")]
     resultado["lecturas"] = {"por_subarbol": dict(sorted(lecturas.items())), "fuera_de_lo_declarado": fuera,
                              "sondeos_de_lo_ausente": {k: ejemplos.get(k) for k in sorted(lecturas)
