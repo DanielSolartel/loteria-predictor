@@ -479,6 +479,10 @@ def get_lanzador_de_laboratorio():
 # ---------------------------------------------------------------------------
 
 def get_carteras() -> CarterasDeModelos:
+    return construir_carteras()
+
+
+def construir_carteras(*, consultar_actividad: bool = True) -> CarterasDeModelos:
     """Almacen, progreso y cerrojos propios (`DIRECTORIO_CARTERAS_MODELOS`).
     Lee el historico con la misma lectura de solo lectura del laboratorio y
     entrena o simula en un proceso trabajador con tiempo maximo."""
@@ -488,7 +492,8 @@ def get_carteras() -> CarterasDeModelos:
     return CarterasDeModelos(CarterasFileStore(directorio), RegistroEjecucionesArchivo(operacion),
                              CerrojoPorJuego(operacion), abrir_lectura_del_laboratorio,
                              ejecutor=EjecutorCarterasEnProceso(settings.tiempo_maximo_trabajador_carteras),
-                             modelos=LaboratorioFileStore(settings.directorio_laboratorio_modelos))
+                             modelos=LaboratorioFileStore(settings.directorio_laboratorio_modelos),
+                             consultar_actividad=consultar_actividad)
 
 
 def _lanzar_carteras_en_hilo(funcion, inicio) -> None:

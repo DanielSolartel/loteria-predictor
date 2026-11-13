@@ -401,16 +401,28 @@ TIPOS = la.TIPOS
 NOTA_SEGUIMIENTO = la.NOTA_SEGUIMIENTO
 
 
+def evaluar_combinacion(juego: str, combinacion: dict, resultado: dict) -> dict:
+    if juego == "COLORLOTO":
+        return {"aciertos": pcl.coincidencias(combinacion["pares"], resultado["pares"]),
+                "numeros_acertados": None, "superbalota": None}
+    numeros = sorted(set(combinacion["numeros"]) & set(resultado["numeros"]))
+    extra_observado = resultado.get("superbalota")
+    superbalota = None
+    if "superbalota" in combinacion and extra_observado is not None:
+        superbalota = combinacion["superbalota"] == extra_observado
+    return {"aciertos": len(numeros), "numeros_acertados": numeros,
+            "superbalota": superbalota}
+
+
 def aciertos_observados(artefacto: dict, r) -> dict:
     juego = artefacto["juego"]
+    resultado = _resultado(juego, r)
     filas = []
     for c in artefacto["cartera"]["combinaciones"]:
-        if juego == "COLORLOTO":
-            fila = {"linea": c["linea"], "aciertos": pcl.coincidencias(c["pares"], r.pares)}
-        else:
-            fila = {"linea": c["linea"], "aciertos": len(set(c["numeros"]) & set(r.numeros))}
-            if "superbalota" in c and r.superbalota is not None:
-                fila["superbalota"] = c["superbalota"] == r.superbalota
+        acierto = evaluar_combinacion(juego, c, resultado)
+        fila = {"linea": c["linea"], "aciertos": acierto["aciertos"]}
+        if acierto["superbalota"] is not None:
+            fila["superbalota"] = acierto["superbalota"]
         filas.append(fila)
     maximo = max(f["aciertos"] for f in filas)
     salida = {"por_linea": filas, "maximo": maximo, "lineas": len(filas),

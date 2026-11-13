@@ -4570,21 +4570,25 @@ Grype real; E10.4 no iniciada.
 
 ---
 
-## 🔜 Fase 11 — Aplicación personal de escritorio y/o móvil (planificada)
+## Fase 11 — Aplicación personal de escritorio para Windows
 
-**Objetivo:** consulta sencilla de combinaciones experimentales por juego y sorteo, con vigencia de datos y último resultado/aciertos. Informes, métricas, modelos y trazas estarán en una vista avanzada; datos actualizados, atrasados y resultados pendientes se distinguirán sin convertir cifras en garantías.
+**Objetivo.** Consultar las predicciones guardadas, sus aciertos, la comparación de modelos y el estado de sincronización de los cuatro juegos desde un PC Windows. La aplicación conserva la identificación del juego, el objetivo, el corte y la versión de cada emisión. Las cifras siguen siendo experimentales.
 
-**Dependencias:** operación automática de Fase 6 y las capacidades de API, interfaz y despliegue pertinentes de fases 8–10. No duplicará lógica ML en cada cliente.
+**Piloto.** React y las consultas existentes de FastAPI sobre un PostgreSQL y archivos sintéticos. La operación de Fase 6 conserva su ciclo de actualización independiente. El [ensayo portátil en Windows x64](backend/docs/fase11_piloto_escritorio.md) validó el inicio por doble clic, las consultas, la reutilización de instancia y el cierre con retirada de la carpeta temporal.
 
-**Entregables planificados:** decisión de plataforma —escritorio, teléfono o ambos; cliente nativo, PWA o empaquetado— sustentada en uso, accesibilidad, actualización, funcionamiento sin conexión, mantenimiento y servicios disponibles; diseño de vistas principal y avanzada; cliente que consuma los mismos contratos del backend. No se elige ni implementa plataforma en esta entrega.
+**Instalador y fuente operativa.** El piloto sintético y la v1 operativa se instalaron, usaron y retiraron en Windows x64. La v1 consultó los cuatro juegos con el rol lector de PostgreSQL. En el equipo validado, Docker Desktop debe estar en ejecución para que PostgreSQL de Fase 6 esté disponible. [Prueba nativa y guía de uso](backend/docs/fase11_piloto_escritorio.md#uso-del-visor-con-datos-de-fase-6)
 
-**Criterios de aceptación:** cada combinación identifica juego, objetivo y vigencia; el estado pendiente/atrasado es visible; concordancia con el backend y sus modelos/configuraciones; acceso a informes y trazas; cierre de interfaz no detiene la operación independiente; pruebas de uso y seguridad en las plataformas elegidas. Ninguna promesa de actualización local con el equipo apagado ni de ventaja predictiva.
+**«Mis apuestas» en la v2.** El registro local conserva la cartera, el modelo, la línea y los juegos en los que se usó. El operador comprobó en Windows los aciertos de dos jugadas y su persistencia al cerrar y reabrir el visor. El registro queda en `%LOCALAPPDATA%\LP11-Operativo\apuestas.sqlite3`. [Validación del 12 de noviembre de 2026](backend/docs/fase11_piloto_escritorio.md#mis-apuestas-en-la-v2)
+
+**Integración.** La entrega local está validada en Windows. La publicación de la rama y la revisión en GitHub siguen pendientes.
+
+**Pendientes.** El [issue #113](https://github.com/DanielSolartel/loteria-predictor/issues/113) conserva la investigación de solo lectura de ColorLoto. D10/NTFS queda pendiente de revisar la limpieza y de decidir si se necesita capturar generaciones para la fuente local. D11, VPS y acceso remoto permanecen aplazados.
 
 ---
 
 ## Siguiente decisión recomendada
 
-> **Orden vigente tras cerrar ML y comprobaciones nativas:** **6 Operación automática → 7 Simulaciones → 8 API pública → 9 React → 10 Despliegue → 11 Aplicación personal**. Solo planificación. El orden 4 → 6 → 7 → 8 → 9 de la entrega Fase 4 se conserva aquí como antecedente superado; no se renumera indiscriminadamente la historia.
+> **Prioridad vigente.** Integrar la Fase 11 tras la validación del visor local y «Mis apuestas» en Windows. La infraestructura remota de Fase 10 permanece aplazada.
 
 > **Actualización (entrega «Fase 3 — modelos versionados»):** el orden vigente de las próximas entregas era **3 → 4 → 6 → 7 → 8 → 9** (ver «Estado por fase» al principio). Lo que sigue se conserva como registro histórico.
 

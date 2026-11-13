@@ -1,4 +1,5 @@
 # Fase 9.1: dependencias instaladas con npm ci y compilacion (se regeneran; no se versionan)
 node_modules/
 dist/
+dist-escritorio/
 *.tsbuildinfo

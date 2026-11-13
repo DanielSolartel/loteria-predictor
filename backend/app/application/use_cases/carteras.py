@@ -125,7 +125,8 @@ def _requisito_de_generacion(juego: str, modelo: str) -> int:
 class CarterasDeModelos:
     def __init__(self, almacen, registro, cerrojo, abrir_lectura: Callable[[], AbstractContextManager[Lectura]],
                  *, ejecutor: EjecutorDeCarteras, reloj: Callable[[], datetime] = _ahora,
-                 generador_de_identificador: Callable[[datetime], str] = nuevo_identificador, modelos=None):
+                 generador_de_identificador: Callable[[datetime], str] = nuevo_identificador, modelos=None,
+                 consultar_actividad: bool = True):
         """`modelos` (Fase 3, opcional): almacen del laboratorio con los modelos
         registrados; solo se lee, para usar una version congelada."""
         self._modelos = modelos
@@ -136,6 +137,7 @@ class CarterasDeModelos:
         self._ejecutor = ejecutor
         self._reloj = reloj
         self._nuevo_identificador = generador_de_identificador
+        self._consultar_actividad = consultar_actividad
 
     # ------------------------------------------------------------------
     # Lectura de la base (cada llamada abre y cierra su propia sesion)
@@ -189,7 +191,8 @@ class CarterasDeModelos:
 
     def diagnostico(self, juego: str) -> dict:
         _validar_juego(juego)
-        salida = {"juego": juego, "nombre": NOMBRES[juego], "activa": self._cerrojo.activa(juego),
+        activa = self._cerrojo.activa(juego) if self._consultar_actividad else None
+        salida = {"juego": juego, "nombre": NOMBRES[juego], "activa": activa,
                   "comparaciones": [_resumen_de_comparacion(e) for e in self._almacen.comparaciones(juego)[:10]],
                   "lineas": self._almacen.lineas(juego), "configuracion": self._configuracion_para_mostrar(juego)}
         try:
