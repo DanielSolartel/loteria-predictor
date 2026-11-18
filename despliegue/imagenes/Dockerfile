@@ -21,7 +21,16 @@ ARG PYTHON_IMAGEN=docker.io/library/python:3.14-slim@sha256:930e1abba7c4e8f96ed9
 ARG NODE_IMAGEN=docker.io/library/node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
 
 # ---------------------------------------------------------------------------
-FROM ${PYTHON_IMAGEN} AS base-dependencias
+FROM ${PYTHON_IMAGEN} AS base-python
+# DSA-6613-1: zlib1g de trixie-security para las imagenes linux/amd64.
+RUN --mount=type=secret,id=ca_extra,required=false \
+    if [ -f /run/secrets/ca_extra ]; then export SSL_CERT_FILE=/run/secrets/ca_extra; fi \
+ && python -c "from urllib.request import urlretrieve; urlretrieve('https://snapshot.debian.org/file/d2eca18b98f94b9179c90e09da4760a27ad1e107', '/tmp/zlib1g.deb')" \
+ && echo '8c27c342230503b73dfde629642c3b352e87b554e06d60cf58772f236a305ceb  /tmp/zlib1g.deb' | sha256sum -c - \
+ && dpkg -i /tmp/zlib1g.deb \
+ && rm /tmp/zlib1g.deb
+
+FROM base-python AS base-dependencias
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 COPY backend/requirements-servicio.lock /tmp/requirements-servicio.lock
 RUN --mount=type=secret,id=ca_extra,required=false \
@@ -50,7 +59,7 @@ FROM base-dependencias AS venv-ejecucion
 RUN /opt/venv/bin/python -m pip uninstall --yes pip
 
 # ---------------------------------------------------------------------------
-FROM ${PYTHON_IMAGEN} AS raiz-ejecucion
+FROM base-python AS raiz-ejecucion
 COPY despliegue/imagenes/raiz_minima.py /tmp/raiz_minima.py
 RUN python -B /tmp/raiz_minima.py /raiz
 
