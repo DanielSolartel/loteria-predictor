@@ -45,8 +45,9 @@ primer CI del PR #109 el check de imágenes estaba abierto. Consulta privada (E1
 
 - Etapas: `base-dependencias` (venv desde `requirements-servicio.lock`), `spa` (`npm ci --ignore-scripts` y
   `npm run build`), `ejecucion` (usuario 10001), y los objetivos `api` y `pasarela` (este con `dist/`).
-- Bases por **digest**: `python:3.14-slim@sha256:930e1abb…`, `node:22-alpine@sha256:fe4f6d74…`; en la demostración,
+- Bases por **digest**: `cgr.dev/chainguard/wolfi-base@sha256:1e9962e1…`, `node:22-alpine@sha256:fe4f6d74…`; en la demostración,
   `nginx:1.29-alpine@sha256:56168782…` y `postgres:16-alpine@sha256:0cefaabd…`.
+- En Linux x86-64, `wolfi-x86_64.lock` fija por nombre, versión y SHA-256 los paquetes de la raíz. La construcción verifica cada descarga. APK verifica la firma del índice con la clave Wolfi fijada y resuelve las dependencias sin red. Una versión ausente o una firma o huella inválida detiene la construcción. El inventario APK se conserva en ambas imágenes finales.
 - `.dockerignore` deja pasar solo `backend/app`, el lock de servicio y lo necesario del frontend; nunca `.git`,
   `.env`, `*.privado.env`, SQLite, `storage/`, `privado/`, perfiles ni datos.
 - Secretos **solo en ejecución** (archivos montados). Una CA adicional del entorno de construcción (proxy con
