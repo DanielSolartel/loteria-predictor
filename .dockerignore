@@ -4,7 +4,9 @@
 *
 !backend/requirements-servicio.lock
 !backend/app/
-!despliegue/imagenes/raiz_minima.py
+!despliegue/imagenes/descargar_wolfi.mjs
+!despliegue/imagenes/wolfi-x86_64.lock
+!despliegue/imagenes/comprobar_raiz_wolfi.py
 !frontend/package.json
 !frontend/package-lock.json
 !frontend/index.html

@@ -82,7 +82,7 @@ async function pedir(url: string, senal: AbortSignal): Promise<unknown> {
     respuesta = await fetch(url, {
       method: "GET",
       headers: { Accept: "application/json" },
-      credentials: "omit",
+      credentials: import.meta.env.MODE === "escritorio" ? "same-origin" : "omit",
       cache: "no-store",
       redirect: "error",
       referrerPolicy: "no-referrer",

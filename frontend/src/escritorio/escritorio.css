@@ -1,0 +1,79 @@
+.visor {
+  min-height: 100vh;
+  background: #f3f6f8;
+  color: #172b39;
+}
+
+.visor-ancho {
+  width: min(100% - 2rem, 68rem);
+  margin-inline: auto;
+}
+
+.visor-cabecera {
+  background: #12384a;
+  color: #fff;
+  padding-block: 1.25rem;
+}
+
+.visor-cabecera .visor-ancho, .visor-detalle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.visor-cabecera h1 {
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  margin: 0;
+}
+
+.visor-cuerpo { padding-block: 1.5rem; }
+
+.visor-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  border-bottom: 1px solid #c8d5dc;
+  padding-bottom: .85rem;
+  margin-bottom: 1.5rem;
+}
+
+.visor-nav button {
+  border: 1px solid #a9bdc8;
+  border-radius: .45rem;
+  background: #fff;
+  color: #184456;
+  font-weight: 600;
+  padding: .52rem .75rem;
+}
+
+.visor-nav button[aria-current="page"] {
+  background: #20556a;
+  border-color: #20556a;
+  color: #fff;
+}
+
+.visor-estado {
+  border-radius: 999px;
+  background: #e4f2f2;
+  color: #144552;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: .35rem .7rem;
+}
+
+.visor-filtros, .visor-paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .75rem;
+  margin: 0 0 1rem;
+}
+
+.visor-filtros label { min-width: min(100%, 12rem); max-width: 100%; font-weight: 600; }
+.visor-filtros select, .visor-filtros input { margin-top: .25rem; }
+.visor-panel { padding: 1rem; background: #fff; border: 1px solid #cddae1; border-radius: .65rem; }
+.visor-panel h3 { font-size: 1.2rem; margin-bottom: .3rem; }
+.visor-resultado { display: grid; gap: .35rem; padding: .75rem 0; margin: .65rem 0; }
+.visor-pie { margin-top: 2rem; font-size: .85rem; color: #425a68; }

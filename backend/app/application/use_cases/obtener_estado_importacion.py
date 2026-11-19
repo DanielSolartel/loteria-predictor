@@ -36,7 +36,7 @@ class ObtenerEstadoImportacion:
         juego_repository: JuegoRepository,
         sorteo_repository: SorteoRepository,
         sincronizacion_repository: SincronizacionRepository,
-        obtener_conector: Callable[[str], DrawSourceConnector],
+        obtener_conector: Callable[[str], DrawSourceConnector] | None = None,
     ):
         self._juegos = juego_repository
         self._sorteos = sorteo_repository
@@ -46,7 +46,7 @@ class ObtenerEstadoImportacion:
     def ejecutar(self, verificar_salud: bool = True) -> list[EstadoConector]:
         estados = []
         for juego in self._juegos.listar_activos():
-            salud = self._obtener_conector(juego.codigo).health_check() if verificar_salud else None
+            salud = self.verificar_salud_de(juego.codigo) if verificar_salud else None
             ultimo = self._sorteos.ultimo_sorteo(juego.id)
             estados.append(
                 EstadoConector(
@@ -59,4 +59,6 @@ class ObtenerEstadoImportacion:
         return estados
 
     def verificar_salud_de(self, codigo_juego: str) -> HealthStatus:
+        if self._obtener_conector is None:
+            raise RuntimeError("La consulta de estados guardados no configura conectores.")
         return self._obtener_conector(codigo_juego).health_check()

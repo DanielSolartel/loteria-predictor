@@ -43,7 +43,8 @@ Node ≥ 22.12 (LTS 22 o 24) y npm. Comprobar con `node --version` antes de inst
 | `npm run typecheck` | TypeScript estricto |
 | `npm test` | pruebas de componentes (Vitest + Testing Library, en StrictMode) |
 | `npm run build` | compila en `dist/` (sin mapas de código ni recursos externos) |
-| `npm run canario` | compila con un canario en el entorno y comprueba que no llega al bundle; busca envío de credenciales, almacenamiento y recursos de terceros |
+| `npm run build:escritorio` | compila el visor de Fase 11 en `dist-escritorio/`. [Guía del visor](../backend/docs/fase11_piloto_escritorio.md) |
+| `npm run canario` | verifica las compilaciones web y de escritorio con un canario. Comprueba credenciales, almacenamiento y recursos externos. El visor admite la cookie del mismo origen. |
 | `npm run tipos` | regenera `src/api/esquema.d.ts` (tras exportar el OpenAPI con `python -m scripts.exportar_openapi_publica ../frontend/src/api/openapi.json` desde `backend/`) |
 | `npm run dev` | Vite en `127.0.0.1:5173`, con reenvío a la pasarela (ver abajo) |
 

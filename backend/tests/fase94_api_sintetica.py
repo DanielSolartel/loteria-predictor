@@ -30,12 +30,12 @@ ESTADOS = ("normal", "vacio", "alterado", "incompatible")
 
 
 @lru_cache(maxsize=8)
-def _version(juego: str, atras: int = 5):
+def _version(juego: str, atras: int = 5, modelo: str | None = None):
     """Una version real, independiente del destino; copia antes de publicar."""
     tamanos = {"BALOTO": 110, "BALOTO_REVANCHA": 100, "MILOTO": 87, "COLORLOTO": 90}
     historico = fp4.historico(juego, tamanos[juego])
     instantanea = lv.validar_instantanea(juego, historico[:-atras])
-    entrada = lm.CATALOGO[MODELOS[juego]]
+    entrada = lm.CATALOGO[modelo or MODELOS[juego]]
     uniforme = lm.CATALOGO["uniforme_paleta" if juego == "COLORLOTO" else "uniforme"]
     entradas = (uniforme, entrada)
     protocolo = le.Protocolo(bloques=1, perfil="reducido")
@@ -49,8 +49,8 @@ def _version(juego: str, atras: int = 5):
     return informe, artefacto, entrenado["contenido"]
 
 
-def registrar(e4, juego: str, *, atras: int = 5, incompatible: bool = False):
-    informe, artefacto, contenido = copy.deepcopy(_version(juego, atras))
+def registrar(e4, juego: str, *, atras: int = 5, incompatible: bool = False, modelo: str | None = None):
+    informe, artefacto, contenido = copy.deepcopy(_version(juego, atras, modelo))
     almacen = e4.almacen_laboratorio
     if almacen.obtener_experimento(informe["clave"]) is None:
         almacen.guardar_experimento(informe)

@@ -9,10 +9,14 @@ const raiz = document.getElementById("raiz");
 if (raiz === null) {
   throw new Error("falta el elemento #raiz");
 }
-createRoot(raiz).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
-);
+if (import.meta.env.MODE === "escritorio") {
+  void import("./escritorio/AppEscritorio").then(({ montarEscritorio }) => montarEscritorio(raiz));
+} else {
+  createRoot(raiz).render(
+    <StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  );
+}

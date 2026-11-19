@@ -100,7 +100,7 @@ def _copiar(origen: Path, destino: Path) -> None:
     shutil.copytree(origen, destino, ignore=ignorar)
 
 
-def main(argv=None) -> int:
+def main(argv=None, *, ampliar_escenario=None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--salida", required=True)
     args = p.parse_args(argv)
@@ -131,6 +131,8 @@ def main(argv=None) -> int:
     datos = f94.preparar(trabajo / "generacion", estado="normal")
     e4 = datos["e4"]
     _emitir_operacion_y_laboratorio(e4)
+    if ampliar_escenario is not None:
+        ampliar_escenario(datos)
     vista_esperada = esperado(datos["guardados"], datos)
     with dbs.SessionLocal() as s:
         s.execute(text("UPDATE colores SET vigente_desde = DATE '2024-08-01' WHERE vigente_desde = DATE '2024-08-15' "

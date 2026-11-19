@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build:escritorio": "tsc --noEmit -p tsconfig.json && vite build --mode escritorio --outDir dist-escritorio",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "tipos": "openapi-typescript src/api/openapi.json -o src/api/esquema.d.ts",

@@ -164,7 +164,8 @@ jobs:
       - name: Identificacion de las imagenes (id, usuario, SO, arquitectura, Python y base)
         # Diagnostico que acompana a los informes: siempre se publica junto a SBOM y grype.
         run: |
-          grep -o 'PYTHON_IMAGEN=[^ ]*' despliegue/imagenes/Dockerfile | head -1 | tee -a imagenes.txt
+          grep '^ARG WOLFI_IMAGEN=' despliegue/imagenes/Dockerfile | tee -a imagenes.txt
+          sha256sum despliegue/imagenes/wolfi-x86_64.lock | tee -a imagenes.txt
           for objetivo in api pasarela; do
             imagen="loteria-e102-$objetivo:ci"
             docker image inspect -f "imagen-$objetivo id={{.Id}} usuario={{.Config.User}} so={{.Os}} arquitectura={{.Architecture}}" "$imagen" | tee -a imagenes.txt
