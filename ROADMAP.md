@@ -4580,7 +4580,7 @@ Grype real; E10.4 no iniciada.
 
 **«Mis apuestas» en la v2.** El registro local conserva la cartera, el modelo, la línea y los juegos en los que se usó. El operador comprobó en Windows los aciertos de dos jugadas y su persistencia al cerrar y reabrir el visor. El registro queda en `%LOCALAPPDATA%\LP11-Operativo\apuestas.sqlite3`. [Validación del 12 de noviembre de 2026](backend/docs/fase11_piloto_escritorio.md#mis-apuestas-en-la-v2)
 
-**Integración.** La entrega local está validada en Windows. La publicación de la rama y la revisión en GitHub siguen pendientes.
+**Integración.** La entrega local está validada en Windows. El piloto y «Mis apuestas» se integraron en `main` (`e62caf86`) tras superar los 12 controles obligatorios en el commit `910e344e`. [PR #114](https://github.com/DanielSolartel/loteria-predictor/pull/114)
 
 **Pendientes.** El [issue #113](https://github.com/DanielSolartel/loteria-predictor/issues/113) conserva la investigación de solo lectura de ColorLoto. D10/NTFS queda pendiente de revisar la limpieza y de decidir si se necesita capturar generaciones para la fuente local. D11, VPS y acceso remoto permanecen aplazados.
 
@@ -4588,7 +4588,7 @@ Grype real; E10.4 no iniciada.
 
 ## Siguiente decisión recomendada
 
-> **Prioridad vigente.** Integrar la Fase 11 tras la validación del visor local y «Mis apuestas» en Windows. La infraestructura remota de Fase 10 permanece aplazada.
+> **Prioridad vigente.** Consultar los cuatro juegos y registrar las jugadas en «Mis apuestas» desde el visor local de Windows. La infraestructura remota de Fase 10 permanece aplazada.
 
 > **Actualización (entrega «Fase 3 — modelos versionados»):** el orden vigente de las próximas entregas era **3 → 4 → 6 → 7 → 8 → 9** (ver «Estado por fase» al principio). Lo que sigue se conserva como registro histórico.
 
