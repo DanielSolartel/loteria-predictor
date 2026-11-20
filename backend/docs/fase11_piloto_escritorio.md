@@ -31,6 +31,12 @@ La prueba aislada cubrió una sola jugada de Markov con dos participaciones, inc
 
 El instalador y el desinstalador administran la carpeta del programa. Las apuestas y las evidencias se conservan en el perfil. Para copiar el archivo de apuestas, cierra el visor primero.
 
+### Recuperación tras reinstalar el visor en Windows
+
+El 20 de noviembre de 2026 el operador respaldó la base SQLite de «Mis apuestas» y comprobó su integridad y la coincidencia de los dos registros completos. La desinstalación retiró el programa, su entrada de Windows y el acceso de Inicio. El archivo de apuestas conservó su huella al desinstalar el programa y al reinstalar la versión `2.0.0`. El instalador terminó con código `0` y Windows volvió a mostrar el acceso de Inicio.
+
+Con el visor cerrado, el operador conservó una copia independiente del original y restauró el respaldo en la ruta habitual del visor. El informe devolvió `restauracion_verificada` con dos apuestas, integridad `ok` y registros coincidentes. El SHA-256 del archivo restaurado coincidió con el del respaldo. Al abrir «Mis apuestas» con los datos de Fase 6, el operador comprobó el juego, el modelo, la línea y los aciertos de las dos jugadas y confirmó el cierre del visor con código `0`.
+
 ### Paquete operativo v2
 
 | Archivo | SHA-256 |
