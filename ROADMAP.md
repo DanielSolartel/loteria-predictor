@@ -4580,9 +4580,29 @@ Grype real; E10.4 no iniciada.
 
 **«Mis apuestas» en la v2.** El registro local conserva la cartera, el modelo, la línea y los juegos en los que se usó. El operador comprobó en Windows los aciertos de dos jugadas y su persistencia al cerrar y reabrir el visor. El registro queda en `%LOCALAPPDATA%\LP11-Operativo\apuestas.sqlite3`. [Validación del 12 de noviembre de 2026](backend/docs/fase11_piloto_escritorio.md#mis-apuestas-en-la-v2)
 
+**Recuperación verificada en Windows.** El 20 de noviembre de 2026 el operador reinstaló el visor 2.0.0, restauró el registro desde su respaldo y comprobó las dos jugadas con sus aciertos. [Ensayo de recuperación](backend/docs/fase11_piloto_escritorio.md#recuperación-tras-reinstalar-el-visor-en-windows)
+
 **Integración.** La entrega local está validada en Windows. El piloto y «Mis apuestas» se integraron en `main` (`e62caf86`) tras superar los 12 controles obligatorios en el commit `910e344e`. [PR #114](https://github.com/DanielSolartel/loteria-predictor/pull/114)
 
-**Pendientes.** El [issue #113](https://github.com/DanielSolartel/loteria-predictor/issues/113) conserva la investigación de solo lectura de ColorLoto. D10/NTFS queda pendiente de revisar la limpieza y de decidir si se necesita capturar generaciones para la fuente local. D11, VPS y acceso remoto permanecen aplazados.
+**Pendientes.** D10/NTFS queda pendiente de revisar la limpieza y de decidir si se necesita capturar generaciones para la fuente local. D11, VPS y acceso remoto permanecen aplazados.
+
+---
+
+## Hoja de ruta de auditoría e integración del motor predictivo
+
+### ColorLoto · repetición de predicciones y selección de carteras
+
+**Pendiente de las fases 12 y 16.** En los objetivos 228–234 avanzaron el histórico y las variables de entrada. Bayes jerárquico v1, entrenado hasta el 222, produjo el mismo vector de probabilidades para los 42 pares y la misma sugerencia principal. Con esos pesos y el mismo orden de pares, la semilla 42 reprodujo también las dos líneas muestreadas. Este resultado sirve de referencia para estudiar mejoras. [Investigación cerrada del issue #113](https://github.com/DanielSolartel/loteria-predictor/issues/113#issuecomment-7010741132)
+
+| Fase | Trabajo previsto para ColorLoto |
+| --- | --- |
+| 12 · Auditoría | Seguir, para cada modelo evaluado, la entrada de un nuevo sorteo desde el histórico y las estadísticas por par hasta el vector de probabilidades y las tres líneas. Comparar cortes consecutivos y localizar dónde aparece la repetición: entradas, inferencia, sugerencia principal o muestreo. |
+| 13 · Trazabilidad | Comprobar que cada emisión identifica su objetivo, corte de entrada, huella del histórico, modelo y corte de entrenamiento, versión del generador, configuración y semilla. Toda variante tendrá identidad propia y deberá poder reproducirse conservando las emisiones originales. |
+| 14 · Evaluación de referencia | Medir la versión actual en objetivos comunes y en orden cronológico, con los datos disponibles en cada corte. Fijar las métricas antes de comparar variantes: Log Loss por balota para el vector, y para las carteras, repetición entre sorteos, cobertura de pares, solapamiento entre líneas y aciertos de pares exactos con multiplicidad. |
+| 15 · Modelos | Si la auditoría identifica variables recientes que un modelo podría aprovechar, contrastar en el laboratorio una versión candidata con la registrada en los mismos cortes. |
+| 16 · Optimización de carteras y simulación | Usar el simulador y los resultados observados para contrastar reglas de selección y diversidad con la cartera vigente, con igual número de líneas por sorteo. Variar solo la semilla servirá como control de muestreo. Informar de la diversidad y los aciertos por separado, junto con el tamaño de la muestra y la incertidumbre. |
+
+**Criterio de decisión.** Para proponer una variante en la operación diaria, la comparación debe demostrar una mejora medible frente a la referencia en el criterio acordado y poder reproducirse a partir de los registros. Si la evidencia es insuficiente, se documentará el resultado y se conservará la configuración vigente.
 
 ---
 
