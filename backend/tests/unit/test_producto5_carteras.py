@@ -8,19 +8,25 @@
 - primera combinacion = sugerencia del modelo (la uniforme no tiene);
 - misma semilla y entrada -> misma cartera; generadores locales que no tocan
   el estado aleatorio global; cambiar semilla, tamano, diversidad o receta
-  cambia la identidad."""
+  cambia la identidad;
+- Fase 13: las lineas 2 y 3 coinciden con una referencia que inicializa NumPy
+  directamente con la secuencia documentada, y la clave, la huella de
+  reproduccion y el sello de `producto5-cartera-1` no cambian."""
 from __future__ import annotations
 
 import random
 from collections import Counter
+from datetime import date
 from itertools import combinations
 
 import numpy as np
 import pytest
 
+from app.application.estadisticas.tipos import ResultadoColorLoto
 from app.application.ml import carteras_artefactos as ca
 from app.application.ml import carteras_construccion as cc
 from app.application.ml import carteras_ensemble as ce
+from app.application.ml import carteras_simulacion as cs
 from app.application.ml import laboratorio_variables as lv
 from app.application.ml import pronostico_colorloto as pcl
 from tests.unit import fixtures_producto4 as f4
@@ -235,3 +241,154 @@ def test_un_vector_fuente_constante_no_tiene_sugerencia():
     uniforme = ca.cuerpo_de_cartera(instantanea, ca.identidad_de_cartera(instantanea, "uniforme", "reducido", 5, 42,
                                                                          "libre"), ce.fuente(instantanea, "uniforme"))
     assert uniforme["cartera"]["primera_combinacion"] == "sin_sugerencia_modelo_uniforme"
+
+
+# ---------------------------------------------------------------------------
+# Fase 13: reproduccion de `producto5-cartera-1` con NumPy directamente
+# ---------------------------------------------------------------------------
+# Las referencias no llaman a `cc.flujos()` ni a los ayudantes de muestreo del
+# proyecto: si cambian la entropia, el reparto de hijos o el orden de consumo,
+# estas pruebas fallan aunque la construccion siga siendo determinista.
+
+ETIQUETA_RNG_V1 = ("numpy PCG64 con SeedSequence([semilla, 5, flujo, juego]); "
+                   "hijos 0 = numeros/pares, 1 = superbalota")
+COLORES_FASE13 = ("AMARILLO", "AZUL", "BLANCO", "NEGRO", "ROJO", "VERDE")
+ENTORNO_FASE13 = {"sistema": "Windows", "python": "3.14.6", "numpy": "2.5.3", "scipy": "1.18.1",
+                  "scikit-learn": "1.9.1"}
+INTENTOS_DE_REFERENCIA = 5000
+
+
+def _fuente_fase13_colorloto() -> dict:
+    """Pares 1-7 x seis colores; el peso de la posicion i (desde 1) es i/903."""
+    candidatos = [[n, c] for n in range(1, 8) for c in COLORES_FASE13]
+    return {"candidatos": candidatos, "probabilidades": [i / 903 for i in range(1, 43)]}
+
+
+def _generadores_numpy(entropia: list[int]) -> tuple[np.random.Generator, np.random.Generator]:
+    principal, superbalota = np.random.SeedSequence(entropia).spawn(2)
+    return np.random.Generator(np.random.PCG64(principal)), np.random.Generator(np.random.PCG64(superbalota))
+
+
+def _pesos(probabilidades) -> np.ndarray:
+    p = np.asarray(probabilidades, dtype=float)
+    return p / p.sum()
+
+
+def _referencia_colorloto(entropia: list[int], fuente: dict, sugerencia: list, cuantas: int) -> list[list]:
+    """Seis pares con reemplazo por intento (hijo 0). Los pares repetidos dentro
+    de una linea se conservan; se descartan las combinaciones completas ya vistas,
+    empezando por la sugerencia (linea 1)."""
+    rng, _ = _generadores_numpy(entropia)
+    pesos = _pesos(fuente["probabilidades"])
+    vistas = {tuple(sorted(tuple(p) for p in sugerencia))}
+    lineas = []
+    for _ in range(INTENTOS_DE_REFERENCIA):
+        if len(lineas) == cuantas:
+            break
+        indices = rng.choice(len(pesos), size=6, replace=True, p=pesos)
+        pares = sorted([list(fuente["candidatos"][int(i)]) for i in indices])
+        identidad = tuple(tuple(p) for p in pares)
+        if identidad not in vistas:
+            vistas.add(identidad)
+            lineas.append(pares)
+    return lineas
+
+
+def _referencia_baloto(entropia: list[int], fuente: dict, sugerencia: dict, cuantas: int) -> list[dict]:
+    """Cinco numeros por claves de Gumbel sin reemplazo (hijo 0) y la superbalota
+    por muestreo ponderado (hijo 1); se descartan las combinaciones completas
+    (numeros y superbalota) ya vistas, empezando por la sugerencia."""
+    rng, rng_sb = _generadores_numpy(entropia)
+    pesos = _pesos(fuente["probabilidades"])
+    pesos_sb = _pesos(fuente["superbalota"]["probabilidades"])
+    vistas = {(tuple(sugerencia["numeros"]), sugerencia["superbalota"])}
+    lineas = []
+    for _ in range(INTENTOS_DE_REFERENCIA):
+        if len(lineas) == cuantas:
+            break
+        claves = np.log(pesos) + rng.gumbel(size=len(pesos))
+        elegidos = np.argsort(-claves, kind="stable")[:5]
+        numeros = sorted(int(fuente["candidatos"][int(i)]) for i in elegidos)
+        posicion = int(rng_sb.choice(len(pesos_sb), size=1, replace=True, p=pesos_sb)[0])
+        superbalota = int(fuente["superbalota"]["candidatos"][posicion])
+        if (tuple(numeros), superbalota) not in vistas:
+            vistas.add((tuple(numeros), superbalota))
+            lineas.append({"numeros": numeros, "superbalota": superbalota})
+    return lineas
+
+
+def test_la_secuencia_documentada_de_los_flujos():
+    """Los valores que la documentacion de Fase 13 da por fijos."""
+    assert cc.VERSION_CONSTRUCCION == "producto5-cartera-1"
+    assert cc.ALGORITMO_RNG == ETIQUETA_RNG_V1
+    assert cc.JUEGO_INDICE == {"BALOTO": 1, "BALOTO_REVANCHA": 2, "MILOTO": 3, "COLORLOTO": 4}
+    assert (cc.FLUJO_CONSTRUCCION, cc.FLUJO_SIMULACION) == (1, 2)
+    # la simulacion numera los escenarios por su posicion, contando desde 1
+    assert cs.ESCENARIOS == ("sorteos_uniformes", "muestreo_ponderado")
+
+
+@pytest.mark.parametrize(("juego", "indice_juego"), [("COLORLOTO", 4), ("BALOTO", 1)])
+@pytest.mark.parametrize("escenario", [1, 2])
+def test_flujos_de_simulacion_reproducen_cada_escenario(juego, indice_juego, escenario):
+    obtenidos = cc.flujos(42, cc.FLUJO_SIMULACION, juego, escenario)
+    esperados = _generadores_numpy([42, 5, 2, indice_juego, escenario])
+    for obtenido, esperado in zip(obtenidos, esperados, strict=True):
+        np.testing.assert_array_equal(obtenido.bit_generator.random_raw(4),
+                                      esperado.bit_generator.random_raw(4))
+
+
+def test_colorloto_lineas_2_y_3_se_reproducen_con_numpy_directamente():
+    fuente = _fuente_fase13_colorloto()
+    r = cc.construir(fuente, "COLORLOTO", con_sugerencia=True, cantidad=3, semilla=42, diversidad="libre")
+    assert r["estado"] == "completa"
+    assert [c["origen"] for c in r["combinaciones"]] == ["sugerencia_del_modelo", "muestreo_ponderado",
+                                                          "muestreo_ponderado"]
+    sugerencia = r["combinaciones"][0]["pares"]
+    obtenidas = [c["pares"] for c in r["combinaciones"][1:3]]
+
+    esperadas = _referencia_colorloto([42, 5, 1, 4, 0], fuente, sugerencia, 2)
+    assert obtenidas == esperadas
+    # el caso fijo incluye un par repetido dentro de una linea: se conserva
+    assert any(max(Counter(tuple(p) for p in linea).values()) > 1 for linea in esperadas)
+
+    # la forma abreviada de la etiqueta (sin el escenario 0) da otras combinaciones
+    abreviadas = _referencia_colorloto([42, 5, 1, 4], fuente, sugerencia, 2)
+    assert len(abreviadas) == 2
+    assert abreviadas[0] != esperadas[0] and abreviadas[1] != esperadas[1]
+
+
+def test_baloto_lineas_2_y_3_se_reproducen_con_numpy_directamente():
+    fuente = fuente_numeros("BALOTO", np.arange(1, 44), sb=np.arange(1, 17))
+    r = cc.construir(fuente, "BALOTO", con_sugerencia=True, cantidad=3, semilla=42, diversidad="libre")
+    assert r["estado"] == "completa"
+    assert [c["origen"] for c in r["combinaciones"]] == ["sugerencia_del_modelo", "muestreo_ponderado",
+                                                          "muestreo_ponderado"]
+    primera = r["combinaciones"][0]
+    obtenidas = [{"numeros": c["numeros"], "superbalota": c["superbalota"]} for c in r["combinaciones"][1:3]]
+    esperadas = _referencia_baloto([42, 5, 1, 1, 0], fuente,
+                                   {"numeros": primera["numeros"], "superbalota": primera["superbalota"]}, 2)
+    assert obtenidas == esperadas
+
+
+def test_clave_huella_de_reproduccion_y_sello_de_v1_no_cambian(monkeypatch):
+    """Coteja la clave de la identidad, la huella del cuerpo reproducible y el
+    sello del artefacto con los valores verificados para una entrada fija."""
+    monkeypatch.setattr(ca, "entorno", lambda: dict(ENTORNO_FASE13))
+    sorteo = ResultadoColorLoto(1, date(2026, 1, 1), "jueves",
+                                tuple(zip(range(1, 7), COLORES_FASE13)))
+    instantanea = lv.validar_instantanea("COLORLOTO", [sorteo])
+    identidad = ca.identidad_de_cartera(instantanea, "bayes_jerarquico_pares", "predeterminado", 3, 42, "libre")
+    assert identidad["cartera"]["version"] == "producto5-cartera-1"
+    assert identidad["cartera"]["algoritmo_rng"] == ETIQUETA_RNG_V1
+    assert identidad["entorno"] == ENTORNO_FASE13
+    assert "registrado" not in identidad["modelo"]
+
+    cuerpo = ca.cuerpo_de_cartera(instantanea, identidad, _fuente_fase13_colorloto())
+    artefacto = ca.componer(cuerpo, "generacion", {"generado_en": "2026-01-02T00:00:00+00:00"})
+
+    assert artefacto["clave_de_entrada"] == "9ec87abab4351f85bad09c7e9292211573be8bc53b1c6c42fccb79031519c3e5"
+    assert artefacto["huella_de_reproduccion"] == "46abdfccca64cd6a9782356802a210ace612f88b76ec0b4f5496173209d30935"
+    assert artefacto["sello"] == "5c36d597034ec27203cb65e3f93d0d2246afb6325a0bca4e8ced74a827f8d0fe"
+    assert ca.integro(artefacto)
+    # la secuencia completa se documenta en el codigo, no en el artefacto
+    assert b"JUEGO_INDICE" not in ca.json_canonico(artefacto)

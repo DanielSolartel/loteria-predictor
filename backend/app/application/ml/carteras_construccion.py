@@ -31,9 +31,9 @@ CONSTRUCCION (determinista para la misma entrada):
    romperian por numero y la «sugerencia» seria 1-2-3-4-5. Entonces todas las
    lineas se muestrean;
 2. las demas se muestrean con generadores LOCALES (PCG64 a partir de
-   `SeedSequence([semilla, 5, 1, juego])`, con un flujo hijo para los numeros
-   o pares y otro para la superbalota). No se toca el estado aleatorio
-   global;
+   `SeedSequence([semilla, 5, 1, JUEGO_INDICE[juego], 0])`, con un flujo
+   hijo para los numeros o pares y otro para la superbalota; ver
+   REPRODUCCION). No se toca el estado aleatorio global;
    - numeros: muestreo secuencial ponderado sin reemplazo con las marginales
      normalizadas como pesos (claves de Gumbel: los 5 mayores de
      log(peso) + Gumbel). ESTE MECANISMO NO CONSERVA las marginales originales
@@ -53,6 +53,33 @@ metricas de cartera (cobertura, frecuencia de uso y coincidencias entre
 lineas) describen la cartera; no se multiplican marginales para presentar
 una probabilidad del premio mayor.
 
+REPRODUCCION (secuencia efectiva de `flujos()`; es la que reproduce una
+cartera `producto5-cartera-1` guardada):
+- raiz = `numpy.random.SeedSequence([semilla, 5, flujo, JUEGO_INDICE[juego],
+  escenario])`; hijos = `raiz.spawn(2)`; cada hijo inicializa su propio
+  `numpy.random.Generator(numpy.random.PCG64(hijo))`. La lista de entropia
+  tiene cinco enteros. Omitir el escenario 0 produce otro flujo. Dos flujos
+  distintos pueden dar la misma combinacion.
+- `JUEGO_INDICE`: Baloto = 1, Baloto Revancha = 2, MiLoto = 3, ColorLoto = 4;
+- construccion: flujo 1 (`FLUJO_CONSTRUCCION`) y escenario 0;
+- simulacion (`carteras_simulacion.simular`): flujo 2 (`FLUJO_SIMULACION`),
+  escenario 1 para `sorteos_uniformes` y 2 para `muestreo_ponderado` (su
+  posicion en `carteras_simulacion.ESCENARIOS`, contando desde 1);
+- hijo 0: numeros o pares. Numeros: claves de Gumbel
+  `log(peso) + gumbel(size=len(pesos))`, orden descendente estable y los 5
+  primeros, una llamada por candidata. Pares de ColorLoto:
+  `choice(len(pesos), size=6, replace=True, p=pesos)`, una llamada por
+  candidata;
+- hijo 1: superbalota, `choice(len(pesos_sb), size=1, replace=True, p=pesos_sb)`
+  en Baloto y Revancha (16 candidatas).
+Para construir una cartera se dividen las probabilidades de cada vector por
+su suma. Cada indice se traduce a su valor segun el orden guardado en
+`fuente["candidatos"]` o `fuente["superbalota"]["candidatos"]`. Los numeros
+principales o pares de la linea se ordenan despues de esa conversion.
+Las candidatas se aceptan en el orden en que salen (ver CONSTRUCCION, 3).
+La etiqueta `ALGORITMO_RNG` que guarda cada cartera es mas corta que esta
+secuencia y se conserva tal cual (ver su comentario).
+
 Modulo puro.
 """
 from __future__ import annotations
@@ -67,6 +94,10 @@ from app.application.ml import laboratorio_variables as lv
 from app.application.ml import pronostico_colorloto as pcl
 
 VERSION_CONSTRUCCION = "producto5-cartera-1"
+# Etiqueta historica incluida en la identidad de la cartera y de la simulacion.
+# Otra etiqueta daria una clave de entrada distinta para la misma solicitud.
+# Las emisiones archivadas conservan su sello y se consultan por su clave original.
+# La cabecera y flujos() documentan la secuencia efectiva de v1.
 ALGORITMO_RNG = "numpy PCG64 con SeedSequence([semilla, 5, flujo, juego]); hijos 0 = numeros/pares, 1 = superbalota"
 FLUJO_CONSTRUCCION = 1
 FLUJO_SIMULACION = 2
@@ -97,7 +128,19 @@ def validar_parametros(cantidad, semilla, diversidad) -> tuple[int, int, str]:
 
 def flujos(semilla: int, flujo: int, juego: str, escenario: int = 0) -> tuple[np.random.Generator, np.random.Generator]:
     """Dos generadores locales e independientes (numeros/pares y superbalota).
-    `escenario` separa los flujos de simulacion de cada escenario."""
+
+    Secuencia efectiva: `SeedSequence([semilla, 5, flujo, JUEGO_INDICE[juego],
+    escenario]).spawn(2)` y un `Generator(PCG64(hijo))` por hijo. El hijo 0
+    genera numeros o pares; el hijo 1, la superbalota cuando el juego la
+    tiene.
+
+    - `JUEGO_INDICE`: Baloto = 1, Baloto Revancha = 2, MiLoto = 3, ColorLoto = 4.
+    - Construccion: flujo 1 y escenario 0 (el valor por defecto).
+    - Simulacion: flujo 2; escenario 1 = `sorteos_uniformes` y
+      2 = `muestreo_ponderado`.
+
+    `escenario` forma parte de la entropia aunque valga 0: la forma abreviada
+    `[semilla, 5, flujo, juego]` de `ALGORITMO_RNG` da otro flujo."""
     raiz = np.random.SeedSequence([semilla, 5, flujo, JUEGO_INDICE[juego], escenario])
     principal, superbalota = raiz.spawn(2)
     return np.random.Generator(np.random.PCG64(principal)), np.random.Generator(np.random.PCG64(superbalota))
